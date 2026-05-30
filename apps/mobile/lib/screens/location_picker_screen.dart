@@ -119,9 +119,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (!mounted) return;
-        setState(() => _isLocating = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(locale.t('addressPicker.locationServiceDisabled'))),
+          SnackBar(
+            content: Text(locale.t('addressPicker.locationServiceDisabled')),
+          ),
         );
         return;
       }
@@ -132,28 +133,33 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         if (!mounted) return;
-        setState(() => _isLocating = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(locale.t('addressPicker.locationPermissionDenied'))),
+          SnackBar(
+            content: Text(locale.t('addressPicker.locationPermissionDenied')),
+          ),
         );
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
-      final reverse = await MapboxApiService.reverseGeocode(pos.latitude, pos.longitude);
+      final reverse = await MapboxApiService.reverseGeocode(
+        pos.latitude,
+        pos.longitude,
+      );
       if (!mounted) return;
-      _pickCity(
-        _extractCityFromAddress(reverse?.address) ?? '',
-        lat: pos.latitude,
-        lon: pos.longitude,
-      );
+      final city = _extractCityFromAddress(reverse?.address) ??
+          locale.t('clientHome.locationPickerUseCity');
+      _pickCity(city, lat: pos.latitude, lon: pos.longitude);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isLocating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(locale.t('addressPicker.locationDetectFailed'))),
       );
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
     }
   }
 

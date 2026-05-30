@@ -501,6 +501,21 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     }
   }
 
+  double _maxDistanceKmForFilter() => _currentRadiusKm().toDouble();
+
+  bool _hasClientCoordinates(ClientLocationStore loc) =>
+      loc.lat != null && loc.lon != null;
+
+  bool _isWithinDistanceFilter(
+    ExploreStudioItem studio,
+    ClientLocationStore loc,
+  ) {
+    if (!_hasClientCoordinates(loc)) return false;
+    final km = _resolvedDistanceKm(studio, loc);
+    if (km == null) return false;
+    return km <= _maxDistanceKmForFilter();
+  }
+
   Future<List<ExploreClassItem>> _fetchExploreClassesForStudio(
     ExploreStudioItem studio,
     String fromQuery,
@@ -652,17 +667,25 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       _loadError = null;
     });
     try {
-      final radiusKm = _currentRadiusKm();
-      final nearbyQuery = StringBuffer(
-        '/studios/nearby?limit=20&radius=$radiusKm',
-      );
-      if (loc.lat != null && loc.lon != null) {
-        nearbyQuery
-          ..write('&lat=')
-          ..write(loc.lat!.toStringAsFixed(6))
-          ..write('&lng=')
-          ..write(loc.lon!.toStringAsFixed(6));
+      if (!_hasClientCoordinates(loc)) {
+        if (!mounted) return;
+        setState(() {
+          _studios = const [];
+          _classes = const [];
+          _loading = false;
+          _loadError = null;
+          _derivedInputsHash = 0;
+          _distanceKmMemo.clear();
+        });
+        return;
       }
+
+      final radiusKm = _currentRadiusKm();
+      final nearbyQuery = StringBuffer('/studios/nearby?limit=50&radius=$radiusKm')
+        ..write('&lat=')
+        ..write(loc.lat!.toStringAsFixed(6))
+        ..write('&lng=')
+        ..write(loc.lon!.toStringAsFixed(6));
       final nearbyPath = nearbyQuery.toString();
       var nearbyRaw = ClientNearbyCache.get(nearbyPath);
       if (nearbyRaw == null) {
@@ -739,6 +762,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           ),
         );
       }
+
+      studios.removeWhere((s) => !_isWithinDistanceFilter(s, loc));
 
       final classes = <ExploreClassItem>[];
       final from = DateTime.now();
@@ -852,6 +877,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   }
 
   int _computeDerivedInputsHash() {
+    final loc = _locationStore;
     return Object.hash(
       _dayKey(_selectedDay),
       _classes.length,
@@ -863,6 +889,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       Object.hashAll(_timePeriods),
       _timeRange.start.round(),
       _timeRange.end.round(),
+      loc?.lat,
+      loc?.lon,
     );
   }
 
@@ -880,8 +908,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final h = _computeDerivedInputsHash();
     if (h == _derivedInputsHash) return;
     _derivedInputsHash = h;
+    final loc = context.read<ClientLocationStore>();
     final selectedDate = _selectedDay;
+
+    final inRangeStudios = _studios
+        .where((s) => _isWithinDistanceFilter(s, loc))
+        .toList(growable: false);
+    final inRangeStudioIds = inRangeStudios.map((s) => s.id).toSet();
+
     final dayClasses = _classes.where((c) {
+      if (!inRangeStudioIds.contains(c.studioId)) return false;
       if (!CalendarDayPill.isSameDay(c.startsAt, selectedDate)) return false;
       if (!_isClassInSelectedPeriods(c.startsAt)) return false;
       if (!_isClassInTimeRange(c.startsAt)) return false;
@@ -893,7 +929,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         .where(_matchesSearchClass)
         .toList(growable: false);
 
-    final visibleStudios = _studios
+    final visibleStudios = inRangeStudios
         .where(_studioMatchesCategory)
         .toList(growable: false);
     _derivedVisibleStudiosCount = visibleStudios.length;
@@ -2189,7 +2225,93 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     );
   }
 
-  Widget _buildBrowseClassesList(ClientLocationStore locationStore) {
+  Widget _buildBrowseListEmptyState({
+    required bool forClasses,
+    required LocaleProvider locale,
+    required ClientLocationStore locationStore,
+  }) {
+    final noCoords = !_hasClientCoordinates(locationStore);
+    final noSourceData = forClasses ? _classes.isEmpty : _studios.isEmpty;
+
+    late final String title;
+    late final String body;
+    VoidCallback? onAction;
+    String? actionLabel;
+
+    if (noCoords) {
+      title = locale.t('clientHome.browseEmptyNoLocationTitle');
+      body = locale.t('clientHome.browseEmptyNoLocationBody');
+      onAction = _openLocationPicker;
+      actionLabel = locale.t('clientHome.setLocation');
+    } else if (noSourceData) {
+      title = forClasses
+          ? locale.t('clientHome.browseEmptyNoClassesTitle')
+          : locale.t('clientHome.browseEmptyNoStudiosTitle');
+      body = forClasses
+          ? locale.t('clientHome.browseEmptyNoClassesBody')
+          : locale.t('clientHome.browseEmptyNoStudiosBody');
+    } else {
+      title = locale.t('clientHome.browseEmptyFiltersTitle');
+      body = locale.t('clientHome.browseEmptyFiltersBody');
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 56),
+      children: [
+        Column(
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            if (onAction != null) ...[
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: onAction,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBrowseClassesList(
+    ClientLocationStore locationStore,
+    LocaleProvider locale,
+  ) {
+    if (_derivedDayClasses.isEmpty) {
+      return _buildBrowseListEmptyState(
+        forClasses: true,
+        locale: locale,
+        locationStore: locationStore,
+      );
+    }
     return ListView.separated(
       key: const PageStorageKey<String>('browse-classes'),
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
@@ -2222,7 +2344,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   Widget _buildBrowseStudiosList(
     ClientLocationStore locationStore,
     ClientFavoritesStore favStore,
+    LocaleProvider locale,
   ) {
+    if (_derivedVisibleStudios.isEmpty) {
+      return _buildBrowseListEmptyState(
+        forClasses: false,
+        locale: locale,
+        locationStore: locationStore,
+      );
+    }
     return ListView.separated(
       key: const PageStorageKey<String>('browse-studios-v2'),
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 56),
@@ -2565,8 +2695,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           index: showClasses ? 0 : 1,
                           sizing: StackFit.expand,
                           children: [
-                            _buildBrowseClassesList(locationStore),
-                            _buildBrowseStudiosList(locationStore, favStore),
+                            _buildBrowseClassesList(locationStore, locale),
+                            _buildBrowseStudiosList(
+                              locationStore,
+                              favStore,
+                              locale,
+                            ),
                           ],
                         );
                       },

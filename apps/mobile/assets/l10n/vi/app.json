@@ -117,7 +117,16 @@
 		"locationPickerUseCity": "Dùng vị trí hiện tại",
 		"locationPickerEmpty": "Nhập tên thành phố",
 		"favoritePromoTitle": "Lưu lớp yêu thích",
-		"favoritePromoSubtitle": "Lưu lớp và nhận nhắc nhở"
+		"favoritePromoSubtitle": "Lưu lớp và nhận nhắc nhở",
+		"browseEmptyFiltersTitle": "Không tìm thấy kết quả",
+		"browseEmptyFiltersBody": "Hãy thử đổi bộ lọc — ngày, khoảng cách, loại hoặc giờ.",
+		"browseEmptyFiltersAction": "Đổi bộ lọc",
+		"browseEmptyNoStudiosTitle": "Không có studio gần đây",
+		"browseEmptyNoStudiosBody": "Thử thành phố khác hoặc mở rộng bán kính tìm kiếm.",
+		"browseEmptyNoClassesTitle": "Không có lớp nào",
+		"browseEmptyNoClassesBody": "Thử ngày khác hoặc điều chỉnh bộ lọc.",
+		"browseEmptyNoLocationTitle": "Chọn vị trí của bạn",
+		"browseEmptyNoLocationBody": "Chọn thành phố để xem studio và lớp gần bạn."
 	},
 	"clientShell": {
 		"home": "Trang chủ",
@@ -199,7 +208,11 @@
 	},
 	"clientMap": {
 		"nearbyStudios": "Studio gần bạn",
-		"noStudiosNearby": "Không tìm thấy studio gần đây"
+		"noStudiosNearby": "Không tìm thấy studio gần đây",
+		"searchStudiosHint": "Tìm studio...",
+		"locationPromptTitle": "Chia sẻ vị trí",
+		"locationPromptBody": "Để hiển thị studio trên bản đồ, hãy cho phép truy cập vị trí hoặc chọn thành phố.",
+		"locationPromptManual": "Chọn thành phố thủ công"
 	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",

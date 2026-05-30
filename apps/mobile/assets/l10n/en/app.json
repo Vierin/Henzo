@@ -117,7 +117,16 @@
 		"locationPickerUseCity": "Use current location",
 		"locationPickerEmpty": "Start typing a city name",
 		"favoritePromoTitle": "Favorite a class",
-		"favoritePromoSubtitle": "Save classes and get reminders"
+		"favoritePromoSubtitle": "Save classes and get reminders",
+		"browseEmptyFiltersTitle": "Nothing found",
+		"browseEmptyFiltersBody": "Try changing your filters — date, distance, type, or time.",
+		"browseEmptyFiltersAction": "Change filters",
+		"browseEmptyNoStudiosTitle": "No studios nearby",
+		"browseEmptyNoStudiosBody": "Try another city or widen the distance filter.",
+		"browseEmptyNoClassesTitle": "No classes found",
+		"browseEmptyNoClassesBody": "Try another day or check your filters.",
+		"browseEmptyNoLocationTitle": "Set your location",
+		"browseEmptyNoLocationBody": "Choose a city to see studios and classes near you."
 	},
 	"clientShell": {
 		"home": "Home",
@@ -199,7 +208,11 @@
 	},
 	"clientMap": {
 		"nearbyStudios": "Nearby studios",
-		"noStudiosNearby": "No studios found nearby"
+		"noStudiosNearby": "No studios found nearby",
+		"searchStudiosHint": "Search studios...",
+		"locationPromptTitle": "Share your location",
+		"locationPromptBody": "To show studios on the map, allow location access or choose your city.",
+		"locationPromptManual": "Choose city manually"
 	},
 	"publicHome": {
 		"loginLink": "Login",

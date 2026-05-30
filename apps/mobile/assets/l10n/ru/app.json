@@ -117,7 +117,16 @@
 		"locationPickerUseCity": "Использовать текущее местоположение",
 		"locationPickerEmpty": "Начните вводить название города",
 		"favoritePromoTitle": "Добавь в избранное",
-		"favoritePromoSubtitle": "Сохраняй занятия и получай напоминания"
+		"favoritePromoSubtitle": "Сохраняй занятия и получай напоминания",
+		"browseEmptyFiltersTitle": "Ничего не найдено",
+		"browseEmptyFiltersBody": "Попробуйте изменить фильтры — дату, расстояние, тип или время.",
+		"browseEmptyFiltersAction": "Изменить фильтры",
+		"browseEmptyNoStudiosTitle": "Рядом нет студий",
+		"browseEmptyNoStudiosBody": "Выберите другой город или увеличьте радиус поиска.",
+		"browseEmptyNoClassesTitle": "Занятий не найдено",
+		"browseEmptyNoClassesBody": "Попробуйте другой день или измените фильтры.",
+		"browseEmptyNoLocationTitle": "Укажите локацию",
+		"browseEmptyNoLocationBody": "Выберите город, чтобы видеть студии и занятия рядом."
 	},
 	"clientShell": {
 		"home": "Главная",
@@ -199,7 +208,11 @@
 	},
 	"clientMap": {
 		"nearbyStudios": "Студии рядом",
-		"noStudiosNearby": "Рядом студий не найдено"
+		"noStudiosNearby": "Рядом студий не найдено",
+		"searchStudiosHint": "Поиск студий...",
+		"locationPromptTitle": "Поделиться геолокацией",
+		"locationPromptBody": "Чтобы показать студии на карте, разрешите доступ к местоположению или выберите город.",
+		"locationPromptManual": "Выбрать город вручную"
 	},
 	"publicHome": {
 		"loginLink": "Вход",

@@ -1049,38 +1049,26 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       showLocationPin: sub.showLocationPin,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: OwnerDailyScheduleSessionCard(
-        session: session,
-        subtitleLabel: rows.subtitleLabel,
-        showLocationPin: rows.showLocationPin,
-        showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
-        trainerLine: rows.trainerLine,
-        onTap: () {
-          if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
-            return;
-          }
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PublicClassDetailScreen(
-                studioId: studioId,
-                sessionId: sessionId,
-                sessionStartsAtHint: startsHint,
-              ),
+    return OwnerDailyScheduleSessionCard(
+      session: session,
+      subtitleLabel: rows.subtitleLabel,
+      showLocationPin: rows.showLocationPin,
+      showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
+      trainerLine: rows.trainerLine,
+      onTap: () {
+        if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PublicClassDetailScreen(
+              studioId: studioId,
+              sessionId: sessionId,
+              sessionStartsAtHint: startsHint,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

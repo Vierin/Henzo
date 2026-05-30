@@ -1,82 +1,121 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
+import '../models/training_category_option.dart';
 import '../services/api_client.dart';
-import '../services/client_location_store.dart';
+import '../services/auth_service.dart';
+import '../services/client_favorites_mutations.dart';
+import '../services/client_favorites_store.dart';
 import '../services/cache/client_nearby_cache.dart';
+import '../services/client_location_store.dart';
+import '../services/mapbox_api_service.dart';
+import '../utils/formatters.dart';
 import '../utils/load_error_message.dart';
 import '../utils/nearby_payload.dart';
+import '../widgets/app_search_prefix_icon.dart';
+import '../widgets/client/browse_studio_list_card.dart';
 import '../widgets/common/henzo_modal.dart';
 import '../widgets/common/load_error_view.dart';
 import '../widgets/map/henzo_map_layers.dart';
+import 'client/client_explore_models.dart';
+import 'client/client_shell_scope.dart';
 import 'location_picker_screen.dart';
+import 'public_class_detail_screen.dart';
+import 'public_studio_detail_screen.dart';
 
-/// Full-screen map sheet (Browse «Map» button).
-Future<void> showClientMapBottomSheet(BuildContext context) {
-  return showHenzoModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (sheetCtx) {
-      final media = MediaQuery.of(sheetCtx);
-      final sheetHeight = media.size.height - media.padding.top - 6;
-      return SizedBox(
-        height: sheetHeight,
-        width: double.infinity,
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          child: ClientMapScreen(
-            onBack: () => Navigator.of(sheetCtx).pop(),
-            showAsSheet: true,
-          ),
-        ),
-      );
-    },
-  );
-}
-
+/// Full-screen map (Browse «Map» / Home).
 class ClientMapScreen extends StatefulWidget {
   const ClientMapScreen({
     super.key,
     required this.onBack,
-    this.showAsSheet = false,
   });
 
   final VoidCallback onBack;
-  final bool showAsSheet;
+
+  static Future<void> open(BuildContext context) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (ctx) => ClientMapScreen(
+          onBack: () => Navigator.of(ctx).pop(),
+        ),
+      ),
+    );
+  }
 
   @override
   State<ClientMapScreen> createState() => _ClientMapScreenState();
 }
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
+  static const _mapPinPurple = Color(0xFF4D39A8);
+  static const _carouselHeight = 158.0;
+  static const _carouselBottomPadding = 24.0;
+  static const _carouselSideInset = 12.0;
+  static const _searchAreaThresholdKm = 2.0;
+  static const _clientLocationZoom = 14.0;
+  static const _userMarkerWidth = 20.0;
+  static const _userMarkerHeight = 20.0;
+
   final MapController _mapController = MapController();
+  final PageController _carouselController = PageController();
   ClientLocationStore? _locationStore;
   final Distance _distance = const Distance();
-  List<_NearbyStudio> _nearbyStudios = const [];
-  bool _isLoadingNearby = true;
-  String? _nearbyLoadError;
+  final Set<String> _favoriteLoadingIds = <String>{};
+
+  List<ExploreStudioItem> _studios = const [];
+  List<TrainingCategoryOption> _trainingCategories = const [];
+  Map<String, List<ExploreClassItem>> _classesByStudio = const {};
+  bool _isLoadingStudios = true;
+  String? _studiosLoadError;
+  int _selectedStudioIndex = 0;
+  bool _showCarouselCard = true;
   bool _showSearchThisArea = false;
   double? _lastSearchLat;
   double? _lastSearchLon;
   double? _pendingSearchLat;
   double? _pendingSearchLon;
-  static const double _searchAreaThresholdKm = 2.0;
+  StreamSubscription<MapEvent>? _mapEventSubscription;
+  double? _pinchGestureStartZoom;
 
   @override
   void initState() {
     super.initState();
+    _mapEventSubscription = _mapController.mapEventStream.listen(_onMapEvent);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncMapToLocation();
-      unawaited(_loadNearbyStudios());
+      unawaited(_bootstrapMap());
     });
+  }
+
+  bool _hasClientMapCenter(ClientLocationStore loc) =>
+      loc.lat != null && loc.lon != null;
+
+  Future<void> _bootstrapMap() async {
+    if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
+    if (!_hasClientMapCenter(loc)) {
+      await _showLocationRequestModal();
+    }
+    if (!mounted) return;
+    _syncMapToClientLocation();
+    final after = context.read<ClientLocationStore>();
+    if (_hasClientMapCenter(after)) {
+      unawaited(_loadStudios());
+    } else if (mounted) {
+      setState(() {
+        _isLoadingStudios = false;
+        _studios = const [];
+        _studiosLoadError = null;
+      });
+    }
+    unawaited(_loadTrainingCategories());
   }
 
   @override
@@ -91,54 +130,198 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   @override
   void dispose() {
+    _mapEventSubscription?.cancel();
     _locationStore?.removeListener(_onSharedLocationChanged);
+    _carouselController.dispose();
     super.dispose();
   }
 
   void _onSharedLocationChanged() {
     if (!mounted) return;
-    _syncMapToLocation();
-    unawaited(_loadNearbyStudios());
-  }
-
-  void _syncMapToLocation() {
-    if (!mounted) return;
+    _syncMapToClientLocation();
     final loc = context.read<ClientLocationStore>();
-    if (loc.lat != null && loc.lon != null) {
-      _mapController.move(LatLng(loc.lat!, loc.lon!), 14);
+    if (_hasClientMapCenter(loc)) {
+      unawaited(_loadStudios());
     }
   }
 
-  Future<void> _openLocationInput() async {
+  void _syncMapToClientLocation() {
+    if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
+    if (!_hasClientMapCenter(loc)) return;
+    _mapController.move(
+      LatLng(loc.lat!, loc.lon!),
+      _clientLocationZoom,
+    );
+  }
+
+  Future<void> _showLocationRequestModal() async {
+    final locale = context.read<LocaleProvider>();
+    await showHenzoModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      showDragHandle: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: screenPaddingH(top: 10, bottom: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  locale.t('clientMap.locationPromptTitle'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  locale.t('clientMap.locationPromptBody'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FilledButton(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await _requestCurrentLocation();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary500,
+                  ),
+                  child: Text(locale.t('clientHome.locationPickerUseCity')),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await _openManualLocationInput();
+                  },
+                  child: Text(locale.t('clientMap.locationPromptManual')),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _requestCurrentLocation() async {
+    final locale = context.read<LocaleProvider>();
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(locale.t('addressPicker.locationServiceDisabled')),
+        ),
+      );
+      await _openManualLocationInput();
+      return;
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(locale.t('addressPicker.locationPermissionDenied')),
+        ),
+      );
+      await _openManualLocationInput();
+      return;
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      final reverse = await MapboxApiService.reverseGeocode(
+        pos.latitude,
+        pos.longitude,
+      );
+      final city = _extractCityFromAddress(reverse?.address) ??
+          locale.t('clientHome.locationPickerUseCity');
+      await context.read<ClientLocationStore>().apply(
+        city: city,
+        lat: pos.latitude,
+        lon: pos.longitude,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('addressPicker.locationDetectFailed'))),
+      );
+      await _openManualLocationInput();
+    }
+  }
+
+  String? _extractCityFromAddress(String? address) {
+    if (address == null || address.trim().isEmpty) return null;
+    final parts = address
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return null;
+    if (parts.length >= 2) return parts[parts.length - 2];
+    return parts.first;
+  }
+
+  Future<void> _openManualLocationInput() async {
     final loc = context.read<ClientLocationStore>();
     final picked = await Navigator.of(context).push<LocationPickerResult>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          initialCity: loc.displayLabel(''),
+          initialCity: loc.city ?? '',
         ),
       ),
     );
     if (picked == null || picked.city.trim().isEmpty) return;
     await context.read<ClientLocationStore>().applyFromPicker(picked);
-    if (!mounted) return;
-    setState(() {
-      _showSearchThisArea = false;
-      _pendingSearchLat = null;
-      _pendingSearchLon = null;
-    });
-    _syncMapToLocation();
-    await _loadNearbyStudios();
   }
 
-  Future<void> _loadNearbyStudios({double? searchLat, double? searchLon}) async {
+  Future<void> _loadTrainingCategories() async {
+    if (_trainingCategories.isNotEmpty) return;
+    try {
+      final raw = await ApiClient.get('/trainings/categories', null);
+      if (raw is! List || !mounted) return;
+      final list = <TrainingCategoryOption>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        list.add(
+          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
+        );
+      }
+      if (!mounted) return;
+      setState(
+        () => _trainingCategories = TrainingCategoryOption.withOtherLast(list),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _loadStudios({double? searchLat, double? searchLon}) async {
     final loc = context.read<ClientLocationStore>();
     final effectiveLat = searchLat ?? loc.lat;
     final effectiveLon = searchLon ?? loc.lon;
     if (!mounted) return;
     setState(() {
-      _isLoadingNearby = true;
-      _nearbyLoadError = null;
+      _isLoadingStudios = true;
+      _studiosLoadError = null;
       _showSearchThisArea = false;
+      _classesByStudio = const {};
     });
     try {
       final query = StringBuffer('/studios/nearby?limit=25');
@@ -152,62 +335,265 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       }
       final path = query.toString();
       dynamic raw = ClientNearbyCache.get(path);
-      if (raw == null &&
-          effectiveLat != null &&
-          effectiveLon != null) {
-        final sliced = ClientNearbyCache.sliceFromHomeCache(
+      if (raw == null && effectiveLat != null && effectiveLon != null) {
+        raw = ClientNearbyCache.sliceFromHomeCache(
           effectiveLat,
           effectiveLon,
           take: 25,
         );
-        if (sliced != null) {
-          raw = sliced;
-        }
       }
       raw ??= await ApiClient.get(path, null);
       ClientNearbyCache.put(path, raw);
       final list = extractStudiosListFromNearby(raw);
-      final mapped = <_NearbyStudio>[];
+      final localeCode = context.read<LocaleProvider>().localeCode;
+      final mapped = <ExploreStudioItem>[];
       for (final item in list) {
         if (item is! Map) continue;
-        final data = Map<String, dynamic>.from(item);
-        final lat = (data['latitude'] as num?)?.toDouble();
-        final lon = (data['longitude'] as num?)?.toDouble();
-        mapped.add(
-          _NearbyStudio(
-            id: (data['id'] ?? '').toString(),
-            name: (data['name'] ?? 'Studio').toString(),
-            address: (data['address'] ?? '').toString(),
-            lat: lat,
-            lon: lon,
-            distanceKm: (data['distance'] as num?)?.toDouble(),
-          ),
+        final studio = _parseExploreStudio(
+          Map<String, dynamic>.from(item),
+          localeCode,
         );
+        if (studio != null) mapped.add(studio);
       }
       if (!mounted) return;
       setState(() {
-        _nearbyStudios = mapped;
-        _isLoadingNearby = false;
-        _nearbyLoadError = null;
+        _studios = mapped;
+        _isLoadingStudios = false;
+        _selectedStudioIndex = 0;
+        _showCarouselCard = false;
         _lastSearchLat = effectiveLat;
         _lastSearchLon = effectiveLon;
         _pendingSearchLat = null;
         _pendingSearchLon = null;
       });
+      if (mapped.isNotEmpty) {
+        if (searchLat != null && searchLon != null) {
+          _mapController.move(
+            LatLng(searchLat, searchLon),
+            _clientLocationZoom,
+          );
+        } else {
+          _syncMapToClientLocation();
+        }
+        unawaited(_loadClassesForStudios(mapped));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _syncCarouselCardVisibility();
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _isLoadingNearby = false;
-        _nearbyLoadError = loadErrorMessage(locale, e);
+        _isLoadingStudios = false;
+        _studiosLoadError = loadErrorMessage(locale, e);
         _lastSearchLat = effectiveLat;
         _lastSearchLon = effectiveLon;
       });
     }
   }
 
-  void _handleMapPositionChanged(MapCamera camera, bool hasGesture) {
-    if (!hasGesture) return;
+  ExploreStudioItem? _parseExploreStudio(
+    Map<String, dynamic> map,
+    String localeCode,
+  ) {
+    final id = (map['id'] ?? '').toString();
+    if (id.isEmpty) return null;
+
+    final reviews = map['Review'] is List ? map['Review'] as List : const [];
+    final reviewCount = reviews.length;
+    final avgRating = reviewCount > 0
+        ? reviews
+                  .whereType<Map>()
+                  .map((r) => (r['rating'] as num?)?.toDouble() ?? 0)
+                  .fold<double>(0, (a, b) => a + b) /
+              reviewCount
+        : ((map['avgRating'] as num?)?.toDouble() ?? 0);
+
+    final trainingCategoryIds = <int>[];
+    final rawCatIds = map['trainingCategoryIds'];
+    if (rawCatIds is List) {
+      for (final e in rawCatIds) {
+        if (e is num) trainingCategoryIds.add(e.toInt());
+      }
+    }
+
+    final categoryNames = extractStudioCategoryLabels(
+      map,
+      localeCode: localeCode,
+      categoryOptions: _trainingCategories,
+    );
+
+    final photos = map['photos'];
+    final photoUrl = photos is List && photos.isNotEmpty
+        ? photos.first?.toString()
+        : null;
+
+    return ExploreStudioItem(
+      id: id,
+      name: (map['name'] ?? 'Studio').toString(),
+      address: (map['address'] ?? '').toString(),
+      locationName: (map['locationName'] ?? '').toString().trim().isEmpty
+          ? null
+          : (map['locationName'] ?? '').toString().trim(),
+      distanceKm: (map['distance'] as num?)?.toDouble(),
+      rating: avgRating,
+      reviewCount: reviewCount,
+      photoUrl: photoUrl,
+      logoUrl: (map['logoUrl'] ??
+              map['logo'] ??
+              map['brandLogoUrl'] ??
+              map['avatarUrl'])
+          ?.toString(),
+      lat: (map['lat'] as num?)?.toDouble() ??
+          (map['latitude'] as num?)?.toDouble(),
+      lng: (map['lng'] as num?)?.toDouble() ??
+          (map['lon'] as num?)?.toDouble() ??
+          (map['longitude'] as num?)?.toDouble(),
+      trainingCategoryIds: trainingCategoryIds,
+      categoryNames: categoryNames,
+    );
+  }
+
+  Future<void> _loadClassesForStudios(List<ExploreStudioItem> studios) async {
+    if (!mounted) return;
+    final from = DateTime.now();
+    final to = from.add(const Duration(days: 1));
+    final fromQuery = Uri.encodeComponent(
+      DateTime(from.year, from.month, from.day).toIso8601String(),
+    );
+    final toQuery = Uri.encodeComponent(to.toIso8601String());
+    final byStudio = <String, List<ExploreClassItem>>{};
+    const concurrency = 4;
+    final slice = studios.take(12).toList();
+    try {
+      for (var i = 0; i < slice.length; i += concurrency) {
+        final end = i + concurrency > slice.length ? slice.length : i + concurrency;
+        final batch = slice.sublist(i, end);
+        final results = await Future.wait(
+          batch.map((s) => _fetchClassesForStudio(s, fromQuery, toQuery)),
+        );
+        for (var j = 0; j < batch.length; j++) {
+          byStudio[batch[j].id] = results[j];
+        }
+      }
+      if (!mounted) return;
+      setState(() => _classesByStudio = byStudio);
+    } catch (_) {}
+  }
+
+  Future<List<ExploreClassItem>> _fetchClassesForStudio(
+    ExploreStudioItem studio,
+    String fromQuery,
+    String toQuery,
+  ) async {
+    try {
+      final raw = await ApiClient.get(
+        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=20',
+        null,
+      );
+      if (raw is! List) return const [];
+      final out = <ExploreClassItem>[];
+      final today = DateTime.now();
+      for (final row in raw) {
+        if (row is! Map) continue;
+        final map = Map<String, dynamic>.from(row);
+        final training = map['training'] is Map
+            ? Map<String, dynamic>.from(map['training'] as Map)
+            : <String, dynamic>{};
+        final startsAt = parseApiDateTime(map['startsAt']);
+        if (startsAt == null) continue;
+        if (!_isSameCalendarDay(startsAt, today)) continue;
+        final trainingCategoryId = training['trainingCategoryId'] == null
+            ? null
+            : (training['trainingCategoryId'] as num).toInt();
+        out.add(
+          ExploreClassItem(
+            sessionId: (map['id'] ?? '').toString(),
+            studioId: studio.id,
+            studioName: studio.name,
+            studioAddress: studio.address,
+            startsAt: startsAt,
+            durationMin: (training['duration'] as num?)?.toInt(),
+            trainerName: map['trainer'] is Map
+                ? (map['trainer']['name'] ?? '').toString()
+                : '',
+            className: (training['name'] ?? 'Class').toString(),
+            price: (training['price'] as num?)?.toDouble(),
+            capacity: (map['capacity'] as num?)?.toInt(),
+            bookedCount: (map['bookedCount'] as num?)?.toInt() ?? 0,
+            displayColorHex: training['displayColor']?.toString(),
+            rating: studio.rating,
+            reviewCount: studio.reviewCount,
+            trainingCategoryId: trainingCategoryId,
+            trainingId: (training['id'] ?? '').toString(),
+            endsAt: parseApiDateTime(map['endsAt']),
+            locationName: map['locationName']?.toString(),
+            distanceKm: studio.distanceKm,
+          ),
+        );
+      }
+      out.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      return out;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  bool _isSameCalendarDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  List<ExploreClassItem> _todayClassesFor(String studioId) {
+    return _classesByStudio[studioId] ?? const [];
+  }
+
+  bool _isStudioInMapViewport(int index) {
+    if (index < 0 || index >= _studios.length) return false;
+    final s = _studios[index];
+    if (s.lat == null || s.lng == null) return false;
+    return _mapController.camera.visibleBounds.contains(
+      LatLng(s.lat!, s.lng!),
+    );
+  }
+
+  void _syncCarouselCardVisibility() {
+    if (!mounted) return;
+    final show =
+        _studios.isNotEmpty && _isStudioInMapViewport(_selectedStudioIndex);
+    if (show == _showCarouselCard) return;
+    setState(() => _showCarouselCard = show);
+  }
+
+  /// Pan-only: ignore pinch-zoom and programmatic [MapController] moves.
+  void _onMapEvent(MapEvent event) {
+    if (event is MapEventMoveStart &&
+        event.source == MapEventSource.multiFingerGestureStart) {
+      _pinchGestureStartZoom = event.camera.zoom;
+      return;
+    }
+    if (event is MapEventWithMove) {
+      _syncCarouselCardVisibility();
+    }
+    final isPanEnd = switch (event) {
+      MapEventMoveEnd(source: MapEventSource.dragEnd) => true,
+      MapEventFlingAnimationEnd() => true,
+      MapEventMoveEnd(source: MapEventSource.multiFingerEnd) =>
+        _wasPinchPanNotZoom(event.camera.zoom),
+      _ => false,
+    };
+    if (!isPanEnd) return;
+    _updateSearchThisAreaButton(event.camera);
+    _syncCarouselCardVisibility();
+  }
+
+  bool _wasPinchPanNotZoom(double endZoom) {
+    final startZoom = _pinchGestureStartZoom;
+    _pinchGestureStartZoom = null;
+    if (startZoom == null) return false;
+    return (endZoom - startZoom).abs() < 0.05;
+  }
+
+  void _updateSearchThisAreaButton(MapCamera camera) {
     final center = camera.center;
     final loc = context.read<ClientLocationStore>();
     final baseLat = _lastSearchLat ?? loc.lat;
@@ -240,7 +626,259 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     final lat = _pendingSearchLat;
     final lon = _pendingSearchLon;
     if (lat == null || lon == null) return;
-    await _loadNearbyStudios(searchLat: lat, searchLon: lon);
+    await _loadStudios(searchLat: lat, searchLon: lon);
+  }
+
+  void _focusStudioOnMap(int index) {
+    if (index < 0 || index >= _studios.length) return;
+    final s = _studios[index];
+    if (s.lat == null || s.lng == null) return;
+    _mapController.move(LatLng(s.lat!, s.lng!), 15);
+  }
+
+  void _onCarouselPageChanged(int index) {
+    setState(() {
+      _selectedStudioIndex = index;
+      _showCarouselCard = _isStudioInMapViewport(index);
+    });
+    _focusStudioOnMap(index);
+  }
+
+  String? _distanceLabel(ExploreStudioItem studio) {
+    final loc = context.read<ClientLocationStore>();
+    final km = resolveStudioDistanceKm(
+      apiDistanceKm: studio.distanceKm,
+      clientLat: loc.lat,
+      clientLon: loc.lon,
+      studioLat: studio.lat,
+      studioLng: studio.lng,
+    );
+    final label = formatBrowseStudioDistanceLabel(km);
+    return label.isEmpty ? null : label;
+  }
+
+  void _openBrowseSearch() {
+    ClientShellScope.maybeOf(context)?.goToExplore(showClasses: false);
+    widget.onBack();
+  }
+
+  void _openStudioDetail(ExploreStudioItem studio) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicStudioDetailScreen(studioId: studio.id),
+      ),
+    );
+  }
+
+  void _openClassDetail(ExploreClassItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicClassDetailScreen(
+          studioId: item.studioId,
+          sessionId: item.sessionId,
+          sessionStartsAtHint: item.startsAt,
+          distanceKm: item.distanceKm,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleFavorite(ExploreStudioItem studio) async {
+    final token = context.read<AuthService>().accessToken;
+    final favStore = context.read<ClientFavoritesStore>();
+    if (token == null ||
+        token.isEmpty ||
+        _favoriteLoadingIds.contains(studio.id)) {
+      return;
+    }
+    final wasFavorite = favStore.isFavorite(studio.id);
+    setState(() => _favoriteLoadingIds.add(studio.id));
+    final ok = wasFavorite
+        ? await ClientFavoritesMutations.removeStudio(
+            favStore: favStore,
+            token: token,
+            studioId: studio.id,
+          )
+        : await ClientFavoritesMutations.addStudio(
+            favStore: favStore,
+            token: token,
+            studioId: studio.id,
+            optimisticStudioPayload: {
+              'id': studio.id,
+              'name': studio.name,
+              'address': studio.address,
+              if (studio.photoUrl != null && studio.photoUrl!.isNotEmpty)
+                'photos': [studio.photoUrl],
+              'avgRating': studio.rating,
+              if (studio.categoryNames.isNotEmpty) ...{
+                'categories': studio.categoryNames,
+                'categoryNames': studio.categoryNames,
+              },
+            },
+          );
+    if (mounted) {
+      setState(() => _favoriteLoadingIds.remove(studio.id));
+    }
+    if (!mounted || !ok) return;
+  }
+
+  Widget _buildMapCloseButton() {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: widget.onBack,
+        customBorder: const CircleBorder(),
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(
+            Icons.close_rounded,
+            size: 22,
+            color: AppColors.primary500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapSearchBar(LocaleProvider locale) {
+    return TextField(
+      readOnly: true,
+      onTap: _openBrowseSearch,
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 14,
+      ),
+      decoration: InputDecoration(
+        hintText: locale.t('clientMap.searchStudiosHint'),
+        hintStyle: const TextStyle(
+          color: AppColors.textTertiary,
+          fontSize: 14,
+        ),
+        isDense: true,
+        prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
+        prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(
+          leftMargin: 12,
+          trailingGap: 4,
+        ),
+        filled: true,
+        fillColor: AppColors.backgroundPrimary,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.primary500.withValues(alpha: 0.45),
+          ),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(
+            color: AppColors.primary500,
+            width: 1.5,
+          ),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.primary500.withValues(alpha: 0.45),
+          ),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 12,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudioCarousel() {
+    final favStore = context.watch<ClientFavoritesStore>();
+
+    if (_isLoadingStudios) {
+      return const SizedBox(
+        height: _carouselHeight,
+        child: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_studiosLoadError != null) {
+      return SizedBox(
+        height: _carouselHeight,
+        child: LoadErrorView(
+          compact: true,
+          message: _studiosLoadError!,
+          onRetry: () => _loadStudios(
+            searchLat: _lastSearchLat,
+            searchLon: _lastSearchLon,
+          ),
+        ),
+      );
+    }
+
+    if (_studios.isEmpty) {
+      return SizedBox(
+        height: _carouselHeight,
+        child: Center(
+          child: Text(
+            context.read<LocaleProvider>().t('clientMap.noStudiosNearby'),
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    if (!_showCarouselCard) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      height: _carouselHeight,
+      child: PageView.builder(
+        controller: _carouselController,
+        itemCount: _studios.length,
+        onPageChanged: _onCarouselPageChanged,
+        itemBuilder: (context, index) {
+          final studio = _studios[index];
+          final card = BrowseStudioListCard(
+            studio: studio,
+            todayClasses: _todayClassesFor(studio.id),
+            trainingCategories: _trainingCategories,
+            distanceLabel: _distanceLabel(studio),
+            isFavorite: favStore.isFavorite(studio.id),
+            onTap: () => _openStudioDetail(studio),
+            onToggleFavorite: () => _toggleFavorite(studio),
+            onClassTap: _openClassDetail,
+          );
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: _carouselSideInset,
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: card,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -251,7 +889,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         ? LatLng(loc.lat!, loc.lon!)
         : const LatLng(21.0285, 105.8542);
     final hasCoords = loc.lat != null && loc.lon != null;
-    final cityLabel = loc.displayLabel(locale.t('clientHome.setLocation'));
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Material(
       color: AppColors.backgroundPrimary,
       child: Stack(
@@ -262,45 +901,47 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               options: MapOptions(
                 initialCenter: center,
                 initialZoom: hasCoords ? 14 : 10,
-                onPositionChanged: _handleMapPositionChanged,
                 interactionOptions: HenzoMapLayers.interactionOptions(),
               ),
               children: [
                 HenzoMapLayers.cartoLightTileLayer(),
                 MarkerLayer(
-                  markers: _nearbyStudios
-                      .where((s) => s.lat != null && s.lon != null)
-                      .map(
-                        (s) => Marker(
-                          point: LatLng(s.lat!, s.lon!),
-                          width: 32,
-                          height: 32,
-                          child: const Icon(
+                  markers: [
+                    for (var i = 0; i < _studios.length; i++)
+                      if (_studios[i].lat != null && _studios[i].lng != null)
+                        Marker(
+                          point: LatLng(_studios[i].lat!, _studios[i].lng!),
+                          width: i == _selectedStudioIndex ? 36 : 32,
+                          height: i == _selectedStudioIndex ? 36 : 32,
+                          child: Icon(
                             Icons.location_on,
-                            size: 32,
-                            color: AppColors.primary500,
+                            size: i == _selectedStudioIndex ? 36 : 32,
+                            color: _mapPinPurple,
                           ),
                         ),
-                      )
-                      .toList(),
+                  ],
                 ),
                 if (hasCoords)
                   MarkerLayer(
                     markers: [
                       Marker(
                         point: LatLng(loc.lat!, loc.lon!),
-                        width: 26,
-                        height: 26,
+                        width: _userMarkerWidth,
+                        height: _userMarkerHeight,
                         child: Container(
+                          width: _userMarkerWidth,
+                          height: _userMarkerHeight,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppColors.primary500,
-                            border: Border.all(color: Colors.white, width: 3),
+                            border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary500.withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                spreadRadius: 2,
+                                color: AppColors.primary500.withValues(
+                                  alpha: 0.35,
+                                ),
+                                blurRadius: 8,
+                                spreadRadius: 1,
                               ),
                             ],
                           ),
@@ -314,127 +955,40 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ),
           Positioned.fill(
             child: IgnorePointer(
-              child: Container(
+              child: ColoredBox(
                 color: const Color(0x1FE1D7C8),
               ),
             ),
           ),
-          if (widget.showAsSheet)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           Positioned(
-            top: widget.showAsSheet ? 22 : 10,
+            top: 4,
             left: 12,
             right: 12,
             child: SafeArea(
               bottom: false,
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                      child: Material(
-                        color: Colors.white.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(999),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(999),
-                          onTap: widget.onBack,
-                          child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Icon(
-                              widget.showAsSheet
-                                  ? Icons.close_rounded
-                                  : Icons.arrow_back,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _buildMapCloseButton(),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                        child: Material(
-                          color: Colors.white.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(12),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: _openLocationInput,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.borderPrimary),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.location_on_outlined,
-                                    size: 18,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      cityLabel,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 8),
+                  _buildMapSearchBar(locale),
                 ],
               ),
             ),
           ),
           if (_showSearchThisArea)
             Positioned(
-              top: 68,
+              top: 110,
               left: 0,
               right: 0,
               child: SafeArea(
                 bottom: false,
                 child: Center(
                   child: ElevatedButton.icon(
-                    onPressed: _isLoadingNearby ? null : _searchThisArea,
+                    onPressed: _isLoadingStudios ? null : _searchThisArea,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary500,
                       foregroundColor: Colors.white,
@@ -456,162 +1010,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 ),
               ),
             ),
-          Positioned.fill(
-            top: widget.showAsSheet ? 96 : 84,
-            child: DraggableScrollableSheet(
-              minChildSize: 0.16,
-              initialChildSize: 0.22,
-              maxChildSize: 0.62,
-              builder: (context, scrollController) {
-                return Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.backgroundPrimary,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x22000000),
-                        blurRadius: 10,
-                        offset: Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 42,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: AppColors.borderSecondary,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Row(
-                          children: [
-                            Text(
-                              locale.t('clientMap.nearbyStudios'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: _isLoadingNearby
-                            ? const Center(child: CircularProgressIndicator())
-                            : _nearbyLoadError != null
-                                ? LoadErrorView(
-                                    compact: true,
-                                    message: _nearbyLoadError!,
-                                    onRetry: () => _loadNearbyStudios(
-                                      searchLat: _lastSearchLat,
-                                      searchLon: _lastSearchLon,
-                                    ),
-                                  )
-                            : _nearbyStudios.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      locale.t('clientMap.noStudiosNearby'),
-                                      style: const TextStyle(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    controller: scrollController,
-                                    itemCount: _nearbyStudios.length,
-                                    separatorBuilder: (_, __) => const Divider(
-                                      height: 1,
-                                      color: AppColors.borderPrimary,
-                                    ),
-                                    itemBuilder: (_, index) {
-                                      final studio = _nearbyStudios[index];
-                                      return ListTile(
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 2,
-                                        ),
-                                        leading: Container(
-                                          width: 30,
-                                          height: 30,
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.primary50,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.fitness_center,
-                                            size: 15,
-                                            color: AppColors.primary500,
-                                          ),
-                                        ),
-                                        title: Text(
-                                          studio.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          studio.address.isEmpty ? 'No address' : studio.address,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        trailing: studio.distanceKm != null
-                                            ? Text(
-                                                '${studio.distanceKm!.toStringAsFixed(1)} km',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.textSecondary,
-                                                ),
-                                              )
-                                            : null,
-                                        onTap: () {
-                                          if (studio.lat == null || studio.lon == null) return;
-                                          _mapController.move(
-                                            LatLng(studio.lat!, studio.lon!),
-                                            15,
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: bottomInset + _carouselBottomPadding,
+            child: _buildStudioCarousel(),
           ),
         ],
       ),
     );
   }
-}
-
-class _NearbyStudio {
-  const _NearbyStudio({
-    required this.id,
-    required this.name,
-    required this.address,
-    this.lat,
-    this.lon,
-    this.distanceKm,
-  });
-
-  final String id;
-  final String name;
-  final String address;
-  final double? lat;
-  final double? lon;
-  final double? distanceKm;
 }

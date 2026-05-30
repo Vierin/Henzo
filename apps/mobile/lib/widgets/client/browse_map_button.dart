@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../constants/colors.dart';
-
 /// Fixed pill above client bottom nav on Browse tab.
 class BrowseMapButton extends StatelessWidget {
   const BrowseMapButton({super.key, required this.label, required this.onTap});
+
+  static const _brandPurple = Color(0xFF4D39A8);
 
   final String label;
   final VoidCallback onTap;
@@ -13,11 +13,13 @@ class BrowseMapButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       elevation: 0,
-      color: AppColors.backgroundPrimary,
+      color: _brandPurple,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
+        splashColor: Colors.white.withValues(alpha: 0.2),
+        highlightColor: Colors.white.withValues(alpha: 0.12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
@@ -26,7 +28,7 @@ class BrowseMapButton extends StatelessWidget {
               const Icon(
                 Icons.map_outlined,
                 size: 18,
-                color: AppColors.primary500,
+                color: Colors.white,
               ),
               const SizedBox(width: 6),
               Text(
@@ -34,7 +36,7 @@ class BrowseMapButton extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                   height: 1.1,
                 ),
               ),

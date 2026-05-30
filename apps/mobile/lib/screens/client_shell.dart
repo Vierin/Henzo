@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,7 +25,6 @@ class ClientShell extends StatefulWidget {
 
 class _ClientShellState extends State<ClientShell> {
   int _currentIndex = 0;
-  bool _showMapScreen = false;
   final GlobalKey<ClientSearchScreenState> _exploreScreenKey =
       GlobalKey<ClientSearchScreenState>();
 
@@ -46,6 +47,10 @@ class _ClientShellState extends State<ClientShell> {
     );
   }
 
+  void _openMapScreen() {
+    unawaited(ClientMapScreen.open(context));
+  }
+
   void goToExploreTab({int? categoryId, bool showClasses = true}) {
     setState(() => _currentIndex = 1);
     _exploreScreenKey.currentState?.ensureExploreLoaded();
@@ -59,7 +64,7 @@ class _ClientShellState extends State<ClientShell> {
 
   List<Widget> get _screens => [
     PublicHomeScreen(
-      onOpenMap: () => setState(() => _showMapScreen = true),
+      onOpenMap: _openMapScreen,
       onOpenBrowseStudios: () => goToExploreTab(showClasses: false),
       onOpenBrowseClasses: () => goToExploreTab(showClasses: true),
       onCategorySelected: (id) => goToExploreTab(categoryId: id),
@@ -82,21 +87,15 @@ class _ClientShellState extends State<ClientShell> {
         body: Stack(
           children: [
             IndexedStack(index: _currentIndex, children: _screens),
-            if (_showMapScreen)
-              Positioned.fill(
-                child: ClientMapScreen(
-                  onBack: () => setState(() => _showMapScreen = false),
-                ),
-              ),
             if (_currentIndex == 1)
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 12,
+                bottom: 6,
                 child: Center(
                   child: BrowseMapButton(
                     label: locale.t('clientShell.map'),
-                    onTap: () => showClientMapBottomSheet(context),
+                    onTap: _openMapScreen,
                   ),
                 ),
               ),
