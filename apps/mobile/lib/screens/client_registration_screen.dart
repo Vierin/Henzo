@@ -39,7 +39,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   bool _isVerifyingCode = false;
   bool _isResendingCode = false;
   int _resendSecondsLeft = 0;
-  bool _agreedToTerms = false;
   Timer? _resendTimer;
   final FocusNode _otpFocusNode = FocusNode();
 
@@ -57,10 +56,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isSubmitting = true);
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
@@ -162,10 +157,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   }
 
   Future<void> _submitGoogle() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isGoogleLoading = true);
     final auth = context.read<AuthService>();
     final locale = context.read<LocaleProvider>();
@@ -181,10 +172,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   }
 
   Future<void> _submitApple() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isAppleLoading = true);
     final auth = context.read<AuthService>();
     final locale = context.read<LocaleProvider>();
@@ -323,11 +310,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
-          LegalAgreementCheckbox(
-            value: _agreedToTerms,
-            onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-          ),
           const SizedBox(height: 20),
           SizedBox(
             height: AuthFormStyles.buttonHeight,
@@ -418,6 +400,9 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   : locale.t('auth.continueWithApple'),
             ),
           ],
+          const SizedBox(height: 20),
+          const LegalAgreementFooter(),
+          const SizedBox(height: 8),
         ],
       ),
     );

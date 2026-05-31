@@ -39,7 +39,6 @@ class _BusinessRegistrationScreenState
   bool _isVerifyingCode = false;
   bool _isResendingCode = false;
   int _resendSecondsLeft = 0;
-  bool _agreedToTerms = false;
   Timer? _resendTimer;
   final FocusNode _otpFocusNode = FocusNode();
 
@@ -56,10 +55,6 @@ class _BusinessRegistrationScreenState
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
 
     setState(() => _isSubmitting = true);
     final locale = context.read<LocaleProvider>();
@@ -163,10 +158,6 @@ class _BusinessRegistrationScreenState
   }
 
   Future<void> _registerWithGoogle() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isGoogleSubmitting = true);
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
@@ -192,10 +183,6 @@ class _BusinessRegistrationScreenState
   }
 
   Future<void> _registerWithApple() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isAppleSubmitting = true);
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
@@ -319,11 +306,6 @@ class _BusinessRegistrationScreenState
               return null;
             },
           ),
-          const SizedBox(height: 16),
-          LegalAgreementCheckbox(
-            value: _agreedToTerms,
-            onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-          ),
           const SizedBox(height: 20),
           SizedBox(
             height: AuthFormStyles.buttonHeight,
@@ -411,6 +393,9 @@ class _BusinessRegistrationScreenState
               label: locale.t('auth.continueWithApple'),
             ),
           ],
+          const SizedBox(height: 20),
+          const LegalAgreementFooter(),
+          const SizedBox(height: 8),
         ],
       ),
     );

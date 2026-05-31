@@ -217,6 +217,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary500,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('Use current location'),
                   ),
@@ -229,6 +232,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       Navigator.of(ctx).pop();
                       await _openManualLocationInput();
                     },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                     child: const Text('Enter city manually'),
                   ),
                 ),

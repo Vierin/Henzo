@@ -668,7 +668,7 @@ class _TicketActionButton extends StatelessWidget {
         backgroundColor: AppColors.primary500,
         foregroundColor: AppColors.textInverse,
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

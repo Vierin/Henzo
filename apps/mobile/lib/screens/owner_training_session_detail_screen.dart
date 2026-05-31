@@ -411,11 +411,7 @@ class _OwnerTrainingSessionDetailScreenState
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final w = constraints.maxWidth;
-                      final titlePad = (w * 0.22).clamp(56.0, 120.0);
-                      return SizedBox(
+                  child: SizedBox(
                         height: 48,
                         child: Stack(
                           alignment: Alignment.center,
@@ -423,21 +419,16 @@ class _OwnerTrainingSessionDetailScreenState
                           children: [
                             Positioned.fill(
                               child: Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: titlePad,
-                                  ),
-                                  child: Text(
-                                    tr('ownerSession.detailTitle'),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                      height: 1,
-                                    ),
+                                child: Text(
+                                  tr('ownerSession.detailTitle'),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                    height: 1,
                                   ),
                                 ),
                               ),
@@ -483,8 +474,6 @@ class _OwnerTrainingSessionDetailScreenState
                             ),
                           ],
                         ),
-                      );
-                    },
                   ),
                 ),
               ),

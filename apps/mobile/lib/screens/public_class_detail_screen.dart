@@ -957,7 +957,7 @@ class _ClassInfoCard extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 14,

@@ -120,7 +120,7 @@ class SessionCapacityCard extends StatelessWidget {
                     vertical: 10,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
                 icon: const Icon(Icons.add, size: 20),

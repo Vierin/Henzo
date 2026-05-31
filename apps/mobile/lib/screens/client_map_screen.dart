@@ -205,6 +205,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary500,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   child: Text(locale.t('clientHome.locationPickerUseCity')),
                 ),
@@ -214,6 +217,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     Navigator.of(ctx).pop();
                     await _openManualLocationInput();
                   },
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                   child: Text(locale.t('clientMap.locationPromptManual')),
                 ),
               ],
