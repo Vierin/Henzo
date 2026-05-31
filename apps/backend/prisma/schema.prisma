@@ -94,6 +94,7 @@ model Studio {
   TrainingSession  TrainingSession[]
   ClientBlocks     StudioClientBlock[]
   StudioClients    StudioClient[]
+  TrainerInvites   TrainerInvite[]
 
   @@index([latitude, longitude])
   @@index([ownerId, createdAt])
@@ -153,13 +154,17 @@ model Trainer {
   email                                        String?
   phone                                        String?
   studioId                                     String
+  userId                                       String?          @unique
   Booking                                      SessionBooking[]
   Studio                                       Studio           @relation(fields: [studioId], references: [id])
   Training                                     Training[]       @relation("TrainerTrainings")
   TrainingSession                              TrainingSession[]
+  TrainerInvite                                TrainerInvite?
+  User                                         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([name, studioId])
   @@index([studioId])
+  @@index([userId])
 }
 
 model Subscription {
@@ -237,6 +242,7 @@ model User {
   StudioClientBlocks  StudioClientBlock[]
   StudioClients       StudioClient[]
   WaitlistEntries     WaitlistEntry[]
+  TrainerRecord       Trainer?
 }
 
 model StudioClient {
@@ -365,6 +371,24 @@ model AppFeedback {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model TrainerInvite {
+  id        String              @id @default(cuid())
+  token     String              @unique
+  studioId  String
+  trainerId String              @unique
+  status    TrainerInviteStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime            @default(now())
+  Studio    Studio              @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  Trainer   Trainer             @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+}
+
+enum TrainerInviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
 }
 
 model WaitlistEntry {

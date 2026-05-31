@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
@@ -12,6 +13,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
+import '../../services/trainer_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
@@ -138,6 +140,102 @@ class _StaffScreenState extends State<StaffScreen> {
     ).then((_) {
       if (mounted) _loadData();
     });
+  }
+
+  Future<void> _showInviteSheet(StaffMember member) async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null) return;
+    String? inviteUrl;
+    bool loading = true;
+    String? error;
+
+    await showHenzoModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (_, setSheet) {
+            if (loading) {
+              TrainerApiService.generateInviteFromStaff(token, member.id).then((result) {
+                inviteUrl = result['inviteUrl']?.toString();
+                setSheet(() => loading = false);
+              }).catchError((e) {
+                error = e.toString();
+                setSheet(() => loading = false);
+              });
+            }
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Invite ${member.name}',
+                      style: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Share this link with ${member.name} to join Henzo as a trainer.',
+                      style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 20),
+                    if (loading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (error != null)
+                      Text(error!, style: const TextStyle(color: AppColors.error500))
+                    else if (inviteUrl != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.neutral100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          inviteUrl!,
+                          style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: inviteUrl!));
+                                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                  const SnackBar(content: Text('Link copied!')),
+                                );
+                              },
+                              icon: const Icon(Icons.copy_outlined, size: 16),
+                              label: const Text('Copy link'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Expires in 7 days',
+                        style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showTrainerLimitDialog() {
@@ -655,6 +753,15 @@ class _StaffScreenState extends State<StaffScreen> {
                           : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                if (_isProPlan)
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    icon: const Icon(Icons.link_outlined, size: 20),
+                                    tooltip: 'Invite',
+                                    onPressed: () => _showInviteSheet(member),
+                                    color: AppColors.primary500,
+                                  ),
                                 IconButton(
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(

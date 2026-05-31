@@ -1182,6 +1182,93 @@ export class FitnessSessionsService {
     }
   }
 
+  // ── Trainer Panel ─────────────────────────────────────────────
+
+  private async getLinkedTrainerOrThrow(authHeader: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const trainer = await this.prisma.trainer.findUnique({
+      where: { userId: currentUser.user.id },
+      select: { id: true, studioId: true, name: true },
+    });
+    if (!trainer) {
+      throw new HttpException('Not a trainer', HttpStatus.FORBIDDEN);
+    }
+    return trainer;
+  }
+
+  async getTrainerSessions(authHeader: string, fromIso?: string, toIso?: string) {
+    const trainer = await this.getLinkedTrainerOrThrow(authHeader);
+    const from = fromIso ? new Date(fromIso) : new Date();
+    const to = toIso
+      ? new Date(toIso)
+      : new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const sessions = await this.prisma.trainingSession.findMany({
+      where: {
+        trainerId: trainer.id,
+        startsAt: { gte: from, lte: to },
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true,
+        startsAt: true,
+        endsAt: true,
+        capacity: true,
+        bookedCount: true,
+        status: true,
+        locationId: true,
+        Training: { select: { id: true, name: true, duration: true, displayColor: true } },
+      },
+    });
+
+    return { trainerId: trainer.id, studioId: trainer.studioId, sessions };
+  }
+
+  async getTrainerSessionEnrollments(authHeader: string, sessionId: string) {
+    const trainer = await this.getLinkedTrainerOrThrow(authHeader);
+    const session = await this.prisma.trainingSession.findFirst({
+      where: { id: sessionId, trainerId: trainer.id },
+      select: { id: true },
+    });
+    if (!session) throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+
+    const rows = await this.prisma.sessionEnrollment.findMany({
+      where: { sessionId },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        User: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      },
+      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return rows.map((r) => ({
+      enrollmentId: r.id,
+      status: r.status,
+      user: { id: r.User.id, name: r.User.name, email: r.User.email, avatarUrl: r.User.avatarUrl },
+    }));
+  }
+
+  async markAttendance(authHeader: string, enrollmentId: string, status: 'ACTIVE' | 'NO_SHOW') {
+    const trainer = await this.getLinkedTrainerOrThrow(authHeader);
+    const row = await this.prisma.sessionEnrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        TrainingSession: { trainerId: trainer.id },
+      },
+      select: { id: true, status: true },
+    });
+    if (!row) throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+
+    await this.prisma.sessionEnrollment.update({
+      where: { id: enrollmentId },
+      data: { status, ...(status === 'ACTIVE' ? { cancelledAt: null } : {}) },
+    });
+    return { success: true };
+  }
+
   async getClientSchedule(
     authHeader: string,
     fromIso?: string,

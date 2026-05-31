@@ -11,6 +11,7 @@ import 'package:crypto/crypto.dart';
 
 import '../config/app_config.dart';
 import '../l10n/auth_error_keys.dart';
+import '../models/trainer_info.dart';
 import '../models/user_model.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/owner_navigation_restore.dart';
@@ -26,6 +27,7 @@ class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   UserModel? _user;
+  TrainerInfo? _trainerInfo;
 
   /// False until [_init] finishes once. Not tied to login-in-progress — avoids
   /// replacing [LoginScreen] during sign-in (which disposed the State and swallowed SnackBars).
@@ -34,6 +36,7 @@ class AuthService extends ChangeNotifier {
   StreamSubscription<AuthState>? _authSub;
 
   UserModel? get user => _user;
+  TrainerInfo? get trainerInfo => _trainerInfo;
   bool get isInitialSessionReady => _initialSessionReady;
   bool get isAuthenticated => _isAuthenticated;
 
@@ -43,6 +46,8 @@ class AuthService extends ChangeNotifier {
   bool get isStudioOperator => normalizedRole == 'OWNER';
 
   bool get isClient => normalizedRole == 'CLIENT';
+
+  bool get isTrainer => _trainerInfo != null;
 
   /// Backward-compatible alias during pivot.
   bool get isSalonOwner => isStudioOperator;
@@ -200,6 +205,8 @@ class AuthService extends ChangeNotifier {
               isOwner: isStudioOperator,
             ),
           );
+          // Detect trainer account — non-blocking
+          unawaited(_fetchTrainerInfo(accessToken));
         }
         return (ok: true, errorL10nKey: null, errorRaw: null);
       }
@@ -834,8 +841,30 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> _fetchTrainerInfo(String? token) async {
+    if (token == null || token.isEmpty) return;
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/trainers/me/profile');
+      final response = await http.get(url, headers: {
+        'Content-Type': 'application/json',
+        'authorization': 'Bearer $token',
+      });
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        _trainerInfo = TrainerInfo.fromJson(data);
+        if (kDebugMode) debugPrint('[Auth] Trainer loaded: ${_trainerInfo?.name}');
+      } else {
+        _trainerInfo = null;
+      }
+      notifyListeners();
+    } catch (_) {
+      _trainerInfo = null;
+    }
+  }
+
   Future<void> logout() async {
     _user = null;
+    _trainerInfo = null;
     _isAuthenticated = false;
     notifyListeners();
     unawaited(AnalyticsService.instance.setUser(null));

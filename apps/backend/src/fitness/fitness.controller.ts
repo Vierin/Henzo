@@ -281,4 +281,32 @@ export class FitnessController {
       'CANCELLED',
     );
   }
+
+  // ── Trainer panel ─────────────────────────────────────────────
+
+  @Get('trainer/sessions')
+  async getTrainerSessions(
+    @Headers('authorization') authHeader: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.fitnessSessionsService.getTrainerSessions(authHeader, from, to);
+  }
+
+  @Get('trainer/sessions/:id/enrollments')
+  async getTrainerSessionEnrollments(
+    @Headers('authorization') authHeader: string,
+    @Param('id') sessionId: string,
+  ) {
+    return this.fitnessSessionsService.getTrainerSessionEnrollments(authHeader, sessionId);
+  }
+
+  @Patch('trainer/enrollments/:id/attendance')
+  async markAttendance(
+    @Headers('authorization') authHeader: string,
+    @Param('id') enrollmentId: string,
+    @Body() body: { status: 'ACTIVE' | 'NO_SHOW' },
+  ) {
+    return this.fitnessSessionsService.markAttendance(authHeader, enrollmentId, body.status);
+  }
 }

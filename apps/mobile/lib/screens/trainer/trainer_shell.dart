@@ -1,0 +1,171 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+
+import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
+import '../../services/auth_service.dart';
+import '../../services/push_notification_service.dart';
+import 'trainer_home_screen.dart';
+import 'trainer_schedule_screen.dart';
+import 'trainer_profile_screen.dart';
+
+class TrainerShell extends StatefulWidget {
+  const TrainerShell({super.key});
+
+  @override
+  State<TrainerShell> createState() => _TrainerShellState();
+}
+
+class _TrainerShellState extends State<TrainerShell> {
+  int _currentIndex = 0;
+
+  late final List<Widget> _tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = const [
+      TrainerHomeScreen(),
+      TrainerScheduleScreen(),
+      TrainerProfileScreen(),
+    ];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registerPush();
+    });
+  }
+
+  Future<void> _registerPush() async {
+    final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
+    if (token != null) {
+      await PushNotificationService.registerToken(
+        accessToken: token,
+        language: locale.localeCode,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+    final t = locale.t;
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundSecondary,
+      body: IndexedStack(index: _currentIndex, children: _tabs),
+      bottomNavigationBar: ColoredBox(
+        color: AppColors.backgroundSecondary,
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
+          child: Container(
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final itemWidth = constraints.maxWidth / 3;
+                return Stack(
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      left: _currentIndex * itemWidth,
+                      top: 0,
+                      bottom: 0,
+                      width: itemWidth,
+                      child: Container(
+                        margin: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary500,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _NavItem(
+                            svgAsset: 'assets/icons/icon-house.svg',
+                            label: t('shell.tabHome'),
+                            isSelected: _currentIndex == 0,
+                            onTap: () => setState(() => _currentIndex = 0),
+                          ),
+                        ),
+                        Expanded(
+                          child: _NavItem(
+                            svgAsset: 'assets/icons/icon-schedule.svg',
+                            label: t('shell.tabSchedule'),
+                            isSelected: _currentIndex == 1,
+                            onTap: () => setState(() => _currentIndex = 1),
+                          ),
+                        ),
+                        Expanded(
+                          child: _NavItem(
+                            svgAsset: 'assets/icons/icon-settings.svg',
+                            label: t('shell.tabSettings'),
+                            isSelected: _currentIndex == 2,
+                            onTap: () => setState(() => _currentIndex = 2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.svgAsset,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String svgAsset;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? Colors.white : AppColors.textSecondary;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            svgAsset,
+            width: 20,
+            height: 20,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

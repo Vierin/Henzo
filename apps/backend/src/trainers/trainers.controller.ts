@@ -92,6 +92,60 @@ export class TrainersController {
     return this.trainersService.updateTrainer(id, data);
   }
 
+  // ── Invite endpoints ─────────────────────────────────────────
+
+  /** Generate (or refresh) an invite link for a trainer (Studio+ owners only). */
+  @Post(':id/invite')
+  async generateInvite(
+    @Headers('authorization') authHeader: string,
+    @Param('id') trainerId: string,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.trainersService.generateInvite(trainerId, currentUser.user.id);
+  }
+
+  /**
+   * Generate invite from the Staff model (Flutter team management).
+   * Finds or creates the matching Trainer record by email/name.
+   */
+  @Post('staff/:staffId/invite')
+  async generateInviteFromStaff(
+    @Headers('authorization') authHeader: string,
+    @Param('staffId') staffId: string,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.trainersService.generateInviteFromStaff(staffId, currentUser.user.id);
+  }
+
+  /** Public — return studio name + trainer name for the invite landing page. */
+  @Get('invite/:token')
+  async getInviteInfo(@Param('token') token: string) {
+    return this.trainersService.getInviteInfo(token);
+  }
+
+  /** Authenticated trainer accepts the invite and gets linked to the Trainer record. */
+  @Post('invite/:token/accept')
+  async acceptInvite(
+    @Headers('authorization') authHeader: string,
+    @Param('token') token: string,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.trainersService.acceptInvite(token, currentUser.user.id);
+  }
+
+  /** Return Trainer record for the current user (used by Flutter for role detection). */
+  @Get('me/profile')
+  async getMyTrainerProfile(@Headers('authorization') authHeader: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.trainersService.getTrainerByUserId(currentUser.user.id);
+  }
+
   @Delete(':id')
   async deleteTrainer(
     @Headers('authorization') authHeader: string,

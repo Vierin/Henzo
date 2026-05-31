@@ -15,12 +15,14 @@ import 'config/app_config.dart';
 import 'config/load_app_env.dart';
 import 'config/release_env.dart';
 import 'deep_links/class_session_deep_link.dart';
+import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
+import 'screens/trainer/trainer_shell.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/client_favorites_store.dart';
@@ -273,9 +275,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
                   child: _withKeyboardDismiss(context, child) ?? const SizedBox.shrink(),
                 );
-                return ClassSessionDeepLinkScope(
+                return TrainerInviteDeepLinkScope(
                   navigatorKey: henzoRootNavigatorKey,
-                  child: scaled,
+                  child: ClassSessionDeepLinkScope(
+                    navigatorKey: henzoRootNavigatorKey,
+                    child: scaled,
+                  ),
                 );
               },
               locale: Locale(locale.languageTag),
@@ -342,6 +347,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         if (ownerAllowed) {
           return const MainShell();
+        }
+
+        if (auth.isAuthenticated && auth.isTrainer) {
+          return const TrainerShell();
         }
 
         if (auth.isAuthenticated && auth.isClient) {
