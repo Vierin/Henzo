@@ -62,8 +62,8 @@ post_install do |installer|
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
       config.build_settings['COPY_PHASE_STRIP'] = 'NO'
       config.build_settings['STRIP_INSTALLED_PRODUCT'] = 'NO'
-      # Exclude arm64 simulator arch to prevent "unsupported platform" App Store rejection
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      # arm64 simulator exclusion removed — Xcode 26+ requires arm64 for Apple Silicon simulators.
+      # App Store "iossimulator platform" issue is handled by "Strip Simulator Platform Flags v4" script.
 
       if NOISY_PODS.include?(target.name)
         config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
