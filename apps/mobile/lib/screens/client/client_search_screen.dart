@@ -2462,6 +2462,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           child: Row(

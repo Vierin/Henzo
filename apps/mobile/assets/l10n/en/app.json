@@ -26,7 +26,8 @@
 		"deleteFailed": "Failed to delete",
 		"setupSalonFirst": "Set up your business first",
 		"verify": "Verify",
-		"apply": "Apply"
+		"apply": "Apply",
+		"reset": "Reset"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -639,7 +640,15 @@
 			"Nov",
 			"Dec"
 		],
-		"weekDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+		"weekDays": [
+			"Sun",
+			"Mon",
+			"Tue",
+			"Wed",
+			"Thu",
+			"Fri",
+			"Sat"
+		],
 		"editSchedule": "Edit schedule",
 		"addUnavailable": "Add unavailable hours for",
 		"unavailableComingSoon": "Unavailable hours coming soon",
@@ -715,7 +724,7 @@
 		"addSalon": "Add salon",
 		"contactInfo": "Contact info",
 		"salonPhone": "Salon phone",
-		"enterPhone": "Enter phone",
+		"enterPhone": "Enter phone number",
 		"salonEmail": "Salon email",
 		"enterEmail": "Enter email",
 		"email": "Email",
@@ -731,7 +740,6 @@
 		"lastName": "Last name",
 		"enterName": "Enter name",
 		"phone": "Phone",
-		"enterPhone": "Enter phone number",
 		"security": "Security",
 		"newPassword": "New password",
 		"confirmPassword": "Confirm password",
@@ -743,7 +751,7 @@
 		"salonCreated": "Salon created",
 		"deleteAccountConfirm": "Are you sure you want to delete your account? This cannot be undone. All data will be permanently deleted.",
 		"passwordMin8": "Password must be at least 8 characters",
-        "instagram": "Instagram",
+		"instagram": "Instagram",
 		"facebook": "Facebook",
 		"youtube": "YouTube",
 		"tiktok": "TikTok",

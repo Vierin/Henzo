@@ -51,7 +51,8 @@ class OwnerChecklistCard extends StatelessWidget {
   final VoidCallback onPublishTap;
   final bool showOptionalPhase;
 
-  static const _iconPurple = Color(0xFF4D39A8);
+  static const _taskIconColor = AppColors.primary500;
+  static const _chevronColor = Color(0xFF3B5BDB);
   static const _optionalHeaderBg = Color(0xFFFFF9F5);
   static const _starBadgeBg = Color(0xFFFFF0D1);
   static const _starColor = Color(0xFFFF9900);
@@ -97,7 +98,7 @@ class OwnerChecklistCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(13, 16, 13, 16),
       decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
+        color: const Color(0xFFC2F600).withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -363,6 +364,7 @@ class _PreviewPublicPageButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
                 child: Text(
@@ -376,6 +378,8 @@ class _PreviewPublicPageButton extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 16),
             ],
           ),
         ),
@@ -563,21 +567,22 @@ class _OnboardingTaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.transparent,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 42,
+                  height: 42,
                   decoration: const BoxDecoration(
-                    color: OwnerChecklistCard._iconPurple,
+                    color: OwnerChecklistCard._taskIconColor,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: Colors.white, size: 20),
@@ -591,7 +596,7 @@ class _OnboardingTaskRow extends StatelessWidget {
                         title,
                         style: const TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -607,8 +612,8 @@ class _OnboardingTaskRow extends StatelessWidget {
                 ),
                 const Icon(
                   Icons.chevron_right_rounded,
-                  color: OwnerChecklistCard._iconPurple,
-                  size: 28,
+                  color: OwnerChecklistCard._chevronColor,
+                  size: 24,
                 ),
               ],
             ),

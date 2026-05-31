@@ -20,13 +20,12 @@ import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
 import '../utils/load_error_message.dart';
 import '../utils/nearby_payload.dart';
-import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/client/browse_studio_list_card.dart';
+import '../widgets/training/training_category_color_chip.dart';
 import '../widgets/common/henzo_modal.dart';
 import '../widgets/common/load_error_view.dart';
 import '../widgets/map/henzo_map_layers.dart';
 import 'client/client_explore_models.dart';
-import 'client/client_shell_scope.dart';
 import 'location_picker_screen.dart';
 import 'public_class_detail_screen.dart';
 import 'public_studio_detail_screen.dart';
@@ -55,17 +54,17 @@ class ClientMapScreen extends StatefulWidget {
 }
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
-  static const _mapPinPurple = Color(0xFF4D39A8);
+  static const _mapPinInactive = Color(0xFF4D39A8);
+  static const _mapPinActive = AppColors.primary500;
   static const _carouselHeight = 158.0;
   static const _carouselBottomPadding = 24.0;
-  static const _carouselSideInset = 12.0;
   static const _searchAreaThresholdKm = 2.0;
   static const _clientLocationZoom = 14.0;
   static const _userMarkerWidth = 20.0;
   static const _userMarkerHeight = 20.0;
 
   final MapController _mapController = MapController();
-  final PageController _carouselController = PageController();
+  final PageController _carouselController = PageController(viewportFraction: 0.88);
   ClientLocationStore? _locationStore;
   final Distance _distance = const Distance();
   final Set<String> _favoriteLoadingIds = <String>{};
@@ -75,15 +74,25 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Map<String, List<ExploreClassItem>> _classesByStudio = const {};
   bool _isLoadingStudios = true;
   String? _studiosLoadError;
-  int _selectedStudioIndex = 0;
+  int _selectedStudioIndex = -1;
   bool _showCarouselCard = true;
   bool _showSearchThisArea = false;
   double? _lastSearchLat;
   double? _lastSearchLon;
   double? _pendingSearchLat;
   double? _pendingSearchLon;
+  Set<int> _selectedCategoryIds = const {};
   StreamSubscription<MapEvent>? _mapEventSubscription;
   double? _pinchGestureStartZoom;
+
+  List<ExploreStudioItem> get _filteredStudios {
+    if (_selectedCategoryIds.isEmpty) return _studios;
+    return _studios
+        .where(
+          (s) => s.trainingCategoryIds.any(_selectedCategoryIds.contains),
+        )
+        .toList();
+  }
 
   @override
   void initState() {
@@ -132,6 +141,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   void dispose() {
     _mapEventSubscription?.cancel();
     _locationStore?.removeListener(_onSharedLocationChanged);
+    _mapController.dispose();
     _carouselController.dispose();
     super.dispose();
   }
@@ -359,7 +369,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _studios = mapped;
         _isLoadingStudios = false;
-        _selectedStudioIndex = 0;
+        _selectedStudioIndex = -1;
         _showCarouselCard = false;
         _lastSearchLat = effectiveLat;
         _lastSearchLon = effectiveLon;
@@ -375,10 +385,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         } else {
           _syncMapToClientLocation();
         }
-        unawaited(_loadClassesForStudios(mapped));
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _syncCarouselCardVisibility();
-        });
+        unawaited(_ensureStudioClassesLoaded(mapped.first));
       }
     } catch (e) {
       if (!mounted) return;
@@ -454,31 +461,18 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
-  Future<void> _loadClassesForStudios(List<ExploreStudioItem> studios) async {
-    if (!mounted) return;
+  Future<void> _ensureStudioClassesLoaded(ExploreStudioItem studio) async {
+    if (!mounted || _classesByStudio.containsKey(studio.id)) return;
     final from = DateTime.now();
-    final to = from.add(const Duration(days: 1));
-    final fromQuery = Uri.encodeComponent(
+    final fromQ = Uri.encodeComponent(
       DateTime(from.year, from.month, from.day).toIso8601String(),
     );
-    final toQuery = Uri.encodeComponent(to.toIso8601String());
-    final byStudio = <String, List<ExploreClassItem>>{};
-    const concurrency = 4;
-    final slice = studios.take(12).toList();
-    try {
-      for (var i = 0; i < slice.length; i += concurrency) {
-        final end = i + concurrency > slice.length ? slice.length : i + concurrency;
-        final batch = slice.sublist(i, end);
-        final results = await Future.wait(
-          batch.map((s) => _fetchClassesForStudio(s, fromQuery, toQuery)),
-        );
-        for (var j = 0; j < batch.length; j++) {
-          byStudio[batch[j].id] = results[j];
-        }
-      }
-      if (!mounted) return;
-      setState(() => _classesByStudio = byStudio);
-    } catch (_) {}
+    final toQ = Uri.encodeComponent(
+      from.add(const Duration(days: 1)).toIso8601String(),
+    );
+    final classes = await _fetchClassesForStudio(studio, fromQ, toQ);
+    if (!mounted) return;
+    setState(() => _classesByStudio = {..._classesByStudio, studio.id: classes});
   }
 
   Future<List<ExploreClassItem>> _fetchClassesForStudio(
@@ -543,25 +537,23 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  List<ExploreClassItem> _todayClassesFor(String studioId) {
-    return _classesByStudio[studioId] ?? const [];
-  }
-
   bool _isStudioInMapViewport(int index) {
-    if (index < 0 || index >= _studios.length) return false;
-    final s = _studios[index];
+    final studios = _filteredStudios;
+    if (index < 0 || index >= studios.length) return false;
+    final s = studios[index];
     if (s.lat == null || s.lng == null) return false;
     return _mapController.camera.visibleBounds.contains(
       LatLng(s.lat!, s.lng!),
     );
   }
 
-  void _syncCarouselCardVisibility() {
-    if (!mounted) return;
-    final show =
-        _studios.isNotEmpty && _isStudioInMapViewport(_selectedStudioIndex);
-    if (show == _showCarouselCard) return;
-    setState(() => _showCarouselCard = show);
+  // Only hides the card when the selected pin leaves the viewport.
+  // Showing is intentional only: pin tap or carousel swipe.
+  void _hideCarouselIfPinOffscreen() {
+    if (!mounted || !_showCarouselCard) return;
+    if (!_isStudioInMapViewport(_selectedStudioIndex)) {
+      setState(() => _showCarouselCard = false);
+    }
   }
 
   /// Pan-only: ignore pinch-zoom and programmatic [MapController] moves.
@@ -570,9 +562,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         event.source == MapEventSource.multiFingerGestureStart) {
       _pinchGestureStartZoom = event.camera.zoom;
       return;
-    }
-    if (event is MapEventWithMove) {
-      _syncCarouselCardVisibility();
     }
     final isPanEnd = switch (event) {
       MapEventMoveEnd(source: MapEventSource.dragEnd) => true,
@@ -583,7 +572,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     };
     if (!isPanEnd) return;
     _updateSearchThisAreaButton(event.camera);
-    _syncCarouselCardVisibility();
+    _hideCarouselIfPinOffscreen();
   }
 
   bool _wasPinchPanNotZoom(double endZoom) {
@@ -630,8 +619,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   void _focusStudioOnMap(int index) {
-    if (index < 0 || index >= _studios.length) return;
-    final s = _studios[index];
+    final studios = _filteredStudios;
+    if (index < 0 || index >= studios.length) return;
+    final s = studios[index];
     if (s.lat == null || s.lng == null) return;
     _mapController.move(LatLng(s.lat!, s.lng!), 15);
   }
@@ -642,6 +632,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       _showCarouselCard = _isStudioInMapViewport(index);
     });
     _focusStudioOnMap(index);
+    if (index < _studios.length) {
+      unawaited(_ensureStudioClassesLoaded(_studios[index]));
+    }
   }
 
   String? _distanceLabel(ExploreStudioItem studio) {
@@ -657,9 +650,107 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     return label.isEmpty ? null : label;
   }
 
-  void _openBrowseSearch() {
-    ClientShellScope.maybeOf(context)?.goToExplore(showClasses: false);
-    widget.onBack();
+  Future<void> _openFilters() async {
+    if (_trainingCategories.isEmpty) return;
+    final locale = context.read<LocaleProvider>();
+    var tempSelected = Set<int>.from(_selectedCategoryIds);
+
+    final result = await showHenzoModalBottomSheet<Set<int>>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (_, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Filter by type',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (tempSelected.isNotEmpty)
+                          TextButton(
+                            onPressed: () =>
+                                setModalState(() => tempSelected = {}),
+                            child: Text(
+                              locale.t('common.reset'),
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        TrainingCategoryColorChip(
+                          label: 'All types',
+                          selected: tempSelected.isEmpty,
+                          onTap: () => setModalState(() => tempSelected = {}),
+                        ),
+                        ..._trainingCategories.map(
+                          (cat) => TrainingCategoryColorChip(
+                            category: cat,
+                            label: cat.label(locale.localeCode),
+                            selected: tempSelected.contains(cat.id),
+                            onTap: () => setModalState(() {
+                              if (tempSelected.contains(cat.id)) {
+                                tempSelected = {...tempSelected}..remove(cat.id);
+                              } else {
+                                tempSelected = {...tempSelected, cat.id};
+                              }
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(ctx).pop(tempSelected),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary500,
+                        ),
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCategoryIds = result;
+        _selectedStudioIndex = -1;
+        _showCarouselCard = false;
+      });
+      if (_filteredStudios.isNotEmpty) {
+        _carouselController.jumpToPage(0);
+      }
+    }
   }
 
   void _openStudioDetail(ExploreStudioItem studio) {
@@ -722,6 +813,53 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     if (!mounted || !ok) return;
   }
 
+  Widget _buildFilterButton() {
+    final isActive = _selectedCategoryIds.isNotEmpty;
+    return Material(
+      color: isActive ? AppColors.primary500 : Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: _openFilters,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(
+            Icons.tune_rounded,
+            size: 22,
+            color: isActive ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildZoomButtons() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapZoomButton(
+          icon: Icons.add,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          onTap: () => _mapController.move(
+            _mapController.camera.center,
+            (_mapController.camera.zoom + 1).clamp(1, 20),
+          ),
+        ),
+        Container(height: 1, color: AppColors.borderPrimary),
+        _MapZoomButton(
+          icon: Icons.remove,
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+          onTap: () => _mapController.move(
+            _mapController.camera.center,
+            (_mapController.camera.zoom - 1).clamp(1, 20),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMapCloseButton() {
     return Material(
       color: Colors.white,
@@ -743,148 +881,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
-  Widget _buildMapSearchBar(LocaleProvider locale) {
-    return TextField(
-      readOnly: true,
-      onTap: _openBrowseSearch,
-      style: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 14,
-      ),
-      decoration: InputDecoration(
-        hintText: locale.t('clientMap.searchStudiosHint'),
-        hintStyle: const TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 14,
-        ),
-        isDense: true,
-        prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
-        prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(
-          leftMargin: 12,
-          trailingGap: 4,
-        ),
-        filled: true,
-        fillColor: AppColors.backgroundPrimary,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.primary500.withValues(alpha: 0.45),
-          ),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-          borderSide: BorderSide(
-            color: AppColors.primary500,
-            width: 1.5,
-          ),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.primary500.withValues(alpha: 0.45),
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 12,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStudioCarousel() {
-    final favStore = context.watch<ClientFavoritesStore>();
-
-    if (_isLoadingStudios) {
-      return const SizedBox(
-        height: _carouselHeight,
-        child: Center(
-          child: SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-
-    if (_studiosLoadError != null) {
-      return SizedBox(
-        height: _carouselHeight,
-        child: LoadErrorView(
-          compact: true,
-          message: _studiosLoadError!,
-          onRetry: () => _loadStudios(
-            searchLat: _lastSearchLat,
-            searchLon: _lastSearchLon,
-          ),
-        ),
-      );
-    }
-
-    if (_studios.isEmpty) {
-      return SizedBox(
-        height: _carouselHeight,
-        child: Center(
-          child: Text(
-            context.read<LocaleProvider>().t('clientMap.noStudiosNearby'),
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-        ),
-      );
-    }
-
-    if (!_showCarouselCard) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      height: _carouselHeight,
-      child: PageView.builder(
-        controller: _carouselController,
-        itemCount: _studios.length,
-        onPageChanged: _onCarouselPageChanged,
-        itemBuilder: (context, index) {
-          final studio = _studios[index];
-          final card = BrowseStudioListCard(
-            studio: studio,
-            todayClasses: _todayClassesFor(studio.id),
-            trainingCategories: _trainingCategories,
-            distanceLabel: _distanceLabel(studio),
-            isFavorite: favStore.isFavorite(studio.id),
-            onTap: () => _openStudioDetail(studio),
-            onToggleFavorite: () => _toggleFavorite(studio),
-            onClassTap: _openClassDetail,
-          );
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: _carouselSideInset,
-              ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: card,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final loc = context.watch<ClientLocationStore>();
-    final locale = context.watch<LocaleProvider>();
+    context.watch<LocaleProvider>();
     final center = (loc.lat != null && loc.lon != null)
         ? LatLng(loc.lat!, loc.lon!)
         : const LatLng(21.0285, 105.8542);
@@ -907,16 +907,35 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 HenzoMapLayers.cartoLightTileLayer(),
                 MarkerLayer(
                   markers: [
-                    for (var i = 0; i < _studios.length; i++)
-                      if (_studios[i].lat != null && _studios[i].lng != null)
+                    for (var i = 0; i < _filteredStudios.length; i++)
+                      if (_filteredStudios[i].lat != null &&
+                          _filteredStudios[i].lng != null)
                         Marker(
-                          point: LatLng(_studios[i].lat!, _studios[i].lng!),
-                          width: i == _selectedStudioIndex ? 36 : 32,
-                          height: i == _selectedStudioIndex ? 36 : 32,
-                          child: Icon(
-                            Icons.location_on,
-                            size: i == _selectedStudioIndex ? 36 : 32,
-                            color: _mapPinPurple,
+                          point: LatLng(
+                            _filteredStudios[i].lat!,
+                            _filteredStudios[i].lng!,
+                          ),
+                          width: i == _selectedStudioIndex ? 40 : 32,
+                          height: i == _selectedStudioIndex ? 40 : 32,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedStudioIndex = i;
+                                _showCarouselCard = _isStudioInMapViewport(i);
+                              });
+                              _carouselController.animateToPage(
+                                i,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            },
+                            child: Icon(
+                              Icons.location_on,
+                              size: i == _selectedStudioIndex ? 40 : 32,
+                              color: i == _selectedStudioIndex
+                                  ? _mapPinActive
+                                  : _mapPinInactive,
+                            ),
                           ),
                         ),
                   ],
@@ -966,22 +985,18 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             right: 12,
             child: SafeArea(
               bottom: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _buildMapCloseButton(),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildMapSearchBar(locale),
+                  _buildFilterButton(),
+                  _buildMapCloseButton(),
                 ],
               ),
             ),
           ),
           if (_showSearchThisArea)
             Positioned(
-              top: 110,
+              top: 65,
               left: 0,
               right: 0,
               child: SafeArea(
@@ -1010,13 +1025,188 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 ),
               ),
             ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            left: 16,
+            bottom: (_isLoadingStudios || _showCarouselCard ||
+                    _studios.isEmpty || _studiosLoadError != null)
+                ? bottomInset + _carouselBottomPadding + _carouselHeight + 12
+                : bottomInset + _carouselBottomPadding + 12,
+            child: _buildZoomButtons(),
+          ),
           Positioned(
             left: 0,
             right: 0,
             bottom: bottomInset + _carouselBottomPadding,
-            child: _buildStudioCarousel(),
+            child: _StudioCarousel(
+              isLoading: _isLoadingStudios,
+              loadError: _studiosLoadError,
+              studios: _filteredStudios,
+              showCard: _showCarouselCard,
+              classesByStudio: _classesByStudio,
+              trainingCategories: _trainingCategories,
+              pageController: _carouselController,
+              distanceLabelOf: _distanceLabel,
+              noStudiosLabel: context.read<LocaleProvider>().t('clientMap.noStudiosNearby'),
+              onPageChanged: _onCarouselPageChanged,
+              onStudioTap: _openStudioDetail,
+              onToggleFavorite: _toggleFavorite,
+              onClassTap: _openClassDetail,
+              onRetry: () => _loadStudios(
+                searchLat: _lastSearchLat,
+                searchLon: _lastSearchLon,
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StudioCarousel extends StatelessWidget {
+  const _StudioCarousel({
+    required this.isLoading,
+    required this.loadError,
+    required this.studios,
+    required this.showCard,
+    required this.classesByStudio,
+    required this.trainingCategories,
+    required this.pageController,
+    required this.distanceLabelOf,
+    required this.noStudiosLabel,
+    required this.onPageChanged,
+    required this.onStudioTap,
+    required this.onToggleFavorite,
+    required this.onClassTap,
+    required this.onRetry,
+  });
+
+  static const _height = 158.0;
+  static const _sideInset = 8.0;
+
+  final bool isLoading;
+  final String? loadError;
+  final List<ExploreStudioItem> studios;
+  final bool showCard;
+  final Map<String, List<ExploreClassItem>> classesByStudio;
+  final List<TrainingCategoryOption> trainingCategories;
+  final PageController pageController;
+  final String? Function(ExploreStudioItem) distanceLabelOf;
+  final String noStudiosLabel;
+  final void Function(int) onPageChanged;
+  final void Function(ExploreStudioItem) onStudioTap;
+  final void Function(ExploreStudioItem) onToggleFavorite;
+  final void Function(ExploreClassItem) onClassTap;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const SizedBox(
+        height: _height,
+        child: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (loadError != null) {
+      return SizedBox(
+        height: _height,
+        child: LoadErrorView(compact: true, message: loadError!, onRetry: onRetry),
+      );
+    }
+
+    if (studios.isEmpty) {
+      return SizedBox(
+        height: _height,
+        child: Center(
+          child: Text(
+            noStudiosLabel,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    if (!showCard) return const SizedBox.shrink();
+
+    // Watch favorites here — isolated from the parent map widget
+    final favStore = context.watch<ClientFavoritesStore>();
+
+    return SizedBox(
+      height: _height,
+      child: PageView.builder(
+        controller: pageController,
+        itemCount: studios.length,
+        onPageChanged: onPageChanged,
+        itemBuilder: (context, index) {
+          final studio = studios[index];
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: _sideInset),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: BrowseStudioListCard(
+                  studio: studio,
+                  todayClasses: classesByStudio[studio.id] ?? const [],
+                  trainingCategories: trainingCategories,
+                  distanceLabel: distanceLabelOf(studio),
+                  isFavorite: favStore.isFavorite(studio.id),
+                  onTap: () => onStudioTap(studio),
+                  onToggleFavorite: () => onToggleFavorite(studio),
+                  onClassTap: onClassTap,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MapZoomButton extends StatelessWidget {
+  const _MapZoomButton({
+    required this.icon,
+    required this.borderRadius,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final BorderRadius borderRadius;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      borderRadius: borderRadius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(icon, size: 20, color: AppColors.textPrimary),
+        ),
       ),
     );
   }

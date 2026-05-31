@@ -32,7 +32,7 @@ class TrainingCategoryColorChip extends StatelessWidget {
       fg = category!.foregroundColorOn(chipBg);
     }
 
-    final borderW = selected ? 2.0 : 1.0;
+    const borderW = 2.0;
     final borderColor = selected
         ? AppColors.primary500
         : (isOther || category == null

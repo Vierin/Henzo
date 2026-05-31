@@ -26,7 +26,8 @@
 		"deleteFailed": "Xóa thất bại",
 		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước",
 		"verify": "Xác minh",
-		"apply": "Áp dụng"
+		"apply": "Áp dụng",
+		"reset": "Đặt lại"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -639,7 +640,15 @@
 			"T11",
 			"T12"
 		],
-		"weekDays": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+		"weekDays": [
+			"CN",
+			"T2",
+			"T3",
+			"T4",
+			"T5",
+			"T6",
+			"T7"
+		],
 		"editSchedule": "Chỉnh lịch",
 		"addUnavailable": "Thêm giờ không làm việc cho",
 		"unavailableComingSoon": "Tính năng đang phát triển",
@@ -658,8 +667,7 @@
 		"setupSalonFirst": "Vui lòng thiết lập doanh nghiệp trước",
 		"bookingConfirmed": "Đã xác nhận đặt chỗ",
 		"bookingRejected": "Đã từ chối đặt chỗ",
-		"bookingCancelled": "Đã hủy đặt chỗ",
-		"unavailableComingSoon": "Tính năng đang phát triển"
+		"bookingCancelled": "Đã hủy đặt chỗ"
 	},
 	"analytics": {
 		"title": "Phân tích",
@@ -732,7 +740,6 @@
 		"lastName": "Họ",
 		"enterName": "Nhập tên",
 		"phone": "Điện thoại",
-		"enterPhone": "Nhập số điện thoại",
 		"security": "Bảo mật",
 		"newPassword": "Mật khẩu mới",
 		"confirmPassword": "Xác nhận mật khẩu",
