@@ -468,8 +468,8 @@ export class FitnessSessionsService {
     const session = await this.prisma.trainingSession.findFirst({
       where: { id: sessionId },
       include: {
-        Studio: { select: { ownerId: true } },
-        Training: { select: { duration: true } },
+        Studio: { select: { ownerId: true, name: true } },
+        Training: { select: { duration: true, name: true } },
       },
     });
     if (!session || session.Studio?.ownerId !== currentUser.user.id) {
@@ -551,6 +551,14 @@ export class FitnessSessionsService {
         }
       }
 
+      const wasActive = session.status === TrainingSessionStatus.ACTIVE;
+      const timeChanged =
+        dto.startsAt !== undefined &&
+        startsAt.getTime() !== session.startsAt.getTime();
+      const beingCancelled =
+        status === TrainingSessionStatus.CANCELLED &&
+        session.status !== TrainingSessionStatus.CANCELLED;
+
       await this.prisma.trainingSession.update({
         where: { id: sessionId },
         data: {
@@ -561,6 +569,22 @@ export class FitnessSessionsService {
           status,
         },
       });
+
+      if (wasActive) {
+        if (beingCancelled) {
+          void this.notificationsService.notifySessionCancelled(sessionId, {
+            className: session.Training?.name || 'class',
+            studioName: session.Studio?.name || 'studio',
+            startsAt: session.startsAt,
+          });
+        } else if (timeChanged) {
+          void this.notificationsService.notifySessionRescheduled(sessionId, {
+            className: session.Training?.name || 'class',
+            studioName: session.Studio?.name || 'studio',
+            newStartsAt: startsAt,
+          });
+        }
+      }
 
       return { success: true };
     }
@@ -652,6 +676,32 @@ export class FitnessSessionsService {
       ),
     );
 
+    // Notify clients for each affected session
+    const className = session.Training?.name || 'class';
+    const studioName = session.Studio?.name || 'studio';
+    const beingCancelledBulk =
+      dto.status === 'CANCELLED' &&
+      session.status !== TrainingSessionStatus.CANCELLED;
+    const timeChangedBulk = timeDeltaMs !== null && timeDeltaMs !== 0;
+
+    for (const row of rows) {
+      const p = planned.find((x) => x.id === row.id);
+      if (!p) continue;
+      if (beingCancelledBulk) {
+        void this.notificationsService.notifySessionCancelled(row.id, {
+          className,
+          studioName,
+          startsAt: row.startsAt,
+        });
+      } else if (timeChangedBulk && p.status === TrainingSessionStatus.ACTIVE) {
+        void this.notificationsService.notifySessionRescheduled(row.id, {
+          className,
+          studioName,
+          newStartsAt: p.startsAt,
+        });
+      }
+    }
+
     return { success: true };
   }
 
@@ -667,16 +717,30 @@ export class FitnessSessionsService {
 
     const session = await this.prisma.trainingSession.findFirst({
       where: { id: sessionId },
-      include: { Studio: { select: { ownerId: true } } },
+      include: {
+        Studio: { select: { ownerId: true, name: true } },
+        Training: { select: { name: true } },
+      },
     });
     if (!session || session.Studio?.ownerId !== currentUser.user.id) {
       throw new Error('Session not found');
     }
 
+    const wasCancelled = session.status === TrainingSessionStatus.CANCELLED;
+
     await this.prisma.trainingSession.update({
       where: { id: sessionId },
       data: { status },
     });
+
+    // Notify enrolled clients when owner cancels a session
+    if (status === 'CANCELLED' && !wasCancelled) {
+      void this.notificationsService.notifySessionCancelled(sessionId, {
+        className: session.Training?.name || 'class',
+        studioName: session.Studio?.name || 'studio',
+        startsAt: session.startsAt,
+      });
+    }
 
     return { success: true };
   }

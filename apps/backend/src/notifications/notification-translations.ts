@@ -12,6 +12,10 @@ export const notificationTranslations = {
     reminder1hBody: '{class} at {studio} starts at {time}',
     waitlistPromotedTitle: 'Spot opened up!',
     waitlistPromotedBody: 'A spot opened in {class} at {studio}. You are now booked!',
+    sessionCancelledTitle: 'Class cancelled',
+    sessionCancelledBody: '{class} at {studio} on {date} has been cancelled.',
+    sessionRescheduledTitle: 'Class time changed',
+    sessionRescheduledBody: '{class} at {studio} moved to {date}.',
   },
   ru: {
     newBookingConfirmed: 'Новая запись',
@@ -26,6 +30,10 @@ export const notificationTranslations = {
     reminder1hBody: '{class} в {studio} начинается в {time}',
     waitlistPromotedTitle: 'Появилось место!',
     waitlistPromotedBody: 'Место в {class} в {studio} освободилось. Вы записаны!',
+    sessionCancelledTitle: 'Занятие отменено',
+    sessionCancelledBody: '{class} в {studio} {date} отменено.',
+    sessionRescheduledTitle: 'Время занятия изменено',
+    sessionRescheduledBody: '{class} в {studio} перенесено на {date}.',
   },
   vi: {
     newBookingConfirmed: 'Đặt lịch mới',
@@ -40,6 +48,10 @@ export const notificationTranslations = {
     reminder1hBody: '{class} tại {studio} bắt đầu lúc {time}',
     waitlistPromotedTitle: 'Có chỗ trống!',
     waitlistPromotedBody: 'Có chỗ trống trong {class} tại {studio}. Bạn đã được đặt chỗ!',
+    sessionCancelledTitle: 'Lớp học đã bị hủy',
+    sessionCancelledBody: '{class} tại {studio} ngày {date} đã bị hủy.',
+    sessionRescheduledTitle: 'Thay đổi thời gian lớp học',
+    sessionRescheduledBody: '{class} tại {studio} đã được dời sang {date}.',
   },
 };
 

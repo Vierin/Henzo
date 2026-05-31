@@ -596,6 +596,107 @@ export class NotificationsService {
     return { sent, errors };
   }
 
+  /**
+   * Notify all actively-enrolled clients that a session has been cancelled.
+   * Fire-and-forget — errors are swallowed so the caller isn't blocked.
+   */
+  async notifySessionCancelled(
+    sessionId: string,
+    sessionInfo: { className: string; studioName: string; startsAt: Date },
+  ): Promise<void> {
+    try {
+      const enrollments = await this.prisma.sessionEnrollment.findMany({
+        where: { sessionId, status: 'ACTIVE' },
+        select: { userId: true },
+      });
+      if (enrollments.length === 0) return;
+
+      const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      for (const { userId } of enrollments) {
+        const tokens = await this.getPushTokensByUserId(userId);
+        if (tokens.length === 0) continue;
+
+        const lang = tokens[0]?.language || 'en';
+        const title = getNotificationText(lang, 'sessionCancelledTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'sessionCancelledBody' as any),
+          {
+            class: sessionInfo.className,
+            studio: sessionInfo.studioName,
+            date: dateStr,
+          },
+        );
+        await this.sendPushNotification(
+          tokens,
+          title,
+          body,
+          { type: 'SESSION_CANCELLED', sessionId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] notifySessionCancelled failed:', err);
+    }
+  }
+
+  /**
+   * Notify all actively-enrolled clients that a session has been rescheduled.
+   */
+  async notifySessionRescheduled(
+    sessionId: string,
+    sessionInfo: { className: string; studioName: string; newStartsAt: Date },
+  ): Promise<void> {
+    try {
+      const enrollments = await this.prisma.sessionEnrollment.findMany({
+        where: { sessionId, status: 'ACTIVE' },
+        select: { userId: true },
+      });
+      if (enrollments.length === 0) return;
+
+      const dateStr = sessionInfo.newStartsAt.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      for (const { userId } of enrollments) {
+        const tokens = await this.getPushTokensByUserId(userId);
+        if (tokens.length === 0) continue;
+
+        const lang = tokens[0]?.language || 'en';
+        const title = getNotificationText(lang, 'sessionRescheduledTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'sessionRescheduledBody' as any),
+          {
+            class: sessionInfo.className,
+            studio: sessionInfo.studioName,
+            date: dateStr,
+          },
+        );
+        await this.sendPushNotification(
+          tokens,
+          title,
+          body,
+          { type: 'SESSION_RESCHEDULED', sessionId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] notifySessionRescheduled failed:', err);
+    }
+  }
+
   /** Push notification to user when promoted from waitlist to enrolled. */
   async sendWaitlistPromotionPush(
     userId: string,
