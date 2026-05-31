@@ -29,6 +29,7 @@ import 'client/client_explore_models.dart';
 import 'location_picker_screen.dart';
 import 'public_class_detail_screen.dart';
 import 'public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Full-screen map (Browse «Map» / Home).
 class ClientMapScreen extends StatefulWidget {
@@ -183,8 +184,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               children: [
                 Text(
                   locale.t('clientMap.locationPromptTitle'),
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -192,8 +193,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 const SizedBox(height: 8),
                 Text(
                   locale.t('clientMap.locationPromptBody'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -262,7 +263,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     }
     try {
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
+        locationSettings: LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
@@ -681,10 +682,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Filter by type',
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 17.sp,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
@@ -695,7 +696,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                                 setModalState(() => tempSelected = {}),
                             child: Text(
                               locale.t('common.reset'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -1025,7 +1026,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       ),
                     ),
                     icon: const Icon(Icons.search, size: 16),
-                    label: const Text(
+                    label: Text(
                       'Search this area',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
@@ -1137,7 +1138,7 @@ class _StudioCarousel extends StatelessWidget {
         child: Center(
           child: Text(
             noStudiosLabel,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
       );

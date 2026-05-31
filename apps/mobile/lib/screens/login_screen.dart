@@ -13,6 +13,7 @@ import '../utils/show_api_error.dart';
 import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/language_selector_modal.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -136,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Text(
                 locale.t('auth.resetPasswordHint'),
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 14.sp),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -226,8 +227,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               _languageLabels[locale.localeCode] ??
                                   locale.localeCode.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textPrimary,
                               ),
@@ -243,10 +244,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       'assets/logo.png',
                       height: 60,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Text(
+                      errorBuilder: (_, __, ___) => Text(
                         'Henzo',
                         style: TextStyle(
-                          fontSize: 44,
+                          fontSize: 44.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -313,9 +314,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Text(
                         locale.t('auth.forgotPassword'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.primary500,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -328,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isSubmitting ? null : _submit,
                       style: AuthFormStyles.primaryButtonStyle(),
                       child: _isSubmitting
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 22,
                               width: 22,
                               child: CircularProgressIndicator(
@@ -341,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textInverse,
-                                fontSize: 16,
+                                fontSize: 16.sp,
                               ),
                             ),
                     ),
@@ -354,11 +355,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       minimumSize: Size.zero,
                     ),
-                    child: const Text(
+                    child: Text(
                       'No account? Register',
                       style: TextStyle(
                         color: AppColors.primary500,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -376,9 +377,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Text(
                         locale.t('auth.orContinue').toLowerCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 15,
+                          fontSize: 15.sp,
                         ),
                       ),
                       const Expanded(
@@ -409,8 +410,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         _isGoogleLoading
                             ? locale.t('common.loading')
                             : locale.t('auth.continueWithGoogle'),
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
                         ),

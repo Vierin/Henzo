@@ -10,6 +10,7 @@ import '../../l10n/locale_provider.dart';
 import '../../utils/load_error_message.dart';
 import '../../widgets/common/load_error_view.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum _BookingFilter { all, new_, pending, completed }
 
@@ -131,10 +132,10 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
         leading: null,
-        title: const Text(
+        title: Text(
           'Your appointments',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -185,7 +186,7 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
                                   'No bookings',
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
-                                    fontSize: 16,
+                                    fontSize: 16.sp,
                                   ),
                                 ),
                               ),
@@ -261,8 +262,8 @@ class _BookingTile extends StatelessWidget {
                   children: [
                     Text(
                       booking.user?.name ?? booking.user?.email ?? 'Client',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -270,16 +271,16 @@ class _BookingTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       booking.service?.name ?? '—',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       DateFormat('dd/MM/yyyy, HH:mm').format(booking.dateTime),
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         color: AppColors.textTertiary,
                       ),
                     ),
@@ -298,7 +299,7 @@ class _BookingTile extends StatelessWidget {
                                 color: AppColors.success500,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 '✓',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -319,7 +320,7 @@ class _BookingTile extends StatelessWidget {
                                 color: AppColors.error500,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 '✕',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -382,7 +383,7 @@ class _BookingTile extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 10.sp,
           fontWeight: FontWeight.w500,
           color: textColor,
         ),

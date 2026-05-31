@@ -15,6 +15,7 @@ import '../../utils/owner_navigation_restore.dart';
 import '../../widgets/auth/auth_form_styles.dart';
 import '../../widgets/settings/account_profile_form_widgets.dart';
 import '../../widgets/settings/settings_header_back_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientEditProfileScreen extends StatefulWidget {
   const ClientEditProfileScreen({super.key});
@@ -329,8 +330,8 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
         ),
         title: Text(
           locale.t('profileForm.personalData'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),

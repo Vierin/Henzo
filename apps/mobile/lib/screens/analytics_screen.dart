@@ -11,6 +11,7 @@ import 'clients_screen.dart';
 import 'main_shell.dart';
 import 'period_picker_screen.dart';
 import 'subscription_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -131,8 +132,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   const SizedBox(height: 16),
                   Text(
                     locale.t('analytics.title'),
-                    style: const TextStyle(
-                      fontSize: 24,
+                    style: TextStyle(
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
@@ -144,7 +145,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       Text(
                         locale.t('analytics.period'),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -170,8 +171,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               Expanded(
                                 child: Text(
                                   _periodText,
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     color: AppColors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -213,9 +214,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         _errorText == null
                             ? locale.t('analytics.noData')
                             : locale.t('analytics.failedLoad'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -421,8 +422,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -469,8 +470,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
@@ -478,8 +479,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
@@ -519,8 +520,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             locale.t('analytics.clients'),
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -531,12 +532,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Text(
                 locale.t('analytics.allClients'),
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               ),
               Text(
                 '$total',
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
@@ -633,8 +634,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             locale.t('analytics.overview'),
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -688,8 +689,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             locale.t('analytics.proLockedTitle'),
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -697,8 +698,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 8),
           Text(
             locale.t('analytics.proLockedDescription'),
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),
@@ -729,7 +730,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         const SizedBox(width: 6),
         Text(
           '$label ($sub)',
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -755,8 +756,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             locale.t('analytics.overview'),
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -849,8 +850,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
@@ -858,8 +859,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   valueText,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../constants/colors.dart';
 import '../../../constants/layout.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientHomeUpcomingCard extends StatelessWidget {
   const ClientHomeUpcomingCard({
@@ -59,8 +60,8 @@ class ClientHomeUpcomingCard extends StatelessWidget {
                     children: [
                       Text(
                         dayLabel,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: 11.sp,
                           color: AppColors.textSecondary,
                           letterSpacing: -0.3,
                           height: 1.1,
@@ -69,8 +70,8 @@ class ClientHomeUpcomingCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         timeLabel,
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: 20.sp,
                           color: AppColors.textPrimary,
                           height: 1.1,
                         ),
@@ -96,8 +97,8 @@ class ClientHomeUpcomingCard extends StatelessWidget {
                               studioName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 color: Colors.white,
                                 height: 1.1,
@@ -111,8 +112,8 @@ class ClientHomeUpcomingCard extends StatelessWidget {
                         className,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 24,
+                        style: TextStyle(
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
                           height: 1.15,
@@ -137,8 +138,8 @@ class ClientHomeUpcomingCard extends StatelessWidget {
                                 trainerName!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
                                   fontWeight: FontWeight.w400,
                                   color: Colors.white,
                                   height: 1.2,

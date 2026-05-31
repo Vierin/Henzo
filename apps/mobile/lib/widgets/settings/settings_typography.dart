@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Screen titles (AppBar) vs section headers inside settings forms.
 class SettingsTypography {
@@ -8,8 +9,8 @@ class SettingsTypography {
 
   /// Section labels: «ОСНОВНАЯ ИНФОРМАЦИЯ», «АККАУНТ», …
   static TextStyle sectionTitle(BuildContext context) {
-    return const TextStyle(
-      fontSize: 14,
+    return TextStyle(
+      fontSize: 14.sp,
       fontWeight: FontWeight.w500,
       letterSpacing: -0.2,
       color: AppColors.textSecondary,
@@ -23,8 +24,8 @@ class SettingsTypography {
           color: AppColors.textPrimary,
           letterSpacing: -0.3,
         ) ??
-        const TextStyle(
-          fontSize: 24,
+        TextStyle(
+          fontSize: 24.sp,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
           letterSpacing: -0.3,

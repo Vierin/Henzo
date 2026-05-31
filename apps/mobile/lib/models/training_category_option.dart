@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Row from GET /trainings/categories (TrainingCategory).
 class TrainingCategoryOption {

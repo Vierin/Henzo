@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shows a SnackBar with the error message. Handles [ApiException] and generic [Exception].
 void showApiError(BuildContext context, dynamic e, {Color? backgroundColor}) {

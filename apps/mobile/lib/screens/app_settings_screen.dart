@@ -28,6 +28,7 @@ import 'staff_screen.dart';
 import 'subscription_screen.dart';
 import '../main.dart';
 import '../utils/owner_navigation_restore.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key, this.embeddedInShell = false});
@@ -463,9 +464,9 @@ class _OwnerHeroCard extends StatelessWidget {
                     ? null
                     : Text(
                         initials,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.primary500,
-                          fontSize: 24,
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.w600,
                           height: 1,
                         ),
@@ -480,9 +481,9 @@ class _OwnerHeroCard extends StatelessWidget {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,
                       ),
@@ -492,9 +493,9 @@ class _OwnerHeroCard extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Holds `/auth/favorites` list for the client shell: hearts on Home/Detail and Favorites tab.
 class ClientFavoritesStore extends ChangeNotifier {

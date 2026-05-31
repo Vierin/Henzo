@@ -8,6 +8,7 @@ import '../../services/staff_api_service.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Полноэкранная форма добавления сотрудника (как на вебе: имя, email, телефон, выбор услуг).
 class AddStaffScreen extends StatefulWidget {
@@ -178,7 +179,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               Text(
                 'Услуги (опционально)',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
@@ -187,7 +188,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               Text(
                 'Выберите услуги, которые выполняет сотрудник. Пусто = все услуги.',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -215,7 +216,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                     },
                     title: Text(
                       s.displayName,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14.sp),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
@@ -233,7 +234,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 ),
                 child: Text(
                   _error!,
-                  style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                  style: TextStyle(color: Colors.red.shade800, fontSize: 13.sp),
                 ),
               ),
             ],

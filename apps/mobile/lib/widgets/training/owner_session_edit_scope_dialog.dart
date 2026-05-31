@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import 'owner_session_scope_option_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// What to update when opening the owner session edit screen.
 enum OwnerSessionEditScope {
@@ -41,8 +42,8 @@ Future<OwnerSessionEditScope?> showOwnerSessionEditScopeDialog(
                     Expanded(
                       child: Text(
                         tr('ownerSession.editScopeDialogTitle'),
-                        style: const TextStyle(
-                          fontSize: 22,
+                        style: TextStyle(
+                          fontSize: 22.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -65,8 +66,8 @@ Future<OwnerSessionEditScope?> showOwnerSessionEditScopeDialog(
                 const SizedBox(height: 8),
                 Text(
                   tr('ownerSession.editScopeTemplateNote'),
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     height: 1.35,
                     color: AppColors.textSecondary,
                   ),

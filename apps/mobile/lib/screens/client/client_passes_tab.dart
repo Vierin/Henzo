@@ -11,6 +11,7 @@ import '../../widgets/client/client_leave_review_sheet.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientPassesTab extends StatelessWidget {
   const ClientPassesTab({super.key});

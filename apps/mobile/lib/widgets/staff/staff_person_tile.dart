@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 String staffPersonInitials(String name) {
   final parts = name
@@ -141,12 +142,12 @@ class StaffPersonTile extends StatelessWidget {
                         style:
                             theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w500,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
                             ) ??
-                            const TextStyle(
-                              fontSize: 16,
+                            TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w500,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
@@ -161,12 +162,12 @@ class StaffPersonTile extends StatelessWidget {
                           style:
                               theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w400,
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 letterSpacing: -0.2,
                                 color: AppColors.textSecondary,
                               ) ??
-                              const TextStyle(
-                                fontSize: 14,
+                              TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 letterSpacing: -0.2,
                                 color: AppColors.textSecondary,

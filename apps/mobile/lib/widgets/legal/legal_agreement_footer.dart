@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/legal_web_links.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Tappable Privacy Policy + Terms footer (localized).
 class LegalAgreementFooter extends StatelessWidget {
@@ -15,8 +16,8 @@ class LegalAgreementFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final baseStyle = const TextStyle(
-      fontSize: 12,
+    final baseStyle = TextStyle(
+      fontSize: 12.sp,
       fontWeight: FontWeight.w400,
       color: AppColors.textPrimary,
       height: 1.2,
@@ -89,8 +90,8 @@ class LegalAgreementCheckbox extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Text(
               locale.t('legal.checkboxLabel'),
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 color: AppColors.textPrimary,
                 height: 1.3,
               ),

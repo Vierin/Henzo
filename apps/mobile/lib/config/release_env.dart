@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'app_config.dart';
 import 'load_app_env.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Validates bundled env before release builds start the app.
 void assertValidReleaseConfiguration() {

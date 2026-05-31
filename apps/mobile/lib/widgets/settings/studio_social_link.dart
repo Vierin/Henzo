@@ -8,6 +8,7 @@ import '../../models/salon.dart';
 import '../common/henzo_modal.dart';
 import '../common/sheet_action_button_style.dart';
 import 'settings_form_tokens.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum StudioSocialPlatform {
   instagram,
@@ -192,8 +193,8 @@ Future<StudioSocialPlatform?> showStudioSocialPlatformPickerSheet(
                     Expanded(
                       child: Text(
                         locale.t('profileForm.addSocialLinkSheetTitle'),
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.4,
                           color: AppColors.textSecondary,
@@ -243,8 +244,8 @@ Future<StudioSocialPlatform?> showStudioSocialPlatformPickerSheet(
                               const SizedBox(width: 12),
                               Text(
                                 platform.label(locale),
-                                style: const TextStyle(
-                                  fontSize: 16,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimary,
                                 ),
@@ -298,8 +299,8 @@ Future<String?> showStudioSocialLinkEditSheet(
                 children: [
                   Text(
                     platform.label(locale),
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),

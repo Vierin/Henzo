@@ -1,3 +1,4 @@
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Ответ GET /subscriptions/pro-prices (цены Pro в VND для экрана подписки).
 class SubscriptionProPrices {
   SubscriptionProPrices({

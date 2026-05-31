@@ -22,6 +22,7 @@ import '../widgets/public/cached_salon_network_image.dart';
 import '../widgets/session_capacity_card.dart';
 import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Icon circle (30) + gap (10) — aligns controls with address text.
 const double _kClassDetailMetaTextInset = 40;
@@ -554,12 +555,12 @@ class _ClassDetailBody extends StatelessWidget {
               HenzoHeaderBackButton(
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Class',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -573,7 +574,7 @@ class _ClassDetailBody extends StatelessWidget {
                   height: 12,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
+                  colorFilter: ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
                   ),
@@ -591,8 +592,8 @@ class _ClassDetailBody extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
+                  textStyle: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -655,8 +656,8 @@ class _ClassDetailBody extends StatelessWidget {
                 const SizedBox(height: 28),
                 Text(
                   tr('clientClassDetail.descriptionSectionLabel'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
@@ -732,8 +733,8 @@ class _StudioHeroBanner extends StatelessWidget {
                             studioName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -742,8 +743,8 @@ class _StudioHeroBanner extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               distanceLabel!,
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: TextStyle(
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.w400,
                                 color: Color(0x663F3F3F),
                                 height: 1.1,
@@ -763,8 +764,8 @@ class _StudioHeroBanner extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Text(
                                     avgRating.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      fontSize: 13,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
                                     ),
@@ -774,8 +775,8 @@ class _StudioHeroBanner extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     '$reviewCount reviews',
-                                    style: const TextStyle(
-                                      fontSize: 13,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
@@ -793,7 +794,7 @@ class _StudioHeroBanner extends StatelessWidget {
               Container(
                 width: 30,
                 height: 30,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
@@ -874,7 +875,7 @@ class _ClassInfoCard extends StatelessWidget {
                   child: Text(
                     categoryLabel,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.3,
                       color: categoryFg,
@@ -887,8 +888,8 @@ class _ClassInfoCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     dateLabel,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                       color: AppColors.textPrimary,
@@ -901,7 +902,7 @@ class _ClassInfoCard extends StatelessWidget {
           Text(
             classTitle,
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 26.sp,
               fontWeight: FontWeight.w600,
               height: 1.15,
               color: AppColors.textPrimary,
@@ -959,8 +960,8 @@ class _ClassInfoCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
+                  textStyle: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1002,8 +1003,8 @@ class _StudioAvatarBadge extends StatelessWidget {
             )
           : Text(
               initials,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
@@ -1057,8 +1058,8 @@ class _ClassMetaItem extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w400,
               letterSpacing: -0.3,
               color: AppColors.textPrimary,
@@ -1124,7 +1125,7 @@ class _DetailIconRow extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: emphasizeTitle
                       ? FontWeight.w600
                       : FontWeight.w500,
@@ -1142,8 +1143,8 @@ class _DetailIconRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         subtitle!,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           height: 1.35,
                           color: AppColors.textSecondary,
                         ),
@@ -1195,8 +1196,8 @@ class _TrainingDescriptionCard extends StatelessWidget {
       ),
       child: Text(
         body,
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: 14.sp,
           height: 1.45,
           color: AppColors.textSecondary,
         ),
@@ -1251,7 +1252,7 @@ class _BookBar extends StatelessWidget {
           ),
         ),
         child: booking
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
@@ -1261,8 +1262,8 @@ class _BookBar extends StatelessWidget {
               )
             : Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
                 ),
               ),

@@ -19,6 +19,7 @@ import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/subscription_legal_disclosure.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const Color _activeBadgeBg = Color(0xFFE8F5E9);
 const Color _activeBadgeFg = Color(0xFF2E7D32);
@@ -296,8 +297,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Text(
                                 locale.t('subscription.offeringsUnavailable'),
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   color: AppColors.error600,
                                 ),
                               ),
@@ -366,8 +367,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             padding: const EdgeInsets.only(top: 16),
                             child: Text(
                               locale.t('subscription.storeNotConfigured'),
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12.sp,
                                 color: AppColors.textTertiary,
                               ),
                               textAlign: TextAlign.center,
@@ -411,8 +412,8 @@ class _CurrentPlanCard extends StatelessWidget {
                   children: [
                     Text(
                       'Текущий план: ${isPro ? 'Pro' : 'Free'}',
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
@@ -422,8 +423,8 @@ class _CurrentPlanCard extends StatelessWidget {
                       isPro
                           ? 'У вас подключен расширенный функционал Pro.'
                           : 'Сейчас у вас бесплатный план. Вы можете перейти на Pro в любой момент.',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -441,8 +442,8 @@ class _CurrentPlanCard extends StatelessWidget {
                 ),
                 child: Text(
                   isPro ? 'PRO' : 'FREE',
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary500,
                   ),
@@ -498,8 +499,8 @@ class _ProStatusCard extends StatelessWidget {
                   children: [
                     Text(
                       planTitle,
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
@@ -507,8 +508,8 @@ class _ProStatusCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       tagline,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         height: 1.25,
                         color: AppColors.textSecondary,
                       ),
@@ -527,8 +528,8 @@ class _ProStatusCard extends StatelessWidget {
                 ),
                 child: Text(
                   activeLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                     color: _activeBadgeFg,
                   ),
@@ -546,8 +547,8 @@ class _ProStatusCard extends StatelessWidget {
                     children: [
                       Text(
                         priceLabel,
-                        style: const TextStyle(
-                          fontSize: 22,
+                        style: TextStyle(
+                          fontSize: 22.sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primary500,
                           letterSpacing: -0.3,
@@ -555,8 +556,8 @@ class _ProStatusCard extends StatelessWidget {
                       ),
                       Text(
                         periodLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -574,15 +575,15 @@ class _ProStatusCard extends StatelessWidget {
                     children: [
                       Text(
                         nextPaymentLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         nextPaymentDate,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -615,8 +616,8 @@ class _ProWhatsIncludedCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
@@ -647,8 +648,8 @@ class _ProWhatsIncludedCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   f,
-                                  style: const TextStyle(
-                                    fontSize: 13,
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
                                     height: 1.25,
                                     color: AppColors.textPrimary,
                                   ),
@@ -705,7 +706,7 @@ class _BillingToggle extends StatelessWidget {
                     child: Text(
                       'Месячный',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         color: billingInterval == 'monthly'
                             ? AppColors.primary500
@@ -735,7 +736,7 @@ class _BillingToggle extends StatelessWidget {
                         Text(
                           'Годовой',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
                             color: billingInterval == 'annual'
                                 ? AppColors.primary500
@@ -755,8 +756,8 @@ class _BillingToggle extends StatelessWidget {
                             ),
                             child: Text(
                               '-$annualSavePercent%',
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: TextStyle(
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -829,8 +830,8 @@ class _PlanCard extends StatelessWidget {
                   children: [
                     Text(
                       locale.t('profile.pro'),
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
@@ -838,8 +839,8 @@ class _PlanCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       locale.t('subscription.proTagline'),
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         height: 1.25,
                         color: AppColors.textSecondary,
                       ),
@@ -856,7 +857,7 @@ class _PlanCard extends StatelessWidget {
               child: Text(
                 comparePriceLabel!,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   color: AppColors.textTertiary.withValues(alpha: 0.9),
                   decoration: TextDecoration.lineThrough,
                   decorationColor: AppColors.textTertiary.withValues(
@@ -867,8 +868,8 @@ class _PlanCard extends StatelessWidget {
             ),
           Text(
             priceLabel,
-            style: const TextStyle(
-              fontSize: 26,
+            style: TextStyle(
+              fontSize: 26.sp,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
               letterSpacing: -0.5,
@@ -877,8 +878,8 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             periodLabel,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -899,8 +900,8 @@ class _PlanCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       f,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         height: 1.35,
                         color: AppColors.textPrimary,
                       ),
@@ -929,7 +930,7 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             locale.t('subscription.noLongTerm'),
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 12.sp, color: AppColors.textTertiary),
             textAlign: TextAlign.center,
           ),
         ],

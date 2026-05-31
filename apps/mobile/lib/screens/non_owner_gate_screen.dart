@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shown when the user is signed in but is not a salon owner (OWNER role).
 class NonOwnerGateScreen extends StatelessWidget {
@@ -53,7 +54,7 @@ class NonOwnerGateScreen extends StatelessWidget {
                 Text(
                   locale.t('auth.ownerRequiredBody'),
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: Colors.grey.shade700,
                     height: 1.4,
                   ),
@@ -71,8 +72,8 @@ class NonOwnerGateScreen extends StatelessWidget {
                   ),
                   child: Text(
                     locale.t('auth.registerOnWebsite'),
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -89,8 +90,8 @@ class NonOwnerGateScreen extends StatelessWidget {
                   ),
                   child: Text(
                     locale.t('auth.openWebsite'),
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

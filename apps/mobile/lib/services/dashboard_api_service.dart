@@ -7,6 +7,7 @@ import '../models/owner_studio_client.dart';
 import '../models/salon.dart';
 import '../models/subscription.dart';
 import '../models/time_block.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 double? _parseOptionalDouble(dynamic v) {
   if (v == null) return null;

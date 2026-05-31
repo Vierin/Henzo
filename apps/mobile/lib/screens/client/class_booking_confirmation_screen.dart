@@ -13,6 +13,7 @@ import '../../constants/layout.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/auth/auth_form_styles.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shown after a successful client self-booking (mockup: ticket + actions).
 class ClassBookingConfirmationScreen extends StatelessWidget {
@@ -282,7 +283,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                             height: 12,
                             fit: BoxFit.contain,
                             excludeFromSemantics: true,
-                            colorFilter: const ColorFilter.mode(
+                            colorFilter: ColorFilter.mode(
                               Colors.white,
                               BlendMode.srcIn,
                             ),
@@ -300,8 +301,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 14,
+                            textStyle: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -331,14 +332,14 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                       _BookingConfirmationHero(
                         titleStyle: wixTextTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 39,
+                          fontSize: 39.sp,
                           color: AppColors.textPrimary,
                           letterSpacing: -0.5,
                         ),
                         dateLine: _headerDateLine,
                         dateStyle: wixTextTheme.labelLarge?.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                           letterSpacing: -0.2,
                         ),
@@ -369,10 +370,10 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         child: FilledButton(
                           onPressed: _shareBooking,
                           style: AuthFormStyles.primaryButtonStyle(),
-                          child: const Text(
+                          child: Text(
                             'Invite friends',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -534,8 +535,8 @@ class _BookingTicketCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 22, 12, 15),
             child: Text(
               classTitle,
-              style: const TextStyle(
-                fontSize: 24,
+              style: TextStyle(
+                fontSize: 24.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
                 height: 1.1,
@@ -690,9 +691,9 @@ class _TicketActionButton extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textInverse,
               ),
             ),
@@ -715,14 +716,14 @@ class _AccentMetaCell extends StatelessWidget {
   }) : assert(icon != null || svgAsset != null);
 
   static TextStyle _labelPrimary(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
+    fontSize: 13.sp,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
   static TextStyle _labelMuted(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
+    fontSize: 13.sp,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary.withValues(alpha: 0.4),
     height: 1.3,
@@ -818,8 +819,8 @@ class _LocationRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                   height: 1.25,
@@ -833,8 +834,8 @@ class _LocationRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         address!,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           height: 1.3,
                           color: AppColors.textSecondary,
                         ),

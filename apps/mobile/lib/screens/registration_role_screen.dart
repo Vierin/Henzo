@@ -8,6 +8,7 @@ import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/language_selector_modal.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class RegistrationRoleScreen extends StatelessWidget {
   const RegistrationRoleScreen({super.key});
@@ -55,8 +56,8 @@ class RegistrationRoleScreen extends StatelessWidget {
                             Text(
                               _languageLabels[locale.localeCode] ??
                                   locale.localeCode.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textPrimary,
                               ),
@@ -131,8 +132,8 @@ class _ScreenHeading extends StatelessWidget {
         Text(
           locale.t('auth.roleTitle'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 32,
+          style: TextStyle(
+            fontSize: 32.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
             letterSpacing: -0.3,
@@ -147,8 +148,8 @@ class _ScreenHeading extends StatelessWidget {
             Text(
               locale.t('auth.roleSubtitleBefore'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w400,
                 color: AppColors.textPrimary,
                 height: 1.2,
@@ -161,8 +162,8 @@ class _ScreenHeading extends StatelessWidget {
                 children: [
                   Text(
                     locale.t('auth.roleSubtitleHighlight'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                       height: 1.2,
@@ -235,8 +236,8 @@ class _RoleCard extends StatelessWidget {
                       children: [
                         Text(
                           locale.t('auth.roleHereTo'),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w400,
                             color: AppColors.textSecondary,
                             height: 1.2,
@@ -245,8 +246,8 @@ class _RoleCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           roleWord,
-                          style: const TextStyle(
-                            fontSize: 28,
+                          style: TextStyle(
+                            fontSize: 28.sp,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                             height: 1,
@@ -326,8 +327,8 @@ class _FeatureRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: 11.sp,
               fontWeight: FontWeight.w400,
               color: AppColors.textPrimary,
               height: 1.2,

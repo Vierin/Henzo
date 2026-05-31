@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Capacity ring + summary; optional Add button (owner session detail).
 class SessionCapacityCard extends StatelessWidget {
@@ -56,8 +57,8 @@ class SessionCapacityCard extends StatelessWidget {
                   ),
                   Text(
                     '$pct%',
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                       letterSpacing: -0.5,
@@ -75,7 +76,7 @@ class SessionCapacityCard extends StatelessWidget {
                   Text(
                     tr('ownerSession.capacityLabel'),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.3,
                       color: AppColors.textPrimary.withValues(alpha: 0.4),
@@ -86,8 +87,8 @@ class SessionCapacityCard extends StatelessWidget {
                     tr('ownerSession.bookedSummary')
                         .replaceAll('{current}', '$enrolled')
                         .replaceAll('{max}', '$cap'),
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: 15.sp,
                       letterSpacing: -0.3,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -99,7 +100,7 @@ class SessionCapacityCard extends StatelessWidget {
                         .replaceAll('{spots}', '$spotsLeft')
                         .replaceAll('{waitlist}', '$waitlistCount'),
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       letterSpacing: -0.3,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary.withValues(alpha: 0.4),

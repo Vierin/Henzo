@@ -16,6 +16,7 @@ import '../../utils/show_api_error.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -185,7 +186,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           child: Text(
                             locale.t('staffScreen.editStaffTitle'),
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 22.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
@@ -210,7 +211,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('staffScreen.fullNameRequired'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -241,7 +242,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('common.email'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -273,7 +274,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('common.phone'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -305,7 +306,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('staffScreen.servicesOptional'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -371,7 +372,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                     ? locale.t('staffScreen.allServices')
                                     : '${selectedServiceIds.length} ${locale.t('staffScreen.servicesSelected')}',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
@@ -381,7 +382,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('staffScreen.selectServicesHint'),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -584,7 +585,7 @@ class _StaffScreenState extends State<StaffScreen> {
                 child: Text(
                   locale.t('common.setupSalonFirst'),
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -709,7 +710,7 @@ class _StaffServicesPickerSheetBodyState
                         'staffScreen.staffServicesTitle',
                       ),
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -745,7 +746,7 @@ class _StaffServicesPickerSheetBodyState
                     },
                     title: Text(
                       s.displayName,
-                      style: const TextStyle(fontSize: 15),
+                      style: TextStyle(fontSize: 15.sp),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: const EdgeInsets.symmetric(

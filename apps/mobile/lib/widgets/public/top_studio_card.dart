@@ -6,9 +6,10 @@ import '../../models/public_studio_preview.dart';
 import '../../services/client_location_store.dart';
 import '../../utils/formatters.dart';
 import 'cached_salon_network_image.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TopStudioCard extends StatelessWidget {
-  const TopStudioCard({
+  TopStudioCard({
     super.key,
     required this.studio,
     required this.isFavorite,
@@ -159,8 +160,8 @@ class _HomeStudioCard extends StatelessWidget {
                             studio.studioName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
                               height: 1.2,
@@ -172,8 +173,8 @@ class _HomeStudioCard extends StatelessWidget {
                               studio.categories.take(3).join(' • '),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textSecondary,
                                 height: 1.1,
@@ -193,8 +194,8 @@ class _HomeStudioCard extends StatelessWidget {
                                 const SizedBox(width: 2),
                                 Text(
                                   studio.rating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 11,
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
                                     height: 1.1,
@@ -203,8 +204,8 @@ class _HomeStudioCard extends StatelessWidget {
                                 if (studio.reviewCount > 0)
                                   Text(
                                     ' (${studio.reviewCount})',
-                                    style: const TextStyle(
-                                      fontSize: 11,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
                                       fontWeight: FontWeight.w400,
                                       color: AppColors.textSecondary,
                                       height: 1.1,
@@ -215,8 +216,8 @@ class _HomeStudioCard extends StatelessWidget {
                               if (distanceLabel != null)
                                 Text(
                                   distanceLabel!,
-                                  style: const TextStyle(
-                                    fontSize: 11,
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
                                     fontWeight: FontWeight.w400,
                                     color: _distanceColor,
                                     height: 1.1,
@@ -322,8 +323,8 @@ class _BrowseStudioCard extends StatelessWidget {
                                   const SizedBox(width: 2),
                                   Text(
                                     studio.rating.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      fontSize: 12,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                     ),
@@ -370,8 +371,8 @@ class _BrowseStudioCard extends StatelessWidget {
                       studio.studioName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 19,
+                      style: TextStyle(
+                        fontSize: 19.sp,
                         height: 1.1,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -386,8 +387,8 @@ class _BrowseStudioCard extends StatelessWidget {
                         studio.categories.take(3).join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: 11.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
@@ -409,16 +410,16 @@ class _BrowseStudioCard extends StatelessWidget {
                           const SizedBox(width: 3),
                           Text(
                             distanceLabel ?? '',
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: TextStyle(
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const Text(
+                          Text(
                             '  •  ',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -429,8 +430,8 @@ class _BrowseStudioCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             softWrap: false,
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: TextStyle(
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),

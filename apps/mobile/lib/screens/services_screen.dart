@@ -31,6 +31,7 @@ import '../../widgets/training/training_filter_chip.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/training/training_time_picker_sheet.dart';
 import 'add_training_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum ServicesSort {
   nameAz,
@@ -217,7 +218,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         );
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Не удалось удалить тренировку'),
             backgroundColor: Colors.red,
           ),
@@ -284,11 +285,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Информация',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                         ),
@@ -306,10 +307,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     height: 1.4,
                     color: AppColors.textSecondary,
                   ),
@@ -432,7 +433,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     Text(
                       locale.t('common.setupSalonFirst'),
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         color: AppColors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
@@ -440,7 +441,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     const SizedBox(height: 24),
                     FilledButton.icon(
                       onPressed: _isLoading ? null : _loadData,
-                      icon: const Icon(Icons.refresh, size: 20),
+                      icon: Icon(Icons.refresh, size: 20),
                       label: Text(locale.t('common.retry')),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary500,
@@ -464,7 +465,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           Text(
                             locale.t('servicesScreen.category'),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                             ),
@@ -576,7 +577,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                   ? locale.t('servicesScreen.emptyTitle')
                                   : locale.t('common.nothingFound'),
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 18.sp,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
@@ -587,7 +588,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                   ? locale.t('servicesScreen.emptySubtitle')
                                   : locale.t('servicesScreen.changeFilters'),
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -690,8 +691,8 @@ class EditTrainingScreen extends StatefulWidget {
 class EditTrainingScreenState extends State<EditTrainingScreen> {
   static const Color _kFormAccent = Color(0xFF6C5CE7);
   static const Color _kHintMuted = Color(0x993F3F3F);
-  static const TextStyle _kFieldInputStyle = TextStyle(
-    fontSize: 16,
+  static final TextStyle _kFieldInputStyle = TextStyle(
+    fontSize: 16.sp,
     color: AppColors.textPrimary,
   );
 
@@ -736,9 +737,9 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     );
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         color: _kHintMuted,
-        fontSize: 16,
+        fontSize: 16.sp,
         fontWeight: FontWeight.w500,
       ),
       prefixIcon: prefixIcon == null
@@ -750,8 +751,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffix: suffix,
       suffixText: suffixText,
-      suffixStyle: const TextStyle(
-        fontSize: 16,
+      suffixStyle: TextStyle(
+        fontSize: 16.sp,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
@@ -784,8 +785,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           Expanded(
             child: Text(
               text.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,
                 color: AppColors.textPrimary,
@@ -840,9 +841,9 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     hintText: '60',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       color: _kHintMuted,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
                     ),
                     border: InputBorder.none,
@@ -861,8 +862,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
                   loc.t('addTraining.durationSuffix'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -974,7 +975,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
             child: Text(
               _narrowWeekday(day, loc),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w700,
                 color: selected ? AppColors.textInverse : AppColors.textPrimary,
               ),
@@ -1330,8 +1331,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         centerTitle: true,
         title: Text(
           widget.title ?? 'Редактировать тренировку',
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -1388,7 +1389,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w400,
                     color: _selectedCategoryId == null
                         ? AppColors.textSecondary
@@ -1440,8 +1441,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                   children: [
                                     Text(
                                       displayName,
-                                      style: const TextStyle(
-                                        fontSize: 19,
+                                      style: TextStyle(
+                                        fontSize: 19.sp,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.textPrimary,
                                       ),
@@ -1450,8 +1451,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                       const SizedBox(height: 4),
                                       Text(
                                         address,
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
                                           height: 1.35,
                                           color: AppColors.textSecondary,
                                         ),
@@ -1552,8 +1553,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               const SizedBox(height: 6),
               Text(
                 locale.t('addTraining.step2.scheduleHint'),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   height: 1.35,
                   color: AppColors.textSecondary,
                 ),
@@ -1577,8 +1578,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                             width: 110,
                             child: Text(
                               _fullWeekday(day, locale),
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ),
@@ -1608,8 +1609,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                 ),
                                 child: Text(
                                   trainingTimeToHm(time),
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
                                   ),
@@ -1671,8 +1672,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                       DateFormat.yMMMd(locale.localeCode).format(
                         _effectiveFromDate,
                       ),
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -1695,7 +1696,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   ),
                 ),
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
@@ -1709,12 +1710,12 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                         locale.t('common.update'),
                         style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               color: AppColors.textInverse,
                             ) ??
-                            const TextStyle(
+                            TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               color: AppColors.textInverse,
                             ),
                       ),

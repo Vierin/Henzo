@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../common/henzo_modal.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Modal: Work schedule time range with wheel pickers.
 /// Returns (startHour, startMinute, endHour, endMinute) on Confirm, null on Cancel.
@@ -127,8 +128,8 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
                   children: [
                     Text(
                       widget.title,
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -136,8 +137,8 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
                     const SizedBox(height: 4),
                     Text(
                       widget.subtitle,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -242,8 +243,8 @@ class _TimeWheelRow extends StatelessWidget {
             width: 48,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -259,12 +260,12 @@ class _TimeWheelRow extends StatelessWidget {
                   onSelectedItemChanged: onHourChanged,
                   itemBuilder: (index) => index.toString().padLeft(2, '0'),
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
                     ':',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                     ),
@@ -318,8 +319,8 @@ class _WheelWithStaticHighlight extends StatelessWidget {
               builder: (context, index) => Center(
                 child: Text(
                   itemBuilder(index),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),

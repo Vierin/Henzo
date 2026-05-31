@@ -30,6 +30,7 @@ import '../settings_screen.dart';
 import '../notifications_screen.dart';
 import '../public_studio_detail_screen.dart';
 import '../studio_details_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -383,8 +384,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: Text(
               _formatDateHeader(loc.localeCode),
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
                 color: AppColors.textPrimary,
@@ -430,8 +431,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 6),
                         Text(
                           count > 99 ? '99+' : '$count',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -465,8 +466,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Text(
             loc.t('dashboard.helloGreeting'),
-            style: const TextStyle(
-              fontSize: 28,
+            style: TextStyle(
+              fontSize: 28.sp,
               fontWeight: FontWeight.w400,
               height: 1.1,
               color: AppColors.textPrimary,
@@ -476,8 +477,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 2),
             Text(
               name,
-              style: const TextStyle(
-                fontSize: 28,
+              style: TextStyle(
+                fontSize: 28.sp,
                 fontWeight: FontWeight.w400,
                 height: 1.15,
                 color: AppColors.textPrimary,
@@ -517,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Text(
                 value,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 30.sp,
                   fontWeight: FontWeight.w500,
                   height: 0.8,
                   color: textColor,
@@ -527,7 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w400,
                 height: 1,
                 color: textColor,
@@ -640,7 +641,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? 'TODAY'
                                 : 'NEXT · ${_formatNextDate(s, loc.localeCode)}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                               color: Colors.white.withValues(alpha: 0.95),
@@ -671,8 +672,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 4),
                       Text(
                         s.trainingName,
-                        style: const TextStyle(
-                          fontSize: 24,
+                        style: TextStyle(
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.w700,
                           height: 1,
                           color: Colors.white,
@@ -684,7 +685,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         '${_formatTimeRange(s)} · With $trainer',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
                           letterSpacing: -0.15,
@@ -716,8 +717,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Center(
                                   child: Text(
                                     '$percent%',
-                                    style: const TextStyle(
-                                      fontSize: 15,
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                       height: 1,
@@ -736,8 +737,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   fillLabel,
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
                                     height: 1,
@@ -747,7 +748,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Text(
                                   loc.t('dashboard.bookedLabel'),
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
                                     color: Colors.white,
                                     letterSpacing: -0.15,
@@ -774,8 +775,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 children: [
                                   Text(
                                     loc.t('dashboard.showMore'),
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
                                     ),

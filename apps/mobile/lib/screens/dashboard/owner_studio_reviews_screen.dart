@@ -6,6 +6,7 @@ import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Owner-facing list of client ratings and comments for this studio (same API as public studio page).
 class OwnerStudioReviewsScreen extends StatefulWidget {
@@ -120,8 +121,8 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
         leadingWidth: 56,
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
@@ -148,9 +149,9 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
                     children: [
                       Text(
                         locale.t('dashboard.reviewsLoadError'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.error600,
-                          fontSize: 15,
+                          fontSize: 15.sp,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -181,8 +182,8 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
                             child: Text(
                               locale.t('dashboard.reviewsEmpty'),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: 15.sp,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -228,9 +229,9 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
                                       Expanded(
                                         child: Text(
                                           displayName,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 15,
+                                            fontSize: 15.sp,
                                             color: AppColors.textPrimary,
                                           ),
                                         ),
@@ -238,8 +239,8 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
                                       if (created != null)
                                         Text(
                                           dateFmt.format(created.toLocal()),
-                                          style: const TextStyle(
-                                            fontSize: 12,
+                                          style: TextStyle(
+                                            fontSize: 12.sp,
                                             color: AppColors.textTertiary,
                                           ),
                                         ),
@@ -251,8 +252,8 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                       comment,
-                                      style: const TextStyle(
-                                        fontSize: 14,
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
                                         height: 1.35,
                                         color: AppColors.textSecondary,
                                       ),
@@ -302,8 +303,8 @@ class _SummaryHeader extends StatelessWidget {
           Expanded(
             child: Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),

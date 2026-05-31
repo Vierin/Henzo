@@ -20,6 +20,7 @@ import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
 import 'owner_edit_training_session_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -344,7 +345,7 @@ class _NavItem extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w400,
                   color: textColor,
                   height: 1,
@@ -388,8 +389,8 @@ class _SalonLoadingCurtain extends StatelessWidget {
                 Consumer<LocaleProvider>(
                   builder: (context, loc, _) => Text(
                     loc.t('shell.loadingWorkspace'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),

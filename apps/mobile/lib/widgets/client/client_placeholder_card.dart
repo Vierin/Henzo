@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientPlaceholderCard extends StatelessWidget {
   const ClientPlaceholderCard({
@@ -30,8 +31,8 @@ class ClientPlaceholderCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
@@ -39,8 +40,8 @@ class ClientPlaceholderCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),

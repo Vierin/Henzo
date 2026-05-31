@@ -19,6 +19,7 @@ import '../widgets/common/henzo_header_back_button.dart';
 import '../navigation/owner_session_navigation.dart';
 import '../widgets/session_capacity_card.dart';
 import '../widgets/training/owner_session_cancel_scope_dialog.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Full-screen session detail for studio owners (replaces bottom sheet modal).
 class OwnerTrainingSessionDetailScreen extends StatefulWidget {
@@ -391,7 +392,7 @@ class _OwnerTrainingSessionDetailScreenState
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 12.sp,
             fontWeight: FontWeight.w700,
             color: fg,
           ),
@@ -424,8 +425,8 @@ class _OwnerTrainingSessionDetailScreenState
                                   textAlign: TextAlign.center,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 18,
+                                  style: TextStyle(
+                                    fontSize: 18.sp,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textPrimary,
                                     height: 1,
@@ -498,7 +499,7 @@ class _OwnerTrainingSessionDetailScreenState
                             child: Text(
                               categoryLabel.trim().toUpperCase(),
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 13.sp,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: -0.3,
                                 color: accentContent,
@@ -511,8 +512,8 @@ class _OwnerTrainingSessionDetailScreenState
                         Expanded(
                           child: Text(
                             dateFmt.format(startsLocal).toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w400,
                               color: AppColors.textPrimary,
                               letterSpacing: -0.3,
@@ -525,8 +526,8 @@ class _OwnerTrainingSessionDetailScreenState
                     const SizedBox(height: 12),
                     Text(
                       session.trainingName,
-                      style: const TextStyle(
-                        fontSize: 26,
+                      style: TextStyle(
+                        fontSize: 26.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                         height: 1.15,
@@ -555,8 +556,8 @@ class _OwnerTrainingSessionDetailScreenState
                             timeRangeLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
+                            style: TextStyle(
+                              fontSize: 15.sp,
                               fontWeight: FontWeight.w400,
                               color: AppColors.textPrimary,
                               letterSpacing: -0.3,
@@ -584,8 +585,8 @@ class _OwnerTrainingSessionDetailScreenState
                               venueLine,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w400,
                                 letterSpacing: -0.3,
                                 color: AppColors.textPrimary,
@@ -617,8 +618,8 @@ class _OwnerTrainingSessionDetailScreenState
                               backgroundColor: AppColors.primary500,
                               foregroundColor: AppColors.textInverse,
                               minimumSize: const Size.fromHeight(50),
-                              textStyle: const TextStyle(
-                                fontSize: 14,
+                              textStyle: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: -0.3,
                               ),
@@ -644,8 +645,8 @@ class _OwnerTrainingSessionDetailScreenState
                                   AppColors.backgroundPrimary,
                               disabledForegroundColor: AppColors.textTertiary,
                               minimumSize: const Size.fromHeight(50),
-                              textStyle: const TextStyle(
-                                fontSize: 14,
+                              textStyle: TextStyle(
+                                fontSize: 14.sp,
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: -0.3,
@@ -668,8 +669,8 @@ class _OwnerTrainingSessionDetailScreenState
                             tr(
                               'ownerSession.attendeesHeading',
                             ).replaceAll('{count}', '${session.enrolledCount}'),
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.6,
                               color: AppColors.textPrimary,
@@ -680,8 +681,8 @@ class _OwnerTrainingSessionDetailScreenState
                           Text(
                             tr('ownerSession.attendanceColumnLabel'),
                             textAlign: TextAlign.end,
-                            style: const TextStyle(
-                              fontSize: 10,
+                            style: TextStyle(
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.35,
                               color: AppColors.textSecondary,
@@ -718,9 +719,9 @@ class _OwnerTrainingSessionDetailScreenState
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
                               tr('ownerSession.noParticipants'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
-                                fontSize: 14,
+                                fontSize: 14.sp,
                               ),
                             ),
                           );
@@ -768,7 +769,7 @@ class _OwnerTrainingSessionDetailScreenState
                                       child: Text(
                                         _initials(displayName),
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 14.sp,
                                           fontWeight: FontWeight.w700,
                                           color: _avatarInk(i),
                                         ),
@@ -782,8 +783,8 @@ class _OwnerTrainingSessionDetailScreenState
                                         children: [
                                           Text(
                                             displayName,
-                                            style: const TextStyle(
-                                              fontSize: 16,
+                                            style: TextStyle(
+                                              fontSize: 16.sp,
                                               fontWeight: FontWeight.w700,
                                               color: AppColors.textPrimary,
                                             ),
@@ -791,8 +792,8 @@ class _OwnerTrainingSessionDetailScreenState
                                           if (subtitle.isNotEmpty)
                                             Text(
                                               subtitle,
-                                              style: const TextStyle(
-                                                fontSize: 14,
+                                              style: TextStyle(
+                                                fontSize: 14.sp,
                                                 fontWeight: FontWeight.w500,
                                                 color: AppColors.textSecondary,
                                               ),

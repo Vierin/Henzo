@@ -11,6 +11,7 @@ import '../l10n/locale_provider.dart';
 import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../services/mapbox_api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key, required this.initialCity});
@@ -202,9 +203,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
     return InputDecoration(
       hintText: locale.t('clientHome.locationPickerHint'),
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         color: AppColors.textTertiary,
-        fontSize: 14,
+        fontSize: 14.sp,
       ),
       isDense: true,
       prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
@@ -254,8 +255,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         leadingWidth: 56,
         title: Text(
           locale.t('clientHome.locationPickerTitle'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
             color: AppColors.textPrimary,
@@ -271,9 +272,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             TextField(
               controller: _controller,
               onChanged: _onChanged,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 14,
+                fontSize: 14.sp,
               ),
               textCapitalization: TextCapitalization.words,
               decoration: _searchDecoration(locale),
@@ -316,7 +317,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         child: Text(
                           locale.t('clientHome.locationPickerUseCity'),
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
                             color: _isLocating
                                 ? AppColors.textTertiary
@@ -336,8 +337,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       child: Text(
                         locale.t('clientHome.locationPickerEmpty'),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           height: 1.4,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textSecondary,
@@ -382,8 +383,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                       city,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 15,
+                                      style: TextStyle(
+                                        fontSize: 15.sp,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.2,
                                         color: AppColors.textPrimary,

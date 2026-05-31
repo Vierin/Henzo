@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientListTile extends StatelessWidget {
   const ClientListTile({
@@ -42,7 +43,7 @@ class ClientListTile extends StatelessWidget {
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : '-',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 22.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary500,
                       height: 1,
@@ -62,12 +63,12 @@ class ClientListTile extends StatelessWidget {
                         style:
                             theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w500,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
                             ) ??
-                            const TextStyle(
-                              fontSize: 16,
+                            TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w500,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
@@ -81,12 +82,12 @@ class ClientListTile extends StatelessWidget {
                         style:
                             theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w400,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               letterSpacing: -0.2,
                               color: AppColors.textSecondary,
                             ) ??
-                            const TextStyle(
-                              fontSize: 14,
+                            TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w400,
                               letterSpacing: -0.2,
                               color: AppColors.textSecondary,

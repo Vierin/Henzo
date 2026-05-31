@@ -1,3 +1,4 @@
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Studio publication lifecycle (matches Prisma `StudioStatus`).
 enum StudioStatus {
   draft,

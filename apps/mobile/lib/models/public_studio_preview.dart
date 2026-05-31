@@ -1,3 +1,4 @@
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 class PublicStudioPreview {
   const PublicStudioPreview({
     required this.id,

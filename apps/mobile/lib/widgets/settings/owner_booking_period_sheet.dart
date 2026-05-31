@@ -11,6 +11,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../common/sheet_action_button_style.dart';
 import 'settings_form_tokens.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 4 weeks — default booking window for new studios.
 const int kDefaultBookingPeriodDays = 30;
@@ -138,8 +139,8 @@ Future<bool?> showOwnerBookingPeriodSheet(
                   children: [
                     Text(
                       locale.t('settings.owner.bookingPeriodTitle'),
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -147,8 +148,8 @@ Future<bool?> showOwnerBookingPeriodSheet(
                     const SizedBox(height: 4),
                     Text(
                       locale.t('settings.owner.bookingPeriodHint'),
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
