@@ -98,7 +98,17 @@
 		"roleClientFeature3": "Đạt mục tiêu",
 		"roleOwnerFeature1": "Quản lý khách hàng",
 		"roleOwnerFeature2": "Lên lịch lớp học",
-		"roleOwnerFeature3": "Phát triển doanh nghiệp"
+		"roleOwnerFeature3": "Phát triển doanh nghiệp",
+		"roleIAm": "Tôi là",
+		"roleClientWord": "Khách hàng",
+		"roleManagerWord": "Quản lý",
+		"roleClientDesc": "Tìm kiếm, đặt chỗ và tham gia các lớp thể dục gần bạn.",
+		"roleOwnerDesc": "Quản lý studio, lịch học, huấn luyện viên và đặt chỗ.",
+		"roleAllInOne": "Tất cả trong một ứng dụng.",
+		"termsPrefix": "Bằng cách tiếp tục, bạn đồng ý với ",
+		"privacyPolicy": "Chính sách quyền riêng tư",
+		"termsAnd": "và",
+		"termsOfService": "Điều khoản dịch vụ"
 	},
 	"clientHome": {
 		"nowIn": "ĐANG Ở",

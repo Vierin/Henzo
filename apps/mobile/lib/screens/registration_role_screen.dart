@@ -1,14 +1,15 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/chaotic_underline.dart';
-import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/language_selector_modal.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class RegistrationRoleScreen extends StatelessWidget {
   const RegistrationRoleScreen({super.key});
@@ -19,6 +20,9 @@ class RegistrationRoleScreen extends StatelessWidget {
     'vi': 'Tiếng Việt',
   };
 
+  static const _privacyUrl = 'https://henzo.app/privacy';
+  static const _termsUrl = 'https://henzo.app/terms';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,91 +30,89 @@ class RegistrationRoleScreen extends StatelessWidget {
       body: SafeArea(
         child: Consumer<LocaleProvider>(
           builder: (context, locale, _) => Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    HenzoHeaderBackButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                    const Spacer(),
-                    InkWell(
-                      onTap: () => showLanguageSelectorModal(context, locale),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.language,
-                              size: 16,
+                // Language selector — top right only
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () => showLanguageSelectorModal(context, locale),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.language,
+                            size: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _languageLabels[locale.localeCode] ??
+                                locale.localeCode.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               color: AppColors.textPrimary,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _languageLabels[locale.localeCode] ??
-                                  locale.localeCode.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 28),
+
+                const SizedBox(height: 20),
+
+                // Heading
                 _ScreenHeading(locale: locale),
+
                 const SizedBox(height: 28),
+
+                // Client card — image on left
                 _RoleCard(
                   locale: locale,
-                  roleWord: locale.t('auth.roleTrain'),
-                  features: [
-                    locale.t('auth.roleClientFeature1'),
-                    locale.t('auth.roleClientFeature2'),
-                    locale.t('auth.roleClientFeature3'),
-                  ],
+                  roleWord: locale.t('auth.roleClientWord'),
+                  description: locale.t('auth.roleClientDesc'),
                   imageAssetPath: 'assets/public/client.webp',
                   accentColor: AppColors.primary500,
-                  underlineWidth: 56,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ClientRegistrationScreen(),
-                      ),
-                    );
-                  },
+                  underlineWidth: 62,
+                  imageOnLeft: true,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ClientRegistrationScreen(),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 14),
+
+                // Manager card — image on right
                 _RoleCard(
                   locale: locale,
-                  roleWord: locale.t('auth.roleManage'),
-                  features: [
-                    locale.t('auth.roleOwnerFeature1'),
-                    locale.t('auth.roleOwnerFeature2'),
-                    locale.t('auth.roleOwnerFeature3'),
-                  ],
+                  roleWord: locale.t('auth.roleManagerWord'),
+                  description: locale.t('auth.roleOwnerDesc'),
                   imageAssetPath: 'assets/public/manager.webp',
                   accentColor: const Color(0xFFC2F600),
-                  accentForegroundColor: AppColors.textPrimary,
-                  underlineWidth: 88,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const BusinessRegistrationScreen(),
-                      ),
-                    );
-                  },
+                  underlineWidth: 96,
+                  imageOnLeft: false,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const BusinessRegistrationScreen(),
+                    ),
+                  ),
                 ),
+
+                const Spacer(),
+
+                // Terms
+                _TermsText(locale: locale),
               ],
             ),
           ),
@@ -133,10 +135,10 @@ class _ScreenHeading extends StatelessWidget {
           locale.t('auth.roleTitle'),
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 32.sp,
-            fontWeight: FontWeight.w600,
+            fontSize: 34.sp,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
-            letterSpacing: -0.3,
+            letterSpacing: -0.5,
             height: 1.05,
           ),
         ),
@@ -146,37 +148,33 @@ class _ScreenHeading extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.start,
           children: [
             Text(
-              locale.t('auth.roleSubtitleBefore'),
-              textAlign: TextAlign.center,
+              '${locale.t('auth.roleSubtitleBefore')} ',
               style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w400,
+                fontSize: 15.sp,
                 color: AppColors.textPrimary,
                 height: 1.2,
               ),
             ),
-            Transform.translate(
-              offset: const Offset(-3, 0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    locale.t('auth.roleSubtitleHighlight'),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      height: 1.2,
-                    ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  locale.t('auth.roleSubtitleHighlight'),
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    height: 1.2,
                   ),
-                  const SizedBox(height: 2),
-                  const ChaoticUnderline(
-                    width: 88,
-                    height: 6,
-                    color: AppColors.primary500,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                const ChaoticUnderline(
+                  width: 88,
+                  height: 5,
+                  color: AppColors.primary500,
+                ),
+              ],
             ),
           ],
         ),
@@ -189,109 +187,127 @@ class _RoleCard extends StatelessWidget {
   const _RoleCard({
     required this.locale,
     required this.roleWord,
-    required this.features,
+    required this.description,
     required this.imageAssetPath,
     required this.accentColor,
     required this.underlineWidth,
+    required this.imageOnLeft,
     required this.onTap,
-    this.accentForegroundColor = Colors.white,
   });
 
   final LocaleProvider locale;
   final String roleWord;
-  final List<String> features;
+  final String description;
   final String imageAssetPath;
   final Color accentColor;
-  final Color accentForegroundColor;
   final double underlineWidth;
+  final bool imageOnLeft;
   final VoidCallback onTap;
 
-  static const double _cardHeight = 196;
-  static const double _photoHeight = 194;
+  static const double _cardHeight = 172.0;
+  static const double _imageWidth = 144.0;
+  static const double _imageTopOverflow = 32.0;
 
   @override
   Widget build(BuildContext context) {
+    final textPadding = imageOnLeft
+        ? const EdgeInsets.fromLTRB(_imageWidth - 8, 20, 20, 20)
+        : const EdgeInsets.fromLTRB(20, 20, _imageWidth - 8, 20);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        borderRadius: BorderRadius.circular(18),
+        child: SizedBox(
+          height: _cardHeight + _imageTopOverflow,
           child: Stack(
             clipBehavior: Clip.none,
+            alignment: Alignment.bottomCenter,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: _cardHeight,
-                  width: double.infinity,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 0, 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          locale.t('auth.roleHereTo'),
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.textSecondary,
-                            height: 1.2,
+              // Card background + text
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: _cardHeight,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Padding(
+                      padding: textPadding,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            locale.t('auth.roleIAm'),
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: AppColors.textSecondary,
+                              height: 1.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          roleWord,
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                            height: 1,
+                          const SizedBox(height: 1),
+                          Text(
+                            roleWord,
+                            style: TextStyle(
+                              fontSize: 38.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                              height: 1.0,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        ChaoticUnderline(
-                          width: underlineWidth,
-                          height: 7,
-                          color: accentColor,
-                        ),
-                        const SizedBox(height: 12),
-                        for (var i = 0; i < features.length; i++) ...[
-                          _FeatureRow(
-                            label: features[i],
-                            accentColor: accentColor,
-                            iconColor: accentForegroundColor,
+                          const SizedBox(height: 5),
+                          ChaoticUnderline(
+                            width: underlineWidth,
+                            height: 6,
+                            color: accentColor,
                           ),
-                          if (i < features.length - 1)
-                            const SizedBox(height: 6),
+                          const SizedBox(height: 12),
+                          Text(
+                            description,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            locale.t('auth.roleAllInOne'),
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
+
+              // Photo — overflows above card
               Positioned(
-                right: 0,
+                left: imageOnLeft ? 0 : null,
+                right: imageOnLeft ? null : 0,
                 bottom: 0,
-                top: -(_photoHeight - _cardHeight),
-                width: 158,
+                top: 0,
+                width: _imageWidth,
                 child: Image.asset(
                   imageAssetPath,
                   fit: BoxFit.contain,
-                  alignment: Alignment.bottomCenter,
+                  alignment: imageOnLeft
+                      ? Alignment.bottomLeft
+                      : Alignment.bottomRight,
                   errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: _ActionCircle(
-                  color: accentColor,
-                  iconColor: accentForegroundColor,
                 ),
               ),
             ],
@@ -302,57 +318,53 @@ class _RoleCard extends StatelessWidget {
   }
 }
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
-    required this.label,
-    required this.accentColor,
-    this.iconColor = Colors.white,
-  });
+class _TermsText extends StatelessWidget {
+  const _TermsText({required this.locale});
 
-  final String label;
-  final Color accentColor;
-  final Color iconColor;
+  final LocaleProvider locale;
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 18,
-          height: 18,
-          decoration: BoxDecoration(color: accentColor, shape: BoxShape.circle),
-          child: Icon(Icons.check, size: 12, color: iconColor),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textPrimary,
-              height: 1.2,
-            ),
-          ),
-        ),
-      ],
-    );
+  Future<void> _open(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
-}
-
-class _ActionCircle extends StatelessWidget {
-  const _ActionCircle({required this.color, this.iconColor = Colors.white});
-
-  final Color color;
-  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: iconColor),
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: 12.sp,
+          color: AppColors.textSecondary,
+          height: 1.4,
+        ),
+        children: [
+          TextSpan(text: locale.t('auth.termsPrefix')),
+          TextSpan(
+            text: locale.t('auth.privacyPolicy'),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _open(RegistrationRoleScreen._privacyUrl),
+          ),
+          TextSpan(text: ' ${locale.t('auth.termsAnd')} '),
+          TextSpan(
+            text: locale.t('auth.termsOfService'),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _open(RegistrationRoleScreen._termsUrl),
+          ),
+          const TextSpan(text: '.'),
+        ],
+      ),
     );
   }
 }

@@ -221,7 +221,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           builder: (context, locale, _) {
             if (!locale.isLoaded) {
             return ScreenUtilInit(
-              designSize: const Size(430, 932),
+              designSize: const Size(390, 844),
               minTextAdapt: true,
               splitScreenMode: false,
               child: MaterialApp(

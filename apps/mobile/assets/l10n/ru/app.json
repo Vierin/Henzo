@@ -98,7 +98,17 @@
 		"roleClientFeature3": "Достигать целей",
 		"roleOwnerFeature1": "Управлять клиентами",
 		"roleOwnerFeature2": "Планировать занятия",
-		"roleOwnerFeature3": "Развивать бизнес"
+		"roleOwnerFeature3": "Развивать бизнес",
+		"roleIAm": "Я",
+		"roleClientWord": "Клиент",
+		"roleManagerWord": "Менеджер",
+		"roleClientDesc": "Ищи, бронируй и посещай фитнес-классы рядом.",
+		"roleOwnerDesc": "Управляй студией, классами, тренерами и записями.",
+		"roleAllInOne": "Всё в одном приложении.",
+		"termsPrefix": "Продолжая, вы соглашаетесь с нашей ",
+		"privacyPolicy": "Политикой конфиденциальности",
+		"termsAnd": "и",
+		"termsOfService": "Условиями использования"
 	},
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",

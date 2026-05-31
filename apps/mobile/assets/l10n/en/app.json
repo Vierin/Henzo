@@ -98,7 +98,17 @@
 		"roleClientFeature3": "Reach your goals",
 		"roleOwnerFeature1": "Manage clients",
 		"roleOwnerFeature2": "Schedule classes",
-		"roleOwnerFeature3": "Grow your business"
+		"roleOwnerFeature3": "Grow your business",
+		"roleIAm": "I'm a",
+		"roleClientWord": "Client",
+		"roleManagerWord": "Manager",
+		"roleClientDesc": "Search, book, and enjoy fitness classes near you.",
+		"roleOwnerDesc": "Manage your studio, classes, trainers, and bookings.",
+		"roleAllInOne": "All in one app.",
+		"termsPrefix": "By continuing, you agree to our ",
+		"privacyPolicy": "Privacy Policy",
+		"termsAnd": "and",
+		"termsOfService": "Terms of Service"
 	},
 	"clientHome": {
 		"nowIn": "NOW IN",
