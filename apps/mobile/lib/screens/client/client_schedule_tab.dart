@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
@@ -87,6 +88,29 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
 
   bool _canCancelBooking(Map<String, dynamic> item) {
     return ClientScheduleStore.canCancelClientBooking(item);
+  }
+
+  Future<void> _confirmCancel(Map<String, dynamic> item) async {
+    final locale = context.read<LocaleProvider>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('clientActivity.cancelConfirmTitle')),
+        content: Text(locale.t('clientActivity.cancelConfirmBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(locale.t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error500),
+            child: Text(locale.t('clientActivity.cancelConfirmAction')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) _cancelBooking(item);
   }
 
   Future<void> _cancelBooking(Map<String, dynamic> item) async {
@@ -193,7 +217,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
             cancelActionLabel: locale.t('clientActivity.cancel'),
             cancelActionLoading: isCanceling,
             onCancelBooking: canCancel && !isCanceling
-                ? () => _cancelBooking(item)
+                ? () => _confirmCancel(item)
                 : null,
             onTap: () => _openStudio(item),
           );

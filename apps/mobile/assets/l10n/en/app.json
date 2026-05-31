@@ -147,7 +147,10 @@
 		"scheduleEmptyTitle": "No classes scheduled yet",
 		"scheduleEmptySubtitle": "Your upcoming bookings will appear here.",
 		"passesEmptyTitle": "No classes yet",
-		"passesEmptySubtitle": "Your class cards will appear here."
+		"passesEmptySubtitle": "Your class cards will appear here.",
+		"cancelConfirmTitle": "Cancel booking?",
+		"cancelConfirmBody": "Are you sure you want to cancel this booking?",
+		"cancelConfirmAction": "Yes, cancel"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Time to find your favorite spot",
@@ -205,7 +208,16 @@
 		"shareSomeone": "Someone",
 		"bookingFailed": "Could not complete booking",
 		"alreadyBooked": "You are already booked for this class",
-		"signInToBook": "Please sign in to book a class"
+		"signInToBook": "Please sign in to book a class",
+		"classStarted": "Class has started",
+		"youAreBooked": "You are booked",
+		"bookClass": "Book class",
+		"joinWaitlist": "Join waitlist",
+		"leaveWaitlist": "Leave waitlist",
+		"joinedWaitlist": "Added to waitlist — we will notify you if a spot opens",
+		"leftWaitlist": "Removed from waitlist",
+		"waitlistError": "Could not join waitlist. Try again.",
+		"waitlistNotifyHint": "You will be notified if a spot opens"
 	},
 	"clientMap": {
 		"nearbyStudios": "Nearby studios",

@@ -54,6 +54,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   Map<String, dynamic>? _session;
   bool _booking = false;
   bool _isBookedByMe = false;
+  bool _isOnWaitlist = false;
+  bool _waitlistLoading = false;
 
   @override
   void initState() {
@@ -117,6 +119,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           );
           if (enr is Map) {
             isBookedByMe = enr['enrolled'] == true;
+            if (!isBookedByMe) {
+              _isOnWaitlist = enr['waitlisted'] == true;
+            }
           }
         } catch (_) {}
       }
@@ -192,6 +197,18 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
       if (!mounted) return;
       ClientScheduleStore.invalidate();
+      // Schedule reminder push via backend — fire-and-forget, silent fallback
+      final enrollmentId = (raw is Map
+              ? (raw['id'] ?? raw['enrollmentId'])
+              : null)
+          ?.toString();
+      if (enrollmentId != null && enrollmentId.isNotEmpty) {
+        ApiClient.post(
+          '/notifications/remind-before-class',
+          token,
+          body: {'enrollmentId': enrollmentId},
+        ).catchError((_) {});
+      }
       final session = _session;
       if (session == null) return;
       await Navigator.of(context).pushReplacement(
@@ -199,6 +216,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           builder: (_) => ClassBookingConfirmationScreen.fromMaps(
             session: session,
             studio: _studio,
+            studioId: widget.studioId,
+            sessionId: widget.sessionId,
           ),
         ),
       );
@@ -217,6 +236,52 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       ).showSnackBar(SnackBar(content: Text(bookingErrorMessage(locale, e))));
     } finally {
       if (mounted) setState(() => _booking = false);
+    }
+  }
+
+  Future<void> _joinWaitlist() async {
+    final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
+    if (token == null || _waitlistLoading) return;
+    setState(() => _waitlistLoading = true);
+    try {
+      await ApiClient.post(
+        '/studios/sessions/${widget.sessionId}/waitlist',
+        token,
+        body: const <String, dynamic>{},
+      );
+      if (!mounted) return;
+      setState(() => _isOnWaitlist = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.joinedWaitlist'))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.waitlistError'))),
+      );
+    } finally {
+      if (mounted) setState(() => _waitlistLoading = false);
+    }
+  }
+
+  Future<void> _leaveWaitlist() async {
+    final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
+    if (token == null || _waitlistLoading) return;
+    setState(() => _waitlistLoading = true);
+    try {
+      await ApiClient.delete(
+        '/studios/sessions/${widget.sessionId}/waitlist',
+        token,
+      );
+      if (!mounted) return;
+      setState(() => _isOnWaitlist = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.leftWaitlist'))),
+      );
+    } catch (_) {
+      if (mounted) setState(() => _waitlistLoading = false);
     }
   }
 
@@ -281,6 +346,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                 onBook: _book,
                 booking: _booking,
                 isBookedByMe: _isBookedByMe,
+                isOnWaitlist: _isOnWaitlist,
+                waitlistLoading: _waitlistLoading,
+                onJoinWaitlist: _joinWaitlist,
+                onLeaveWaitlist: _leaveWaitlist,
               ),
       ),
     );
@@ -451,6 +520,10 @@ class _ClassDetailBody extends StatelessWidget {
     required this.onBook,
     required this.booking,
     required this.isBookedByMe,
+    required this.isOnWaitlist,
+    required this.waitlistLoading,
+    required this.onJoinWaitlist,
+    required this.onLeaveWaitlist,
   });
 
   final Map<String, dynamic>? studio;
@@ -465,6 +538,10 @@ class _ClassDetailBody extends StatelessWidget {
   final VoidCallback onBook;
   final bool booking;
   final bool isBookedByMe;
+  final bool isOnWaitlist;
+  final bool waitlistLoading;
+  final VoidCallback onJoinWaitlist;
+  final VoidCallback onLeaveWaitlist;
 
   @override
   Widget build(BuildContext context) {
@@ -676,6 +753,10 @@ class _ClassDetailBody extends StatelessWidget {
             booking: booking,
             isBookedByMe: isBookedByMe,
             canBook: !isBookedByMe && (cap == 0 || booked < cap),
+            isOnWaitlist: isOnWaitlist,
+            waitlistLoading: waitlistLoading,
+            onJoinWaitlist: onJoinWaitlist,
+            onLeaveWaitlist: onLeaveWaitlist,
           ),
       ],
     );
@@ -1213,6 +1294,10 @@ class _BookBar extends StatelessWidget {
     required this.booking,
     required this.isBookedByMe,
     required this.canBook,
+    required this.isOnWaitlist,
+    required this.waitlistLoading,
+    required this.onJoinWaitlist,
+    required this.onLeaveWaitlist,
   });
 
   final DateTime startsAt;
@@ -1220,15 +1305,16 @@ class _BookBar extends StatelessWidget {
   final bool booking;
   final bool isBookedByMe;
   final bool canBook;
+  final bool isOnWaitlist;
+  final bool waitlistLoading;
+  final VoidCallback onJoinWaitlist;
+  final VoidCallback onLeaveWaitlist;
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
     final started = startsAt.isBefore(DateTime.now());
-    final label = started
-        ? 'Class has started'
-        : isBookedByMe
-        ? 'You are booked'
-        : 'Book class';
+    final classFull = !canBook && !isBookedByMe;
 
     return Container(
       width: double.infinity,
@@ -1239,35 +1325,120 @@ class _BookBar extends StatelessWidget {
         12 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: const BoxDecoration(color: AppColors.backgroundSecondary),
-      child: FilledButton(
-        onPressed: (!canBook || started || booking) ? null : onBook,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary500,
-          disabledBackgroundColor: AppColors.primary500.withValues(alpha: 0.45),
-          disabledForegroundColor: Colors.white70,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: booking
-            ? SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
+      child: classFull && !started
+          ? _WaitlistButton(
+              isOnWaitlist: isOnWaitlist,
+              loading: waitlistLoading,
+              onJoin: onJoinWaitlist,
+              onLeave: onLeaveWaitlist,
+              locale: locale,
+            )
+          : FilledButton(
+              onPressed: (!canBook || started || booking) ? null : onBook,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary500,
+                disabledBackgroundColor:
+                    AppColors.primary500.withValues(alpha: 0.45),
+                disabledForegroundColor: Colors.white70,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-      ),
+              child: booking
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      started
+                          ? locale.t('clientClassDetail.classStarted')
+                          : isBookedByMe
+                          ? locale.t('clientClassDetail.youAreBooked')
+                          : locale.t('clientClassDetail.bookClass'),
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+    );
+  }
+}
+
+class _WaitlistButton extends StatelessWidget {
+  const _WaitlistButton({
+    required this.isOnWaitlist,
+    required this.loading,
+    required this.onJoin,
+    required this.onLeave,
+    required this.locale,
+  });
+
+  final bool isOnWaitlist;
+  final bool loading;
+  final VoidCallback onJoin;
+  final VoidCallback onLeave;
+  final LocaleProvider locale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FilledButton.icon(
+          onPressed: loading ? null : (isOnWaitlist ? onLeave : onJoin),
+          icon: loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Icon(
+                  isOnWaitlist
+                      ? Icons.notifications_off_outlined
+                      : Icons.notifications_active_outlined,
+                  size: 18,
+                ),
+          label: Text(
+            isOnWaitlist
+                ? locale.t('clientClassDetail.leaveWaitlist')
+                : locale.t('clientClassDetail.joinWaitlist'),
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: isOnWaitlist
+                ? AppColors.neutral200
+                : AppColors.primary500,
+            foregroundColor: isOnWaitlist
+                ? AppColors.textPrimary
+                : Colors.white,
+            minimumSize: const Size(double.infinity, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        if (isOnWaitlist) ...[
+          const SizedBox(height: 6),
+          Text(
+            locale.t('clientClassDetail.waitlistNotifyHint'),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
     );
   }
 }

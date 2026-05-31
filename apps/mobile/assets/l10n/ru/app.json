@@ -147,7 +147,10 @@
 		"scheduleEmptyTitle": "Пока нет запланированных занятий",
 		"scheduleEmptySubtitle": "Здесь появятся ваши предстоящие записи.",
 		"passesEmptyTitle": "Пока нет занятий",
-		"passesEmptySubtitle": "Здесь появятся карточки ваших занятий."
+		"passesEmptySubtitle": "Здесь появятся карточки ваших занятий.",
+		"cancelConfirmTitle": "Отменить запись?",
+		"cancelConfirmBody": "Вы уверены, что хотите отменить эту запись?",
+		"cancelConfirmAction": "Да, отменить"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Пора найти ваше любимое место",
@@ -205,7 +208,16 @@
 		"shareSomeone": "Кто-то",
 		"bookingFailed": "Не удалось завершить бронирование",
 		"alreadyBooked": "Вы уже записаны на это занятие",
-		"signInToBook": "Войдите, чтобы записаться на занятие"
+		"signInToBook": "Войдите, чтобы записаться на занятие",
+		"classStarted": "Занятие началось",
+		"youAreBooked": "Вы записаны",
+		"bookClass": "Записаться",
+		"joinWaitlist": "Встать в очередь",
+		"leaveWaitlist": "Покинуть очередь",
+		"joinedWaitlist": "Вы в очереди — уведомим, если появится место",
+		"leftWaitlist": "Вы вышли из очереди",
+		"waitlistError": "Не удалось встать в очередь. Попробуйте снова.",
+		"waitlistNotifyHint": "Уведомим вас, если появится место"
 	},
 	"clientMap": {
 		"nearbyStudios": "Студии рядом",

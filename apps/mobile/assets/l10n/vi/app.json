@@ -147,7 +147,10 @@
 		"scheduleEmptyTitle": "Chưa có lớp nào được đặt",
 		"scheduleEmptySubtitle": "Các buổi đặt sắp tới sẽ hiển thị tại đây.",
 		"passesEmptyTitle": "Chưa có lớp nào",
-		"passesEmptySubtitle": "Thẻ lớp của bạn sẽ hiển thị tại đây."
+		"passesEmptySubtitle": "Thẻ lớp của bạn sẽ hiển thị tại đây.",
+		"cancelConfirmTitle": "Hủy đặt chỗ?",
+		"cancelConfirmBody": "Bạn có chắc muốn hủy đặt chỗ này không?",
+		"cancelConfirmAction": "Có, hủy"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -205,7 +208,16 @@
 		"shareSomeone": "Ai đó",
 		"bookingFailed": "Không thể hoàn tất đặt chỗ",
 		"alreadyBooked": "Bạn đã đặt lớp này rồi",
-		"signInToBook": "Vui lòng đăng nhập để đặt lớp"
+		"signInToBook": "Vui lòng đăng nhập để đặt lớp",
+		"classStarted": "Lớp đã bắt đầu",
+		"youAreBooked": "Bạn đã đặt chỗ",
+		"bookClass": "Đặt lớp",
+		"joinWaitlist": "Tham gia danh sách chờ",
+		"leaveWaitlist": "Rời danh sách chờ",
+		"joinedWaitlist": "Đã thêm vào danh sách chờ — chúng tôi sẽ thông báo khi có chỗ",
+		"leftWaitlist": "Đã rời danh sách chờ",
+		"waitlistError": "Không thể tham gia danh sách chờ. Thử lại.",
+		"waitlistNotifyHint": "Bạn sẽ được thông báo nếu có chỗ trống"
 	},
 	"clientMap": {
 		"nearbyStudios": "Studio gần bạn",

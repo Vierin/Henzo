@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../utils/class_session_link.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/auth/auth_form_styles.dart';
@@ -20,6 +21,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   factory ClassBookingConfirmationScreen.fromMaps({
     required Map<String, dynamic> session,
     Map<String, dynamic>? studio,
+    String? studioId,
+    String? sessionId,
   }) {
     final training = session['training'] is Map
         ? Map<String, dynamic>.from(session['training'] as Map)
@@ -58,6 +61,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       accentIcon: accentIcon,
       latitude: (studio?['latitude'] as num?)?.toDouble(),
       longitude: (studio?['longitude'] as num?)?.toDouble(),
+      studioId: studioId ?? (studio?['id'] ?? '').toString(),
+      sessionId: sessionId ?? (session['id'] ?? '').toString(),
     );
   }
 
@@ -75,6 +80,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     this.price,
     this.latitude,
     this.longitude,
+    this.studioId,
+    this.sessionId,
   });
 
   final String classTitle;
@@ -89,6 +96,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   final double? price;
   final double? latitude;
   final double? longitude;
+  final String? studioId;
+  final String? sessionId;
 
   static const _weekdays = [
     'MONDAY',
@@ -153,6 +162,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
 
   String _shareMessage() {
+    final sid = studioId;
+    final sesId = sessionId;
     final buf = StringBuffer()
       ..writeln('Join me for $classTitle!')
       ..writeln(_headerDateLine);
@@ -164,11 +175,21 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     }
     final address = studioAddress?.trim();
     if (address != null && address.isNotEmpty) buf.writeln(address);
+    if (sid != null && sid.isNotEmpty && sesId != null && sesId.isNotEmpty) {
+      final link = ClassSessionLink(
+        studioId: sid,
+        sessionId: sesId,
+        startsAt: startsAt,
+      );
+      buf
+        ..writeln()
+        ..write(link.toShareUri().toString());
+    }
     return buf.toString().trim();
   }
 
   Future<void> _shareBooking() async {
-    await Share.share(_shareMessage());
+    await Share.share(_shareMessage(), subject: classTitle);
   }
 
   Future<void> _openCalendar(BuildContext context) async {
