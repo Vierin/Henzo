@@ -490,7 +490,12 @@
 		"rcEntitlementNotLinked": "Purchase recorded in RevenueCat but Pro was not applied. Link products to the \"pro\" entitlement in the RevenueCat dashboard.",
 		"autoRenewDisclosure": "Payment will be charged to your Apple ID or Google Play account. Subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel in your store account settings.",
 		"legalLinksPrefix": "See ",
-		"legalLinksSuffix": "."
+		"legalLinksSuffix": ".",
+		"soloClassLimitTitle": "Class limit reached",
+		"soloClassLimitBody": "The Solo plan allows 12 classes per month. Upgrade to Studio for unlimited classes.",
+		"soloTrainerLimitTitle": "Trainer limit reached",
+		"soloTrainerLimitBody": "The Solo plan includes 1 trainer (you). Upgrade to Studio to add more trainers.",
+		"upgradeToStudio": "Upgrade to Studio"
 	},
 	"profile": {
 		"title": "Profile",
@@ -645,6 +650,11 @@
 			"bookingPeriodDaysLabel": "Days",
 			"bookingPeriodSaved": "Booking settings saved",
 			"bookingLink": "Salon preview"
+		},
+		"usage": {
+			"classesThisMonth": "Classes this month",
+			"trainers": "Trainers",
+			"upgradeHint": "Upgrade to Studio for more"
 		}
 	},
 	"calendar": {

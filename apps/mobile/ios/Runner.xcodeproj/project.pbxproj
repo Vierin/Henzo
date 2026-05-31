@@ -275,7 +275,7 @@
 				A04FD51DD9433C2979CFFA3A /* [CP] Copy Pods Resources */,
 				36F6CBB534831BE1C047B433 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
 				C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */,
-				D084C693B6538DBC1ACE8E3A /* Strip Simulator Platform Flags v5 */,
+				DC651005E0B73E1485AB4EA6 /* Strip Simulator Platform Flags v5 */,
 			);
 			buildRules = (
 			);
@@ -506,7 +506,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		D084C693B6538DBC1ACE8E3A /* Strip Simulator Platform Flags v5 */ = {
+		DC651005E0B73E1485AB4EA6 /* Strip Simulator Platform Flags v5 */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (

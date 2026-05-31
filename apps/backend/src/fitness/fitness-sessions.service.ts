@@ -17,6 +17,7 @@ import {
   isDeliverableClientEmail,
   StudioClientsService,
 } from './studio-clients.service';
+import { PlanLimitsService } from '../subscriptions/plan-limits.service';
 import {
   countTrainingLocations,
   resolveSessionLocationDisplayName,
@@ -80,6 +81,7 @@ export class FitnessSessionsService {
     private readonly analytics: AnalyticsService,
     private readonly studioClients: StudioClientsService,
     private readonly emailService: EmailService,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   /**
@@ -175,6 +177,8 @@ export class FitnessSessionsService {
     if (!training) {
       throw new Error('Training not found');
     }
+
+    await this.planLimits.assertMonthlySessionsLimit(dto.studioId);
 
     const resolvedTrainerId = studio.User
       ? await resolveTrainerIdForSession(

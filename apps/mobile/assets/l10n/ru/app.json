@@ -490,7 +490,12 @@
 		"rcEntitlementNotLinked": "Покупка в RevenueCat есть, но Pro не применился. Привяжи продукты к entitlement «pro» в дашборде RevenueCat.",
 		"autoRenewDisclosure": "Оплата списывается с Apple ID или Google Play. Подписка продлевается автоматически, если не отменить её минимум за 24 часа до конца периода. Управление — в настройках магазина.",
 		"legalLinksPrefix": "См. ",
-		"legalLinksSuffix": "."
+		"legalLinksSuffix": ".",
+		"soloClassLimitTitle": "Достигнут лимит занятий",
+		"soloClassLimitBody": "Пакет Solo позволяет 12 занятий в месяц. Перейдите на Studio для безлимитных занятий.",
+		"soloTrainerLimitTitle": "Достигнут лимит тренеров",
+		"soloTrainerLimitBody": "Пакет Solo включает 1 тренера (вас). Перейдите на Studio чтобы добавить больше.",
+		"upgradeToStudio": "Перейти на Studio"
 	},
 	"profile": {
 		"title": "Профиль",
@@ -645,6 +650,11 @@
 			"bookingPeriodDaysLabel": "Дней",
 			"bookingPeriodSaved": "Настройки бронирования сохранены",
 			"bookingLink": "Предпросмотр салона"
+		},
+		"usage": {
+			"classesThisMonth": "Занятий в этом месяце",
+			"trainers": "Тренеры",
+			"upgradeHint": "Перейдите на Studio для расширения"
 		}
 	},
 	"calendar": {

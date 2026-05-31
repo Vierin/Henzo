@@ -57,7 +57,6 @@ class ClientMapScreen extends StatefulWidget {
 class _ClientMapScreenState extends State<ClientMapScreen> {
   static const _mapPinInactive = Color(0xFF4D39A8);
   static const _mapPinActive = AppColors.primary500;
-  static const _carouselHeight = 158.0;
   static const _carouselBottomPadding = 24.0;
   static const _searchAreaThresholdKm = 2.0;
   static const _clientLocationZoom = 14.0;
@@ -844,31 +843,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
-  Widget _buildZoomButtons() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _MapZoomButton(
-          icon: Icons.add,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-          onTap: () => _mapController.move(
-            _mapController.camera.center,
-            (_mapController.camera.zoom + 1).clamp(1, 20),
-          ),
-        ),
-        Container(height: 1, color: AppColors.borderPrimary),
-        _MapZoomButton(
-          icon: Icons.remove,
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-          onTap: () => _mapController.move(
-            _mapController.camera.center,
-            (_mapController.camera.zoom - 1).clamp(1, 20),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildMapCloseButton() {
     return Material(
       color: Colors.white,
@@ -1034,16 +1008,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 ),
               ),
             ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            left: 16,
-            bottom: (_isLoadingStudios || _showCarouselCard ||
-                    _studios.isEmpty || _studiosLoadError != null)
-                ? bottomInset + _carouselBottomPadding + _carouselHeight + 12
-                : bottomInset + _carouselBottomPadding + 12,
-            child: _buildZoomButtons(),
-          ),
           Positioned(
             left: 0,
             right: 0,
@@ -1190,33 +1154,3 @@ class _StudioCarousel extends StatelessWidget {
   }
 }
 
-class _MapZoomButton extends StatelessWidget {
-  const _MapZoomButton({
-    required this.icon,
-    required this.borderRadius,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final BorderRadius borderRadius;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 3,
-      shadowColor: Colors.black.withValues(alpha: 0.18),
-      borderRadius: borderRadius,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: SizedBox(
-          width: 42,
-          height: 42,
-          child: Icon(icon, size: 20, color: AppColors.textPrimary),
-        ),
-      ),
-    );
-  }
-}

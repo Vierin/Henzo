@@ -6,7 +6,10 @@ import '../../services/auth_service.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/staff_api_service.dart';
 import '../../services/services_api_service.dart';
+import '../../l10n/locale_provider.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/show_api_error.dart';
+import 'subscription_screen.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -114,11 +117,39 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _saving = false;
-        });
+      if (!mounted) return;
+      setState(() => _saving = false);
+      if (isSoloTrainerLimitError(e)) {
+        final locale = context.read<LocaleProvider>();
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(locale.t('subscription.soloTrainerLimitTitle')),
+            content: Text(locale.t('subscription.soloTrainerLimitBody')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(locale.t('common.cancel')),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SubscriptionScreen(),
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                ),
+                child: Text(locale.t('subscription.upgradeToStudio')),
+              ),
+            ],
+          ),
+        );
+      } else {
+        setState(() => _error = e.toString());
         showApiError(context, e);
       }
     }

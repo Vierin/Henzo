@@ -19,6 +19,7 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
+import '../utils/load_error_message.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -27,6 +28,7 @@ import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
+import 'subscription_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
@@ -1429,6 +1431,35 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
   }
 
+  Future<void> _showClassLimitDialog() async {
+    final locale = context.read<LocaleProvider>();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('subscription.soloClassLimitTitle')),
+        content: Text(locale.t('subscription.soloClassLimitBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(locale.t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: Text(locale.t('subscription.upgradeToStudio')),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save() async {
     final token = context.read<AuthService>().accessToken;
     final studioId = _studio?.id;
@@ -1525,7 +1556,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         );
       }
     } catch (e) {
-      if (mounted) showApiError(context, e);
+      if (!mounted) return;
+      if (isSoloSessionLimitError(e)) {
+        await _showClassLimitDialog();
+      } else {
+        showApiError(context, e);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

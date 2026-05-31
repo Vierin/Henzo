@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PlanLimitsService } from '../subscriptions/plan-limits.service';
 
 @Injectable()
 export class TrainersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private planLimits: PlanLimitsService,
+  ) {}
 
   async isStudioOwnedByOwner(studioId: string, ownerId: string) {
     const salon = await this.prisma.salon.findUnique({
@@ -91,6 +95,8 @@ export class TrainersService {
     studioId: string;
     trainingIds?: string[];
   }) {
+    await this.planLimits.assertTrainerLimit(data.studioId);
+
     const createData = {
       ...data,
       salonId: data.studioId,

@@ -490,7 +490,12 @@
 		"rcEntitlementNotLinked": "Đã ghi nhận mua trên RevenueCat nhưng chưa kích hoạt Pro. Gắn sản phẩm với entitlement \"pro\" trong RevenueCat.",
 		"autoRenewDisclosure": "Thanh toán qua Apple ID hoặc Google Play. Gói tự gia hạn trừ khi hủy ít nhất 24 giờ trước khi kết thúc kỳ. Quản lý trong cài đặt cửa hàng.",
 		"legalLinksPrefix": "Xem ",
-		"legalLinksSuffix": "."
+		"legalLinksSuffix": ".",
+		"soloClassLimitTitle": "Đã đạt giới hạn lớp học",
+		"soloClassLimitBody": "Gói Solo cho phép 12 lớp mỗi tháng. Nâng cấp lên Studio để không giới hạn.",
+		"soloTrainerLimitTitle": "Đã đạt giới hạn huấn luyện viên",
+		"soloTrainerLimitBody": "Gói Solo có 1 huấn luyện viên (bạn). Nâng cấp lên Studio để thêm người.",
+		"upgradeToStudio": "Nâng cấp lên Studio"
 	},
 	"profile": {
 		"title": "Hồ sơ",
@@ -645,6 +650,11 @@
 			"bookingPeriodDaysLabel": "Ngày",
 			"bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ",
 			"bookingLink": "Xem trước salon"
+		},
+		"usage": {
+			"classesThisMonth": "Lớp học trong tháng",
+			"trainers": "Huấn luyện viên",
+			"upgradeHint": "Nâng cấp lên Studio để mở rộng"
 		}
 	},
 	"calendar": {

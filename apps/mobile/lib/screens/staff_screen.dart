@@ -16,6 +16,7 @@ import '../../utils/show_api_error.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
+import 'subscription_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StaffScreen extends StatefulWidget {
@@ -125,11 +126,8 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   void _openAddStaff() {
-    final locale = context.read<LocaleProvider>();
     if (!_isProPlan) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('staffScreen.addStaffProRequired'))),
-      );
+      _showTrainerLimitDialog();
       return;
     }
     final salonId = _salon?.id;
@@ -140,6 +138,37 @@ class _StaffScreenState extends State<StaffScreen> {
     ).then((_) {
       if (mounted) _loadData();
     });
+  }
+
+  void _showTrainerLimitDialog() {
+    final locale = context.read<LocaleProvider>();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('subscription.soloTrainerLimitTitle')),
+        content: Text(locale.t('subscription.soloTrainerLimitBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(locale.t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SubscriptionScreen(),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: Text(locale.t('subscription.upgradeToStudio')),
+          ),
+        ],
+      ),
+    );
   }
 
   List<StaffMember> _staffExcludingOwner(String? ownerEmail) {
