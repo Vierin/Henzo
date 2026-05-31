@@ -235,7 +235,8 @@
 		"searchStudiosHint": "Tìm studio...",
 		"locationPromptTitle": "Chia sẻ vị trí",
 		"locationPromptBody": "Để hiển thị studio trên bản đồ, hãy cho phép truy cập vị trí hoặc chọn thành phố.",
-		"locationPromptManual": "Chọn thành phố thủ công"
+		"locationPromptManual": "Chọn thành phố thủ công",
+		"searchThisArea": "Tìm kiếm khu vực này"
 	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",

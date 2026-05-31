@@ -7,6 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
 import { FitnessModule } from '../fitness/fitness.module';
 import { AdminModule } from '../admin/admin.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AdminModule } from '../admin/admin.module';
     EmailModule,
     FitnessModule,
     AdminModule,
+    NotificationsModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [RemindersController],

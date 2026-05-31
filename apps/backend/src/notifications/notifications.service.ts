@@ -481,4 +481,154 @@ export class NotificationsService {
       );
     }
   }
+
+  /** Schedule 24h and 1h pre-class push reminders for an enrollment. */
+  async schedulePreClassReminders(
+    enrollmentId: string,
+    userId: string,
+  ): Promise<void> {
+    const enrollment = await this.prisma.sessionEnrollment.findFirst({
+      where: { id: enrollmentId, userId, status: 'ACTIVE' },
+      select: {
+        sessionId: true,
+        TrainingSession: { select: { startsAt: true } },
+      },
+    });
+    if (!enrollment?.TrainingSession?.startsAt) return;
+
+    const startsAt = enrollment.TrainingSession.startsAt;
+    const now = new Date();
+
+    const reminders = [
+      {
+        type: '24h',
+        scheduledFor: new Date(startsAt.getTime() - 24 * 60 * 60 * 1000),
+      },
+      {
+        type: '1h',
+        scheduledFor: new Date(startsAt.getTime() - 60 * 60 * 1000),
+      },
+    ].filter((r) => r.scheduledFor > now);
+
+    for (const { type, scheduledFor } of reminders) {
+      await this.prisma.scheduledPushReminder.upsert({
+        where: { enrollmentId_type: { enrollmentId, type } },
+        create: {
+          enrollmentId,
+          userId,
+          sessionId: enrollment.sessionId,
+          type,
+          scheduledFor,
+        },
+        update: { scheduledFor, sentAt: null },
+      });
+    }
+  }
+
+  /** Called by RemindersScheduler — sends all due push reminders. */
+  async sendPendingPushReminders(): Promise<{ sent: number; errors: number }> {
+    const now = new Date();
+    const pending = await this.prisma.scheduledPushReminder.findMany({
+      where: { scheduledFor: { lte: now }, sentAt: null },
+      take: 100,
+      orderBy: { scheduledFor: 'asc' },
+    });
+
+    let sent = 0;
+    let errors = 0;
+
+    for (const reminder of pending) {
+      try {
+        const tokens = await this.getPushTokensByUserId(reminder.userId);
+        if (tokens.length > 0) {
+          const session = await this.prisma.trainingSession.findUnique({
+            where: { id: reminder.sessionId },
+            select: {
+              startsAt: true,
+              Training: { select: { name: true } },
+              Studio: { select: { name: true } },
+            },
+          });
+
+          if (session) {
+            const lang = tokens[0]?.language || 'en';
+            const timeStr = session.startsAt.toLocaleTimeString(
+              lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
+              { hour: '2-digit', minute: '2-digit', hour12: false },
+            );
+            const titleKey =
+              reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
+            const bodyKey =
+              reminder.type === '24h' ? 'reminder24hBody' : 'reminder1hBody';
+
+            const title = getNotificationText(lang, titleKey as any);
+            const body = formatNotificationTemplate(
+              getNotificationText(lang, bodyKey as any),
+              {
+                class: session.Training?.name || 'class',
+                studio: session.Studio?.name || 'studio',
+                time: timeStr,
+              },
+            );
+
+            await this.sendPushNotification(
+              tokens,
+              title,
+              body,
+              { type: 'PRE_CLASS_REMINDER', sessionId: reminder.sessionId },
+              undefined,
+              'henzo_default',
+            );
+          }
+        }
+
+        await this.prisma.scheduledPushReminder.update({
+          where: { id: reminder.id },
+          data: { sentAt: now },
+        });
+        sent++;
+      } catch (err) {
+        errors++;
+        console.error('[Notifications] Failed to send push reminder:', err);
+      }
+    }
+
+    return { sent, errors };
+  }
+
+  /** Push notification to user when promoted from waitlist to enrolled. */
+  async sendWaitlistPromotionPush(
+    userId: string,
+    sessionInfo: { sessionId: string; className: string; studioName: string },
+  ): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensByUserId(userId);
+      if (tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const title = getNotificationText(lang, 'waitlistPromotedTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'waitlistPromotedBody' as any),
+          { class: sessionInfo.className, studio: sessionInfo.studioName },
+        );
+        await this.sendPushNotification(
+          langTokens,
+          title,
+          body,
+          { type: 'WAITLIST_PROMOTED', sessionId: sessionInfo.sessionId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] Failed to send waitlist push:', err);
+    }
+  }
 }

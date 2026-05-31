@@ -185,14 +185,16 @@ model TrainingSession {
   startsAt    DateTime
   endsAt      DateTime
   capacity    Int                 @default(1)
-  bookedCount Int                 @default(0)
-  status      TrainingSessionStatus @default(ACTIVE)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  Studio      Studio              @relation(fields: [studioId], references: [id], onDelete: Cascade)
-  Training    Training            @relation(fields: [trainingId], references: [id], onDelete: Cascade)
-  Trainer     Trainer?            @relation(fields: [trainerId], references: [id], onDelete: SetNull)
-  Enrollments SessionEnrollment[]
+  bookedCount   Int                 @default(0)
+  waitlistCount Int                 @default(0)
+  status        TrainingSessionStatus @default(ACTIVE)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  Studio        Studio              @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  Training      Training            @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  Trainer       Trainer?            @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  Enrollments   SessionEnrollment[]
+  Waitlist      WaitlistEntry[]
 
   @@index([studioId, startsAt])
   @@index([studioId, status, startsAt])
@@ -231,9 +233,10 @@ model User {
   pushTokens       PushToken[]
   Review           Review[]
   Studio           Studio[]
-  SessionEnrollment SessionEnrollment[]
-  StudioClientBlocks StudioClientBlock[]
-  StudioClients      StudioClient[]
+  SessionEnrollment   SessionEnrollment[]
+  StudioClientBlocks  StudioClientBlock[]
+  StudioClients       StudioClient[]
+  WaitlistEntries     WaitlistEntry[]
 }
 
 model StudioClient {
@@ -362,4 +365,32 @@ model AppFeedback {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  TrainingSession TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  User            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, createdAt])
+}
+
+model ScheduledPushReminder {
+  id           String    @id @default(cuid())
+  enrollmentId String
+  userId       String
+  sessionId    String
+  type         String    // "24h" | "1h"
+  scheduledFor DateTime
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([enrollmentId, type])
+  @@index([scheduledFor, sentAt])
+  @@index([enrollmentId])
 }

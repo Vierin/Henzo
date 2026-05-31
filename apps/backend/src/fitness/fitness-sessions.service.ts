@@ -18,6 +18,7 @@ import {
   StudioClientsService,
 } from './studio-clients.service';
 import { PlanLimitsService } from '../subscriptions/plan-limits.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   countTrainingLocations,
   resolveSessionLocationDisplayName,
@@ -82,6 +83,7 @@ export class FitnessSessionsService {
     private readonly studioClients: StudioClientsService,
     private readonly emailService: EmailService,
     private readonly planLimits: PlanLimitsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -1050,6 +1052,9 @@ export class FitnessSessionsService {
       });
     });
 
+    // Auto-promote first waitlist entry if one exists
+    void this.promoteFromWaitlist(row.sessionId);
+
     const enrollment = await this.prisma.sessionEnrollment.findUnique({
       where: { id: enrollmentId },
       select: {
@@ -1065,6 +1070,52 @@ export class FitnessSessionsService {
     });
 
     return { success: true };
+  }
+
+  private async promoteFromWaitlist(sessionId: string): Promise<void> {
+    try {
+      const next = await this.prisma.waitlistEntry.findFirst({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, userId: true },
+      });
+      if (!next) return;
+
+      const session = await this.prisma.trainingSession.findUnique({
+        where: { id: sessionId },
+        select: {
+          capacity: true,
+          bookedCount: true,
+          Training: { select: { name: true } },
+          Studio: { select: { name: true } },
+        },
+      });
+      if (!session || session.bookedCount >= session.capacity) return;
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.waitlistEntry.delete({ where: { id: next.id } });
+        await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: {
+            bookedCount: { increment: 1 },
+            waitlistCount: { decrement: 1 },
+          },
+        });
+        await tx.sessionEnrollment.upsert({
+          where: { sessionId_userId: { sessionId, userId: next.userId } },
+          create: { sessionId, userId: next.userId, status: 'ACTIVE' },
+          update: { status: 'ACTIVE', cancelledAt: null },
+        });
+      });
+
+      await this.notificationsService.sendWaitlistPromotionPush(next.userId, {
+        sessionId,
+        className: session.Training?.name || 'class',
+        studioName: session.Studio?.name || 'studio',
+      });
+    } catch (err) {
+      console.error('[FitnessSessions] Waitlist promote failed:', err);
+    }
   }
 
   async getClientSchedule(

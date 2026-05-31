@@ -235,7 +235,8 @@
 		"searchStudiosHint": "Поиск студий...",
 		"locationPromptTitle": "Поделиться геолокацией",
 		"locationPromptBody": "Чтобы показать студии на карте, разрешите доступ к местоположению или выберите город.",
-		"locationPromptManual": "Выбрать город вручную"
+		"locationPromptManual": "Выбрать город вручную",
+		"searchThisArea": "Искать в этом районе"
 	},
 	"publicHome": {
 		"loginLink": "Вход",

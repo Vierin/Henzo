@@ -867,7 +867,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = context.watch<ClientLocationStore>();
-    context.watch<LocaleProvider>();
+    final locale = context.watch<LocaleProvider>();
     final center = (loc.lat != null && loc.lon != null)
         ? LatLng(loc.lat!, loc.lon!)
         : const LatLng(21.0285, 105.8542);
@@ -1001,8 +1001,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     ),
                     icon: const Icon(Icons.search, size: 16),
                     label: Text(
-                      'Search this area',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      locale.t('clientMap.searchThisArea'),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

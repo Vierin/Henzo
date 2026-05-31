@@ -235,7 +235,8 @@
 		"searchStudiosHint": "Search studios...",
 		"locationPromptTitle": "Share your location",
 		"locationPromptBody": "To show studios on the map, allow location access or choose your city.",
-		"locationPromptManual": "Choose city manually"
+		"locationPromptManual": "Choose city manually",
+		"searchThisArea": "Search this area"
 	},
 	"publicHome": {
 		"loginLink": "Login",
