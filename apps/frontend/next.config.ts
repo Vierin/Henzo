@@ -142,6 +142,15 @@ const nextConfig: NextConfig = {
   // P1: Оптимизация для production
   // swcMinify удалено - в Next.js 15 SWC минификация включена по умолчанию
   poweredByHeader: false, // Убрать X-Powered-By header
+  async headers() {
+    return [
+      {
+        // Apple requires AASA to be served as application/json (not text/plain)
+        source: '/.well-known/apple-app-site-association',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
+    ];
+  },
 };
 
 export default withBundleAnalyzer(nextConfig);

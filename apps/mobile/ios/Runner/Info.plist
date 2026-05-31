@@ -102,6 +102,13 @@
 	<key>NSHealthShareUsageDescription</key>
 	<string>Henzo reads your steps, calories and workouts to display your activity summary on the Profile screen.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Henzo does not write any health data.</string>
+	<string>Henzo does not write any health data to Apple Health.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Henzo uses analytics to improve your experience and show relevant fitness studios near you.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>
