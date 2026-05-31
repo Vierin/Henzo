@@ -25,6 +25,7 @@ import 'public_studio_detail_screen.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
+import 'studio_qr_code_screen.dart';
 import 'subscription_screen.dart';
 import '../main.dart';
 import '../utils/owner_navigation_restore.dart';
@@ -317,6 +318,15 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         title: locale.t('settings.owner.onlineBooking'),
                         trailingText: bookingTrailing,
                         onTap: _openBookingPeriodSheet,
+                      ),
+                      SettingsListTile(
+                        icon: Icons.qr_code_rounded,
+                        title: locale.t('settings.studioQrCode'),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const StudioQrCodeScreen(),
+                          ),
+                        ),
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-train.svg',

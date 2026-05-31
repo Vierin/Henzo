@@ -54,7 +54,7 @@ class _TrainerInviteAcceptScreenState
     final token = auth.accessToken;
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in first')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('common.pleaseLoginFirst'))),
       );
       return;
     }
@@ -119,7 +119,7 @@ class _TrainerInviteAcceptScreenState
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'You\'ve been invited!',
+                      context.read<LocaleProvider>().t('trainer.inviteTitle'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 26.sp,
@@ -132,10 +132,13 @@ class _TrainerInviteAcceptScreenState
                     if (studioName.isNotEmpty || trainerName.isNotEmpty)
                       Text(
                         studioName.isNotEmpty && trainerName.isNotEmpty
-                            ? 'Join $studioName as $trainerName'
+                            ? context.read<LocaleProvider>().t('trainer.joinAs')
+                              .replaceAll('{studio}', studioName)
+                              .replaceAll('{name}', trainerName)
                             : studioName.isNotEmpty
-                            ? 'Join $studioName as a trainer'
-                            : 'Accept trainer invitation',
+                            ? context.read<LocaleProvider>().t('trainer.joinAsTrainer')
+                              .replaceAll('{studio}', studioName)
+                            : context.read<LocaleProvider>().t('trainer.acceptInvitation'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 15.sp,
@@ -163,7 +166,7 @@ class _TrainerInviteAcceptScreenState
                               ),
                             )
                           : Text(
-                              'Accept invitation',
+                              context.read<LocaleProvider>().t('trainer.acceptInvitation'),
                               style: TextStyle(
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.w700,
@@ -206,8 +209,8 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               error.contains('not found') || error.contains('expired')
-                  ? 'This invite link is invalid or has expired.'
-                  : 'Could not load invite. Check your connection.',
+                  ? context.read<LocaleProvider>().t('trainer.invalidExpiredLink')
+                  : context.read<LocaleProvider>().t('trainer.couldNotLoadInvite'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.textSecondary),
             ),

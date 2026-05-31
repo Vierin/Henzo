@@ -155,7 +155,8 @@ class _StaffScreenState extends State<StaffScreen> {
       backgroundColor: AppColors.backgroundPrimary,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (_, setSheet) {
+          builder: (sheetCtx, setSheet) {
+            final locale = sheetCtx.read<LocaleProvider>();
             if (loading) {
               TrainerApiService.generateInviteFromStaff(token, member.id).then((result) {
                 inviteUrl = result['inviteUrl']?.toString();
@@ -174,7 +175,7 @@ class _StaffScreenState extends State<StaffScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Invite ${member.name}',
+                      locale.t('staff.inviteTitle').replaceAll('{name}', member.name),
                       style: TextStyle(
                         fontSize: 17.sp,
                         fontWeight: FontWeight.w700,
@@ -183,7 +184,7 @@ class _StaffScreenState extends State<StaffScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Share this link with ${member.name} to join Henzo as a trainer.',
+                      locale.t('staff.shareInviteMessage').replaceAll('{name}', member.name),
                       style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 20),
@@ -213,18 +214,18 @@ class _StaffScreenState extends State<StaffScreen> {
                               onPressed: () {
                                 Clipboard.setData(ClipboardData(text: inviteUrl!));
                                 ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                  const SnackBar(content: Text('Link copied!')),
+                                  SnackBar(content: Text(locale.t('common.linkCopied'))),
                                 );
                               },
                               icon: const Icon(Icons.copy_outlined, size: 16),
-                              label: const Text('Copy link'),
+                              label: Text(locale.t('common.copyLink')),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Expires in 7 days',
+                        locale.t('staff.inviteExpires'),
                         style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
                       ),
                     ],

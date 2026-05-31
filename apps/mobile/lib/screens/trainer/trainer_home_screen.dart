@@ -248,48 +248,51 @@ class TrainerSessionEnrollmentsScreenState extends State<TrainerSessionEnrollmen
           : _enrollments.isEmpty
           ? Center(
               child: Text(
-                'No clients enrolled',
+                context.watch<LocaleProvider>().t('trainer.noClientsEnrolled'),
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
               ),
             )
-          : ListView.builder(
-              padding: EdgeInsets.all(kScreenPaddingHorizontal),
-              itemCount: _enrollments.length,
-              itemBuilder: (_, i) {
-                final e = _enrollments[i];
-                final user = e['user'] is Map
-                    ? Map<String, dynamic>.from(e['user'] as Map)
-                    : <String, dynamic>{};
-                final name = (user['name'] ?? user['email'] ?? 'Client').toString();
-                final status = (e['status'] ?? 'ACTIVE').toString();
-                final isNoShow = status == 'NO_SHOW';
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primary100,
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : '?',
-                        style: const TextStyle(color: AppColors.primary700, fontWeight: FontWeight.w700),
+          : Builder(builder: (context) {
+              final t = context.watch<LocaleProvider>().t;
+              return ListView.builder(
+                padding: EdgeInsets.all(kScreenPaddingHorizontal),
+                itemCount: _enrollments.length,
+                itemBuilder: (_, i) {
+                  final e = _enrollments[i];
+                  final user = e['user'] is Map
+                      ? Map<String, dynamic>.from(e['user'] as Map)
+                      : <String, dynamic>{};
+                  final name = (user['name'] ?? user['email'] ?? 'Client').toString();
+                  final status = (e['status'] ?? 'ACTIVE').toString();
+                  final isNoShow = status == 'NO_SHOW';
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary100,
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(color: AppColors.primary700, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      title: Text(name, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
+                      subtitle: isNoShow
+                          ? Text(t('trainer.noShowStatus'), style: TextStyle(fontSize: 12.sp, color: AppColors.error500))
+                          : null,
+                      trailing: IconButton(
+                        icon: Icon(
+                          isNoShow ? Icons.check_circle_outline : Icons.cancel_outlined,
+                          color: isNoShow ? AppColors.success500 : AppColors.error400,
+                        ),
+                        tooltip: isNoShow ? t('trainer.markPresent') : t('trainer.markNoShow'),
+                        onPressed: () => _toggleAttendance(e),
                       ),
                     ),
-                    title: Text(name, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
-                    subtitle: isNoShow
-                        ? Text('No show', style: TextStyle(fontSize: 12.sp, color: AppColors.error500))
-                        : null,
-                    trailing: IconButton(
-                      icon: Icon(
-                        isNoShow ? Icons.check_circle_outline : Icons.cancel_outlined,
-                        color: isNoShow ? AppColors.success500 : AppColors.error400,
-                      ),
-                      tooltip: isNoShow ? 'Mark present' : 'Mark no-show',
-                      onPressed: () => _toggleAttendance(e),
-                    ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              );
+            }),
     );
   }
 }

@@ -2,10 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../utils/legal_web_links.dart';
 import '../widgets/chaotic_underline.dart';
 import '../widgets/language_selector_modal.dart';
 import 'business_registration_screen.dart';
@@ -20,8 +20,6 @@ class RegistrationRoleScreen extends StatelessWidget {
     'vi': 'Tiếng Việt',
   };
 
-  static const _privacyUrl = 'https://henzo.app/privacy';
-  static const _termsUrl = 'https://henzo.app/terms';
 
   @override
   Widget build(BuildContext context) {
@@ -323,14 +321,6 @@ class _TermsText extends StatelessWidget {
 
   final LocaleProvider locale;
 
-  Future<void> _open(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return RichText(
@@ -350,7 +340,7 @@ class _TermsText extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
             recognizer: TapGestureRecognizer()
-              ..onTap = () => _open(RegistrationRoleScreen._privacyUrl),
+              ..onTap = () => openLegalWebPage(context, locale, '/privacy-policy'),
           ),
           TextSpan(text: ' ${locale.t('auth.termsAnd')} '),
           TextSpan(
@@ -360,7 +350,7 @@ class _TermsText extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
             recognizer: TapGestureRecognizer()
-              ..onTap = () => _open(RegistrationRoleScreen._termsUrl),
+              ..onTap = () => openLegalWebPage(context, locale, '/terms-of-service'),
           ),
           const TextSpan(text: '.'),
         ],

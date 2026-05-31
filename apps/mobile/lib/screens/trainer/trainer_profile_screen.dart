@@ -93,7 +93,7 @@ class TrainerProfileScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            'Trainer',
+                            locale.t('trainer.role'),
                             style: TextStyle(
                               fontSize: 11.sp,
                               fontWeight: FontWeight.w600,

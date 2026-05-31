@@ -27,7 +27,13 @@
 		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước",
 		"verify": "Xác minh",
 		"apply": "Áp dụng",
-		"reset": "Đặt lại"
+		"reset": "Đặt lại",
+		"linkCopied": "Đã sao chép liên kết!",
+		"copyLink": "Sao chép liên kết",
+		"invite": "Mời",
+		"pleaseLoginFirst": "Vui lòng đăng nhập trước",
+		"addressCopied": "Đã sao chép địa chỉ",
+		"share": "Chia sẻ"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -656,7 +662,9 @@
 			"classesThisMonth": "Lớp học trong tháng",
 			"trainers": "Huấn luyện viên",
 			"upgradeHint": "Nâng cấp lên Studio để mở rộng"
-		}
+		},
+		"studioQrCode": "Mã QR Studio",
+		"studioQrCodeSubtitle": "Chia sẻ trang studio"
 	},
 	"calendar": {
 		"months": [
@@ -859,5 +867,32 @@
 			"sessionsPlanned": "{count} buổi trong khoảng này",
 			"back": "Quay lại"
 		}
+	},
+	"trainer": {
+		"role": "Huấn luyện viên",
+		"noClientsEnrolled": "Không có khách hàng đăng ký",
+		"noShowStatus": "Vắng mặt",
+		"markPresent": "Đánh dấu có mặt",
+		"markNoShow": "Đánh dấu vắng mặt",
+		"inviteTitle": "Bạn được mời!",
+		"joinAs": "Tham gia {studio} với tư cách {name}",
+		"joinAsTrainer": "Tham gia {studio} với tư cách huấn luyện viên",
+		"acceptInvitation": "Chấp nhận lời mời",
+		"invalidExpiredLink": "Liên kết mời không hợp lệ hoặc đã hết hạn.",
+		"couldNotLoadInvite": "Không thể tải lời mời. Kiểm tra kết nối."
+	},
+	"staff": {
+		"inviteTitle": "Mời {name}",
+		"shareInviteMessage": "Chia sẻ liên kết này với {name} để tham gia với tư cách huấn luyện viên.",
+		"inviteExpires": "Liên kết hết hạn sau 7 ngày"
+	},
+	"client": {
+		"bookingCancelled": "Đã hủy đặt chỗ",
+		"cancelBookingFailed": "Không thể hủy đặt chỗ"
+	},
+	"public": {
+		"noAddressAvailable": "Không có địa chỉ",
+		"couldNotOpenMaps": "Không thể mở bản đồ",
+		"getDirections": "Chỉ đường"
 	}
 }

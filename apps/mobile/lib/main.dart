@@ -15,6 +15,7 @@ import 'config/app_config.dart';
 import 'config/load_app_env.dart';
 import 'config/release_env.dart';
 import 'deep_links/class_session_deep_link.dart';
+import 'deep_links/studio_deep_link.dart';
 import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
@@ -275,11 +276,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
                   child: _withKeyboardDismiss(context, child) ?? const SizedBox.shrink(),
                 );
-                return TrainerInviteDeepLinkScope(
+                return StudioDeepLinkScope(
                   navigatorKey: henzoRootNavigatorKey,
-                  child: ClassSessionDeepLinkScope(
+                  child: TrainerInviteDeepLinkScope(
                     navigatorKey: henzoRootNavigatorKey,
-                    child: scaled,
+                    child: ClassSessionDeepLinkScope(
+                      navigatorKey: henzoRootNavigatorKey,
+                      child: scaled,
+                    ),
                   ),
                 );
               },

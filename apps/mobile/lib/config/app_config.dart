@@ -20,7 +20,7 @@ abstract final class AppConfig {
 
   /// URL веб-приложения для ссылки на онлайн-запись (без завершающего слэша).
   static String get webUrl =>
-      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://henzo.app')
+      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://www.henzo.app')
           .trim()
           .replaceAll(RegExp(r'/$'), '');
 

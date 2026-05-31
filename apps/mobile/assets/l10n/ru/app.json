@@ -27,7 +27,13 @@
 		"setupSalonFirst": "Сначала настройте бизнес",
 		"verify": "Подтвердить",
 		"apply": "Применить",
-		"reset": "Сбросить"
+		"reset": "Сбросить",
+		"linkCopied": "Ссылка скопирована!",
+		"copyLink": "Скопировать ссылку",
+		"invite": "Пригласить",
+		"pleaseLoginFirst": "Сначала войдите в аккаунт",
+		"addressCopied": "Адрес скопирован",
+		"share": "Поделиться"
 	},
 	"nav": {
 		"dashboard": "Дашборд",
@@ -656,7 +662,9 @@
 			"classesThisMonth": "Занятий в этом месяце",
 			"trainers": "Тренеры",
 			"upgradeHint": "Перейдите на Studio для расширения"
-		}
+		},
+		"studioQrCode": "QR-код студии",
+		"studioQrCodeSubtitle": "Поделитесь страницей студии"
 	},
 	"calendar": {
 		"months": [
@@ -859,5 +867,32 @@
 			"sessionsPlanned": "Занятий в периоде: {count}",
 			"back": "Назад"
 		}
+	},
+	"trainer": {
+		"role": "Тренер",
+		"noClientsEnrolled": "Нет записавшихся клиентов",
+		"noShowStatus": "Не пришёл",
+		"markPresent": "Отметить присутствие",
+		"markNoShow": "Отметить отсутствие",
+		"inviteTitle": "Вас пригласили!",
+		"joinAs": "Присоединиться к {studio} как {name}",
+		"joinAsTrainer": "Присоединиться к {studio} как тренер",
+		"acceptInvitation": "Принять приглашение",
+		"invalidExpiredLink": "Ссылка недействительна или истекла.",
+		"couldNotLoadInvite": "Не удалось загрузить приглашение. Проверьте соединение."
+	},
+	"staff": {
+		"inviteTitle": "Пригласить {name}",
+		"shareInviteMessage": "Отправьте ссылку {name} чтобы присоединиться как тренер.",
+		"inviteExpires": "Ссылка действует 7 дней"
+	},
+	"client": {
+		"bookingCancelled": "Бронирование отменено",
+		"cancelBookingFailed": "Не удалось отменить бронирование"
+	},
+	"public": {
+		"noAddressAvailable": "Адрес не указан",
+		"couldNotOpenMaps": "Не удалось открыть карты",
+		"getDirections": "Маршрут"
 	}
 }

@@ -127,13 +127,13 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
       ClientScheduleStore.invalidate();
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Booking cancelled')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('client.bookingCancelled'))),
       );
       await _load(force: true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Failed to cancel booking: $e')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('client.cancelBookingFailed'))),
       );
     } finally {
       if (mounted) setState(() => _cancelingBookingIds.remove(bookingId));
