@@ -17,6 +17,8 @@ export const notificationTranslations = {
     sessionCancelledBody: '{class} at {studio} on {date} has been cancelled.',
     sessionRescheduledTitle: 'Class time changed',
     sessionRescheduledBody: '{class} at {studio} moved to {date}.',
+    newReviewTitle: 'New review ⭐',
+    newReviewBody: '{client} left a {rating}★ review for {studio}',
   },
   ru: {
     newBookingConfirmed: 'Новая запись',
@@ -36,6 +38,8 @@ export const notificationTranslations = {
     sessionCancelledBody: '{class} в {studio} {date} отменено.',
     sessionRescheduledTitle: 'Время занятия изменено',
     sessionRescheduledBody: '{class} в {studio} перенесено на {date}.',
+    newReviewTitle: 'Новый отзыв ⭐',
+    newReviewBody: '{client} оставил(а) отзыв {rating}★ о студии {studio}',
   },
   vi: {
     newBookingConfirmed: 'Đặt lịch mới',
@@ -55,6 +59,8 @@ export const notificationTranslations = {
     sessionCancelledBody: '{class} tại {studio} ngày {date} đã bị hủy.',
     sessionRescheduledTitle: 'Thay đổi thời gian lớp học',
     sessionRescheduledBody: '{class} tại {studio} đã được dời sang {date}.',
+    newReviewTitle: 'Đánh giá mới ⭐',
+    newReviewBody: '{client} đã để lại đánh giá {rating}★ cho {studio}',
   },
 };
 

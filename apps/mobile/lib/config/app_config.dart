@@ -87,11 +87,21 @@ abstract final class AppConfig {
     return '';
   }
 
-  /// Entitlement identifier in RevenueCat (default `pro`).
+  /// Entitlement identifier in RevenueCat (legacy / fallback).
   static String get revenueCatEntitlementId =>
       (dotenv.env['EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID'] ??
               dotenv.env['REVENUECAT_ENTITLEMENT_ID'] ??
-              'pro')
+              'premium_studio')
+          .trim();
+
+  static String get revenueCatStudioEntitlementId =>
+      (dotenv.env['EXPO_PUBLIC_REVENUECAT_STUDIO_ENTITLEMENT_ID'] ??
+              'premium_studio')
+          .trim();
+
+  static String get revenueCatEnterpriseEntitlementId =>
+      (dotenv.env['EXPO_PUBLIC_REVENUECAT_ENTERPRISE_ENTITLEMENT_ID'] ??
+              'premium_enterprise')
           .trim();
 
   static bool get isRevenueCatEnabled => revenueCatApiKey.isNotEmpty;

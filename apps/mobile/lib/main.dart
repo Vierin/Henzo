@@ -34,6 +34,7 @@ import 'services/cache/owner_sessions_cache.dart';
 import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/client_location_store.dart';
+import 'services/client_schedule_store.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
 import 'services/revenuecat_service.dart';
@@ -308,6 +309,19 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _lastOwnerAllowed = false;
   bool _wasClient = false;
+  String? _lastUserId;
+
+  void _clearAllCaches(BuildContext ctx) {
+    if (!ctx.mounted) return;
+    ctx.read<SalonCache>().invalidate();
+    ctx.read<BookingsCache>().invalidate();
+    ctx.read<ServicesStaffCache>().invalidateAll();
+    ctx.read<OwnerSessionsCache>().invalidate();
+    ctx.read<ClientFavoritesStore>().clear();
+    ClientNearbyCache.clear();
+    StudioPublicDetailCache.clear();
+    ClientScheduleStore.invalidate();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -321,26 +335,31 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
         final isClient = auth.isAuthenticated && auth.isClient;
+        final currentUserId = auth.user?.id;
 
         if (auth.isInitialSessionReady) {
-          if (_lastOwnerAllowed && !ownerAllowed) {
+          // User switched accounts — clear everything
+          final userChanged = currentUserId != null &&
+              _lastUserId != null &&
+              currentUserId != _lastUserId;
+
+          if (userChanged || (_lastOwnerAllowed && !ownerAllowed)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              context.read<SalonCache>().invalidate();
-              context.read<BookingsCache>().invalidate();
-              context.read<ServicesStaffCache>().invalidateAll();
+              _clearAllCaches(context);
             });
-          }
-          if (_wasClient && !isClient) {
+          } else if (_wasClient && !isClient) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;
               context.read<ClientFavoritesStore>().clear();
               ClientNearbyCache.clear();
               StudioPublicDetailCache.clear();
+              ClientScheduleStore.invalidate();
             });
           }
+
           _lastOwnerAllowed = ownerAllowed;
           _wasClient = isClient;
+          _lastUserId = currentUserId ?? _lastUserId;
         }
 
         if (ownerAllowed) {

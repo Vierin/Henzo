@@ -700,6 +700,48 @@ export class NotificationsService {
     }
   }
 
+  /** Push notification to studio owner when a client leaves a new review. */
+  async sendNewReviewNotification(params: {
+    studioId: string;
+    studioName: string;
+    clientName: string;
+    rating: number;
+  }): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensBySalonOwner(params.studioId);
+      if (!tokens || tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const title = getNotificationText(lang, 'newReviewTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'newReviewBody' as any),
+          {
+            client: params.clientName,
+            rating: String(params.rating),
+            studio: params.studioName,
+          },
+        );
+        await this.sendPushNotification(
+          langTokens,
+          title,
+          body,
+          { type: 'NEW_REVIEW', studioId: params.studioId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] Failed to send review push:', err);
+    }
+  }
+
   /** Push notification to user when promoted from waitlist to enrolled. */
   async sendWaitlistPromotionPush(
     userId: string,

@@ -79,6 +79,25 @@ class RevenueCatService {
         _findPackage(offering, const ['monthly', 'month']);
   }
 
+  /// Returns the monthly package for a specific plan tier ('studio' | 'enterprise').
+  /// Looks in a tier-specific offering first, then falls back to default offering
+  /// searching by product ID keywords.
+  static Package? packageForTier(Offerings? offerings, String tier) {
+    if (offerings == null) return null;
+
+    // Try dedicated offering (e.g. offering id = 'studio' or 'enterprise')
+    final tierOffering = offerings.getOffering(tier);
+    if (tierOffering != null) {
+      return tierOffering.monthly ??
+          tierOffering.availablePackages.firstOrNull;
+    }
+
+    // Fall back to default offering — find package whose id/productId contains tier name
+    final def = offerings.current;
+    if (def == null) return null;
+    return _findPackage(def, [tier]);
+  }
+
   static Package? _findPackage(Offering offering, List<String> hints) {
     for (final pkg in offering.availablePackages) {
       final id = pkg.identifier.toLowerCase();
@@ -107,23 +126,38 @@ class RevenueCatService {
     return (((fullYear - y) / fullYear) * 100).round().clamp(1, 99);
   }
 
-  static bool hasActiveProEntitlement(CustomerInfo info) {
-    final target = AppConfig.revenueCatEntitlementId.toLowerCase();
-    for (final key in info.entitlements.active.keys) {
-      if (key.toLowerCase() == target) return true;
+  /// Returns the active subscription tier: 'enterprise', 'studio', or null.
+  /// Enterprise includes all Studio features, so enterprise users are always also "studio".
+  static String? getActiveTier(CustomerInfo info) {
+    final active = info.entitlements.active;
+    final enterprise = AppConfig.revenueCatEnterpriseEntitlementId.toLowerCase();
+    final studio = AppConfig.revenueCatStudioEntitlementId.toLowerCase();
+
+    final hasEnterprise = active.keys.any((k) => k.toLowerCase() == enterprise) ||
+        info.entitlements.all.entries.any(
+          (e) => e.key.toLowerCase() == enterprise && e.value.isActive,
+        );
+    if (hasEnterprise) return 'enterprise';
+
+    final hasStudio = active.keys.any((k) => k.toLowerCase() == studio) ||
+        info.entitlements.all.entries.any(
+          (e) => e.key.toLowerCase() == studio && e.value.isActive,
+        );
+    if (hasStudio) return 'studio';
+
+    // Debug / Test Store: product purchased but not yet linked to entitlement in RC
+    if (kDebugMode && (active.isNotEmpty || info.activeSubscriptions.isNotEmpty)) {
+      final sub = info.activeSubscriptions.firstOrNull?.toLowerCase() ?? '';
+      if (sub.contains('enterprise')) return 'enterprise';
+      return 'studio'; // fallback to studio for any active test subscription
     }
-    for (final entry in info.entitlements.all.entries) {
-      if (entry.key.toLowerCase() == target && entry.value.isActive) {
-        return true;
-      }
-    }
-    // Test Store only: product bought but not linked to entitlement in RC dashboard.
-    if (kDebugMode) {
-      if (info.entitlements.active.isNotEmpty) return true;
-      if (info.activeSubscriptions.isNotEmpty) return true;
-    }
-    return false;
+
+    return null;
   }
+
+  /// True if user has any active paid subscription (Studio or Enterprise).
+  static bool hasActiveProEntitlement(CustomerInfo info) =>
+      getActiveTier(info) != null;
 
   static void debugLogEntitlements(CustomerInfo info) {
     if (!kDebugMode) return;

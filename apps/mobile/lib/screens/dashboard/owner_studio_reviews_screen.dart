@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
+import '../../utils/formatters.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import '../../widgets/common/load_error_view.dart';
+import '../../widgets/public/studio_review_card.dart';
+import '../../widgets/public/studio_reviews_summary_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Owner-facing list of client ratings and comments for this studio (same API as public studio page).
 class OwnerStudioReviewsScreen extends StatefulWidget {
   const OwnerStudioReviewsScreen({
     super.key,
@@ -29,7 +32,6 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
   String? _error;
   List<Map<String, dynamic>> _reviews = [];
   double _avgFromPayload = 0;
-  int _countFromPayload = 0;
 
   @override
   void initState() {
@@ -49,7 +51,6 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
         setState(() {
           _loading = false;
           _error = 'Invalid response';
-          _reviews = [];
         });
         return;
       }
@@ -57,11 +58,7 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
           raw['reviews'] is List ? raw['reviews'] as List : const <dynamic>[];
       final parsed = <Map<String, dynamic>>[];
       for (final item in list) {
-        if (item is Map<String, dynamic>) {
-          parsed.add(Map<String, dynamic>.from(item));
-        } else if (item is Map) {
-          parsed.add(Map<String, dynamic>.from(item));
-        }
+        if (item is Map) parsed.add(Map<String, dynamic>.from(item));
       }
       parsed.sort((a, b) {
         final da = DateTime.tryParse((a['createdAt'] ?? '').toString());
@@ -71,6 +68,7 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
         if (db == null) return -1;
         return db.compareTo(da);
       });
+
       double sum = 0;
       var n = 0;
       for (final r in parsed) {
@@ -80,10 +78,10 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
           n++;
         }
       }
+
       setState(() {
         _reviews = parsed;
-        _avgFromPayload = n > 0 ? sum / n : 0;
-        _countFromPayload = parsed.length;
+        _avgFromPayload = n > 0 ? sum / n : (widget.headerAvgRating ?? 0);
         _loading = false;
         _error = null;
       });
@@ -92,254 +90,121 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
       setState(() {
         _loading = false;
         _error = e.toString();
-        _reviews = [];
       });
     }
-  }
-
-  double get _displayAvg {
-    if (_avgFromPayload > 0) return _avgFromPayload;
-    final h = widget.headerAvgRating;
-    if (h != null && h > 0) return h;
-    return 0;
   }
 
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final title = locale.t('dashboard.reviewsTitle');
-    final dateFmt = DateFormat.yMMMd(locale.languageTag);
+    final t = (String k) => locale.t('clientStudioDetail.$k');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: HenzoHeaderBackButton(
-          onPressed: () => Navigator.pop(context),
-        ),
-        leadingWidth: 56,
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        color: AppColors.primary500,
-        child: _loading
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  Center(
-                    child: CircularProgressIndicator(color: AppColors.primary500),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header — same style as ClientStudioReviewsScreen
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
+              child: Row(
+                children: [
+                  HenzoHeaderBackButton(
+                    onPressed: () => Navigator.pop(context),
                   ),
+                  Expanded(
+                    child: Text(
+                      t('reviewsTitle'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: HenzoHeaderBackButton.size + 8),
                 ],
-              )
-            : _error != null
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(24),
-                    children: [
-                      Text(
-                        locale.t('dashboard.reviewsLoadError'),
-                        style: TextStyle(
-                          color: AppColors.error600,
-                          fontSize: 15.sp,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: _load,
-                        child: Text(locale.t('dashboard.reviewsRetry')),
-                      ),
-                    ],
-                  )
-                : ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: _SummaryHeader(
-                          avg: _displayAvg,
-                          count: _countFromPayload,
-                          subtitleTemplate:
-                              locale.t('dashboard.reviewsSubtitle'),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      if (_reviews.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Center(
-                            child: Text(
-                              locale.t('dashboard.reviewsEmpty'),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15.sp,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ..._reviews.map((r) {
-                          final rating =
-                              (r['rating'] as num?)?.toDouble() ?? 0;
-                          final comment =
-                              (r['comment'] ?? '').toString().trim();
-                          final user = r['user'];
-                          final name = user is Map
-                              ? (user['name'] ?? '').toString().trim()
-                              : '';
-                          final displayName = name.isNotEmpty ? name : '—';
-                          final created = DateTime.tryParse(
-                            (r['createdAt'] ?? '').toString(),
-                          );
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(
-                                14,
-                                12,
-                                14,
-                                12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundPrimary,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          displayName,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15.sp,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                      if (created != null)
-                                        Text(
-                                          dateFmt.format(created.toLocal()),
-                                          style: TextStyle(
-                                            fontSize: 12.sp,
-                                            color: AppColors.textTertiary,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  _RatingStars(rating: rating),
-                                  if (comment.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      comment,
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        height: 1.35,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
-                    ],
-                  ),
-      ),
-    );
-  }
-}
-
-class _SummaryHeader extends StatelessWidget {
-  const _SummaryHeader({
-    required this.avg,
-    required this.count,
-    required this.subtitleTemplate,
-  });
-
-  final double avg;
-  final int count;
-  final String subtitleTemplate;
-
-  @override
-  Widget build(BuildContext context) {
-    final ratingStr =
-        avg > 0 ? avg.toStringAsFixed(1) : '—';
-    final subtitle = subtitleTemplate
-        .replaceAll('{rating}', ratingStr)
-        .replaceAll('{count}', '$count');
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: AppColors.primary50,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary200),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.star_rounded, color: Color(0xFFFFC940), size: 28),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
               ),
             ),
-          ),
-        ],
+
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary500,
+                      ),
+                    )
+                  : _error != null
+                  ? LoadErrorView(
+                      message: _error!,
+                      onRetry: _load,
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: AppColors.primary500,
+                      child: _reviews.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                const SizedBox(height: 80),
+                                Center(
+                                  child: Text(
+                                    locale.t('dashboard.reviewsEmpty'),
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 15.sp,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                kScreenPaddingHorizontal,
+                                0,
+                                kScreenPaddingHorizontal,
+                                24,
+                              ),
+                              children: [
+                                StudioReviewsSummaryCard(
+                                  avgRating: _avgFromPayload,
+                                  reviewCount: _reviews.length,
+                                  reviews: _reviews,
+                                  onReviewsLabel: t('reviewsOnCount'),
+                                ),
+                                const SizedBox(height: 16),
+                                ..._reviews.map((r) {
+                                  final created = DateTime.tryParse(
+                                    (r['createdAt'] ?? '').toString(),
+                                  );
+                                  final dateLabel =
+                                      formatRelativeReviewDateLabel(
+                                    created,
+                                    daysAgoTemplate: t('reviewsDaysAgo'),
+                                    hoursAgoTemplate: t('reviewsHoursAgo'),
+                                    justNowLabel: t('reviewsJustNow'),
+                                  );
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: StudioReviewCard(
+                                      review: r,
+                                      readMoreLabel: t('readMore'),
+                                      readLessLabel: t('readLess'),
+                                      dateLabel: dateLabel,
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                    ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-}
-
-class _RatingStars extends StatelessWidget {
-  const _RatingStars({required this.rating});
-
-  final double rating;
-
-  @override
-  Widget build(BuildContext context) {
-    final full = rating.clamp(0, 5).floor();
-    final hasHalf = rating - full >= 0.5 && full < 5;
-    return Row(
-      children: [
-        for (var i = 0; i < 5; i++)
-          Icon(
-            i < full
-                ? Icons.star_rounded
-                : (i == full && hasHalf)
-                    ? Icons.star_half_rounded
-                    : Icons.star_border_rounded,
-            size: 18,
-            color: i < full || (i == full && hasHalf)
-                ? const Color(0xFFFFC940)
-                : AppColors.neutral300,
-          ),
-      ],
     );
   }
 }

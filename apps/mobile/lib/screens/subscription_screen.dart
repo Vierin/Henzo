@@ -47,14 +47,18 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Subscription? _subscription;
-  Package? _monthlyPackage;
-  Package? _annualPackage;
+  Package? _studioPackage;
+  Package? _enterprisePackage;
+  // Legacy aliases kept for _priceLabelForInterval / _comparePriceLabel compatibility
+  Package? get _monthlyPackage => _studioPackage;
+  Package? get _annualPackage => _enterprisePackage;
   int? _annualSavePercent;
   bool _loading = true;
   bool _offeringsError = false;
-  String? _checkoutLoading; // 'monthly' | 'annual'
+  String? _checkoutLoading; // 'studio' | 'enterprise'
   bool _restoreLoading = false;
   String _billingInterval = 'monthly';
+  String? _activeTier; // 'studio' | 'enterprise' | null
   SubscriptionRefreshNotifier? _subRefresh;
 
   @override
@@ -88,29 +92,32 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     setState(() => _loading = true);
     try {
       final sub = await SubscriptionApiService.getCurrent(token);
-      Offering? offering;
-      Package? monthly;
-      Package? annual;
+      Package? studioPkg;
+      Package? enterprisePkg;
+      String? activeTier;
       var offeringsError = false;
+
       if (RevenueCatService.isConfigured) {
         final offerings = await RevenueCatService.fetchOfferings();
-        offering = offerings?.current;
-        monthly = RevenueCatService.packageForInterval(offering, 'monthly');
-        annual = RevenueCatService.packageForInterval(offering, 'annual');
-        offeringsError =
-            offering == null || (monthly == null && annual == null);
+        studioPkg = RevenueCatService.packageForTier(offerings, 'studio');
+        enterprisePkg = RevenueCatService.packageForTier(offerings, 'enterprise');
+        offeringsError = studioPkg == null && enterprisePkg == null;
+
+        // Detect active tier from CustomerInfo
+        try {
+          final info = await Purchases.getCustomerInfo();
+          activeTier = RevenueCatService.getActiveTier(info);
+        } catch (_) {}
       } else {
         offeringsError = true;
       }
+
       if (mounted) {
         setState(() {
           _subscription = sub;
-          _monthlyPackage = monthly;
-          _annualPackage = annual;
-          _annualSavePercent = RevenueCatService.annualSavePercent(
-            monthly: monthly,
-            annual: annual,
-          );
+          _studioPackage = studioPkg;
+          _enterprisePackage = enterprisePkg;
+          _activeTier = activeTier;
           _offeringsError = offeringsError;
           _loading = false;
         });
@@ -120,7 +127,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
-  bool get _isPro => _subscription?.type.toUpperCase() == 'PRO';
+  bool get _isPro =>
+      _activeTier != null ||
+      _subscription?.type.toUpperCase() == 'PRO';
 
   Package? _packageForInterval(String interval) =>
       interval == 'annual' ? _annualPackage : _monthlyPackage;
@@ -171,7 +180,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
-  Future<void> _handleSelectPlan(String interval) async {
+  Package? _packageForTier(String tier) =>
+      tier == 'enterprise' ? _enterprisePackage : _studioPackage;
+
+  Future<void> _handleSelectPlan(String tier) async {
     final locale = context.read<LocaleProvider>();
     if (!RevenueCatService.isConfigured) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -179,7 +191,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       );
       return;
     }
-    final pkg = _packageForInterval(interval);
+    final pkg = _packageForTier(tier);
     if (pkg == null) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(content: Text(locale.t('subscription.offeringsUnavailable'))),
@@ -188,7 +200,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
-    setState(() => _checkoutLoading = interval);
+    setState(() => _checkoutLoading = tier);
     try {
       final info = await RevenueCatService.purchasePackage(pkg);
       if (!mounted) return;
@@ -196,6 +208,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         RevenueCatService.debugLogEntitlements(info);
         await _afterStorePurchase(token);
         if (!mounted) return;
+        // Update active tier from fresh CustomerInfo
+        if (mounted) {
+          setState(() => _activeTier = RevenueCatService.getActiveTier(info));
+        }
         if (!RevenueCatService.hasActiveProEntitlement(info)) {
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(
@@ -227,6 +243,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       if (!mounted) return;
       if (info != null) {
         RevenueCatService.debugLogEntitlements(info);
+        if (mounted) {
+          setState(() => _activeTier = RevenueCatService.getActiveTier(info));
+        }
         if (RevenueCatService.hasActiveProEntitlement(info)) {
           await _afterStorePurchase(token);
         } else {
@@ -297,7 +316,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           _PlanCard(
                             title: locale.t('subscription.studioTitle'),
                             tagline: locale.t('subscription.studioTagline'),
-                            priceLabel: _monthlyPackage?.storeProduct.priceString ??
+                            priceLabel: _studioPackage?.storeProduct.priceString ??
                                 locale.t('subscription.studioFallbackPrice'),
                             features: [
                               locale.t('subscription.feature_studio_1'),
@@ -307,8 +326,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               locale.t('subscription.feature_studio_5'),
                             ],
                             subscribeLabel: locale.t('subscription.subscribeToStudioBtn'),
-                            isLoading: _checkoutLoading == 'monthly',
-                            onSubscribe: () => _handleSelectPlan('monthly'),
+                            isLoading: _checkoutLoading == 'studio',
+                            onSubscribe: () => _handleSelectPlan('studio'),
                           ),
 
                           const SizedBox(height: 20),
@@ -317,10 +336,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           _PlanCard(
                             title: locale.t('subscription.enterpriseTitle'),
                             tagline: locale.t('subscription.enterpriseTagline'),
-                            priceLabel: locale.t('subscription.enterpriseFallbackPrice'),
+                            priceLabel: _enterprisePackage?.storeProduct.priceString ??
+                                locale.t('subscription.enterpriseFallbackPrice'),
                             features: [
-                              locale.t('subscription.feature_enterprise_1'),
-                              locale.t('subscription.feature_enterprise_2'),
+                              // Enterprise includes all Studio features:
+                              locale.t('subscription.feature_studio_1'),
+                              locale.t('subscription.feature_studio_2'),
+                              locale.t('subscription.feature_studio_3'),
+                              locale.t('subscription.feature_studio_4'),
+                              locale.t('subscription.feature_studio_5'),
+                              // + Enterprise-exclusive:
                               locale.t('subscription.feature_enterprise_3'),
                               locale.t('subscription.feature_enterprise_4'),
                               locale.t('subscription.feature_enterprise_5'),
@@ -328,7 +353,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             ],
                             subscribeLabel: locale.t('subscription.subscribeToEnterpriseBtn'),
                             isLoading: _checkoutLoading == 'enterprise',
-                            onSubscribe: () => _handleSelectPlan('monthly'),
+                            onSubscribe: () => _handleSelectPlan('enterprise'),
                           ),
 
                           const SizedBox(height: 12),
@@ -347,8 +372,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             nextPaymentDate:
                                 _nextPaymentDateLabel(context) ?? '—',
                             activeLabel: locale.t('profile.active'),
-                            planTitle: locale.t('profile.pro'),
-                            tagline: locale.t('subscription.proTagline'),
+                            planTitle: _activeTier == 'enterprise'
+                                ? locale.t('subscription.enterpriseTitle')
+                                : locale.t('subscription.studioTitle'),
+                            tagline: _activeTier == 'enterprise'
+                                ? locale.t('subscription.enterpriseTagline')
+                                : locale.t('subscription.studioTagline'),
                             nextPaymentLabel: locale.t(
                               'subscription.nextPayment',
                             ),
