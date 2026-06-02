@@ -132,7 +132,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         _isBookedByMe = isBookedByMe;
         _loading = false;
         if (found == null) {
-          _error = 'This class is no longer available.';
+          _error = context.read<LocaleProvider>().t('publicClassDetail.notFound');
         }
       });
     } catch (e) {
@@ -484,7 +484,7 @@ Future<void> _openDirections({
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('No address available')));
+        ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
       }
       return;
     }
@@ -497,7 +497,7 @@ Future<void> _openDirections({
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Could not open maps')));
+      ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.couldNotOpenMaps'))));
     }
     return;
   }
@@ -727,7 +727,7 @@ class _ClassDetailBody extends StatelessWidget {
                     : () {
                         Clipboard.setData(ClipboardData(text: address));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Address copied')),
+                          SnackBar(content: Text(context.read<LocaleProvider>().t('common.addressCopied'))),
                         );
                       },
               ),
@@ -1054,7 +1054,7 @@ class _ClassInfoCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: const Text('Get directions'),
+                child: Text(context.read<LocaleProvider>().t('common.getDirections')),
               ),
             ),
           ),

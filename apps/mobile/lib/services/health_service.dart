@@ -75,15 +75,31 @@ class HealthService {
       if (status != HealthConnectSdkStatus.sdkAvailable) {
         return false;
       }
+      try {
+        final granted = await _health.hasPermissions(
+          _readTypes,
+          permissions: _permissions,
+        );
+        return granted == true;
+      } catch (e) {
+        log('HealthService.hasAccess: $e');
+        return false;
+      }
     }
+
+    // iOS: hasPermissions() always returns null (Apple privacy design).
+    // Instead, try reading a small amount of data — if it works, we have access.
     try {
-      final granted = await _health.hasPermissions(
-        _readTypes,
-        permissions: _permissions,
+      final now = DateTime.now();
+      final start = now.subtract(const Duration(hours: 1));
+      await _health.getHealthDataFromTypes(
+        startTime: start,
+        endTime: now,
+        types: [HealthDataType.STEPS],
       );
-      return granted == true;
+      return true;
     } catch (e) {
-      log('HealthService.hasAccess: $e');
+      log('HealthService.hasAccess iOS check: $e');
       return false;
     }
   }
@@ -143,16 +159,22 @@ class HealthService {
         }
       }
 
-      final verified = await _health.hasPermissions(
-        _readTypes,
-        permissions: _permissions,
-      );
-      if (verified != true) {
-        return const HealthConnectResult(
-          ok: false,
-          issue: HealthConnectIssue.permissionDenied,
-          userMessage: 'Permissions were not granted for Henzo.',
+      // iOS: hasPermissions() always returns null by Apple design (privacy).
+      // If requestAuthorization returned true, trust it and proceed.
+      if (Platform.isAndroid) {
+        final verified = await _health.hasPermissions(
+          _readTypes,
+          permissions: _permissions,
         );
+        if (verified != true) {
+          return const HealthConnectResult(
+            ok: false,
+            issue: HealthConnectIssue.permissionDenied,
+            userMessage:
+                'In Health Connect → App permissions → Henzo: allow Steps, '
+                'Calories, and Exercise.',
+          );
+        }
       }
 
       return HealthConnectResult.success;

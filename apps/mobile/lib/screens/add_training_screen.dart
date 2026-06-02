@@ -225,14 +225,15 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   }
 
   String _weekdayLabel(int weekday) {
-    const labels = {
-      1: 'ПН',
-      2: 'ВТ',
-      3: 'СР',
-      4: 'ЧТ',
-      5: 'ПТ',
-      6: 'СБ',
-      7: 'ВС',
+    final t = context.read<LocaleProvider>().t;
+    final labels = {
+      1: t('addTraining.weekdayMon'),
+      2: t('addTraining.weekdayTue'),
+      3: t('addTraining.weekdayWed'),
+      4: t('addTraining.weekdayThu'),
+      5: t('addTraining.weekdayFri'),
+      6: t('addTraining.weekdaySat'),
+      7: t('addTraining.weekdaySun'),
     };
     return labels[weekday] ?? '?';
   }
@@ -534,8 +535,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
 
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(
-        content: Text('Проверьте поля, отмеченные красной рамкой'),
+      SnackBar(
+        content: Text(context.read<LocaleProvider>().t('addTraining.checkErrors')),
       ),
     );
     return false;
@@ -1471,14 +1472,14 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (token == null || token.isEmpty || studioId == null) return;
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Введите название тренировки')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('addTraining.enterName'))),
       );
       return;
     }
     if (duration <= 0 || capacity <= 0 || price <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Цена, длительность и вместительность должны быть > 0'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('addTraining.invalidValues')),
         ),
       );
       return;
@@ -1489,7 +1490,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (_isRecurring) {
       if (recurringDays.isEmpty) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(content: Text('Выберите хотя бы один день недели')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('addTraining.selectDays'))),
         );
         return;
       }
@@ -1552,7 +1553,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(content: Text('Не удалось добавить тренировку')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('common.errorGeneric'))),
         );
       }
     } catch (e) {
@@ -1625,7 +1626,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 setState(() => _step1NameError = false),
                             decoration: _regInputDecoration(
                               invalid: _step1NameError,
-                              hintText: 'Например: Vinyasa Flow',
+                              hintText: context.read<LocaleProvider>().t('addTraining.nameExample'),
                             ),
                           )
                         else
@@ -1662,7 +1663,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                         setState(() => _step1NameError = false),
                                     decoration: _regInputDecoration(
                                       invalid: _step1NameError,
-                                      hintText: 'Например: Vinyasa Flow',
+                                      hintText: context.read<LocaleProvider>().t('addTraining.nameExample'),
                                     ),
                                   );
                                 },
@@ -1713,7 +1714,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         if (_existing.isEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'У этой студии пока нет тренировок. Введите название новой.',
+                            context.read<LocaleProvider>().t('addTraining.noExistingTrainings'),
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: AppColors.textSecondary,
@@ -1918,7 +1919,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               setState(() => _step1PriceError = false),
                           decoration: _regInputDecoration(
                             invalid: _step1PriceError,
-                            hintText: 'Введите цену',
+                            hintText: context.read<LocaleProvider>().t('addTraining.enterPrice'),
                           ),
                         ),
                         const SizedBox(height: 22),
@@ -1932,7 +1933,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           maxLines: 5,
                           decoration: _regInputDecoration(
                             invalid: false,
-                            hintText: 'Описание тренировки (необязательно)',
+                            hintText: context.read<LocaleProvider>().t('addTraining.descriptionOptional'),
                           ),
                         ),
                         const SizedBox(height: 22),
@@ -1982,7 +1983,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                             },
                             style: AuthFormStyles.primaryButtonStyle(),
                             child: Text(
-                              'Следующий шаг',
+                              context.read<LocaleProvider>().t('addTraining.nextStep'),
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16.sp,

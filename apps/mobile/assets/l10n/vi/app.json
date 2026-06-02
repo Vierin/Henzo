@@ -33,7 +33,32 @@
 		"invite": "Mời",
 		"pleaseLoginFirst": "Vui lòng đăng nhập trước",
 		"addressCopied": "Đã sao chép địa chỉ",
-		"share": "Chia sẻ"
+		"share": "Chia sẻ",
+		"stay": "Ở lại",
+		"exit": "Thoát",
+		"info": "Thông tin",
+		"understood": "Đã hiểu",
+		"dash": "—",
+		"studio": "Studio",
+		"client": "Khách hàng",
+		"error": "Lỗi: {error}",
+		"errorGeneric": "Đã xảy ra lỗi",
+		"free": "Miễn phí",
+		"couldNotOpenCalendar": "Không thể mở lịch",
+		"noAddressAvailable": "Không có địa chỉ",
+		"couldNotOpenMaps": "Không thể mở bản đồ",
+		"addToCalendar": "Thêm vào lịch",
+		"getDirections": "Chỉ đường",
+		"today": "Hôm nay",
+		"collapse": "Thu gọn",
+		"expand": "Mở rộng",
+		"invalidResponse": "Phản hồi không hợp lệ",
+		"unknownError": "Lỗi không xác định",
+		"appName": "Henzo",
+		"class": "Lớp",
+		"default": "Mặc định",
+		"reviewsCount": "{count} đánh giá",
+		"signInToUploadPhoto": "Đăng nhập lại để tải ảnh"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -114,7 +139,10 @@
 		"termsPrefix": "Bằng cách tiếp tục, bạn đồng ý với ",
 		"privacyPolicy": "Chính sách quyền riêng tư",
 		"termsAnd": "và",
-		"termsOfService": "Điều khoản dịch vụ"
+		"termsOfService": "Điều khoản dịch vụ",
+		"noAccountRegister": "Chưa có tài khoản? Đăng ký",
+		"phone": "Điện thoại",
+		"createAccount": "Tạo tài khoản"
 	},
 	"clientHome": {
 		"nowIn": "ĐANG Ở",
@@ -143,7 +171,31 @@
 		"browseEmptyNoClassesTitle": "Không có lớp nào",
 		"browseEmptyNoClassesBody": "Thử ngày khác hoặc điều chỉnh bộ lọc.",
 		"browseEmptyNoLocationTitle": "Chọn vị trí của bạn",
-		"browseEmptyNoLocationBody": "Chọn thành phố để xem studio và lớp gần bạn."
+		"browseEmptyNoLocationBody": "Chọn thành phố để xem studio và lớp gần bạn.",
+		"filterTypes": "Loại hình",
+		"filterTime": "Thời gian",
+		"filterDistance": "Khoảng cách",
+		"filterSort": "Sắp xếp",
+		"filtersTitle": "Bộ lọc",
+		"sortBySection": "Sắp xếp theo",
+		"sortRecommended": "Đề xuất cho bạn",
+		"sortRatings": "Đánh giá",
+		"sortRatingsDesc": "Cao đến thấp",
+		"sortDistance": "Khoảng cách",
+		"sortDistanceAsc": "Gần nhất trước",
+		"distanceFromLocation": "Khoảng cách từ vị trí của bạn",
+		"distanceAuto": "Tự động (20 km)",
+		"distance5km": "5 km",
+		"distance10km": "10 km",
+		"distance15km": "15 km",
+		"distance30plus": "30+ km",
+		"timePeriodMorning": "Buổi sáng",
+		"timePeriodAfternoon": "Buổi chiều",
+		"timePeriodEvening": "Buổi tối",
+		"filterByTime": "Lọc theo thời gian",
+		"activitiesByTimePeriod": "Hoạt động theo buổi",
+		"activitiesByStartTime": "Hoạt động theo giờ bắt đầu",
+		"failedToUpdateFavorites": "Không thể cập nhật yêu thích"
 	},
 	"clientShell": {
 		"home": "Trang chủ",
@@ -166,7 +218,9 @@
 		"passesEmptySubtitle": "Thẻ lớp của bạn sẽ hiển thị tại đây.",
 		"cancelConfirmTitle": "Hủy đặt chỗ?",
 		"cancelConfirmBody": "Bạn có chắc muốn hủy đặt chỗ này không?",
-		"cancelConfirmAction": "Có, hủy"
+		"cancelConfirmAction": "Có, hủy",
+		"studioUnavailable": "Studio không khả dụng",
+		"thankYouForReview": "Cảm ơn đánh giá của bạn!"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -199,7 +253,8 @@
 		"completed": "Hoàn thành",
 		"notificationsTitle": "Luôn cập nhật",
 		"notificationsSubtitle": "Bật thông báo về lớp sắp tới và cập nhật studio.",
-		"manageNotifications": "Quản lý thông báo"
+		"manageNotifications": "Quản lý thông báo",
+		"failedToUpdateFavorites": "Không thể cập nhật yêu thích"
 	},
 	"clientStudioDetail": {
 		"share": "Chia sẻ",
@@ -333,7 +388,8 @@
 		"bookedLabel": "đã đặt",
 		"showMore": "Xem thêm",
 		"noTrainingsToday": "Không có lớp nào hôm nay",
-		"enjoyYourDay": "Chúc bạn một ngày tốt lành!"
+		"enjoyYourDay": "Chúc bạn một ngày tốt lành!",
+		"studioNowActive": "Studio đã hoạt động"
 	},
 	"ownerSession": {
 		"detailTitle": "Buổi tập",
@@ -435,7 +491,15 @@
 		"trainerYou": "Bạn",
 		"visitMinutes": "{n} phút",
 		"actionCall": "Gọi",
-		"actionEmail": "Email"
+		"actionEmail": "Email",
+		"clientCountOne": "{n} KHÁCH",
+		"clientCountFew": "{n} KHÁCH",
+		"clientCountMany": "{n} KHÁCH",
+		"searchHint": "Tìm theo tên, email hoặc điện thoại",
+		"filterAll": "Tất cả",
+		"filterSleepers": "Không hoạt động",
+		"filterWhiteList": "Danh sách trắng",
+		"filterBlocked": "Đã chặn"
 	},
 	"booking": {
 		"details": "Chi tiết đặt chỗ",
@@ -613,7 +677,19 @@
 		"searchByName": "Tìm theo tên...",
 		"emptyTitle": "Chưa có dịch vụ",
 		"emptySubtitle": "Thêm dịch vụ đầu tiên",
-		"changeFilters": "Thay đổi bộ lọc"
+		"changeFilters": "Thay đổi bộ lọc",
+		"deleteTrainingTitle": "Xóa buổi tập",
+		"deleteTrainingConfirm": "Xóa buổi tập \"{name}\"?",
+		"trainingDeleted": "Đã xóa buổi tập",
+		"deleteFailed": "Không thể xóa buổi tập",
+		"categoryRequestMessage": "Nếu không thấy danh mục phù hợp, hãy cho chúng tôi biết.",
+		"editTraining": "Chỉnh sửa buổi tập",
+		"editAllFuture": "Áp dụng thay đổi cho tất cả buổi tập tương lai",
+		"applyFromToday": "Áp dụng từ hôm nay",
+		"changeStartDate": "Ngày bắt đầu thay đổi",
+		"scheduleUpdateResult": "Đã tạo: {created}, bỏ qua: {skipped}",
+		"scheduleUpdateFailed": "Không thể cập nhật lịch",
+		"updateDefaultsFailed": "Không thể cập nhật sức chứa hoặc địa điểm"
 	},
 	"notifications": {
 		"title": "Thông báo",
@@ -782,7 +858,7 @@
 		"profileSettings": "Cài đặt hồ sơ",
 		"mainInfo": "Thông tin chính",
 		"salonName": "Tên salon",
-		"enterSalonName": "Nhập tên salon",
+		"enterSalonName": "Nhập tên studio",
 		"description": "Mô tả",
 		"enterDescription": "Mô tả salon của bạn",
 		"address": "Địa chỉ",
@@ -835,7 +911,19 @@
 		"addSocialLinkSheetTitle": "THÊM LIÊN KẾT",
 		"mainPhoto": "Chính",
 		"salonDescriptionHint": "Nhập thông tin salon: tên, mô tả, địa chỉ, liên hệ, ảnh và giờ mở cửa.",
-		"deleteWarning": "Xóa tài khoản là vĩnh viễn. Mọi dữ liệu sẽ mất."
+		"deleteWarning": "Xóa tài khoản là vĩnh viễn. Mọi dữ liệu sẽ mất.",
+		"unsavedChanges": "Thay đổi chưa được lưu",
+		"confirmDiscardChanges": "Bạn có chắc muốn thoát mà không lưu?",
+		"loginToUploadLogo": "Đăng nhập để tải logo",
+		"uploadLogoFailed": "Không thể tải logo",
+		"photoLimitExceeded": "Tối đa {max} ảnh",
+		"extraPhotosSkipped": "Ảnh thừa đã bỏ qua. Giới hạn: {max}",
+		"loginToUploadPhotos": "Đăng nhập để tải ảnh",
+		"optimizing": "Đang tối ưu...",
+		"uploading": "Đang tải...",
+		"photoTooLarge": "Ảnh vượt quá 3 MB",
+		"oversizedPhotosSkipped": "{count} ảnh vượt 3 MB không được thêm",
+		"uploadsFailed": "{count} ảnh không tải được"
 	},
 	"locations": {
 		"mainStudio": "Studio chính"
@@ -892,7 +980,29 @@
 			"scheduleHint": "Chỉnh giờ cho từng ngày đã chọn",
 			"sessionsPlanned": "{count} buổi trong khoảng này",
 			"back": "Quay lại"
-		}
+		},
+		"checkErrors": "Kiểm tra các trường được đánh dấu đỏ",
+		"noExistingTrainings": "Studio chưa có buổi tập nào. Nhập tên mới.",
+		"nameExample": "VD: Vinyasa Flow",
+		"enterName": "Nhập tên buổi tập",
+		"invalidValues": "Giá, thời lượng và sức chứa phải > 0",
+		"selectDays": "Chọn ít nhất một ngày trong tuần",
+		"nextStep": "Bước tiếp theo",
+		"trainingName": "Tên buổi tập",
+		"category": "Danh mục",
+		"duration": "Thời lượng",
+		"capacity": "Sức chứa",
+		"price": "Giá",
+		"enterPrice": "Nhập giá",
+		"description": "Mô tả",
+		"descriptionOptional": "Mô tả buổi tập (không bắt buộc)",
+		"weekdayMon": "T2",
+		"weekdayTue": "T3",
+		"weekdayWed": "T4",
+		"weekdayThu": "T5",
+		"weekdayFri": "T6",
+		"weekdaySat": "T7",
+		"weekdaySun": "CN"
 	},
 	"trainer": {
 		"role": "Huấn luyện viên",
@@ -920,5 +1030,41 @@
 		"noAddressAvailable": "Không có địa chỉ",
 		"couldNotOpenMaps": "Không thể mở bản đồ",
 		"getDirections": "Chỉ đường"
+	},
+	"periodPicker": {
+		"title": "Khoảng thời gian",
+		"currentMonth": "Tháng hiện tại",
+		"previousMonth": "Tháng trước",
+		"currentWeek": "Tuần hiện tại",
+		"previousWeek": "Tuần trước"
+	},
+	"bookings": {
+		"bookingCancelled": "Đã hủy đặt chỗ",
+		"bookingConfirmed": "Đặt chỗ đã xác nhận",
+		"bookingRejected": "Đặt chỗ bị từ chối",
+		"yourAppointments": "Lịch đặt",
+		"filterAll": "Tất cả",
+		"filterNew": "Mới",
+		"filterPending": "Chờ duyệt",
+		"filterCompleted": "Hoàn thành",
+		"noBookings": "Không có lịch đặt",
+		"statusPending": "Chờ duyệt",
+		"statusConfirmed": "Đã xác nhận",
+		"statusCompleted": "Hoàn thành",
+		"statusCancelled": "Đã hủy",
+		"statusNoShow": "Vắng mặt"
+	},
+	"accountSettings": {
+		"reloginToUploadPhoto": "Đăng nhập lại để tải ảnh",
+		"uploadPhotoFailed": "Không thể tải ảnh",
+		"uploadError": "Lỗi tải lên"
+	},
+	"clientBooking": {
+		"confirmed": "Đã xác nhận",
+		"inviteFriends": "Mời bạn bè",
+		"youreIn": "Bạn đã đặt chỗ!"
+	},
+	"publicClassDetail": {
+		"notFound": "Lớp học này không còn khả dụng."
 	}
 }

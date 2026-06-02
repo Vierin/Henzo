@@ -449,18 +449,21 @@ class ClientsScreenState extends State<ClientsScreen> {
     return out;
   }
 
-  static String _membersOverline(int n) {
+  String _membersOverline(int n) {
+    final t = context.read<LocaleProvider>().t;
     final h = n % 100;
-    if (h >= 11 && h <= 14) return '$n КЛИЕНТОВ';
+    if (h >= 11 && h <= 14) {
+      return t('ownerClient.clientCountMany').replaceAll('{n}', '$n');
+    }
     switch (n % 10) {
       case 1:
-        return '$n КЛИЕНТ';
+        return t('ownerClient.clientCountOne').replaceAll('{n}', '$n');
       case 2:
       case 3:
       case 4:
-        return '$n КЛИЕНТА';
+        return t('ownerClient.clientCountFew').replaceAll('{n}', '$n');
       default:
-        return '$n КЛИЕНТОВ';
+        return t('ownerClient.clientCountMany').replaceAll('{n}', '$n');
     }
   }
 
@@ -576,7 +579,7 @@ class ClientsScreenState extends State<ClientsScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Поиск по имени, email или телефону',
+                  hintText: context.watch<LocaleProvider>().t('ownerClient.searchHint'),
                   hintStyle: TextStyle(
                     fontSize: 14.sp,
                     color: AppColors.textTertiary,
@@ -624,14 +627,14 @@ class ClientsScreenState extends State<ClientsScreen> {
               child: Row(
                 children: [
                   ClientsFilterChip(
-                    label: 'Все',
+                    label: tr('ownerClient.filterAll'),
                     count: _countFor(ClientFilter.all),
                     isSelected: _filter == ClientFilter.all,
                     onTap: () => setState(() => _filter = ClientFilter.all),
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
-                    label: 'Спящие',
+                    label: tr('ownerClient.filterSleepers'),
                     count: _countFor(ClientFilter.sleepers),
                     isSelected: _filter == ClientFilter.sleepers,
                     onTap: () =>
@@ -639,7 +642,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
-                    label: 'Белый список',
+                    label: tr('ownerClient.filterWhiteList'),
                     count: _countFor(ClientFilter.whiteList),
                     isSelected: _filter == ClientFilter.whiteList,
                     onTap: () =>
@@ -647,7 +650,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
-                    label: 'Заблокированные',
+                    label: tr('ownerClient.filterBlocked'),
                     count: _countFor(ClientFilter.blocked),
                     isSelected: _filter == ClientFilter.blocked,
                     onTap: () => setState(() => _filter = ClientFilter.blocked),

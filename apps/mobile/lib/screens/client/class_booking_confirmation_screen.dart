@@ -8,8 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../l10n/locale_provider.dart';
 import '../../utils/class_session_link.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
@@ -154,9 +156,9 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
             : AppColors.textInverse);
   }
 
-  String get _costPrimary {
+  String _costPrimary(LocaleProvider locale) {
     if (price != null && price! > 0) return formatVnd(price!);
-    return 'Free';
+    return locale.t('common.free');
   }
 
   String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
@@ -213,7 +215,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     if (!await canLaunchUrl(uri)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open calendar')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('common.couldNotOpenCalendar'))),
         );
       }
       return;
@@ -238,7 +240,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('No address available')));
+          ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
         }
         return;
       }
@@ -251,7 +253,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Could not open maps')));
+        ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.couldNotOpenMaps'))));
       }
       return;
     }
@@ -264,11 +266,12 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     Clipboard.setData(ClipboardData(text: address));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Address copied')));
+    ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.addressCopied'))));
   }
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
     final wixTextTheme = Theme.of(context).textTheme;
     final ticketTextTheme = GoogleFonts.interTextTheme(wixTextTheme);
 
@@ -331,7 +334,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      'Confirmed',
+                      locale.t('clientBooking.confirmed'),
                       style: ticketTextTheme.titleSmall?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -374,7 +377,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         gridTimePrimary: formatTime24(startsAt),
                         gridTimeMuted: ' · ($durationMin min)',
                         trainerName: trainerName,
-                        costPrimary: _costPrimary,
+                        costPrimary: _costPrimary(locale),
                         costMuted: _costMuted,
                         locationTitle: locationTitle,
                         studioAddress: studioAddress,
@@ -392,7 +395,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                           onPressed: _shareBooking,
                           style: AuthFormStyles.primaryButtonStyle(),
                           child: Text(
-                            'Invite friends',
+                            locale.t('clientBooking.inviteFriends'),
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w600,
@@ -645,7 +648,7 @@ class _BookingTicketCard extends StatelessWidget {
                     svgAsset: 'assets/icons/icon-calendar.svg',
                     iconWidth: 13,
                     iconHeight: 12,
-                    label: 'Add to calendar',
+                    label: context.read<LocaleProvider>().t('common.addToCalendar'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -655,7 +658,7 @@ class _BookingTicketCard extends StatelessWidget {
                     svgAsset: 'assets/icons/icon-pin-simple.svg',
                     iconWidth: 10,
                     iconHeight: 14,
-                    label: 'Get directions',
+                    label: context.read<LocaleProvider>().t('common.getDirections'),
                   ),
                 ),
               ],

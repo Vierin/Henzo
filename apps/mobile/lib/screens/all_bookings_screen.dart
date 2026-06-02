@@ -87,8 +87,8 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Запись отменена'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('bookings.bookingCancelled')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -102,8 +102,8 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
     if (mounted) {
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Бронирование подтверждено'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('bookings.bookingConfirmed')),
           backgroundColor: Colors.green,
         ),
       );
@@ -118,8 +118,8 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Бронирование отклонено'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('bookings.bookingRejected')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -133,7 +133,7 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       appBar: AppBar(
         leading: null,
         title: Text(
-          'Your appointments',
+          context.watch<LocaleProvider>().t('bookings.yourAppointments'),
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w600,
@@ -152,13 +152,13 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
             child: Row(
               children: [
-                _filterChip('All', _BookingFilter.all),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterAll'), _BookingFilter.all),
                 const SizedBox(width: 8),
-                _filterChip('New', _BookingFilter.new_),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterNew'), _BookingFilter.new_),
                 const SizedBox(width: 8),
-                _filterChip('Pending', _BookingFilter.pending),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterPending'), _BookingFilter.pending),
                 const SizedBox(width: 8),
-                _filterChip('Completed', _BookingFilter.completed),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterCompleted'), _BookingFilter.completed),
               ],
             ),
           ),
@@ -183,7 +183,7 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
                               const SizedBox(height: 48),
                               Center(
                                 child: Text(
-                                  'No bookings',
+                                  context.watch<LocaleProvider>().t('bookings.noBookings'),
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 16.sp,
@@ -261,7 +261,7 @@ class _BookingTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      booking.user?.name ?? booking.user?.email ?? 'Client',
+                      booking.user?.name ?? booking.user?.email ?? context.read<LocaleProvider>().t('common.client'),
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
@@ -335,7 +335,7 @@ class _BookingTile extends StatelessWidget {
                   ],
                 ),
               ),
-              _statusBadge(booking.status),
+              _statusBadge(booking.status, context.read<LocaleProvider>()),
             ],
           ),
         ),
@@ -343,7 +343,7 @@ class _BookingTile extends StatelessWidget {
     );
   }
 
-  Widget _statusBadge(BookingStatus status) {
+  Widget _statusBadge(BookingStatus status, LocaleProvider locale) {
     Color bgColor;
     Color textColor;
     String label;
@@ -351,27 +351,27 @@ class _BookingTile extends StatelessWidget {
       case BookingStatus.pending:
         bgColor = AppColors.warning100;
         textColor = AppColors.warning600;
-        label = 'Pending';
+        label = locale.t('bookings.statusPending');
         break;
       case BookingStatus.confirmed:
         bgColor = AppColors.success100;
         textColor = AppColors.success600;
-        label = 'Confirmed';
+        label = locale.t('bookings.statusConfirmed');
         break;
       case BookingStatus.completed:
         bgColor = AppColors.primary100;
         textColor = AppColors.primary600;
-        label = 'Completed';
+        label = locale.t('bookings.statusCompleted');
         break;
       case BookingStatus.canceled:
         bgColor = AppColors.error100;
         textColor = AppColors.error600;
-        label = 'Cancelled';
+        label = locale.t('bookings.statusCancelled');
         break;
       case BookingStatus.noShow:
         bgColor = AppColors.warning200;
         textColor = AppColors.warning700;
-        label = 'No Show';
+        label = locale.t('bookings.statusNoShow');
         break;
     }
     return Container(

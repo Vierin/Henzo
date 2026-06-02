@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/locale_provider.dart';
 
 import '../constants/colors.dart';
 import '../services/api_client.dart';
@@ -62,7 +63,7 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
         });
       } else {
         setState(() {
-          if (_studio == null) _error = 'Invalid response';
+          if (_studio == null) _error = context.read<LocaleProvider>().t('common.invalidResponse');
           _isLoading = false;
         });
       }
@@ -127,7 +128,7 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Failed to load studio',
+                  context.read<LocaleProvider>().t('common.errorGeneric'),
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16.sp,
@@ -136,7 +137,7 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _error ?? 'Unknown error',
+                  _error ?? context.read<LocaleProvider>().t('common.unknownError'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),

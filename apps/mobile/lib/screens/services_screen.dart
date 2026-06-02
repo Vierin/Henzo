@@ -184,12 +184,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final confirm = await showHenzoDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить тренировку'),
-        content: Text('Удалить тренировку «${item.displayName}»?'),
+        title: Text(context.read<LocaleProvider>().t('servicesScreen.deleteTrainingTitle')),
+        content: Text(context.read<LocaleProvider>().t('servicesScreen.deleteTrainingConfirm').replaceAll('{name}', item.displayName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(context.read<LocaleProvider>().t('common.cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -211,15 +211,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
         context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
         await _loadData();
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('Тренировка удалена'),
+          SnackBar(
+            content: Text(context.read<LocaleProvider>().t('servicesScreen.trainingDeleted')),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
-            content: Text('Не удалось удалить тренировку'),
+            content: Text(context.read<LocaleProvider>().t('servicesScreen.deleteFailed')),
             backgroundColor: Colors.red,
           ),
         );
@@ -287,7 +287,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Информация',
+                        context.read<LocaleProvider>().t('common.info'),
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w800,
@@ -324,7 +324,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary500,
                     ),
-                    child: const Text('Понятно'),
+                    child: Text(context.read<LocaleProvider>().t('common.understood')),
                   ),
                 ),
               ],
@@ -1184,7 +1184,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Введите название тренировки')),
+        SnackBar(content: Text('Введите название тренировки')),
       );
       return;
     }
@@ -1197,7 +1197,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     if (price <= 0 || duration <= 0 || capacity <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Цена, длительность и вместительность должны быть > 0',
           ),
@@ -1209,7 +1209,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final recurringDays = _recurringDays.toList()..sort();
     if (_applyScheduleChanges && recurringDays.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Выберите хотя бы один день')),
+        SnackBar(content: Text('Выберите хотя бы один день')),
       );
       return;
     }
@@ -1257,8 +1257,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           );
           if (scheduleRes == null && mounted) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              const SnackBar(
-                content: Text('Не удалось обновить расписание тренировок'),
+              SnackBar(
+                content: Text(context.read<LocaleProvider>().t('servicesScreen.scheduleUpdateFailed')),
               ),
             );
             return;
@@ -1288,8 +1288,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           );
           if (!ok && mounted) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              const SnackBar(
-                content: Text('Не удалось обновить вместимость или адрес'),
+              SnackBar(
+                content: Text(context.read<LocaleProvider>().t('servicesScreen.updateDefaultsFailed')),
               ),
             );
             return;
@@ -1330,7 +1330,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         leadingWidth: 56,
         centerTitle: true,
         title: Text(
-          widget.title ?? 'Редактировать тренировку',
+          widget.title ?? context.read<LocaleProvider>().t('servicesScreen.editTraining'),
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w600,

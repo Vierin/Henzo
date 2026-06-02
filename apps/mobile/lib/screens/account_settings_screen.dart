@@ -112,7 +112,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       if (picked == null) return;
 
       if (Supabase.instance.client.auth.currentUser?.id == null) {
-        _showSnack('Войдите снова, чтобы загрузить фото');
+        _showSnack(context.read<LocaleProvider>().t('accountSettings.reloginToUploadPhoto'));
         return;
       }
 
@@ -135,11 +135,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           );
         }
       } else {
-        _showSnack(upload.error ?? 'Не удалось загрузить фото');
+        _showSnack(upload.error ?? context.read<LocaleProvider>().t('accountSettings.uploadPhotoFailed'));
       }
     } catch (e) {
       if (mounted) {
-        _showSnack('Ошибка загрузки: $e');
+        _showSnack(context.read<LocaleProvider>().t('accountSettings.uploadError'));
       }
     } finally {
       await OwnerNavigationRestore.clearPendingProfilePhotoUpload();

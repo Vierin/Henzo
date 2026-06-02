@@ -100,7 +100,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     final enrollmentId = (item['enrollmentId'] ?? '').toString();
     if (studioId.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Studio is unavailable')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('clientActivity.studioUnavailable'))),
       );
       return;
     }
@@ -120,7 +120,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     if (submitted == true) {
       ClientScheduleStore.invalidate();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Thank you for your review')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('clientActivity.thankYouForReview'))),
       );
       await _load(force: true);
     }

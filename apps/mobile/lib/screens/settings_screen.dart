@@ -245,16 +245,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Изменения не сохранены'),
-          content: const Text('Вы уверены, что хотите выйти без сохранения?'),
+          title: Text(context.read<LocaleProvider>().t('profileForm.unsavedChanges')),
+          content: Text(context.read<LocaleProvider>().t('profileForm.confirmDiscardChanges')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Остаться'),
+              child: Text(context.read<LocaleProvider>().t('common.stay')),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Выйти'),
+              child: Text(context.read<LocaleProvider>().t('common.exit')),
             ),
           ],
         );
@@ -442,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (name.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Введите название салона')));
+      ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('profileForm.enterSalonName'))));
       return;
     }
     final token = context.read<AuthService>().accessToken;
@@ -523,7 +523,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (picked == null) return;
 
     if (Supabase.instance.client.auth.currentUser?.id == null) {
-      _showSnack('Войдите в аккаунт, чтобы загрузить логотип');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.loginToUploadLogo'));
       return;
     }
 
@@ -534,7 +534,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted) return;
       if (upload.url == null) {
-        _showSnack(upload.error ?? 'Не удалось загрузить логотип');
+        _showSnack(upload.error ?? context.read<LocaleProvider>().t('profileForm.uploadLogoFailed'));
         return;
       }
       setState(() => _logoUrl = upload.url);
@@ -551,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_photosProcessing) return;
     final availableSlots = _maxStudioPhotos - _studioPhotos.length;
     if (availableSlots <= 0) {
-      _showSnack('Можно загрузить максимум $_maxStudioPhotos фото');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.photoLimitExceeded').replaceAll('{max}', '$_maxStudioPhotos'));
       return;
     }
 
@@ -563,29 +563,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     var filesToProcess = picked;
     if (picked.length > availableSlots) {
       filesToProcess = picked.take(availableSlots).toList();
-      _showSnack('Лишние фото пропущены. Лимит: $_maxStudioPhotos');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.extraPhotosSkipped').replaceAll('{max}', '$_maxStudioPhotos'));
     }
 
     if (Supabase.instance.client.auth.currentUser?.id == null) {
-      _showSnack('Войдите в аккаунт, чтобы загрузить фото');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.loginToUploadPhotos'));
       return;
     }
 
+    final locale = context.read<LocaleProvider>();
     setState(() => _photosProcessing = true);
-    setState(() => _photoProgressText = 'Оптимизация...');
+    setState(() => _photoProgressText = locale.t('profileForm.optimizing'));
     final uploadedUrls = <String>[];
     var oversizedCount = 0;
     var failedUploadsCount = 0;
     final uploadErrors = <String>{};
     for (final file in filesToProcess) {
       if (mounted) {
-        setState(() => _photoProgressText = 'Загрузка...');
+        setState(() => _photoProgressText = locale.t('profileForm.uploading'));
       }
       final upload = await OwnerPhotoStorageService.uploadStudioGalleryPhoto(
         file: file,
       );
       if (upload.url == null) {
-        if (upload.error == 'Фото больше 3 MB') {
+        if (upload.error == locale.t('profileForm.photoTooLarge') || upload.error == 'Фото больше 3 MB') {
           oversizedCount++;
         } else {
           failedUploadsCount++;
@@ -605,10 +606,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _photoProgressText = null;
     });
     if (oversizedCount > 0) {
-      _showSnack('$oversizedCount фото больше 3MB и не были добавлены');
+      _showSnack(locale.t('profileForm.oversizedPhotosSkipped').replaceAll('{count}', '$oversizedCount'));
     }
     if (failedUploadsCount > 0) {
-      _showSnack('$failedUploadsCount фото не загрузились в storage');
+      _showSnack(locale.t('profileForm.uploadsFailed').replaceAll('{count}', '$failedUploadsCount'));
       if (uploadErrors.isNotEmpty) {
         _showSnack(uploadErrors.first);
       }

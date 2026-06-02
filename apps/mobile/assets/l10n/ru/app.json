@@ -33,7 +33,32 @@
 		"invite": "Пригласить",
 		"pleaseLoginFirst": "Сначала войдите в аккаунт",
 		"addressCopied": "Адрес скопирован",
-		"share": "Поделиться"
+		"share": "Поделиться",
+		"stay": "Остаться",
+		"exit": "Выйти",
+		"info": "Информация",
+		"understood": "Понятно",
+		"dash": "—",
+		"studio": "Студия",
+		"client": "Клиент",
+		"error": "Ошибка: {error}",
+		"errorGeneric": "Что-то пошло не так",
+		"free": "Бесплатно",
+		"couldNotOpenCalendar": "Не удалось открыть календарь",
+		"noAddressAvailable": "Адрес не указан",
+		"couldNotOpenMaps": "Не удалось открыть карты",
+		"addToCalendar": "Добавить в календарь",
+		"getDirections": "Маршрут",
+		"today": "Сегодня",
+		"collapse": "Свернуть",
+		"expand": "Развернуть",
+		"invalidResponse": "Некорректный ответ",
+		"unknownError": "Неизвестная ошибка",
+		"appName": "Henzo",
+		"class": "Класс",
+		"default": "По умолчанию",
+		"reviewsCount": "{count} отзывов",
+		"signInToUploadPhoto": "Войдите снова, чтобы загрузить фото"
 	},
 	"nav": {
 		"dashboard": "Дашборд",
@@ -114,7 +139,10 @@
 		"termsPrefix": "Продолжая, вы соглашаетесь с нашей ",
 		"privacyPolicy": "Политикой конфиденциальности",
 		"termsAnd": "и",
-		"termsOfService": "Условиями использования"
+		"termsOfService": "Условиями использования",
+		"noAccountRegister": "Нет аккаунта? Зарегистрируйтесь",
+		"phone": "Телефон",
+		"createAccount": "Создать аккаунт"
 	},
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",
@@ -143,7 +171,31 @@
 		"browseEmptyNoClassesTitle": "Занятий не найдено",
 		"browseEmptyNoClassesBody": "Попробуйте другой день или измените фильтры.",
 		"browseEmptyNoLocationTitle": "Укажите локацию",
-		"browseEmptyNoLocationBody": "Выберите город, чтобы видеть студии и занятия рядом."
+		"browseEmptyNoLocationBody": "Выберите город, чтобы видеть студии и занятия рядом.",
+		"filterTypes": "Типы",
+		"filterTime": "Время",
+		"filterDistance": "Расстояние",
+		"filterSort": "Сортировка",
+		"filtersTitle": "Фильтры",
+		"sortBySection": "Сортировать по",
+		"sortRecommended": "Рекомендуемые",
+		"sortRatings": "Рейтинг",
+		"sortRatingsDesc": "От высокого к низкому",
+		"sortDistance": "Расстояние",
+		"sortDistanceAsc": "Ближайшие сначала",
+		"distanceFromLocation": "Расстояние от вас",
+		"distanceAuto": "Авто (20 км)",
+		"distance5km": "5 км",
+		"distance10km": "10 км",
+		"distance15km": "15 км",
+		"distance30plus": "30+ км",
+		"timePeriodMorning": "Утро",
+		"timePeriodAfternoon": "День",
+		"timePeriodEvening": "Вечер",
+		"filterByTime": "Фильтр по времени",
+		"activitiesByTimePeriod": "Занятия по времени суток",
+		"activitiesByStartTime": "Занятия по времени начала",
+		"failedToUpdateFavorites": "Не удалось обновить избранное"
 	},
 	"clientShell": {
 		"home": "Главная",
@@ -166,7 +218,9 @@
 		"passesEmptySubtitle": "Здесь появятся карточки ваших занятий.",
 		"cancelConfirmTitle": "Отменить запись?",
 		"cancelConfirmBody": "Вы уверены, что хотите отменить эту запись?",
-		"cancelConfirmAction": "Да, отменить"
+		"cancelConfirmAction": "Да, отменить",
+		"studioUnavailable": "Студия недоступна",
+		"thankYouForReview": "Спасибо за отзыв!"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Пора найти ваше любимое место",
@@ -199,7 +253,8 @@
 		"completed": "Выполнено",
 		"notificationsTitle": "Будьте в курсе",
 		"notificationsSubtitle": "Включите уведомления о занятиях и обновлениях студий.",
-		"manageNotifications": "Уведомления"
+		"manageNotifications": "Уведомления",
+		"failedToUpdateFavorites": "Не удалось обновить избранное"
 	},
 	"clientStudioDetail": {
 		"share": "Поделиться",
@@ -333,7 +388,8 @@
 		"bookedLabel": "записано",
 		"showMore": "Подробнее",
 		"noTrainingsToday": "На сегодня занятий нет",
-		"enjoyYourDay": "Хорошего дня!"
+		"enjoyYourDay": "Хорошего дня!",
+		"studioNowActive": "Студия теперь активна"
 	},
 	"ownerSession": {
 		"detailTitle": "Занятие",
@@ -435,7 +491,15 @@
 		"trainerYou": "Вы",
 		"visitMinutes": "{n} мин",
 		"actionCall": "Звонок",
-		"actionEmail": "Email"
+		"actionEmail": "Email",
+		"clientCountOne": "{n} КЛИЕНТ",
+		"clientCountFew": "{n} КЛИЕНТА",
+		"clientCountMany": "{n} КЛИЕНТОВ",
+		"searchHint": "Поиск по имени, email или телефону",
+		"filterAll": "Все",
+		"filterSleepers": "Спящие",
+		"filterWhiteList": "Белый список",
+		"filterBlocked": "Заблокированные"
 	},
 	"booking": {
 		"details": "Детали записи",
@@ -613,7 +677,19 @@
 		"searchByName": "Поиск по имени...",
 		"emptyTitle": "Пока нет услуг",
 		"emptySubtitle": "Добавьте первую услугу",
-		"changeFilters": "Измените фильтры"
+		"changeFilters": "Измените фильтры",
+		"deleteTrainingTitle": "Удалить тренировку",
+		"deleteTrainingConfirm": "Удалить тренировку «{name}»?",
+		"trainingDeleted": "Тренировка удалена",
+		"deleteFailed": "Не удалось удалить тренировку",
+		"categoryRequestMessage": "Если нет нужной категории — сообщите нам, и мы добавим её.",
+		"editTraining": "Редактировать тренировку",
+		"editAllFuture": "Применить изменения ко всем будущим тренировкам",
+		"applyFromToday": "Применить с сегодняшнего дня",
+		"changeStartDate": "Дата начала изменений",
+		"scheduleUpdateResult": "Создано: {created}, пропущено: {skipped}",
+		"scheduleUpdateFailed": "Не удалось обновить расписание",
+		"updateDefaultsFailed": "Не удалось обновить вместимость или адрес"
 	},
 	"notifications": {
 		"title": "Уведомления",
@@ -782,7 +858,7 @@
 		"profileSettings": "Настройки профиля",
 		"mainInfo": "Основная информация",
 		"salonName": "Название салона",
-		"enterSalonName": "Введите название салона",
+		"enterSalonName": "Введите название студии",
 		"description": "Описание",
 		"enterDescription": "Опишите ваш салон",
 		"address": "Адрес",
@@ -835,7 +911,19 @@
 		"addSocialLinkSheetTitle": "ДОБАВИТЬ СОЦСЕТЬ",
 		"mainPhoto": "Главное",
 		"salonDescriptionHint": "Укажите детали о вашем салоне, включая название, описание, адрес, контактную информацию, фотографии и часы работы.",
-		"deleteWarning": "После удаления аккаунта восстановление невозможно. Все данные будут удалены."
+		"deleteWarning": "После удаления аккаунта восстановление невозможно. Все данные будут удалены.",
+		"unsavedChanges": "Изменения не сохранены",
+		"confirmDiscardChanges": "Вы уверены, что хотите выйти без сохранения?",
+		"loginToUploadLogo": "Войдите в аккаунт, чтобы загрузить логотип",
+		"uploadLogoFailed": "Не удалось загрузить логотип",
+		"photoLimitExceeded": "Можно загрузить максимум {max} фото",
+		"extraPhotosSkipped": "Лишние фото пропущены. Лимит: {max}",
+		"loginToUploadPhotos": "Войдите в аккаунт, чтобы загрузить фото",
+		"optimizing": "Оптимизация...",
+		"uploading": "Загрузка...",
+		"photoTooLarge": "Фото больше 3 MB",
+		"oversizedPhotosSkipped": "{count} фото больше 3 MB не добавлены",
+		"uploadsFailed": "{count} фото не загрузились"
 	},
 	"locations": {
 		"mainStudio": "Основная студия"
@@ -892,7 +980,29 @@
 			"scheduleHint": "Время для каждого выбранного дня",
 			"sessionsPlanned": "Занятий в периоде: {count}",
 			"back": "Назад"
-		}
+		},
+		"checkErrors": "Проверьте поля, отмеченные красной рамкой",
+		"noExistingTrainings": "У студии пока нет тренировок. Введите название новой.",
+		"nameExample": "Например: Vinyasa Flow",
+		"enterName": "Введите название тренировки",
+		"invalidValues": "Цена, длительность и вместимость должны быть > 0",
+		"selectDays": "Выберите хотя бы один день недели",
+		"nextStep": "Следующий шаг",
+		"trainingName": "Название тренировки",
+		"category": "Категория",
+		"duration": "Длительность",
+		"capacity": "Вместимость",
+		"price": "Цена",
+		"enterPrice": "Введите цену",
+		"description": "Описание",
+		"descriptionOptional": "Описание тренировки (необязательно)",
+		"weekdayMon": "ПН",
+		"weekdayTue": "ВТ",
+		"weekdayWed": "СР",
+		"weekdayThu": "ЧТ",
+		"weekdayFri": "ПТ",
+		"weekdaySat": "СБ",
+		"weekdaySun": "ВС"
 	},
 	"trainer": {
 		"role": "Тренер",
@@ -920,5 +1030,41 @@
 		"noAddressAvailable": "Адрес не указан",
 		"couldNotOpenMaps": "Не удалось открыть карты",
 		"getDirections": "Маршрут"
+	},
+	"periodPicker": {
+		"title": "Период",
+		"currentMonth": "Текущий месяц",
+		"previousMonth": "Прошлый месяц",
+		"currentWeek": "Текущая неделя",
+		"previousWeek": "Прошлая неделя"
+	},
+	"bookings": {
+		"bookingCancelled": "Запись отменена",
+		"bookingConfirmed": "Бронирование подтверждено",
+		"bookingRejected": "Бронирование отклонено",
+		"yourAppointments": "Записи",
+		"filterAll": "Все",
+		"filterNew": "Новые",
+		"filterPending": "Ожидают",
+		"filterCompleted": "Завершённые",
+		"noBookings": "Записей нет",
+		"statusPending": "Ожидает",
+		"statusConfirmed": "Подтверждено",
+		"statusCompleted": "Завершено",
+		"statusCancelled": "Отменено",
+		"statusNoShow": "Не пришёл"
+	},
+	"accountSettings": {
+		"reloginToUploadPhoto": "Войдите снова, чтобы загрузить фото",
+		"uploadPhotoFailed": "Не удалось загрузить фото",
+		"uploadError": "Ошибка загрузки"
+	},
+	"clientBooking": {
+		"confirmed": "Подтверждено",
+		"inviteFriends": "Пригласить друзей",
+		"youreIn": "Вы записаны!"
+	},
+	"publicClassDetail": {
+		"notFound": "Этот класс больше недоступен."
 	}
 }

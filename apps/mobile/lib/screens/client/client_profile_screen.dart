@@ -264,7 +264,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Failed to update favorites')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('clientProfile.failedToUpdateFavorites'))),
         );
     }
   }

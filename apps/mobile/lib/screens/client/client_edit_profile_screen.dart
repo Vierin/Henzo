@@ -116,7 +116,7 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
 
       if (Supabase.instance.client.auth.currentUser?.id == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in again to upload photo')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('common.signInToUploadPhoto'))),
         );
         return;
       }
