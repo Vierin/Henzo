@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -18,7 +19,6 @@ import '../utils/load_error_message.dart';
 import '../widgets/common/load_error_view.dart';
 import '../services/client_schedule_store.dart';
 import '../widgets/common/henzo_header_back_button.dart';
-import '../widgets/public/cached_salon_network_image.dart';
 import '../widgets/session_capacity_card.dart';
 import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
@@ -198,10 +198,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       if (!mounted) return;
       ClientScheduleStore.invalidate();
       // Schedule reminder push via backend — fire-and-forget, silent fallback
-      final enrollmentId = (raw is Map
-              ? (raw['id'] ?? raw['enrollmentId'])
-              : null)
-          ?.toString();
+      final enrollmentId =
+          (raw is Map ? (raw['id'] ?? raw['enrollmentId']) : null)?.toString();
       if (enrollmentId != null && enrollmentId.isNotEmpty) {
         ApiClient.post(
           '/notifications/remind-before-class',
@@ -568,7 +566,7 @@ class _ClassDetailBody extends StatelessWidget {
     final locName = (session['locationName'] ?? '').toString().trim();
     final studioName = (studio?['name'] ?? 'Studio').toString();
     final address = (studio?['address'] ?? '').toString().trim();
-    final logoUrl = (studio?['logoUrl'] ?? '').toString();
+    final logoUrl = resolveStudioBrandImageUrl(studio) ?? '';
     final initials = studioName.isEmpty
         ? '?'
         : studioName
@@ -619,63 +617,73 @@ class _ClassDetailBody extends StatelessWidget {
       studioLat: studioLat,
       studioLng: studioLng,
     );
-    final distanceText = formatBrowseStudioDistanceLabel(resolvedKm);
-    final distanceLabel =
-        distanceText.isEmpty ? null : distanceText;
+    final distanceLabel = formatDistanceKmLabel(resolvedKm);
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 12, 16),
-          child: Row(
-            children: [
-              HenzoHeaderBackButton(
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              Expanded(
-                child: Text(
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingHorizontal,
+            4,
+            kScreenPaddingHorizontal,
+            16,
+          ),
+          child: SizedBox(
+            height: 40,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Row(
+                  children: [
+                    HenzoHeaderBackButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: onShare,
+                      icon: SvgPicture.asset(
+                        'assets/icons/icon-share.svg',
+                        width: 16,
+                        height: 12,
+                        fit: BoxFit.contain,
+                        excludeFromSemantics: true,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      label: const Text('Share'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary500,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        textStyle: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
                   'Class',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-              FilledButton.icon(
-                onPressed: onShare,
-                icon: SvgPicture.asset(
-                  'assets/icons/icon-share.svg',
-                  width: 16,
-                  height: 12,
-                  fit: BoxFit.contain,
-                  excludeFromSemantics: true,
-                  colorFilter: ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                label: const Text('Share'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         Expanded(
@@ -689,6 +697,7 @@ class _ClassDetailBody extends StatelessWidget {
             children: [
               _StudioHeroBanner(
                 accent: accent,
+                foregroundColor: chipFg,
                 studioName: studioName,
                 logoUrl: logoUrl,
                 initials: initials,
@@ -766,6 +775,7 @@ class _ClassDetailBody extends StatelessWidget {
 class _StudioHeroBanner extends StatelessWidget {
   const _StudioHeroBanner({
     required this.accent,
+    required this.foregroundColor,
     required this.studioName,
     required this.logoUrl,
     required this.initials,
@@ -776,6 +786,7 @@ class _StudioHeroBanner extends StatelessWidget {
   });
 
   final Color accent;
+  final Color foregroundColor;
   final String studioName;
   final String logoUrl;
   final String initials;
@@ -784,8 +795,41 @@ class _StudioHeroBanner extends StatelessWidget {
   final String? distanceLabel;
   final VoidCallback onTap;
 
+  static const _metaSeparator = ' · ';
+
+  TextStyle _metaStyle() => TextStyle(
+    fontSize: 11.sp,
+    fontWeight: FontWeight.w400,
+    color: foregroundColor,
+    height: 1.1,
+  );
+
   @override
   Widget build(BuildContext context) {
+    final metaParts = <Widget>[];
+    if (avgRating > 0) {
+      metaParts.addAll([
+        Icon(Icons.star_rounded, size: 14, color: foregroundColor),
+        const SizedBox(width: 2),
+        Text(
+          avgRating.toStringAsFixed(1).replaceAll('.', ','),
+          style: _metaStyle().copyWith(fontWeight: FontWeight.w600),
+        ),
+      ]);
+    }
+    if (reviewCount > 0) {
+      if (metaParts.isNotEmpty) {
+        metaParts.add(Text(_metaSeparator, style: _metaStyle()));
+      }
+      metaParts.add(Text('$reviewCount reviews', style: _metaStyle()));
+    }
+    if (distanceLabel != null && distanceLabel!.isNotEmpty) {
+      if (metaParts.isNotEmpty) {
+        metaParts.add(Text(_metaSeparator, style: _metaStyle()));
+      }
+      metaParts.add(Text(distanceLabel!, style: _metaStyle()));
+    }
+
     return Material(
       color: accent,
       borderRadius: BorderRadius.circular(14),
@@ -801,10 +845,7 @@ class _StudioHeroBanner extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _StudioAvatarBadge(
-                      logoUrl: logoUrl,
-                      initials: initials,
-                    ),
+                    _StudioAvatarBadge(logoUrl: logoUrl, initials: initials),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -817,52 +858,16 @@ class _StudioHeroBanner extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
+                              color: foregroundColor,
                             ),
                           ),
-                          if (distanceLabel != null) ...[
+                          if (metaParts.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Text(
-                              distanceLabel!,
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0x663F3F3F),
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                          if (avgRating > 0 || reviewCount > 0) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                if (avgRating > 0) ...[
-                                  const Icon(
-                                    Icons.star_rounded,
-                                    size: 16,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    avgRating.toStringAsFixed(1),
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                                if (reviewCount > 0) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '$reviewCount reviews',
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 0,
+                              runSpacing: 2,
+                              children: metaParts,
                             ),
                           ],
                         ],
@@ -996,6 +1001,7 @@ class _ClassInfoCard extends StatelessWidget {
               Expanded(
                 child: _ClassMetaItem(
                   accent: accent,
+                  iconColor: categoryFg,
                   icon: Icons.schedule_rounded,
                   label: timeLabel,
                 ),
@@ -1005,6 +1011,7 @@ class _ClassInfoCard extends StatelessWidget {
                 Expanded(
                   child: _ClassMetaItem(
                     accent: accent,
+                    iconColor: categoryFg,
                     svgAsset: 'assets/icons/icon-profile-large.svg',
                     svgSize: 14,
                     label: instructorName,
@@ -1016,6 +1023,7 @@ class _ClassInfoCard extends StatelessWidget {
           const SizedBox(height: 12),
           _DetailIconRow(
             accent: accent,
+            iconColor: categoryFg,
             icon: Icons.place_outlined,
             title: locationTitle,
             emphasizeTitle: true,
@@ -1075,11 +1083,23 @@ class _StudioAvatarBadge extends StatelessWidget {
       child: logoUrl.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: CachedSalonNetworkImage(
+              child: CachedNetworkImage(
                 imageUrl: logoUrl,
                 width: 40,
                 height: 40,
                 fit: BoxFit.cover,
+                fadeInDuration: const Duration(milliseconds: 180),
+                placeholder: (_, __) => const ColoredBox(
+                  color: AppColors.secondary100,
+                ),
+                errorWidget: (_, __, ___) => Text(
+                  initials,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
             )
           : Text(
@@ -1097,6 +1117,7 @@ class _StudioAvatarBadge extends StatelessWidget {
 class _ClassMetaItem extends StatelessWidget {
   const _ClassMetaItem({
     required this.accent,
+    required this.iconColor,
     this.icon,
     this.svgAsset,
     this.svgSize = 18,
@@ -1104,6 +1125,7 @@ class _ClassMetaItem extends StatelessWidget {
   }) : assert(icon != null || svgAsset != null);
 
   final Color accent;
+  final Color iconColor;
   final IconData? icon;
   final String? svgAsset;
   final double svgSize;
@@ -1126,12 +1148,9 @@ class _ClassMetaItem extends StatelessWidget {
                   height: svgSize,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 )
-              : Icon(icon, size: 16, color: AppColors.textPrimary),
+              : Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(width: 10),
         Flexible(
@@ -1156,6 +1175,7 @@ class _ClassMetaItem extends StatelessWidget {
 class _DetailIconRow extends StatelessWidget {
   const _DetailIconRow({
     required this.accent,
+    required this.iconColor,
     this.icon,
     this.svgAsset,
     this.svgSize = 20,
@@ -1166,6 +1186,7 @@ class _DetailIconRow extends StatelessWidget {
   }) : assert(icon != null || svgAsset != null);
 
   final Color accent;
+  final Color iconColor;
   final IconData? icon;
   final String? svgAsset;
   final double svgSize;
@@ -1191,12 +1212,9 @@ class _DetailIconRow extends StatelessWidget {
                   height: svgSize,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 )
-              : Icon(icon, size: 16, color: AppColors.textPrimary),
+              : Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -1337,8 +1355,9 @@ class _BookBar extends StatelessWidget {
               onPressed: (!canBook || started || booking) ? null : onBook,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary500,
-                disabledBackgroundColor:
-                    AppColors.primary500.withValues(alpha: 0.45),
+                disabledBackgroundColor: AppColors.primary500.withValues(
+                  alpha: 0.45,
+                ),
                 disabledForegroundColor: Colors.white70,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1431,10 +1450,7 @@ class _WaitlistButton extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             locale.t('clientClassDetail.waitlistNotifyHint'),
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],

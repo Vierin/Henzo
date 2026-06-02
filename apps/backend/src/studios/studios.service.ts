@@ -1621,6 +1621,7 @@ export class StudiosService {
         phone: Studio.phone,
         website: Studio.website,
         instagram: Studio.instagram,
+        logoUrl: Studio.logoUrl,
         photos: Studio.photos,
         workingHours: Studio.workingHours,
         latitude: Studio.latitude,

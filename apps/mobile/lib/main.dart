@@ -6,7 +6,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'config/load_app_env.dart';
 import 'config/release_env.dart';
+import 'config/screen_util_config.dart';
 import 'deep_links/class_session_deep_link.dart';
 import 'deep_links/studio_deep_link.dart';
 import 'deep_links/trainer_invite_deep_link.dart';
@@ -223,10 +223,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         child: Consumer<LocaleProvider>(
           builder: (context, locale, _) {
             if (!locale.isLoaded) {
-            return ScreenUtilInit(
-              designSize: const Size(390, 844),
-              minTextAdapt: true,
-              splitScreenMode: false,
+            return henzScreenUtilInit(
               child: MaterialApp(
                 title: 'Henzo',
                 theme: AppTheme.light,
@@ -257,10 +254,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ),
             );
           }
-          return ScreenUtilInit(
-            designSize: const Size(430, 932),
-            minTextAdapt: true,
-            splitScreenMode: false,
+          return henzScreenUtilInit(
             builder: (context, child) => MaterialApp(
               title: 'Henzo',
               navigatorKey: henzoRootNavigatorKey,
