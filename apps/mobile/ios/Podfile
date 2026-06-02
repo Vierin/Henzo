@@ -62,8 +62,8 @@ post_install do |installer|
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
       config.build_settings['COPY_PHASE_STRIP'] = 'NO'
       config.build_settings['STRIP_INSTALLED_PRODUCT'] = 'NO'
-      # Exclude arm64 simulator arch to prevent "unsupported platform" App Store rejection
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      # arm64 simulator exclusion removed — Xcode 26+ requires arm64 for Apple Silicon simulators.
+      # App Store "iossimulator platform" issue is handled by "Strip Simulator Platform Flags v4" script.
 
       if NOISY_PODS.include?(target.name)
         config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
@@ -78,71 +78,108 @@ post_install do |installer|
   runner_project.targets.each do |target|
     next unless target.name == 'Runner'
 
-    # Fix "unsupported platform in arm64 slice" App Store validation error.
-    # Some Flutter/Dart frameworks ship with iossimulator platform flags in the
-    # arm64 slice. xcrun vtool rewrites the Mach-O build version to plain iOS.
-    # Remove legacy phase names so the updated script replaces them
+    # Fix "unsupported platform in arm64 slice" App Store validation error (409).
+    # Root cause: Flutter/Dart FFI frameworks ship with LC_BUILD_VERSION
+    # platform=IOSSIMULATOR (7) in the arm64 slice. We patch the Mach-O bytes
+    # directly with Python (more reliable than vtool), remove the stale code
+    # signature so Xcode re-signs the clean binary during archive export.
+    # Phase is always removed & re-added to stay AFTER "Embed Pods Frameworks"
+    # and to pick up the latest script on every pod install.
     target.shell_script_build_phases.select { |p|
-      p.name == 'Strip Simulator Platform Flags' || p.name == 'Strip Simulator Platform Flags v2'
+      p.name.to_s.start_with?('Strip Simulator Platform Flags')
     }.each(&:remove_from_project)
 
-    strip_phase_name = 'Strip Simulator Platform Flags v3'
-    unless target.shell_script_build_phases.any? { |p| p.name == strip_phase_name }
-      strip_phase = target.new_shell_script_build_phase(strip_phase_name)
-      strip_phase.shell_script = <<~'SH'
-        if [ "${CONFIGURATION}" = "Debug" ]; then exit 0; fi
-        FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
-        [ -d "${FRAMEWORKS}" ] || exit 0
+    strip_phase = target.new_shell_script_build_phase('Strip Simulator Platform Flags v5')
+    # No input/output files → phase always runs (never skipped by build system cache)
+    strip_phase.input_paths             = []
+    strip_phase.output_paths            = []
+    strip_phase.input_file_list_paths   = []
+    strip_phase.output_file_list_paths  = []
+    strip_phase.shell_script = <<~'SH'
+      if [ "${CONFIGURATION}" = "Debug" ]; then exit 0; fi
 
-        fix_binary() {
-          local binary="$1"
-          xcrun vtool -show-build "${binary}" 2>/dev/null | grep -qiE "IOSSIMULATOR|iossimulator" || return 0
-          echo "[strip] Fixing simulator platform flag: $(basename "${binary}")"
-          local tmp
-          tmp=$(mktemp)
-          # Xcode 14+ supports -remove-build-version: removes iossimulator and sets ios in one pass
-          if xcrun vtool \
-              -remove-build-version iossimulator \
-              -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${IPHONEOS_DEPLOYMENT_TARGET}" \
-              -output "${tmp}" "${binary}" 2>/dev/null; then
-            mv "${tmp}" "${binary}"
-            return 0
-          fi
-          rm -f "${tmp}"
-          # Fallback: thin to arm64-only slice, then replace build version
-          local thin
-          thin=$(mktemp)
-          lipo -extract arm64 "${binary}" -output "${thin}" 2>/dev/null || cp "${binary}" "${thin}"
-          if xcrun vtool \
-              -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${IPHONEOS_DEPLOYMENT_TARGET}" \
-              -replace -output "${tmp}" "${thin}" 2>/dev/null; then
-            mv "${tmp}" "${binary}"
-          fi
-          rm -f "${thin}" "${tmp}"
-        }
+      FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+      [ -d "${FRAMEWORKS}" ] || exit 0
 
-        # 1. Fix .framework binaries (error 4ad/409)
-        find "${FRAMEWORKS}" -name "*.framework" -type d | while IFS= read -r fw; do
-          binary="${fw}/$(basename "${fw}" .framework)"
-          [ -f "${binary}" ] && fix_binary "${binary}"
-        done
+      # Python patches LC_BUILD_VERSION platform bytes directly in the Mach-O.
+      # PLATFORM_IOSSIMULATOR = 7  →  PLATFORM_IOS = 2
+      # Handles both single-arch and FAT binaries.
+      # After patching the stale code signature is removed so Xcode re-signs
+      # the binary during the archive export step (deep signing).
+      fix_binary() {
+        local binary="$1"
+        [ -f "${binary}" ] || return 0
 
-        # 1b. Fix loose .dylib files
-        find "${FRAMEWORKS}" -name "*.dylib" -type f | while IFS= read -r dylib; do
-          fix_binary "${dylib}"
-        done
+        python3 - "${binary}" << 'PYEOF'
+import sys, struct, os
 
-        # 2. Sync MinimumOSVersion in framework Info.plist to match app target (error 90208)
-        find "${FRAMEWORKS}" -name "Info.plist" | while IFS= read -r plist; do
-          current=$(/usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "${plist}" 2>/dev/null)
-          [ -z "${current}" ] && continue
-          if [ "${current}" != "${IPHONEOS_DEPLOYMENT_TARGET}" ]; then
-            echo "[strip] Updating MinimumOSVersion: $(dirname "${plist}" | xargs basename)"
-            /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion ${IPHONEOS_DEPLOYMENT_TARGET}" "${plist}" 2>/dev/null || true
-          fi
-        done
-      SH
-    end
+PLATFORM_IOSSIMULATOR = 7
+PLATFORM_IOS          = 2
+LC_BUILD_VERSION      = 0x32
+
+def patch_arch(data, base):
+    magic = struct.unpack_from('<I', data, base)[0]
+    if magic != 0xFEEDFACF:   # only 64-bit LE (arm64)
+        return False
+    ncmds   = struct.unpack_from('<I', data, base + 16)[0]
+    off     = base + 32        # 64-bit Mach-O header size
+    changed = False
+    for _ in range(ncmds):
+        cmd, size = struct.unpack_from('<II', data, off)
+        if cmd == LC_BUILD_VERSION:
+            plat = struct.unpack_from('<I', data, off + 8)[0]
+            if plat == PLATFORM_IOSSIMULATOR:
+                struct.pack_into('<I', data, off + 8, PLATFORM_IOS)
+                changed = True
+        off += size
+    return changed
+
+path = sys.argv[1]
+with open(path, 'rb') as f:
+    raw = bytearray(f.read())
+
+modified = False
+fat_magic = struct.unpack_from('>I', raw, 0)[0]
+if fat_magic == 0xCAFEBABE:           # FAT binary
+    nfat = struct.unpack_from('>I', raw, 4)[0]
+    for i in range(nfat):
+        arch_offset = struct.unpack_from('>I', raw, 8 + i * 20 + 8)[0]
+        if patch_arch(raw, arch_offset):
+            modified = True
+else:
+    modified = patch_arch(raw, 0)
+
+if modified:
+    with open(path, 'wb') as f:
+        f.write(raw)
+    print(f"[strip] Patched platform flags: {os.path.basename(path)}")
+    # Remove stale code signature — Xcode will re-sign during archive export
+    os.system(f'codesign --remove-signature "{path}" 2>/dev/null || true')
+PYEOF
+      }
+
+      # Fix .framework binaries
+      find "${FRAMEWORKS}" -name "*.framework" -type d | while IFS= read -r fw; do
+        fix_binary "${fw}/$(basename "${fw}" .framework)"
+      done
+
+      # Fix loose .dylib files
+      find "${FRAMEWORKS}" -name "*.dylib" -type f | while IFS= read -r dylib; do
+        fix_binary "${dylib}"
+      done
+
+      # Sync MinimumOSVersion in Info.plist to avoid error 90208
+      find "${FRAMEWORKS}" -name "Info.plist" | while IFS= read -r plist; do
+        current=$(/usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "${plist}" 2>/dev/null)
+        [ -z "${current}" ] && continue
+        if [ "${current}" != "${IPHONEOS_DEPLOYMENT_TARGET}" ]; then
+          /usr/libexec/PlistBuddy -c \
+            "Set :MinimumOSVersion ${IPHONEOS_DEPLOYMENT_TARGET}" "${plist}" 2>/dev/null || true
+        fi
+      done
+
+      echo "[strip] Done."
+    SH
 
     dsym_phase_name = 'Generate Missing Framework dSYMs'
     unless target.shell_script_build_phases.any? { |p| p.name == dsym_phase_name }

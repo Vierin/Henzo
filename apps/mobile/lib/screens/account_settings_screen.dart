@@ -16,6 +16,7 @@ import '../utils/auth_ui_result.dart';
 import '../utils/owner_image_picker.dart';
 import '../utils/owner_navigation_restore.dart';
 import 'main_shell.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -311,8 +312,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         ),
         title: Text(
           locale.t('profileForm.accountSettings'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),

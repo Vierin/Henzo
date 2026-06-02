@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../widgets/common/henzo_header_back_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const _monthNamesRu = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -109,10 +110,10 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         leadingWidth: 56,
-        title: const Text(
+        title: Text(
           'Период',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
@@ -207,8 +208,8 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                       children: [
                         Text(
                           '${_monthNamesRu[_displayMonth.month - 1]} ${_displayMonth.year}',
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
@@ -241,8 +242,8 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                                 child: Center(
                                   child: Text(
                                     d,
-                                    style: const TextStyle(
-                                      fontSize: 12,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
                                       color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -367,8 +368,8 @@ class _QuickButton extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
               ),
@@ -427,7 +428,7 @@ class _DayCell extends StatelessWidget {
               child: Text(
                 '${date.day}',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 15.sp,
                   fontWeight: (isStart || isEnd) ? FontWeight.bold : FontWeight.w500,
                   color: isOtherMonth
                       ? AppColors.textTertiary

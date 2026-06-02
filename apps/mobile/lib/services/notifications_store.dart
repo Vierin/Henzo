@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_notification.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const String _keyList = 'henzo_notifications_list';
 

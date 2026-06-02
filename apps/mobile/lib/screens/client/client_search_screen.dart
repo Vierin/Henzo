@@ -32,6 +32,7 @@ import '../../widgets/client/browse_day_pill.dart';
 import '../../widgets/client/browse_studio_list_card.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
 import '../../widgets/training/training_category_color_chip.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const int _kExploreHorizonDays = 31;
 
@@ -277,8 +278,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                 child: Center(
                   child: Text(
                     dow[i],
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w400,
                       letterSpacing: -0.3,
                       color: AppColors.textSecondary,
@@ -340,7 +341,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             child: Text(
                               '${day.day}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                                 color: selected
                                     ? Colors.white
@@ -824,8 +825,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 30 / 1.6,
+            style: TextStyle(
+              fontSize: 30.sp / 1.6,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
@@ -1102,7 +1103,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           child: TextButton(
                             onPressed: () =>
                                 setModalState(() => tempSelection = -1),
-                            child: const Text(
+                            child: Text(
                               'Reset',
                               style: TextStyle(
                                 color: AppColors.textPrimary,
@@ -1238,7 +1239,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     children: [
                       _filterSheetTitleRow(ctx, 'Filter by time'),
                       const SizedBox(height: 14),
-                      const Text(
+                      Text(
                         'Activities by time period',
                         style: TextStyle(
                           color: AppColors.textPrimary,
@@ -1269,7 +1270,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         ],
                       ),
                       const SizedBox(height: 18),
-                      const Text(
+                      Text(
                         'Activities by start time',
                         style: TextStyle(
                           color: AppColors.textPrimary,
@@ -1281,7 +1282,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         alignment: Alignment.centerRight,
                         child: Text(
                           '${formatMinutesSliderLabel(tempRange.start)} - ${formatMinutesSliderLabel(tempRange.end)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.primary500,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1307,7 +1308,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               tempRange = _kExploreDefaultTimeRange;
                             });
                           },
-                          child: const Text(
+                          child: Text(
                             'Reset',
                             style: TextStyle(
                               color: AppColors.textPrimary,
@@ -1429,16 +1430,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 ? AppColors.primary500
                                 : AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: 15.sp,
                           ),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 13,
+                              fontSize: 13.sp,
                             ),
                           ),
                         ],
@@ -1502,7 +1503,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => temp = 'recommended'),
-                          child: const Text(
+                          child: Text(
                             'Reset',
                             style: TextStyle(
                               color: AppColors.textPrimary,
@@ -1588,16 +1589,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 ? AppColors.primary500
                                 : AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: 15.sp,
                           ),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 13,
+                              fontSize: 13.sp,
                             ),
                           ),
                         ],
@@ -1668,7 +1669,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => tempDistance = 'auto'),
-                          child: const Text(
+                          child: Text(
                             'Reset',
                             style: TextStyle(
                               color: AppColors.textPrimary,
@@ -1723,7 +1724,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
@@ -1774,9 +1775,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 12,
+                              fontSize: 12.sp,
                             ),
                           ),
                         ],
@@ -1987,7 +1988,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           alignment: Alignment.centerRight,
                           child: Text(
                             '${formatMinutesSliderLabel(tempRange.start)} - ${formatMinutesSliderLabel(tempRange.end)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.primary500,
                               fontWeight: FontWeight.w700,
                             ),
@@ -2015,7 +2016,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 tempRange = _kExploreDefaultTimeRange;
                               });
                             },
-                            child: const Text(
+                            child: Text(
                               'Reset',
                               style: TextStyle(
                                 color: AppColors.textPrimary,
@@ -2160,12 +2161,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       child: InkWell(
         onTap: _goToToday,
         borderRadius: BorderRadius.circular(999),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Text(
             'Today',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: Colors.white,
               height: 1.1,
@@ -2211,8 +2212,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
               const SizedBox(width: 6),
               Text(
                 _isMonthExpanded ? 'Collapse' : 'Expand',
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                   height: 1.1,
@@ -2263,8 +2264,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
+              style: TextStyle(
+                fontSize: 17.sp,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
                 height: 1.3,
@@ -2274,8 +2275,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             Text(
               body,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
                 height: 1.4,
@@ -2462,6 +2463,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           child: Row(
@@ -2481,7 +2483,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     height: 1.1,
                     color: fg,
                   ),
@@ -2542,8 +2544,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               locationLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 letterSpacing: 0.4,
                                 color: AppColors.textPrimary,
                               ),
@@ -2563,11 +2565,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Browse',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: 28.sp,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                               letterSpacing: -0.5,
@@ -2600,15 +2602,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     padding: screenPaddingH(),
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                       ),
                       decoration: InputDecoration(
                         hintText: locale.t('clientHome.searchHint'),
-                        hintStyle: const TextStyle(
+                        hintStyle: TextStyle(
                           color: AppColors.textTertiary,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                         isDense: true,
                         prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),

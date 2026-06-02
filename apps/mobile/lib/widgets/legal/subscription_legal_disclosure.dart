@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/legal_web_links.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Apple 3.1.2 / Play subscription legal text + Privacy/Terms links.
 class SubscriptionLegalDisclosure extends StatelessWidget {
@@ -13,8 +14,8 @@ class SubscriptionLegalDisclosure extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    const baseStyle = TextStyle(
-      fontSize: 11,
+    final baseStyle = TextStyle(
+      fontSize: 11.sp,
       color: AppColors.textTertiary,
       height: 1.35,
     );

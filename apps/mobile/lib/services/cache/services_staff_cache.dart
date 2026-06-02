@@ -4,6 +4,7 @@ import '../../models/service_item.dart';
 import '../../models/staff_member.dart';
 import '../services_api_service.dart';
 import '../staff_api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// In-memory cache for services and staff by studioId. Invalidated on create/update/delete.
 class ServicesStaffCache extends ChangeNotifier {

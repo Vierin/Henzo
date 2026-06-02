@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
 import 'settings_typography.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const double _settingsCardRadius = 14;
 const double _settingsIconBoxSize = 31;
@@ -89,9 +90,9 @@ class SettingsListTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.2,
                       ),
@@ -100,9 +101,9 @@ class SettingsListTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           height: 1.25,
                         ),
                       ),
@@ -122,9 +123,9 @@ class SettingsListTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -208,8 +209,8 @@ class SettingsLogoutButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: 15.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.error500,
             ),

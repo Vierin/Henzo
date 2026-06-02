@@ -26,7 +26,14 @@
 		"deleteFailed": "Не удалось удалить",
 		"setupSalonFirst": "Сначала настройте бизнес",
 		"verify": "Подтвердить",
-		"apply": "Применить"
+		"apply": "Применить",
+		"reset": "Сбросить",
+		"linkCopied": "Ссылка скопирована!",
+		"copyLink": "Скопировать ссылку",
+		"invite": "Пригласить",
+		"pleaseLoginFirst": "Сначала войдите в аккаунт",
+		"addressCopied": "Адрес скопирован",
+		"share": "Поделиться"
 	},
 	"nav": {
 		"dashboard": "Дашборд",
@@ -97,7 +104,17 @@
 		"roleClientFeature3": "Достигать целей",
 		"roleOwnerFeature1": "Управлять клиентами",
 		"roleOwnerFeature2": "Планировать занятия",
-		"roleOwnerFeature3": "Развивать бизнес"
+		"roleOwnerFeature3": "Развивать бизнес",
+		"roleIAm": "Я",
+		"roleClientWord": "Клиент",
+		"roleManagerWord": "Менеджер",
+		"roleClientDesc": "Ищи, бронируй и посещай фитнес-классы рядом.",
+		"roleOwnerDesc": "Управляй студией, классами, тренерами и записями.",
+		"roleAllInOne": "Всё в одном приложении.",
+		"termsPrefix": "Продолжая, вы соглашаетесь с нашей ",
+		"privacyPolicy": "Политикой конфиденциальности",
+		"termsAnd": "и",
+		"termsOfService": "Условиями использования"
 	},
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",
@@ -146,7 +163,10 @@
 		"scheduleEmptyTitle": "Пока нет запланированных занятий",
 		"scheduleEmptySubtitle": "Здесь появятся ваши предстоящие записи.",
 		"passesEmptyTitle": "Пока нет занятий",
-		"passesEmptySubtitle": "Здесь появятся карточки ваших занятий."
+		"passesEmptySubtitle": "Здесь появятся карточки ваших занятий.",
+		"cancelConfirmTitle": "Отменить запись?",
+		"cancelConfirmBody": "Вы уверены, что хотите отменить эту запись?",
+		"cancelConfirmAction": "Да, отменить"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Пора найти ваше любимое место",
@@ -204,7 +224,16 @@
 		"shareSomeone": "Кто-то",
 		"bookingFailed": "Не удалось завершить бронирование",
 		"alreadyBooked": "Вы уже записаны на это занятие",
-		"signInToBook": "Войдите, чтобы записаться на занятие"
+		"signInToBook": "Войдите, чтобы записаться на занятие",
+		"classStarted": "Занятие началось",
+		"youAreBooked": "Вы записаны",
+		"bookClass": "Записаться",
+		"joinWaitlist": "Встать в очередь",
+		"leaveWaitlist": "Покинуть очередь",
+		"joinedWaitlist": "Вы в очереди — уведомим, если появится место",
+		"leftWaitlist": "Вы вышли из очереди",
+		"waitlistError": "Не удалось встать в очередь. Попробуйте снова.",
+		"waitlistNotifyHint": "Уведомим вас, если появится место"
 	},
 	"clientMap": {
 		"nearbyStudios": "Студии рядом",
@@ -212,7 +241,8 @@
 		"searchStudiosHint": "Поиск студий...",
 		"locationPromptTitle": "Поделиться геолокацией",
 		"locationPromptBody": "Чтобы показать студии на карте, разрешите доступ к местоположению или выберите город.",
-		"locationPromptManual": "Выбрать город вручную"
+		"locationPromptManual": "Выбрать город вручную",
+		"searchThisArea": "Искать в этом районе"
 	},
 	"publicHome": {
 		"loginLink": "Вход",
@@ -467,7 +497,38 @@
 		"rcEntitlementNotLinked": "Покупка в RevenueCat есть, но Pro не применился. Привяжи продукты к entitlement «pro» в дашборде RevenueCat.",
 		"autoRenewDisclosure": "Оплата списывается с Apple ID или Google Play. Подписка продлевается автоматически, если не отменить её минимум за 24 часа до конца периода. Управление — в настройках магазина.",
 		"legalLinksPrefix": "См. ",
-		"legalLinksSuffix": "."
+		"legalLinksSuffix": ".",
+		"soloClassLimitTitle": "Достигнут лимит занятий",
+		"soloClassLimitBody": "Пакет Solo позволяет 12 занятий в месяц. Перейдите на Studio для безлимитных занятий.",
+		"soloTrainerLimitTitle": "Достигнут лимит тренеров",
+		"soloTrainerLimitBody": "Пакет Solo включает 1 тренера (вас). Перейдите на Studio чтобы добавить больше.",
+		"upgradeToStudio": "Перейти на Studio",
+		"studioTitle": "Studio",
+		"studioTagline": "Для растущих студий",
+		"enterpriseTitle": "Enterprise",
+		"enterpriseTagline": "Для крупных студий",
+		"studioFallbackPrice": "599.000₫",
+		"enterpriseFallbackPrice": "1.999.000₫",
+		"perMonth": "/мес",
+		"subscribeToStudio": "Подключить Studio",
+		"subscribeToEnterprise": "Подключить Enterprise",
+		"feature_studio_1": "100 занятий в месяц",
+		"feature_studio_2": "До 5 тренеров",
+		"feature_studio_3": "Лист ожидания",
+		"feature_studio_4": "Автонапоминания",
+		"feature_studio_5": "Аналитика (90 дней)",
+		"feature_enterprise_1": "Безлимитные занятия",
+		"feature_enterprise_2": "Безлимитные тренеры",
+		"feature_enterprise_3": "Несколько локаций",
+		"feature_enterprise_4": "Расширенная аналитика",
+		"feature_enterprise_5": "Роли и права доступа",
+		"feature_enterprise_6": "Приоритетная поддержка",
+		"currentPlanLabel": "Текущий план: {plan}",
+		"currentSoloDesc": "У вас бесплатный план. Перейдите на Studio или Enterprise в любой момент.",
+		"currentProDesc": "У вас подключён расширенный функционал Pro.",
+		"solo": "Solo",
+		"subscribeToStudioBtn": "Подключить Studio",
+		"subscribeToEnterpriseBtn": "Подключить Enterprise"
 	},
 	"profile": {
 		"title": "Профиль",
@@ -622,7 +683,14 @@
 			"bookingPeriodDaysLabel": "Дней",
 			"bookingPeriodSaved": "Настройки бронирования сохранены",
 			"bookingLink": "Предпросмотр салона"
-		}
+		},
+		"usage": {
+			"classesThisMonth": "Занятий в этом месяце",
+			"trainers": "Тренеры",
+			"upgradeHint": "Перейдите на Studio для расширения"
+		},
+		"studioQrCode": "QR-код студии",
+		"studioQrCodeSubtitle": "Поделитесь страницей студии"
 	},
 	"calendar": {
 		"months": [
@@ -639,7 +707,15 @@
 			"Ноябрь",
 			"Декабрь"
 		],
-		"weekDays": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+		"weekDays": [
+			"Вс",
+			"Пн",
+			"Вт",
+			"Ср",
+			"Чт",
+			"Пт",
+			"Сб"
+		],
 		"editSchedule": "Изменить расписание",
 		"addUnavailable": "Добавить нерабочие часы для",
 		"unavailableComingSoon": "Нерабочие часы в разработке",
@@ -817,5 +893,32 @@
 			"sessionsPlanned": "Занятий в периоде: {count}",
 			"back": "Назад"
 		}
+	},
+	"trainer": {
+		"role": "Тренер",
+		"noClientsEnrolled": "Нет записавшихся клиентов",
+		"noShowStatus": "Не пришёл",
+		"markPresent": "Отметить присутствие",
+		"markNoShow": "Отметить отсутствие",
+		"inviteTitle": "Вас пригласили!",
+		"joinAs": "Присоединиться к {studio} как {name}",
+		"joinAsTrainer": "Присоединиться к {studio} как тренер",
+		"acceptInvitation": "Принять приглашение",
+		"invalidExpiredLink": "Ссылка недействительна или истекла.",
+		"couldNotLoadInvite": "Не удалось загрузить приглашение. Проверьте соединение."
+	},
+	"staff": {
+		"inviteTitle": "Пригласить {name}",
+		"shareInviteMessage": "Отправьте ссылку {name} чтобы присоединиться как тренер.",
+		"inviteExpires": "Ссылка действует 7 дней"
+	},
+	"client": {
+		"bookingCancelled": "Бронирование отменено",
+		"cancelBookingFailed": "Не удалось отменить бронирование"
+	},
+	"public": {
+		"noAddressAvailable": "Адрес не указан",
+		"couldNotOpenMaps": "Не удалось открыть карты",
+		"getDirections": "Маршрут"
 	}
 }

@@ -25,9 +25,11 @@ import 'public_studio_detail_screen.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
+import 'studio_qr_code_screen.dart';
 import 'subscription_screen.dart';
 import '../main.dart';
 import '../utils/owner_navigation_restore.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key, this.embeddedInShell = false});
@@ -41,8 +43,12 @@ class AppSettingsScreen extends StatefulWidget {
 class _AppSettingsScreenState extends State<AppSettingsScreen> {
   static const int _defaultBookingPeriodDays = 30;
 
+  static const int _soloClassLimit = 12;
+  static const int _soloTrainerLimit = 1;
+
   int _servicesCount = 0;
   int _staffCount = 0;
+  int _monthlySessionsCount = 0;
   int? _bookingPeriodDays;
   bool _statsLoading = true;
   String? _studioName;
@@ -92,12 +98,22 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     final salonCache = context.read<SalonCache>();
     final staffCache = context.read<ServicesStaffCache>();
     try {
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final monthEnd = DateTime(now.year, now.month + 1, 1)
+          .subtract(const Duration(seconds: 1));
       final results = await Future.wait([
         salonCache.getSalon(token),
         DashboardApiService.getCurrentSubscription(token),
+        DashboardApiService.getCurrentStudioAnalytics(
+          token,
+          fromIso: monthStart.toIso8601String(),
+          toIso: monthEnd.toIso8601String(),
+        ),
       ]);
       final salon = results[0] as Salon?;
       final sub = results[1] as Subscription?;
+      final analytics = results[2] as StudioAnalytics?;
       final services = salon != null
           ? await staffCache.getServicesForSalon(token, salon.id)
           : const [];
@@ -113,6 +129,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         _servicesCount = services.length;
         _staffCount = _teamDisplayCount(staff, owner);
         _subscription = sub;
+        _monthlySessionsCount =
+            analytics?.trainingSessionsScheduled ?? 0;
         _statsLoading = false;
         _subscriptionLoading = false;
       });
@@ -243,6 +261,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         : null,
                     planLabel: _planBadgeLabel(locale),
                     isProPlan: _hasActiveProPlan,
+                    monthlySessionsCount: _monthlySessionsCount,
+                    monthlySessionsLimit: _soloClassLimit,
+                    staffCount: _staffCount,
+                    staffLimit: _soloTrainerLimit,
+                    statsLoading: _statsLoading,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const AccountSettingsScreen(),
@@ -295,6 +318,15 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         title: locale.t('settings.owner.onlineBooking'),
                         trailingText: bookingTrailing,
                         onTap: _openBookingPeriodSheet,
+                      ),
+                      SettingsListTile(
+                        icon: Icons.qr_code_rounded,
+                        title: locale.t('settings.studioQrCode'),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const StudioQrCodeScreen(),
+                          ),
+                        ),
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-train.svg',
@@ -426,6 +458,11 @@ class _OwnerHeroCard extends StatelessWidget {
     required this.avatarUrl,
     required this.planLabel,
     required this.isProPlan,
+    required this.monthlySessionsCount,
+    required this.monthlySessionsLimit,
+    required this.staffCount,
+    required this.staffLimit,
+    required this.statsLoading,
     required this.onTap,
   });
 
@@ -435,6 +472,11 @@ class _OwnerHeroCard extends StatelessWidget {
   final String? avatarUrl;
   final String planLabel;
   final bool isProPlan;
+  final int monthlySessionsCount;
+  final int monthlySessionsLimit;
+  final int staffCount;
+  final int staffLimit;
+  final bool statsLoading;
   final VoidCallback onTap;
 
   static const double _radius = 14;
@@ -463,9 +505,9 @@ class _OwnerHeroCard extends StatelessWidget {
                     ? null
                     : Text(
                         initials,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.primary500,
-                          fontSize: 24,
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.w600,
                           height: 1,
                         ),
@@ -480,9 +522,9 @@ class _OwnerHeroCard extends StatelessWidget {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,
                       ),
@@ -492,9 +534,9 @@ class _OwnerHeroCard extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -524,6 +566,24 @@ class _OwnerHeroCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (!isProPlan && !statsLoading) ...[
+                      const SizedBox(height: 10),
+                      _UsageBar(
+                        label: context
+                            .read<LocaleProvider>()
+                            .t('settings.usage.classesThisMonth'),
+                        used: monthlySessionsCount,
+                        limit: monthlySessionsLimit,
+                      ),
+                      const SizedBox(height: 6),
+                      _UsageBar(
+                        label: context
+                            .read<LocaleProvider>()
+                            .t('settings.usage.trainers'),
+                        used: staffCount,
+                        limit: staffLimit,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -536,6 +596,62 @@ class _OwnerHeroCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _UsageBar extends StatelessWidget {
+  const _UsageBar({
+    required this.label,
+    required this.used,
+    required this.limit,
+  });
+
+  final String label;
+  final int used;
+  final int limit;
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = (used / limit).clamp(0.0, 1.0);
+    final isAtLimit = used >= limit;
+    final barColor = isAtLimit ? AppColors.error500 : AppColors.primary500;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              '$used / $limit',
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: isAtLimit ? AppColors.error500 : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 5,
+            backgroundColor: AppColors.neutral200,
+            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+          ),
+        ),
+      ],
     );
   }
 }

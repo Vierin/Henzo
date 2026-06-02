@@ -23,6 +23,7 @@ import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
 import '../../widgets/settings/studio_social_link.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Scroll + optional focus when opening studio profile from onboarding.
 enum StudioProfileFocusTarget {
@@ -730,8 +731,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             )
                           : Text(
                               locale.t('common.save'),
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -774,9 +775,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   children: [
                                     Text(
                                       locale.t('profileForm.studioLogoHint'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppColors.textSecondary,
-                                        fontSize: 13,
+                                        fontSize: 13.sp,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -808,9 +809,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   children: [
                                     Text(
                                       locale.t('profileForm.studioPhotosHint'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppColors.textSecondary,
-                                        fontSize: 13,
+                                        fontSize: 13.sp,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -865,9 +866,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           const SizedBox(width: 8),
                                           Text(
                                             _photoProgressText!,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: AppColors.textSecondary,
-                                              fontSize: 13,
+                                              fontSize: 13.sp,
                                             ),
                                           ),
                                         ],
@@ -978,8 +979,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                           children: [
                                                             Text(
                                                               displayName,
-                                                              style: const TextStyle(
-                                                                fontSize: 16,
+                                                              style: TextStyle(
+                                                                fontSize: 16.sp,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .w700,
@@ -994,8 +995,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                               ),
                                                               Text(
                                                                 address,
-                                                                style: const TextStyle(
-                                                                  fontSize: 14,
+                                                                style: TextStyle(
+                                                                  fontSize: 14.sp,
                                                                   height: 1.25,
                                                                   fontWeight:
                                                                       FontWeight
@@ -1014,9 +1015,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                                   locale.t(
                                                                     'addTraining.noAddress',
                                                                   ),
-                                                                  style: const TextStyle(
-                                                                    fontSize:
-                                                                        14,
+                                                                  style: TextStyle(
+                                                                    fontSize: 14.sp,
                                                                     color: AppColors
                                                                         .textTertiary,
                                                                   ),
@@ -1123,7 +1123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       icon: const Icon(Icons.add, size: 20),
                                       label: Text(
                                         locale.t('profileForm.addSocialLink'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -1266,8 +1266,8 @@ class _StudioLogoTile extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           actionLabel,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.primary500,
           ),
@@ -1362,8 +1362,8 @@ class _StudioPhotoTile extends StatelessWidget {
                 ),
                 child: Text(
                   mainLabel,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -1441,8 +1441,8 @@ class _SocialLinkRow extends StatelessWidget {
               children: [
                 Text(
                   link.platform.label(locale),
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -1450,8 +1450,8 @@ class _SocialLinkRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   link.displayValue(),
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     color: AppColors.textSecondary,
                   ),
                   maxLines: 1,

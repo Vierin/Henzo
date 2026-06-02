@@ -1,3 +1,4 @@
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ExploreStudioItem {
   const ExploreStudioItem({
     required this.id,

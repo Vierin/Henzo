@@ -89,4 +89,24 @@ export class NotificationsController {
       );
     }
   }
+
+  /** Schedule pre-class push reminders (24h + 1h) for an enrollment. */
+  @Post('remind-before-class')
+  async schedulePreClassReminder(
+    @Body() data: { enrollmentId: string },
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      await this.notificationsService.schedulePreClassReminders(
+        data.enrollmentId,
+        currentUser.user.id,
+      );
+      return { success: true };
+    } catch (error) {
+      // Non-critical — swallow and return success so client flow isn't blocked
+      console.error('❌ remind-before-class failed:', error);
+      return { success: false };
+    }
+  }
 }

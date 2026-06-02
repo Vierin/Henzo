@@ -13,6 +13,7 @@ import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientRegistrationScreen extends StatefulWidget {
   const ClientRegistrationScreen({super.key});
@@ -39,7 +40,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   bool _isVerifyingCode = false;
   bool _isResendingCode = false;
   int _resendSecondsLeft = 0;
-  bool _agreedToTerms = false;
   Timer? _resendTimer;
   final FocusNode _otpFocusNode = FocusNode();
 
@@ -57,10 +57,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isSubmitting = true);
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
@@ -162,10 +158,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   }
 
   Future<void> _submitGoogle() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isGoogleLoading = true);
     final auth = context.read<AuthService>();
     final locale = context.read<LocaleProvider>();
@@ -181,10 +173,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   }
 
   Future<void> _submitApple() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isAppleLoading = true);
     final auth = context.read<AuthService>();
     final locale = context.read<LocaleProvider>();
@@ -323,11 +311,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
-          LegalAgreementCheckbox(
-            value: _agreedToTerms,
-            onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-          ),
           const SizedBox(height: 20),
           SizedBox(
             height: AuthFormStyles.buttonHeight,
@@ -348,7 +331,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                       'Create account',
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         color: AppColors.textInverse,
                       ),
                     ),
@@ -367,9 +350,9 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               ),
               Text(
                 locale.t('auth.orContinue'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: 15.sp,
                 ),
               ),
               const Expanded(
@@ -399,8 +382,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                 _isGoogleLoading
                     ? locale.t('common.loading')
                     : locale.t('auth.continueWithGoogle'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
@@ -418,6 +401,9 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   : locale.t('auth.continueWithApple'),
             ),
           ],
+          const SizedBox(height: 20),
+          const LegalAgreementFooter(),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -476,8 +462,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                                 index < _otpController.text.length
                                     ? _otpController.text[index]
                                     : '',
-                                style: const TextStyle(
-                                  fontSize: 24,
+                                style: TextStyle(
+                                  fontSize: 24.sp,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
                                 ),
@@ -508,7 +494,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                             locale.t('common.verify'),
                             style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               color: AppColors.textInverse,
                             ),
                           ),
@@ -522,8 +508,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
         if (_resendSecondsLeft > 0)
           Text(
             '${locale.t('auth.resendCodeIn')} 00:${_resendSecondsLeft.toString().padLeft(2, '0')}',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
@@ -535,8 +521,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               children: [
                 Text(
                   locale.t('auth.didntReceiveCode'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -555,8 +541,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                         )
                       : Text(
                           locale.t('auth.resend'),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary500,
                           ),
@@ -569,8 +555,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
         Center(
           child: Text(
             email,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               color: AppColors.textTertiary,
             ),
           ),

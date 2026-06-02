@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/colors.dart';
 import '../../utils/studio_public_contacts.dart';
 import '../settings/studio_social_link.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Circular contact shortcuts (phone, email, social) — studio profile mock.
 class StudioContactRow extends StatelessWidget {

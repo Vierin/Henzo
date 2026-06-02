@@ -8,6 +8,7 @@ import '../../models/training_category_option.dart';
 import '../../screens/client/client_explore_models.dart';
 import '../../utils/formatters.dart';
 import '../public/cached_salon_network_image.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Studio row on client Browse (Studios tab) — horizontal card per design.
 class BrowseStudioListCard extends StatelessWidget {
@@ -147,8 +148,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                   studio.name,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 15,
+                                  style: TextStyle(
+                                    fontSize: 15.sp,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: -0.3,
                                     color: AppColors.textPrimary,
@@ -161,8 +162,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   distanceLabel!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
                                     fontWeight: FontWeight.w400,
                                     letterSpacing: -0.3,
                                     color: _distanceColor,
@@ -191,8 +192,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                     _locationLabel!,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
                                       fontWeight: FontWeight.w400,
                                       color: AppColors.textPrimary,
                                     ),
@@ -243,12 +244,12 @@ class BrowseStudioListCard extends StatelessWidget {
                             ),
                           ] else ...[
                             const SizedBox(height: 10),
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'No classes today',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
@@ -305,8 +306,8 @@ class _BrowseStudioClassesBlock extends StatelessWidget {
                 classesTitle.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11,
+                style: TextStyle(
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
                   color: AppColors.textPrimary,
@@ -322,8 +323,8 @@ class _BrowseStudioClassesBlock extends StatelessWidget {
                 children: [
                   Text(
                     seeAllLabel,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.3,
                       color: AppColors.primary500,
@@ -399,8 +400,8 @@ class _ImageRatingBadge extends StatelessWidget {
           const SizedBox(width: 2),
           Text(
             rating.toStringAsFixed(1).replaceAll('.', ','),
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.3,
               color: AppColors.textPrimary,
@@ -410,8 +411,8 @@ class _ImageRatingBadge extends StatelessWidget {
           if (reviewCount > 0)
             Text(
               ' ($reviewCount)',
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.3,
                 color: BrowseStudioListCard._reviewCountColor,
@@ -455,7 +456,7 @@ class _CategoryPill extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 11.sp,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: fg,
@@ -482,8 +483,8 @@ class _MoreCategoriesPill extends StatelessWidget {
       ),
       child: Text(
         '+$count other',
-        style: const TextStyle(
-          fontSize: 11,
+        style: TextStyle(
+          fontSize: 11.sp,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: AppColors.textPrimary,
@@ -516,8 +517,8 @@ class _TodayClassRow extends StatelessWidget {
             children: [
               Text(
                 formatTime24(item.startsAt),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
                   color: AppColors.primary500,
@@ -530,8 +531,8 @@ class _TodayClassRow extends StatelessWidget {
                   item.className,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
@@ -543,8 +544,8 @@ class _TodayClassRow extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   price,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,

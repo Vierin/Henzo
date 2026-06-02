@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Конфигурация из `assets/.env`. Ключи соответствуют именам в .env: EXPO_PUBLIC_*.
 abstract final class AppConfig {
@@ -19,7 +20,7 @@ abstract final class AppConfig {
 
   /// URL веб-приложения для ссылки на онлайн-запись (без завершающего слэша).
   static String get webUrl =>
-      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://henzo.app')
+      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://www.henzo.app')
           .trim()
           .replaceAll(RegExp(r'/$'), '');
 

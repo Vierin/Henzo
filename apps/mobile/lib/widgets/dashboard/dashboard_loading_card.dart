@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DashboardLoadingCard extends StatelessWidget {
   const DashboardLoadingCard({super.key});
@@ -18,7 +19,7 @@ class DashboardLoadingCard extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Загрузка данных салона...',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 16.sp, color: AppColors.textSecondary),
             ),
           ],
         ),

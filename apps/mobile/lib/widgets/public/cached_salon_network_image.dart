@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Disk-cached cover image for salon photos (cards, lists, detail header).
 class CachedSalonNetworkImage extends StatelessWidget {

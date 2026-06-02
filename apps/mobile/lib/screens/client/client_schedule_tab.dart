@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
@@ -11,6 +12,7 @@ import '../../utils/client_schedule_owner_session.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientScheduleTab extends StatefulWidget {
   const ClientScheduleTab({super.key});
@@ -88,6 +90,29 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     return ClientScheduleStore.canCancelClientBooking(item);
   }
 
+  Future<void> _confirmCancel(Map<String, dynamic> item) async {
+    final locale = context.read<LocaleProvider>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('clientActivity.cancelConfirmTitle')),
+        content: Text(locale.t('clientActivity.cancelConfirmBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(locale.t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error500),
+            child: Text(locale.t('clientActivity.cancelConfirmAction')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) _cancelBooking(item);
+  }
+
   Future<void> _cancelBooking(Map<String, dynamic> item) async {
     final token = context.read<AuthService>().accessToken;
     final bookingId = _bookingId(item);
@@ -102,13 +127,13 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
       ClientScheduleStore.invalidate();
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Booking cancelled')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('client.bookingCancelled'))),
       );
       await _load(force: true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Failed to cancel booking: $e')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('client.cancelBookingFailed'))),
       );
     } finally {
       if (mounted) setState(() => _cancelingBookingIds.remove(bookingId));
@@ -192,7 +217,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
             cancelActionLabel: locale.t('clientActivity.cancel'),
             cancelActionLoading: isCanceling,
             onCancelBooking: canCancel && !isCanceling
-                ? () => _cancelBooking(item)
+                ? () => _confirmCancel(item)
                 : null,
             onTap: () => _openStudio(item),
           );

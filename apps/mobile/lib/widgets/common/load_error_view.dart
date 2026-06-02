@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Inline or full-screen load failure with retry.
 class LoadErrorView extends StatelessWidget {
@@ -37,8 +38,8 @@ class LoadErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -49,8 +50,8 @@ class LoadErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -76,8 +77,8 @@ class LoadErrorView extends StatelessWidget {
             Text(
               displayTitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
@@ -86,8 +87,8 @@ class LoadErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
               ),
             ),

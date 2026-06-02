@@ -10,15 +10,19 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../utils/class_session_link.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/auth/auth_form_styles.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shown after a successful client self-booking (mockup: ticket + actions).
 class ClassBookingConfirmationScreen extends StatelessWidget {
   factory ClassBookingConfirmationScreen.fromMaps({
     required Map<String, dynamic> session,
     Map<String, dynamic>? studio,
+    String? studioId,
+    String? sessionId,
   }) {
     final training = session['training'] is Map
         ? Map<String, dynamic>.from(session['training'] as Map)
@@ -57,6 +61,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       accentIcon: accentIcon,
       latitude: (studio?['latitude'] as num?)?.toDouble(),
       longitude: (studio?['longitude'] as num?)?.toDouble(),
+      studioId: studioId ?? (studio?['id'] ?? '').toString(),
+      sessionId: sessionId ?? (session['id'] ?? '').toString(),
     );
   }
 
@@ -74,6 +80,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     this.price,
     this.latitude,
     this.longitude,
+    this.studioId,
+    this.sessionId,
   });
 
   final String classTitle;
@@ -88,6 +96,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   final double? price;
   final double? latitude;
   final double? longitude;
+  final String? studioId;
+  final String? sessionId;
 
   static const _weekdays = [
     'MONDAY',
@@ -152,6 +162,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
 
   String _shareMessage() {
+    final sid = studioId;
+    final sesId = sessionId;
     final buf = StringBuffer()
       ..writeln('Join me for $classTitle!')
       ..writeln(_headerDateLine);
@@ -163,11 +175,21 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     }
     final address = studioAddress?.trim();
     if (address != null && address.isNotEmpty) buf.writeln(address);
+    if (sid != null && sid.isNotEmpty && sesId != null && sesId.isNotEmpty) {
+      final link = ClassSessionLink(
+        studioId: sid,
+        sessionId: sesId,
+        startsAt: startsAt,
+      );
+      buf
+        ..writeln()
+        ..write(link.toShareUri().toString());
+    }
     return buf.toString().trim();
   }
 
   Future<void> _shareBooking() async {
-    await Share.share(_shareMessage());
+    await Share.share(_shareMessage(), subject: classTitle);
   }
 
   Future<void> _openCalendar(BuildContext context) async {
@@ -282,7 +304,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                             height: 12,
                             fit: BoxFit.contain,
                             excludeFromSemantics: true,
-                            colorFilter: const ColorFilter.mode(
+                            colorFilter: ColorFilter.mode(
                               Colors.white,
                               BlendMode.srcIn,
                             ),
@@ -300,8 +322,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 14,
+                            textStyle: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -331,14 +353,14 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                       _BookingConfirmationHero(
                         titleStyle: wixTextTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 39,
+                          fontSize: 39.sp,
                           color: AppColors.textPrimary,
                           letterSpacing: -0.5,
                         ),
                         dateLine: _headerDateLine,
                         dateStyle: wixTextTheme.labelLarge?.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                           letterSpacing: -0.2,
                         ),
@@ -369,10 +391,10 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         child: FilledButton(
                           onPressed: _shareBooking,
                           style: AuthFormStyles.primaryButtonStyle(),
-                          child: const Text(
+                          child: Text(
                             'Invite friends',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -534,8 +556,8 @@ class _BookingTicketCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 22, 12, 15),
             child: Text(
               classTitle,
-              style: const TextStyle(
-                fontSize: 24,
+              style: TextStyle(
+                fontSize: 24.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
                 height: 1.1,
@@ -668,7 +690,7 @@ class _TicketActionButton extends StatelessWidget {
         backgroundColor: AppColors.primary500,
         foregroundColor: AppColors.textInverse,
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -690,9 +712,9 @@ class _TicketActionButton extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textInverse,
               ),
             ),
@@ -715,14 +737,14 @@ class _AccentMetaCell extends StatelessWidget {
   }) : assert(icon != null || svgAsset != null);
 
   static TextStyle _labelPrimary(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
+    fontSize: 13.sp,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
   static TextStyle _labelMuted(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
+    fontSize: 13.sp,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary.withValues(alpha: 0.4),
     height: 1.3,
@@ -818,8 +840,8 @@ class _LocationRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                   height: 1.25,
@@ -833,8 +855,8 @@ class _LocationRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         address!,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           height: 1.3,
                           color: AppColors.textSecondary,
                         ),

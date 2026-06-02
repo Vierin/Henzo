@@ -7,6 +7,7 @@ import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import 'settings_form_tokens.dart';
 import 'settings_typography.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Studio name + default address row — same as owner [SettingsScreen] main info.
 class StudioNameAddressFields extends StatelessWidget {
@@ -70,8 +71,8 @@ class StudioNameAddressFields extends StatelessWidget {
                           locationDisplayName.trim().isNotEmpty
                               ? locationDisplayName.trim()
                               : locale.t('addTraining.studioNameFallback'),
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
@@ -80,8 +81,8 @@ class StudioNameAddressFields extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             addressText,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               height: 1.25,
                               fontWeight: FontWeight.w400,
                               color: AppColors.textSecondary,
@@ -92,8 +93,8 @@ class StudioNameAddressFields extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               locale.t('addTraining.noAddress'),
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 color: AppColors.textTertiary,
                               ),
                             ),

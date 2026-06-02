@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import 'henzo_header_back_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Стандартный AppBar приложения: фон, цвет текста и иконок из палитры.
 /// Используй для единообразия на всех экранах.
@@ -27,8 +28,8 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 18,
+        style: TextStyle(
+          fontSize: 18.sp,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),

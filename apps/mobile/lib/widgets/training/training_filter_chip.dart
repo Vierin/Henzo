@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Category / day filter on Trainings screen — no checkmark, brand orange when on.
 class TrainingFilterChip extends StatelessWidget {
@@ -40,7 +41,7 @@ class TrainingFilterChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: selected
                   ? AppColors.textInverse

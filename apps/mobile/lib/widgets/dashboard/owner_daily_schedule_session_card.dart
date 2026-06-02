@@ -5,6 +5,7 @@ import '../../constants/colors.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 String ownerDailyScheduleTrainerLabel(
   OwnerTrainingSession session,
@@ -205,8 +206,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                     if (showDateAboveTime) ...[
                       Text(
                         formatBookingCardDate(s.startsAt),
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: 11.sp,
                           fontWeight: FontWeight.w600,
                           height: 1,
                           color: AppColors.textTertiary,
@@ -216,8 +217,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                     ],
                     Text(
                       startLabel,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.w600,
                         height: 1,
                         letterSpacing: -0.3,
@@ -227,8 +228,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '$duration min',
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFFA4A4A4),
                       ),
@@ -247,8 +248,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                   children: [
                     Text(
                       s.trainingName,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.w700,
                         height: 1,
                         letterSpacing: -0.3,
@@ -269,8 +270,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               subtitleLabel,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textPrimary,
                               ),
@@ -290,8 +291,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               trainerRowText,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textPrimary,
                               ),
@@ -316,7 +317,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           priceText,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w800,
                             color: priceColor,
                             height: 1.1,
@@ -340,7 +341,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         priceText,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w800,
                           color: priceColor,
                           height: 1.1,
@@ -385,8 +386,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                             : Text(
                                 cancelActionLabel,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w700,
                                   height: 1.1,
                                 ),
@@ -399,8 +400,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       children: [
                         Text(
                           fillLabel,
-                          style: const TextStyle(
-                            fontSize: 15,
+                          style: TextStyle(
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textPrimary,
                           ),
@@ -497,7 +498,7 @@ class _BookedBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFF81C784)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.check_rounded, size: 14, color: Color(0xFF388E3C)),
@@ -505,7 +506,7 @@ class _BookedBadge extends StatelessWidget {
           Text(
             'Booked',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w700,
               color: Color(0xFF388E3C),
               height: 1.1,
@@ -551,8 +552,8 @@ class _ScheduleReviewButton extends StatelessWidget {
           : Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w700,
                 height: 1.15,
               ),
@@ -594,8 +595,8 @@ class _ScheduleBookButton extends StatelessWidget {
           : Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 color: AppColors.backgroundPrimary,
                 fontWeight: FontWeight.w700,
                 height: 1.15,

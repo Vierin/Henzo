@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ProfilePhotoPicker extends StatelessWidget {
   const ProfilePhotoPicker({
@@ -43,8 +44,8 @@ class ProfilePhotoPicker extends StatelessWidget {
                       ? null
                       : Text(
                           initials,
-                          style: const TextStyle(
-                            fontSize: 28,
+                          style: TextStyle(
+                            fontSize: 28.sp,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary500,
                           ),
@@ -95,8 +96,8 @@ class ProfilePhotoPicker extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           hasPhoto ? changeLabel : addLabel,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.primary500,
           ),
@@ -125,8 +126,8 @@ class SettingsFormCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 17,
+            style: TextStyle(
+              fontSize: 17.sp,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
@@ -174,8 +175,8 @@ class SettingsDeleteAccountButton extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.error600,
                 ),

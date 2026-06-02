@@ -39,6 +39,7 @@ import 'location_picker_screen.dart';
 import 'notifications_screen.dart';
 import 'public_class_detail_screen.dart';
 import 'public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PublicHomeScreen extends StatefulWidget {
   const PublicHomeScreen({
@@ -192,19 +193,19 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Share your location',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'To show nearby studios, allow location access or choose city manually.',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -218,6 +219,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary500,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('Use current location'),
                   ),
@@ -230,6 +234,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       Navigator.of(ctx).pop();
                       await _openManualLocationInput();
                     },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                     child: const Text('Enter city manually'),
                   ),
                 ),
@@ -579,8 +588,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       child: Text(
                         count > 9 ? '9+' : '$count',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 9,
+                        style: TextStyle(
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           height: 1.2,
@@ -725,8 +734,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                                 locationLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
                                   letterSpacing: 0.4,
                                   color: AppColors.textPrimary,
                                 ),
@@ -751,8 +760,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                   padding: screenPaddingH(top: 0, bottom: 12),
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.w500,
                         height: 1.1,
                         color: AppColors.textPrimary,
@@ -761,7 +770,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         TextSpan(text: locale.t('clientHome.greetingHello')),
                         TextSpan(
                           text: firstName,
-                          style: const TextStyle(fontWeight: FontWeight.w400),
+                          style: TextStyle(fontWeight: FontWeight.w400),
                         ),
                       ],
                     ),
@@ -780,9 +789,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                           readOnly: true,
                           decoration: InputDecoration(
                             hintText: locale.t('clientHome.searchHint'),
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               color: AppColors.textTertiary,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                             ),
                             isDense: true,
                             prefixIcon: const AppSearchPrefixIcon(

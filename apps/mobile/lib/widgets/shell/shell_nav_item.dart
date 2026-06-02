@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Bottom tab item — same look as owner [MainShell] nav.
 class ShellNavItem extends StatelessWidget {
@@ -52,7 +53,7 @@ class ShellNavItem extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w400,
                   color: textColor,
                   height: 1,

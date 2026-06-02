@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import 'auth_form_styles.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppleSignInButton extends StatelessWidget {
   const AppleSignInButton({
@@ -34,8 +35,8 @@ class AppleSignInButton extends StatelessWidget {
               ),
         label: Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16.sp,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimary,
           ),

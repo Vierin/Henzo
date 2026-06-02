@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../../utils/formatters.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Single review row — client studio profile (mockup).
 class StudioReviewCard extends StatefulWidget {
@@ -66,9 +67,9 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
             child: avatarUrl == null || avatarUrl.isEmpty
                 ? Text(
                     initial,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       color: AppColors.textPrimary,
                     ),
                   )
@@ -90,8 +91,8 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
                         children: [
                           Text(
                             displayName,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
                               height: 1.2,
@@ -105,8 +106,8 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
                       const SizedBox(width: 8),
                       Text(
                         resolvedDateLabel,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.w400,
                           color: AppColors.textTertiary,
                         ),
@@ -122,8 +123,8 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
                     overflow: _expanded
                         ? TextOverflow.visible
                         : TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w400,
                       height: 1.35,
                       color: AppColors.textPrimary,
@@ -142,8 +143,8 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
                               _expanded
                                   ? widget.readLessLabel
                                   : widget.readMoreLabel,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary500,
                               ),
@@ -220,8 +221,8 @@ class StudioReviewsSectionHeader extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 13,
+          style: TextStyle(
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.4,
             color: AppColors.textPrimary,
@@ -237,8 +238,8 @@ class StudioReviewsSectionHeader extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$ratingText ($reviewCount)',
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -254,8 +255,8 @@ class StudioReviewsSectionHeader extends StatelessWidget {
               children: [
                 Text(
                   seeMoreLabel,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary500,
                   ),

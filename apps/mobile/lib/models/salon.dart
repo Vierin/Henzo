@@ -1,4 +1,5 @@
 import 'studio_status.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class Salon {
   final String id;

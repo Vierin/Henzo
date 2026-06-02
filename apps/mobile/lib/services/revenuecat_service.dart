@@ -6,6 +6,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../config/app_config.dart';
 import 'subscription_api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// StoreKit / Play Billing via RevenueCat (App Store / Play compliant).
 class RevenueCatService {

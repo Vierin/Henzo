@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClassScheduleCard extends StatelessWidget {
   const ClassScheduleCard({
@@ -50,8 +51,8 @@ class ClassScheduleCard extends StatelessWidget {
               children: [
                 Text(
                   timeLabel,
-                  style: const TextStyle(
-                    fontSize: 28 / 1.6,
+                  style: TextStyle(
+                    fontSize: 28.sp / 1.6,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -59,7 +60,7 @@ class ClassScheduleCard extends StatelessWidget {
                 if (durationMin != null)
                   Text(
                     '($durationMin min)',
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
               ],
             ),
@@ -70,27 +71,27 @@ class ClassScheduleCard extends StatelessWidget {
               children: [
                 Text(
                   className,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 20 / 1.6,
+                    fontSize: 20.sp / 1.6,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 if (trainerName.trim().isNotEmpty)
                   Text(
                     trainerName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
+                      fontSize: 13.sp,
                     ),
                   ),
                 if (hasCapacity) ...[
                   const SizedBox(height: 6),
                   Text(
                     '$safeBooked/$capacity spots',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -118,7 +119,7 @@ class ClassScheduleCard extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     color: accentColor,
-                    fontSize: 26 / 1.6,
+                    fontSize: 26.sp / 1.6,
                   ),
                 ),
               const SizedBox(height: 8),

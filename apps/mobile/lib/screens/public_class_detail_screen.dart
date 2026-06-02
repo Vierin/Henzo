@@ -22,6 +22,7 @@ import '../widgets/public/cached_salon_network_image.dart';
 import '../widgets/session_capacity_card.dart';
 import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Icon circle (30) + gap (10) — aligns controls with address text.
 const double _kClassDetailMetaTextInset = 40;
@@ -53,6 +54,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   Map<String, dynamic>? _session;
   bool _booking = false;
   bool _isBookedByMe = false;
+  bool _isOnWaitlist = false;
+  bool _waitlistLoading = false;
 
   @override
   void initState() {
@@ -116,6 +119,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           );
           if (enr is Map) {
             isBookedByMe = enr['enrolled'] == true;
+            if (!isBookedByMe) {
+              _isOnWaitlist = enr['waitlisted'] == true;
+            }
           }
         } catch (_) {}
       }
@@ -191,6 +197,18 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
       if (!mounted) return;
       ClientScheduleStore.invalidate();
+      // Schedule reminder push via backend — fire-and-forget, silent fallback
+      final enrollmentId = (raw is Map
+              ? (raw['id'] ?? raw['enrollmentId'])
+              : null)
+          ?.toString();
+      if (enrollmentId != null && enrollmentId.isNotEmpty) {
+        ApiClient.post(
+          '/notifications/remind-before-class',
+          token,
+          body: {'enrollmentId': enrollmentId},
+        ).catchError((_) {});
+      }
       final session = _session;
       if (session == null) return;
       await Navigator.of(context).pushReplacement(
@@ -198,6 +216,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           builder: (_) => ClassBookingConfirmationScreen.fromMaps(
             session: session,
             studio: _studio,
+            studioId: widget.studioId,
+            sessionId: widget.sessionId,
           ),
         ),
       );
@@ -216,6 +236,52 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       ).showSnackBar(SnackBar(content: Text(bookingErrorMessage(locale, e))));
     } finally {
       if (mounted) setState(() => _booking = false);
+    }
+  }
+
+  Future<void> _joinWaitlist() async {
+    final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
+    if (token == null || _waitlistLoading) return;
+    setState(() => _waitlistLoading = true);
+    try {
+      await ApiClient.post(
+        '/studios/sessions/${widget.sessionId}/waitlist',
+        token,
+        body: const <String, dynamic>{},
+      );
+      if (!mounted) return;
+      setState(() => _isOnWaitlist = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.joinedWaitlist'))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.waitlistError'))),
+      );
+    } finally {
+      if (mounted) setState(() => _waitlistLoading = false);
+    }
+  }
+
+  Future<void> _leaveWaitlist() async {
+    final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
+    if (token == null || _waitlistLoading) return;
+    setState(() => _waitlistLoading = true);
+    try {
+      await ApiClient.delete(
+        '/studios/sessions/${widget.sessionId}/waitlist',
+        token,
+      );
+      if (!mounted) return;
+      setState(() => _isOnWaitlist = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.leftWaitlist'))),
+      );
+    } catch (_) {
+      if (mounted) setState(() => _waitlistLoading = false);
     }
   }
 
@@ -280,6 +346,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                 onBook: _book,
                 booking: _booking,
                 isBookedByMe: _isBookedByMe,
+                isOnWaitlist: _isOnWaitlist,
+                waitlistLoading: _waitlistLoading,
+                onJoinWaitlist: _joinWaitlist,
+                onLeaveWaitlist: _leaveWaitlist,
               ),
       ),
     );
@@ -450,6 +520,10 @@ class _ClassDetailBody extends StatelessWidget {
     required this.onBook,
     required this.booking,
     required this.isBookedByMe,
+    required this.isOnWaitlist,
+    required this.waitlistLoading,
+    required this.onJoinWaitlist,
+    required this.onLeaveWaitlist,
   });
 
   final Map<String, dynamic>? studio;
@@ -464,6 +538,10 @@ class _ClassDetailBody extends StatelessWidget {
   final VoidCallback onBook;
   final bool booking;
   final bool isBookedByMe;
+  final bool isOnWaitlist;
+  final bool waitlistLoading;
+  final VoidCallback onJoinWaitlist;
+  final VoidCallback onLeaveWaitlist;
 
   @override
   Widget build(BuildContext context) {
@@ -554,12 +632,12 @@ class _ClassDetailBody extends StatelessWidget {
               HenzoHeaderBackButton(
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Class',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -573,7 +651,7 @@ class _ClassDetailBody extends StatelessWidget {
                   height: 12,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
+                  colorFilter: ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
                   ),
@@ -591,8 +669,8 @@ class _ClassDetailBody extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
+                  textStyle: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -655,8 +733,8 @@ class _ClassDetailBody extends StatelessWidget {
                 const SizedBox(height: 28),
                 Text(
                   tr('clientClassDetail.descriptionSectionLabel'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
@@ -675,6 +753,10 @@ class _ClassDetailBody extends StatelessWidget {
             booking: booking,
             isBookedByMe: isBookedByMe,
             canBook: !isBookedByMe && (cap == 0 || booked < cap),
+            isOnWaitlist: isOnWaitlist,
+            waitlistLoading: waitlistLoading,
+            onJoinWaitlist: onJoinWaitlist,
+            onLeaveWaitlist: onLeaveWaitlist,
           ),
       ],
     );
@@ -732,8 +814,8 @@ class _StudioHeroBanner extends StatelessWidget {
                             studioName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -742,8 +824,8 @@ class _StudioHeroBanner extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               distanceLabel!,
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: TextStyle(
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.w400,
                                 color: Color(0x663F3F3F),
                                 height: 1.1,
@@ -763,8 +845,8 @@ class _StudioHeroBanner extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Text(
                                     avgRating.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      fontSize: 13,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
                                     ),
@@ -774,8 +856,8 @@ class _StudioHeroBanner extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     '$reviewCount reviews',
-                                    style: const TextStyle(
-                                      fontSize: 13,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
@@ -793,7 +875,7 @@ class _StudioHeroBanner extends StatelessWidget {
               Container(
                 width: 30,
                 height: 30,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
@@ -874,7 +956,7 @@ class _ClassInfoCard extends StatelessWidget {
                   child: Text(
                     categoryLabel,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.3,
                       color: categoryFg,
@@ -887,8 +969,8 @@ class _ClassInfoCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     dateLabel,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                       color: AppColors.textPrimary,
@@ -901,7 +983,7 @@ class _ClassInfoCard extends StatelessWidget {
           Text(
             classTitle,
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 26.sp,
               fontWeight: FontWeight.w600,
               height: 1.15,
               color: AppColors.textPrimary,
@@ -957,10 +1039,10 @@ class _ClassInfoCard extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
+                  textStyle: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1002,8 +1084,8 @@ class _StudioAvatarBadge extends StatelessWidget {
             )
           : Text(
               initials,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
@@ -1057,8 +1139,8 @@ class _ClassMetaItem extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w400,
               letterSpacing: -0.3,
               color: AppColors.textPrimary,
@@ -1124,7 +1206,7 @@ class _DetailIconRow extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: emphasizeTitle
                       ? FontWeight.w600
                       : FontWeight.w500,
@@ -1142,8 +1224,8 @@ class _DetailIconRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         subtitle!,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           height: 1.35,
                           color: AppColors.textSecondary,
                         ),
@@ -1195,8 +1277,8 @@ class _TrainingDescriptionCard extends StatelessWidget {
       ),
       child: Text(
         body,
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: 14.sp,
           height: 1.45,
           color: AppColors.textSecondary,
         ),
@@ -1212,6 +1294,10 @@ class _BookBar extends StatelessWidget {
     required this.booking,
     required this.isBookedByMe,
     required this.canBook,
+    required this.isOnWaitlist,
+    required this.waitlistLoading,
+    required this.onJoinWaitlist,
+    required this.onLeaveWaitlist,
   });
 
   final DateTime startsAt;
@@ -1219,15 +1305,16 @@ class _BookBar extends StatelessWidget {
   final bool booking;
   final bool isBookedByMe;
   final bool canBook;
+  final bool isOnWaitlist;
+  final bool waitlistLoading;
+  final VoidCallback onJoinWaitlist;
+  final VoidCallback onLeaveWaitlist;
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
     final started = startsAt.isBefore(DateTime.now());
-    final label = started
-        ? 'Class has started'
-        : isBookedByMe
-        ? 'You are booked'
-        : 'Book class';
+    final classFull = !canBook && !isBookedByMe;
 
     return Container(
       width: double.infinity,
@@ -1238,35 +1325,120 @@ class _BookBar extends StatelessWidget {
         12 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: const BoxDecoration(color: AppColors.backgroundSecondary),
-      child: FilledButton(
-        onPressed: (!canBook || started || booking) ? null : onBook,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary500,
-          disabledBackgroundColor: AppColors.primary500.withValues(alpha: 0.45),
-          disabledForegroundColor: Colors.white70,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: booking
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+      child: classFull && !started
+          ? _WaitlistButton(
+              isOnWaitlist: isOnWaitlist,
+              loading: waitlistLoading,
+              onJoin: onJoinWaitlist,
+              onLeave: onLeaveWaitlist,
+              locale: locale,
+            )
+          : FilledButton(
+              onPressed: (!canBook || started || booking) ? null : onBook,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary500,
+                disabledBackgroundColor:
+                    AppColors.primary500.withValues(alpha: 0.45),
+                disabledForegroundColor: Colors.white70,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-      ),
+              child: booking
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      started
+                          ? locale.t('clientClassDetail.classStarted')
+                          : isBookedByMe
+                          ? locale.t('clientClassDetail.youAreBooked')
+                          : locale.t('clientClassDetail.bookClass'),
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+    );
+  }
+}
+
+class _WaitlistButton extends StatelessWidget {
+  const _WaitlistButton({
+    required this.isOnWaitlist,
+    required this.loading,
+    required this.onJoin,
+    required this.onLeave,
+    required this.locale,
+  });
+
+  final bool isOnWaitlist;
+  final bool loading;
+  final VoidCallback onJoin;
+  final VoidCallback onLeave;
+  final LocaleProvider locale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FilledButton.icon(
+          onPressed: loading ? null : (isOnWaitlist ? onLeave : onJoin),
+          icon: loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Icon(
+                  isOnWaitlist
+                      ? Icons.notifications_off_outlined
+                      : Icons.notifications_active_outlined,
+                  size: 18,
+                ),
+          label: Text(
+            isOnWaitlist
+                ? locale.t('clientClassDetail.leaveWaitlist')
+                : locale.t('clientClassDetail.joinWaitlist'),
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: isOnWaitlist
+                ? AppColors.neutral200
+                : AppColors.primary500,
+            foregroundColor: isOnWaitlist
+                ? AppColors.textPrimary
+                : Colors.white,
+            minimumSize: const Size(double.infinity, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        if (isOnWaitlist) ...[
+          const SizedBox(height: 6),
+          Text(
+            locale.t('clientClassDetail.waitlistNotifyHint'),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
     );
   }
 }

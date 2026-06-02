@@ -19,6 +19,7 @@ import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
 import '../widgets/schedule/calendar_day_pill.dart';
 import 'public_class_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
   const PublicStudioScheduleScreen({
@@ -377,8 +378,8 @@ class _PublicStudioScheduleScreenState
                 child: Center(
                   child: Text(
                     dow[i],
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w400,
                       letterSpacing: -0.3,
                       color: AppColors.textSecondary,
@@ -440,7 +441,7 @@ class _PublicStudioScheduleScreenState
                             child: Text(
                               '${day.day}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                                 color: selected
                                     ? Colors.white
@@ -468,12 +469,12 @@ class _PublicStudioScheduleScreenState
       child: InkWell(
         onTap: _goToToday,
         borderRadius: BorderRadius.circular(999),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Text(
             'Today',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: Colors.white,
               height: 1.1,
@@ -526,8 +527,8 @@ class _PublicStudioScheduleScreenState
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                     height: 1.1,
@@ -567,8 +568,8 @@ class _PublicStudioScheduleScreenState
                   alignment: Alignment.centerLeft,
                   child: Text(
                     CalendarDayPill.monthYearUpperEn(pagerDay),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                       color: AppColors.textPrimary,
@@ -782,7 +783,7 @@ class _PublicStudioScheduleScreenState
                                 mainAxisSize: MainAxisSize.min,
 
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Failed to load schedule',
 
                                     style: TextStyle(
@@ -799,7 +800,7 @@ class _PublicStudioScheduleScreenState
 
                                     textAlign: TextAlign.center,
 
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textSecondary,
                                     ),
                                   ),

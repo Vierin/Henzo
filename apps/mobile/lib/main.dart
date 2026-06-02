@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,12 +15,15 @@ import 'config/app_config.dart';
 import 'config/load_app_env.dart';
 import 'config/release_env.dart';
 import 'deep_links/class_session_deep_link.dart';
+import 'deep_links/studio_deep_link.dart';
+import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
+import 'screens/trainer/trainer_shell.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/client_favorites_store.dart';
@@ -219,45 +223,79 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         child: Consumer<LocaleProvider>(
           builder: (context, locale, _) {
             if (!locale.isLoaded) {
-            return MaterialApp(
+            return ScreenUtilInit(
+              designSize: const Size(390, 844),
+              minTextAdapt: true,
+              splitScreenMode: false,
+              child: MaterialApp(
+                title: 'Henzo',
+                theme: AppTheme.light,
+                builder: (context, child) {
+                  final media = MediaQuery.of(context);
+                  return MediaQuery(
+                    data: media.copyWith(
+                      textScaler: TextScaler.linear(
+                        media.textScaler.scale(1.0).clamp(0.85, 1.2),
+                      ),
+                    ),
+                    child: _withKeyboardDismiss(context, child) ?? const SizedBox.shrink(),
+                  );
+                },
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                  Locale('en'),
+                  Locale('ru'),
+                  Locale('vi'),
+                ],
+                home: const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            );
+          }
+          return ScreenUtilInit(
+            designSize: const Size(430, 932),
+            minTextAdapt: true,
+            splitScreenMode: false,
+            builder: (context, child) => MaterialApp(
               title: 'Henzo',
+              navigatorKey: henzoRootNavigatorKey,
               theme: AppTheme.light,
-              builder: _withKeyboardDismiss,
+              themeMode: ThemeMode.light,
+              builder: (context, child) {
+                final media = MediaQuery.of(context);
+                final scaled = MediaQuery(
+                  data: media.copyWith(
+                    textScaler: TextScaler.linear(
+                      media.textScaler.scale(1.0).clamp(0.85, 1.2),
+                    ),
+                  ),
+                  child: _withKeyboardDismiss(context, child) ?? const SizedBox.shrink(),
+                );
+                return StudioDeepLinkScope(
+                  navigatorKey: henzoRootNavigatorKey,
+                  child: TrainerInviteDeepLinkScope(
+                    navigatorKey: henzoRootNavigatorKey,
+                    child: ClassSessionDeepLinkScope(
+                      navigatorKey: henzoRootNavigatorKey,
+                      child: scaled,
+                    ),
+                  ),
+                );
+              },
+              locale: Locale(locale.languageTag),
               localizationsDelegates: const [
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ru'),
-                Locale('vi'),
-              ],
-              home: const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              ),
-            );
-          }
-          return MaterialApp(
-            title: 'Henzo',
-            navigatorKey: henzoRootNavigatorKey,
-            theme: AppTheme.light,
-            themeMode: ThemeMode.light,
-            builder: (context, child) {
-              final layered = _withKeyboardDismiss(context, child);
-              return ClassSessionDeepLinkScope(
-                navigatorKey: henzoRootNavigatorKey,
-                child: layered,
-              );
-            },
-            locale: Locale(locale.languageTag),
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
-            home: const AuthWrapper(),
+              supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
+              home: const AuthWrapper(),
+            ),
           );
           },
         ),
@@ -313,6 +351,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         if (ownerAllowed) {
           return const MainShell();
+        }
+
+        if (auth.isAuthenticated && auth.isTrainer) {
+          return const TrainerShell();
         }
 
         if (auth.isAuthenticated && auth.isClient) {

@@ -26,7 +26,14 @@
 		"deleteFailed": "Xóa thất bại",
 		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước",
 		"verify": "Xác minh",
-		"apply": "Áp dụng"
+		"apply": "Áp dụng",
+		"reset": "Đặt lại",
+		"linkCopied": "Đã sao chép liên kết!",
+		"copyLink": "Sao chép liên kết",
+		"invite": "Mời",
+		"pleaseLoginFirst": "Vui lòng đăng nhập trước",
+		"addressCopied": "Đã sao chép địa chỉ",
+		"share": "Chia sẻ"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -97,7 +104,17 @@
 		"roleClientFeature3": "Đạt mục tiêu",
 		"roleOwnerFeature1": "Quản lý khách hàng",
 		"roleOwnerFeature2": "Lên lịch lớp học",
-		"roleOwnerFeature3": "Phát triển doanh nghiệp"
+		"roleOwnerFeature3": "Phát triển doanh nghiệp",
+		"roleIAm": "Tôi là",
+		"roleClientWord": "Khách hàng",
+		"roleManagerWord": "Quản lý",
+		"roleClientDesc": "Tìm kiếm, đặt chỗ và tham gia các lớp thể dục gần bạn.",
+		"roleOwnerDesc": "Quản lý studio, lịch học, huấn luyện viên và đặt chỗ.",
+		"roleAllInOne": "Tất cả trong một ứng dụng.",
+		"termsPrefix": "Bằng cách tiếp tục, bạn đồng ý với ",
+		"privacyPolicy": "Chính sách quyền riêng tư",
+		"termsAnd": "và",
+		"termsOfService": "Điều khoản dịch vụ"
 	},
 	"clientHome": {
 		"nowIn": "ĐANG Ở",
@@ -146,7 +163,10 @@
 		"scheduleEmptyTitle": "Chưa có lớp nào được đặt",
 		"scheduleEmptySubtitle": "Các buổi đặt sắp tới sẽ hiển thị tại đây.",
 		"passesEmptyTitle": "Chưa có lớp nào",
-		"passesEmptySubtitle": "Thẻ lớp của bạn sẽ hiển thị tại đây."
+		"passesEmptySubtitle": "Thẻ lớp của bạn sẽ hiển thị tại đây.",
+		"cancelConfirmTitle": "Hủy đặt chỗ?",
+		"cancelConfirmBody": "Bạn có chắc muốn hủy đặt chỗ này không?",
+		"cancelConfirmAction": "Có, hủy"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -204,7 +224,16 @@
 		"shareSomeone": "Ai đó",
 		"bookingFailed": "Không thể hoàn tất đặt chỗ",
 		"alreadyBooked": "Bạn đã đặt lớp này rồi",
-		"signInToBook": "Vui lòng đăng nhập để đặt lớp"
+		"signInToBook": "Vui lòng đăng nhập để đặt lớp",
+		"classStarted": "Lớp đã bắt đầu",
+		"youAreBooked": "Bạn đã đặt chỗ",
+		"bookClass": "Đặt lớp",
+		"joinWaitlist": "Tham gia danh sách chờ",
+		"leaveWaitlist": "Rời danh sách chờ",
+		"joinedWaitlist": "Đã thêm vào danh sách chờ — chúng tôi sẽ thông báo khi có chỗ",
+		"leftWaitlist": "Đã rời danh sách chờ",
+		"waitlistError": "Không thể tham gia danh sách chờ. Thử lại.",
+		"waitlistNotifyHint": "Bạn sẽ được thông báo nếu có chỗ trống"
 	},
 	"clientMap": {
 		"nearbyStudios": "Studio gần bạn",
@@ -212,7 +241,8 @@
 		"searchStudiosHint": "Tìm studio...",
 		"locationPromptTitle": "Chia sẻ vị trí",
 		"locationPromptBody": "Để hiển thị studio trên bản đồ, hãy cho phép truy cập vị trí hoặc chọn thành phố.",
-		"locationPromptManual": "Chọn thành phố thủ công"
+		"locationPromptManual": "Chọn thành phố thủ công",
+		"searchThisArea": "Tìm kiếm khu vực này"
 	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",
@@ -467,7 +497,38 @@
 		"rcEntitlementNotLinked": "Đã ghi nhận mua trên RevenueCat nhưng chưa kích hoạt Pro. Gắn sản phẩm với entitlement \"pro\" trong RevenueCat.",
 		"autoRenewDisclosure": "Thanh toán qua Apple ID hoặc Google Play. Gói tự gia hạn trừ khi hủy ít nhất 24 giờ trước khi kết thúc kỳ. Quản lý trong cài đặt cửa hàng.",
 		"legalLinksPrefix": "Xem ",
-		"legalLinksSuffix": "."
+		"legalLinksSuffix": ".",
+		"soloClassLimitTitle": "Đã đạt giới hạn lớp học",
+		"soloClassLimitBody": "Gói Solo cho phép 12 lớp mỗi tháng. Nâng cấp lên Studio để không giới hạn.",
+		"soloTrainerLimitTitle": "Đã đạt giới hạn huấn luyện viên",
+		"soloTrainerLimitBody": "Gói Solo có 1 huấn luyện viên (bạn). Nâng cấp lên Studio để thêm người.",
+		"upgradeToStudio": "Nâng cấp lên Studio",
+		"studioTitle": "Studio",
+		"studioTagline": "Dành cho studio đang phát triển",
+		"enterpriseTitle": "Enterprise",
+		"enterpriseTagline": "Dành cho doanh nghiệp lớn",
+		"studioFallbackPrice": "599.000₫",
+		"enterpriseFallbackPrice": "1.999.000₫",
+		"perMonth": "/tháng",
+		"subscribeToStudio": "Đăng ký Studio",
+		"subscribeToEnterprise": "Đăng ký Enterprise",
+		"feature_studio_1": "100 lớp/tháng",
+		"feature_studio_2": "Tối đa 5 huấn luyện viên",
+		"feature_studio_3": "Danh sách chờ",
+		"feature_studio_4": "Nhắc nhở tự động",
+		"feature_studio_5": "Phân tích (90 ngày)",
+		"feature_enterprise_1": "Không giới hạn lớp học",
+		"feature_enterprise_2": "Không giới hạn HLV",
+		"feature_enterprise_3": "Nhiều địa điểm",
+		"feature_enterprise_4": "Phân tích nâng cao",
+		"feature_enterprise_5": "Phân quyền nhóm",
+		"feature_enterprise_6": "Hỗ trợ ưu tiên",
+		"currentPlanLabel": "Gói hiện tại: {plan}",
+		"currentSoloDesc": "Bạn đang dùng gói miễn phí. Nâng cấp lên Studio hoặc Enterprise bất cứ lúc nào.",
+		"currentProDesc": "Bạn có quyền truy cập đầy đủ tính năng Pro.",
+		"solo": "Solo",
+		"subscribeToStudioBtn": "Đăng ký Studio",
+		"subscribeToEnterpriseBtn": "Đăng ký Enterprise"
 	},
 	"profile": {
 		"title": "Hồ sơ",
@@ -622,7 +683,14 @@
 			"bookingPeriodDaysLabel": "Ngày",
 			"bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ",
 			"bookingLink": "Xem trước salon"
-		}
+		},
+		"usage": {
+			"classesThisMonth": "Lớp học trong tháng",
+			"trainers": "Huấn luyện viên",
+			"upgradeHint": "Nâng cấp lên Studio để mở rộng"
+		},
+		"studioQrCode": "Mã QR Studio",
+		"studioQrCodeSubtitle": "Chia sẻ trang studio"
 	},
 	"calendar": {
 		"months": [
@@ -639,7 +707,15 @@
 			"T11",
 			"T12"
 		],
-		"weekDays": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+		"weekDays": [
+			"CN",
+			"T2",
+			"T3",
+			"T4",
+			"T5",
+			"T6",
+			"T7"
+		],
 		"editSchedule": "Chỉnh lịch",
 		"addUnavailable": "Thêm giờ không làm việc cho",
 		"unavailableComingSoon": "Tính năng đang phát triển",
@@ -658,8 +734,7 @@
 		"setupSalonFirst": "Vui lòng thiết lập doanh nghiệp trước",
 		"bookingConfirmed": "Đã xác nhận đặt chỗ",
 		"bookingRejected": "Đã từ chối đặt chỗ",
-		"bookingCancelled": "Đã hủy đặt chỗ",
-		"unavailableComingSoon": "Tính năng đang phát triển"
+		"bookingCancelled": "Đã hủy đặt chỗ"
 	},
 	"analytics": {
 		"title": "Phân tích",
@@ -732,7 +807,6 @@
 		"lastName": "Họ",
 		"enterName": "Nhập tên",
 		"phone": "Điện thoại",
-		"enterPhone": "Nhập số điện thoại",
 		"security": "Bảo mật",
 		"newPassword": "Mật khẩu mới",
 		"confirmPassword": "Xác nhận mật khẩu",
@@ -819,5 +893,32 @@
 			"sessionsPlanned": "{count} buổi trong khoảng này",
 			"back": "Quay lại"
 		}
+	},
+	"trainer": {
+		"role": "Huấn luyện viên",
+		"noClientsEnrolled": "Không có khách hàng đăng ký",
+		"noShowStatus": "Vắng mặt",
+		"markPresent": "Đánh dấu có mặt",
+		"markNoShow": "Đánh dấu vắng mặt",
+		"inviteTitle": "Bạn được mời!",
+		"joinAs": "Tham gia {studio} với tư cách {name}",
+		"joinAsTrainer": "Tham gia {studio} với tư cách huấn luyện viên",
+		"acceptInvitation": "Chấp nhận lời mời",
+		"invalidExpiredLink": "Liên kết mời không hợp lệ hoặc đã hết hạn.",
+		"couldNotLoadInvite": "Không thể tải lời mời. Kiểm tra kết nối."
+	},
+	"staff": {
+		"inviteTitle": "Mời {name}",
+		"shareInviteMessage": "Chia sẻ liên kết này với {name} để tham gia với tư cách huấn luyện viên.",
+		"inviteExpires": "Liên kết hết hạn sau 7 ngày"
+	},
+	"client": {
+		"bookingCancelled": "Đã hủy đặt chỗ",
+		"cancelBookingFailed": "Không thể hủy đặt chỗ"
+	},
+	"public": {
+		"noAddressAvailable": "Không có địa chỉ",
+		"couldNotOpenMaps": "Không thể mở bản đồ",
+		"getDirections": "Chỉ đường"
 	}
 }

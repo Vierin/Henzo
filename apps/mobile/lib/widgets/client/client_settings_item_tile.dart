@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientSettingsItemTile extends StatelessWidget {
   const ClientSettingsItemTile({
@@ -35,8 +36,8 @@ class ClientSettingsItemTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),

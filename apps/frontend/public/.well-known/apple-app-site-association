@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["PR2HAF6344.com.henzo.vn.Henzo"],
+        "components": [
+          { "/": "/class*" },
+          { "/": "/studio/*" },
+          { "/": "/trainer-invite/*" },
+          { "/": "/en/*" },
+          { "/": "/ru/*" },
+          { "/": "/vi/*" }
+        ]
+      }
+    ]
+  }
+}

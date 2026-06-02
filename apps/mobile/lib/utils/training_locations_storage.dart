@@ -6,6 +6,7 @@ import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/dashboard_api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 Future<Salon?> persistExtraTrainingLocations(
   BuildContext context,

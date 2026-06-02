@@ -20,6 +20,7 @@ import '../../widgets/clients/add_owner_client_sheet.dart';
 import '../../widgets/clients/client_list_tile.dart';
 import '../../widgets/clients/clients_filter_chip.dart';
 import 'client_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum ClientFilter { all, sleepers, whiteList, blocked }
 
@@ -499,11 +500,11 @@ class ClientsScreenState extends State<ClientsScreen> {
                               textTheme.labelSmall?.copyWith(
                                 color: AppColors.textPrimary,
                                 letterSpacing: -0.3,
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                               ) ??
                               TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: -0.3,
@@ -517,8 +518,8 @@ class ClientsScreenState extends State<ClientsScreen> {
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ) ??
-                              const TextStyle(
-                                fontSize: 24,
+                              TextStyle(
+                                fontSize: 24.sp,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                                 letterSpacing: -0.3,
@@ -577,7 +578,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                 decoration: InputDecoration(
                   hintText: 'Поиск по имени, email или телефону',
                   hintStyle: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textTertiary,
                   ),
                   prefixIcon: const AppSearchPrefixIcon(),
@@ -692,7 +693,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                                               ? 'Нет клиентов'
                                               : 'Ничего не найдено',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: 16.sp,
                                             color: AppColors.textSecondary,
                                           ),
                                         ),
@@ -729,11 +730,11 @@ class ClientsScreenState extends State<ClientsScreen> {
                                         style:
                                             textTheme.titleSmall?.copyWith(
                                               fontWeight: FontWeight.w700,
-                                              fontSize: 16,
+                                              fontSize: 16.sp,
                                               color: AppColors.textPrimary,
                                             ) ??
-                                            const TextStyle(
-                                              fontSize: 16,
+                                            TextStyle(
+                                              fontSize: 16.sp,
                                               fontWeight: FontWeight.w700,
                                               color: AppColors.textPrimary,
                                             ),

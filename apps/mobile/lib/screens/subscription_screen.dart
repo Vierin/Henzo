@@ -19,6 +19,7 @@ import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/subscription_legal_disclosure.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const Color _activeBadgeBg = Color(0xFFE8F5E9);
 const Color _activeBadgeFg = Color(0xFF2E7D32);
@@ -290,40 +291,49 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         const SizedBox(height: 8),
                         if (!_isPro) ...[
                           _CurrentPlanCard(isPro: false),
-                          const SizedBox(height: 16),
-                          if (_offeringsError)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                locale.t('subscription.offeringsUnavailable'),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.error600,
-                                ),
-                              ),
-                            ),
-                          if (_monthlyPackage != null && _annualPackage != null)
-                            _BillingToggle(
-                              billingInterval: _billingInterval,
-                              annualSavePercent: _annualSavePercent ?? 0,
-                              onChanged: (v) =>
-                                  setState(() => _billingInterval = v),
-                            ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
+
+                          // Studio
                           _PlanCard(
-                            priceLabel:
-                                _priceLabelForInterval(_billingInterval) ?? '—',
-                            comparePriceLabel: _comparePriceLabel(),
-                            isAnnual: _billingInterval == 'annual',
-                            onSubscribe: () =>
-                                _handleSelectPlan(_billingInterval),
-                            checkoutLoading: _checkoutLoading,
+                            title: locale.t('subscription.studioTitle'),
+                            tagline: locale.t('subscription.studioTagline'),
+                            priceLabel: _monthlyPackage?.storeProduct.priceString ??
+                                locale.t('subscription.studioFallbackPrice'),
+                            features: [
+                              locale.t('subscription.feature_studio_1'),
+                              locale.t('subscription.feature_studio_2'),
+                              locale.t('subscription.feature_studio_3'),
+                              locale.t('subscription.feature_studio_4'),
+                              locale.t('subscription.feature_studio_5'),
+                            ],
+                            subscribeLabel: locale.t('subscription.subscribeToStudioBtn'),
+                            isLoading: _checkoutLoading == 'monthly',
+                            onSubscribe: () => _handleSelectPlan('monthly'),
                           ),
+
+                          const SizedBox(height: 20),
+
+                          // Enterprise
+                          _PlanCard(
+                            title: locale.t('subscription.enterpriseTitle'),
+                            tagline: locale.t('subscription.enterpriseTagline'),
+                            priceLabel: locale.t('subscription.enterpriseFallbackPrice'),
+                            features: [
+                              locale.t('subscription.feature_enterprise_1'),
+                              locale.t('subscription.feature_enterprise_2'),
+                              locale.t('subscription.feature_enterprise_3'),
+                              locale.t('subscription.feature_enterprise_4'),
+                              locale.t('subscription.feature_enterprise_5'),
+                              locale.t('subscription.feature_enterprise_6'),
+                            ],
+                            subscribeLabel: locale.t('subscription.subscribeToEnterpriseBtn'),
+                            isLoading: _checkoutLoading == 'enterprise',
+                            onSubscribe: () => _handleSelectPlan('monthly'),
+                          ),
+
                           const SizedBox(height: 12),
                           TextButton(
-                            onPressed: _restoreLoading
-                                ? null
-                                : _restorePurchases,
+                            onPressed: _restoreLoading ? null : _restorePurchases,
                             child: Text(
                               _restoreLoading
                                   ? locale.t('common.loading')
@@ -366,8 +376,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             padding: const EdgeInsets.only(top: 16),
                             child: Text(
                               locale.t('subscription.storeNotConfigured'),
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12.sp,
                                 color: AppColors.textTertiary,
                               ),
                               textAlign: TextAlign.center,
@@ -409,24 +419,34 @@ class _CurrentPlanCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Текущий план: ${isPro ? 'Pro' : 'Free'}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final locale = context.read<LocaleProvider>();
+                      final planName = isPro
+                          ? locale.t('profile.pro')
+                          : locale.t('subscription.solo');
+                      return Text(
+                        locale.t('subscription.currentPlanLabel')
+                            .replaceAll('{plan}', planName),
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 8),
-                    Text(
-                      isPro
-                          ? 'У вас подключен расширенный функционал Pro.'
-                          : 'Сейчас у вас бесплатный план. Вы можете перейти на Pro в любой момент.',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final locale = context.read<LocaleProvider>();
+                      return Text(
+                        isPro
+                            ? locale.t('subscription.currentProDesc')
+                            : locale.t('subscription.currentSoloDesc'),
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: AppColors.textSecondary,
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -436,15 +456,15 @@ class _CurrentPlanCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary500.withValues(alpha: 0.15),
+                  color: _activeBadgeBg,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  isPro ? 'PRO' : 'FREE',
-                  style: const TextStyle(
-                    fontSize: 11,
+                  context.read<LocaleProvider>().t('profile.active').toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary500,
+                    color: _activeBadgeFg,
                   ),
                 ),
               ),
@@ -498,8 +518,8 @@ class _ProStatusCard extends StatelessWidget {
                   children: [
                     Text(
                       planTitle,
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
@@ -507,8 +527,8 @@ class _ProStatusCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       tagline,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         height: 1.25,
                         color: AppColors.textSecondary,
                       ),
@@ -527,8 +547,8 @@ class _ProStatusCard extends StatelessWidget {
                 ),
                 child: Text(
                   activeLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                     color: _activeBadgeFg,
                   ),
@@ -546,8 +566,8 @@ class _ProStatusCard extends StatelessWidget {
                     children: [
                       Text(
                         priceLabel,
-                        style: const TextStyle(
-                          fontSize: 22,
+                        style: TextStyle(
+                          fontSize: 22.sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primary500,
                           letterSpacing: -0.3,
@@ -555,8 +575,8 @@ class _ProStatusCard extends StatelessWidget {
                       ),
                       Text(
                         periodLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -574,15 +594,15 @@ class _ProStatusCard extends StatelessWidget {
                     children: [
                       Text(
                         nextPaymentLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         nextPaymentDate,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -615,8 +635,8 @@ class _ProWhatsIncludedCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
@@ -647,8 +667,8 @@ class _ProWhatsIncludedCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   f,
-                                  style: const TextStyle(
-                                    fontSize: 13,
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
                                     height: 1.25,
                                     color: AppColors.textPrimary,
                                   ),
@@ -705,7 +725,7 @@ class _BillingToggle extends StatelessWidget {
                     child: Text(
                       'Месячный',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         color: billingInterval == 'monthly'
                             ? AppColors.primary500
@@ -735,7 +755,7 @@ class _BillingToggle extends StatelessWidget {
                         Text(
                           'Годовой',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
                             color: billingInterval == 'annual'
                                 ? AppColors.primary500
@@ -755,8 +775,8 @@ class _BillingToggle extends StatelessWidget {
                             ),
                             child: Text(
                               '-$annualSavePercent%',
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: TextStyle(
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -777,26 +797,27 @@ class _BillingToggle extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
+  final String title;
+  final String tagline;
   final String priceLabel;
-  final String? comparePriceLabel;
-  final bool isAnnual;
+  final List<String> features;
+  final String subscribeLabel;
   final VoidCallback onSubscribe;
-  final String? checkoutLoading;
+  final bool isLoading;
 
   const _PlanCard({
+    required this.title,
+    required this.tagline,
     required this.priceLabel,
-    this.comparePriceLabel,
-    required this.isAnnual,
+    required this.features,
+    required this.subscribeLabel,
     required this.onSubscribe,
-    this.checkoutLoading,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final locale = context.read<LocaleProvider>();
-    final periodLabel = locale.t(
-      isAnnual ? 'subscription.perYearShort' : 'subscription.perMonthShort',
-    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -817,29 +838,25 @@ class _PlanCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset(
-                'assets/icons/icon-rocket.png',
-                width: 28,
-                height: 28,
-              ),
+              Image.asset('assets/icons/icon-rocket.png', width: 28, height: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      locale.t('profile.pro'),
-                      style: const TextStyle(
-                        fontSize: 24,
+                      title,
+                      style: TextStyle(
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      locale.t('subscription.proTagline'),
-                      style: const TextStyle(
-                        fontSize: 14,
+                      tagline,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         height: 1.25,
                         color: AppColors.textSecondary,
                       ),
@@ -850,25 +867,10 @@ class _PlanCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          if (isAnnual && comparePriceLabel != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                comparePriceLabel!,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: AppColors.textTertiary.withValues(alpha: 0.9),
-                  decoration: TextDecoration.lineThrough,
-                  decorationColor: AppColors.textTertiary.withValues(
-                    alpha: 0.7,
-                  ),
-                ),
-              ),
-            ),
           Text(
             priceLabel,
-            style: const TextStyle(
-              fontSize: 26,
+            style: TextStyle(
+              fontSize: 26.sp,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
               letterSpacing: -0.5,
@@ -876,31 +878,27 @@ class _PlanCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            periodLabel,
-            style: const TextStyle(
-              fontSize: 14,
+            locale.t('subscription.perMonthShort'),
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 20),
-          ..._proFeatureLabels(locale).map(
+          ...features.map(
             (f) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(
-                    'assets/icons/icon-fire.png',
-                    width: 22,
-                    height: 22,
-                  ),
+                  Image.asset('assets/icons/icon-fire.png', width: 22, height: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       f,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         height: 1.35,
                         color: AppColors.textPrimary,
                       ),
@@ -917,19 +915,24 @@ class _PlanCard extends StatelessWidget {
             width: double.infinity,
             height: AuthFormStyles.buttonHeight,
             child: FilledButton(
-              onPressed: checkoutLoading != null ? null : onSubscribe,
+              onPressed: isLoading ? null : onSubscribe,
               style: AuthFormStyles.primaryButtonStyle(),
-              child: Text(
-                checkoutLoading != null
-                    ? locale.t('common.loading')
-                    : locale.t('subscription.subscribe'),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(subscribeLabel),
             ),
           ),
           const SizedBox(height: 12),
           Text(
             locale.t('subscription.noLongTerm'),
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 12.sp, color: AppColors.textTertiary),
             textAlign: TextAlign.center,
           ),
         ],

@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
 import '../../services/health_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 String formatProfileCount(int value) {
   final digits = value.toString();
@@ -37,7 +38,7 @@ class ClientProfileHeader extends StatelessWidget {
             title,
             style: BrandTypography.greeting(
               context,
-            ).copyWith(fontSize: 28, fontWeight: FontWeight.w700),
+            ).copyWith(fontSize: 28.sp, fontWeight: FontWeight.w700),
           ),
         ),
         Material(
@@ -101,8 +102,8 @@ class ClientProfileUserRow extends StatelessWidget {
             child: avatarUrl == null || avatarUrl!.isEmpty
                 ? Text(
                     initial,
-                    style: const TextStyle(
-                      fontSize: 22,
+                    style: TextStyle(
+                      fontSize: 22.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
@@ -116,8 +117,8 @@ class ClientProfileUserRow extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -139,8 +140,8 @@ class ClientProfileUserRow extends StatelessWidget {
                       Expanded(
                         child: Text(
                           location!,
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: 13.sp,
                             color: AppColors.textTertiary,
                           ),
                         ),
@@ -151,8 +152,8 @@ class ClientProfileUserRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     email,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: 13.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -330,7 +331,7 @@ class _StatSquareCard extends StatelessWidget {
               child: Text(
                 item.value,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 30.sp,
                   fontWeight: FontWeight.w500,
                   height: 0.9,
                   color: item.textColor,
@@ -351,7 +352,7 @@ class _StatSquareCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w400,
                       height: 1.1,
                       color: item.textColor,
@@ -437,8 +438,8 @@ class ClientProfileHealthSection extends StatelessWidget {
                   children: [
                     Text(
                       connectTitle,
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                         height: 1.2,
@@ -448,8 +449,8 @@ class ClientProfileHealthSection extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         connectSubtitle,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: 11.sp,
                           height: 1.3,
                           color: Colors.white70,
                         ),
@@ -476,8 +477,8 @@ class ClientProfileHealthSection extends StatelessWidget {
                       const SizedBox(width: 3),
                       Text(
                         secureLabel,
-                        style: const TextStyle(
-                          fontSize: 9,
+                        style: TextStyle(
+                          fontSize: 9.sp,
                           color: Colors.white60,
                           height: 1.2,
                         ),
@@ -557,7 +558,7 @@ class ClientProfileHealthSection extends StatelessWidget {
           children: [
             Text(
               needsInstall ? 'Install' : connectLabel,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
             ),
             const Icon(Icons.chevron_right_rounded, size: 16),
           ],
@@ -616,8 +617,8 @@ class _HealthMetric extends StatelessWidget {
             Text(
               value,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
                 height: 1.1,
@@ -632,8 +633,8 @@ class _HealthMetric extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   maxLines: 2,
-                  style: const TextStyle(
-                    fontSize: 10,
+                  style: TextStyle(
+                    fontSize: 10.sp,
                     color: Colors.white70,
                     height: 1.2,
                   ),

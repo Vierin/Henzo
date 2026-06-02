@@ -19,6 +19,7 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
+import '../utils/load_error_message.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -27,6 +28,8 @@ import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
+import 'subscription_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
@@ -282,7 +285,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                       const Spacer(),
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(selected),
-                        child: const Text(
+                        child: Text(
                           'Готово',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
@@ -330,9 +333,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         color: _kRegHintMuted,
-        fontSize: 16,
+        fontSize: 16.sp,
         fontWeight: FontWeight.w500,
       ),
       prefixIcon: prefixIcon == null
@@ -344,8 +347,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffix: suffix,
       suffixText: suffixText,
-      suffixStyle: const TextStyle(
-        fontSize: 16,
+      suffixStyle: TextStyle(
+        fontSize: 16.sp,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
@@ -415,9 +418,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   onChanged: (_) => setState(() => _step1DurationError = false),
                   decoration: InputDecoration(
                     hintText: '60',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       color: _kRegHintMuted,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
                     ),
                     border: InputBorder.none,
@@ -436,8 +439,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
                   loc.t('addTraining.durationSuffix'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -451,8 +454,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
   }
 
-  static const TextStyle _stepFieldInputStyle = TextStyle(
-    fontSize: 16,
+  static final TextStyle _stepFieldInputStyle = TextStyle(
+    fontSize: 16.sp,
     color: AppColors.textPrimary,
   );
 
@@ -460,8 +463,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     padding: const EdgeInsets.only(bottom: 10, left: 12),
     child: Text(
       text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 13,
+      style: TextStyle(
+        fontSize: 13.sp,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
         color: AppColors.textPrimary,
@@ -626,8 +629,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           padding: const EdgeInsets.only(top: 4, left: 4),
                           child: Text(
                             loc.t('addTraining.categorySheetTitle'),
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.4,
                               color: AppColors.textSecondary,
@@ -697,7 +700,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                   style: TextStyle(
                                     color: fg,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                                    fontSize: 13.sp,
                                   ),
                                 ),
                               ),
@@ -879,7 +882,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           ? Container(
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
               ),
@@ -919,7 +922,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             child: Text(
               _narrowWeekday(day, loc),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w700,
                 color: selected ? AppColors.textInverse : AppColors.textPrimary,
               ),
@@ -954,8 +957,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                     children: [
                       Text(
                         caption,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: 11.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
@@ -963,8 +966,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                       const SizedBox(height: 4),
                       Text(
                         value,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -1004,8 +1007,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               Expanded(
                 child: Text(
                   loc.t('addTraining.step2.oneTraining').toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.35,
                     color: AppColors.textPrimary,
@@ -1042,8 +1045,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   children: [
                     Text(
                       loc.t('addTraining.step2.repeatedTraining').toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.35,
                         color: AppColors.textPrimary,
@@ -1052,8 +1055,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                     const SizedBox(height: 4),
                     Text(
                       loc.t('addTraining.step2.repeatedHint'),
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         height: 1.35,
                         color: AppColors.textSecondary,
                       ),
@@ -1084,8 +1087,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             ),
             child: Text(
               _formatYMMMd(_sessionDate, loc),
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -1112,8 +1115,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             ),
             child: Text(
               _timeToHm(_sessionTime),
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -1142,9 +1145,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   )
                 : Text(
                     loc.t('addTraining.step2.createClass'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                     ),
                   ),
           ),
@@ -1210,8 +1213,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         const SizedBox(height: 6),
         Text(
           loc.t('addTraining.step2.scheduleHint'),
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 12.sp,
             height: 1.35,
             color: AppColors.textSecondary,
           ),
@@ -1235,8 +1238,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                       width: 110,
                       child: Text(
                         _fullWeekday(day, loc),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -1286,8 +1289,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                           child: Text(
                             _timeToHm(time),
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
                             ),
@@ -1319,8 +1322,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                 loc
                     .t('addTraining.step2.sessionsPlanned')
                     .replaceAll('{count}', '$n'),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -1347,7 +1350,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   ),
                   child: Text(
                     loc.t('addTraining.step2.back'),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -1376,7 +1379,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         )
                       : Text(
                           loc.t('common.save'),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                 ),
               ),
@@ -1426,6 +1429,35 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       setState(() => _loading = false);
       showApiError(context, e);
     }
+  }
+
+  Future<void> _showClassLimitDialog() async {
+    final locale = context.read<LocaleProvider>();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('subscription.soloClassLimitTitle')),
+        content: Text(locale.t('subscription.soloClassLimitBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(locale.t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: Text(locale.t('subscription.upgradeToStudio')),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -1524,7 +1556,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         );
       }
     } catch (e) {
-      if (mounted) showApiError(context, e);
+      if (!mounted) return;
+      if (isSoloSessionLimitError(e)) {
+        await _showClassLimitDialog();
+      } else {
+        showApiError(context, e);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1555,8 +1592,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             _step == 1
                 ? loc.t('addTraining.newClassStep1')
                 : loc.t('addTraining.newClassStep2'),
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -1659,7 +1696,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                           subtitle: Text(
                                             sub,
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 12.sp,
                                               color: AppColors.textSecondary,
                                               fontWeight: FontWeight.w500,
                                             ),
@@ -1675,10 +1712,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                         if (_existing.isEmpty) ...[
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'У этой студии пока нет тренировок. Введите название новой.',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -1709,7 +1746,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 16.sp,
                                         fontWeight: FontWeight.w400,
                                         color: _selectedCategoryId == null
                                             ? AppColors.textSecondary
@@ -1771,8 +1808,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                               children: [
                                                 Text(
                                                   displayName,
-                                                  style: const TextStyle(
-                                                    fontSize: 19,
+                                                  style: TextStyle(
+                                                    fontSize: 19.sp,
                                                     fontWeight: FontWeight.w700,
                                                     color:
                                                         AppColors.textPrimary,
@@ -1782,8 +1819,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                                   const SizedBox(height: 4),
                                                   Text(
                                                     address,
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
+                                                    style: TextStyle(
+                                                      fontSize: 14.sp,
                                                       height: 1.25,
                                                       fontWeight:
                                                           FontWeight.w400,
@@ -1801,8 +1838,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                                       loc.t(
                                                         'addTraining.noAddress',
                                                       ),
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
+                                                      style: TextStyle(
+                                                        fontSize: 14.sp,
                                                         color: AppColors
                                                             .textTertiary,
                                                       ),
@@ -1920,8 +1957,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                           child: Text(
                             ownerName,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               color: AppColors.textPrimary,
                             ),
                           ),
@@ -1929,8 +1966,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         const SizedBox(height: 8),
                         Text(
                           loc.t('addTraining.step2.trainerProNote'),
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: TextStyle(
+                            fontSize: 12.sp,
                             height: 1.35,
                             color: AppColors.textSecondary,
                           ),
@@ -1948,7 +1985,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               'Следующий шаг',
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                                fontSize: 16.sp,
                                 color: AppColors.textInverse,
                               ),
                             ),

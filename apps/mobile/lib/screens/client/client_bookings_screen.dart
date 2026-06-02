@@ -7,6 +7,7 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import 'client_passes_tab.dart';
 import 'client_schedule_tab.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Bottom-nav Activity: upcoming and passes.
 class ClientBookingsScreen extends StatefulWidget {
@@ -69,7 +70,7 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
               child: Text(
                 locale.t('clientActivity.title'),
                 style: BrandTypography.greeting(context).copyWith(
-                  fontSize: 28,
+                  fontSize: 28.sp,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -233,7 +234,7 @@ class _ActivitySegmentedTabBarState extends State<_ActivitySegmentedTabBar> {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 15.sp,
                 fontWeight: fontWeight,
                 height: 1.1,
                 color: color,

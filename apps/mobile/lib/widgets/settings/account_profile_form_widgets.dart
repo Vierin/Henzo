@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../../widgets/auth/auth_form_styles.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared with owner [AccountSettingsScreen] and client personal data.
 const Color kAccountDangerPurple = Color(0xFF5141A8);
@@ -18,8 +19,8 @@ class AccountSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(left: 12),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
+        style: TextStyle(
+          fontSize: 12.sp,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.4,
           color: AppColors.textSecondary,
@@ -74,8 +75,8 @@ class AccountPhotoCard extends StatelessWidget {
                         ? null
                         : Text(
                             initials,
-                            style: const TextStyle(
-                              fontSize: 32,
+                            style: TextStyle(
+                              fontSize: 32.sp,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
@@ -122,8 +123,8 @@ class AccountPhotoCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
@@ -178,8 +179,8 @@ class AccountPrimaryButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -216,7 +217,7 @@ class AccountDangerButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
         ),
       ),
     );

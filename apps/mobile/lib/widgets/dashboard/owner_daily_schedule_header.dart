@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// «DAILY SCHEDULE» и опционально «See all ›» (только дашборд).
 class OwnerDailyScheduleHeader extends StatelessWidget {
@@ -15,11 +16,11 @@ class OwnerDailyScheduleHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
             'DAILY SCHEDULE',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w500,
               letterSpacing: -0.8,
               color: AppColors.textPrimary,
@@ -30,13 +31,13 @@ class OwnerDailyScheduleHeader extends StatelessWidget {
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onSeeAll,
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'See all',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.primary500,
                   ),

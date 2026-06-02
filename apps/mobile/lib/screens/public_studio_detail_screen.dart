@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../widgets/public/public_studio_detail_body.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PublicStudioDetailScreen extends StatefulWidget {
   const PublicStudioDetailScreen({super.key, required this.studioId});
@@ -125,11 +126,11 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Failed to load studio',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -137,7 +138,7 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
                 Text(
                   _error ?? 'Unknown error',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 12),
                 FilledButton(

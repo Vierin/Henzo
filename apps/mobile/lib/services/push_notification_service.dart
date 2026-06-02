@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'api_client.dart';
 import 'workout_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Handles FCM token registration with backend and in-app message handling.
 class PushNotificationService {

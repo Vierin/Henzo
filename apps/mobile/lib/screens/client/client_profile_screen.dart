@@ -20,6 +20,7 @@ import '../../widgets/client/client_section_header.dart';
 import '../../widgets/public/top_studio_card.dart';
 import '../public_studio_detail_screen.dart';
 import 'client_profile_settings_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientProfileScreen extends StatefulWidget {
   const ClientProfileScreen({super.key});
@@ -399,16 +400,17 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 if (favorites.isEmpty)
                   Text(
                     locale.t('clientFavorites.emptySubtitle'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   )
                 else
                   SizedBox(
-                    height: 186,
+                    height: 188,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
+                      padding: screenPaddingH(),
                       itemCount: favorites.length,
                       itemBuilder: (_, index) {
                         final studio = _studioPreview(

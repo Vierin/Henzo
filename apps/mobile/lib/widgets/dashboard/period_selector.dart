@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum Period { sevenDays, thirtyDays, oneYear }
 
@@ -65,7 +66,7 @@ class PeriodSelector extends StatelessWidget {
             child: Text(
               _getPeriodLabel(period),
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: isSelected ? AppColors.primary500 : AppColors.textPrimary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
@@ -97,8 +98,8 @@ class PeriodSelector extends StatelessWidget {
             children: [
               Text(
                 _getPeriodLabel(value),
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),

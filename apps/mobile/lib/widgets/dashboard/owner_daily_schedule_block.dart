@@ -8,6 +8,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../utils/owner_session_card_subtitle.dart';
 import 'owner_daily_schedule_header.dart';
 import 'owner_daily_schedule_session_card.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Заголовок + список карточек дневного расписания (как на дашборде).
 class OwnerDailyScheduleBlock extends StatelessWidget {
@@ -132,8 +133,8 @@ class _ScheduleEmptyState extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
                   color: AppColors.textPrimary,
@@ -144,8 +145,8 @@ class _ScheduleEmptyState extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle!,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
                     height: 1.3,

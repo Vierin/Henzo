@@ -1,5 +1,6 @@
 import '../models/public_studio_preview.dart';
 import '../models/training_category_option.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Normalizes various `/studios/nearby` JSON shapes to a raw studio list.
 List<dynamic> extractStudiosListFromNearby(dynamic raw) {
