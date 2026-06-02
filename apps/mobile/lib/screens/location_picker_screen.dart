@@ -10,6 +10,7 @@ import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/common/henzo_header_back_button.dart';
+import '../services/device_location_service.dart';
 import '../services/mapbox_api_service.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -116,22 +117,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     final locale = context.read<LocaleProvider>();
     setState(() => _isLocating = true);
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
+      if (!await Geolocator.isLocationServiceEnabled()) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(locale.t('addressPicker.locationServiceDisabled')),
           ),
         );
+        await Geolocator.openLocationSettings();
         return;
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (!await DeviceLocationService.ensureAccess()) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -140,18 +136,36 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         );
         return;
       }
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-      final reverse = await MapboxApiService.reverseGeocode(
-        pos.latitude,
-        pos.longitude,
-      );
+
+      final pos = await DeviceLocationService.resolvePosition();
       if (!mounted) return;
-      final city = _extractCityFromAddress(reverse?.address) ??
-          locale.t('clientHome.locationPickerUseCity');
+      if (pos == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${locale.t('addressPicker.locationDetectFailed')}\n'
+              '${locale.t('addressPicker.locationDetectFailedHint')}',
+            ),
+          ),
+        );
+        return;
+      }
+
+      ReverseGeocodeResult? reverse;
+      try {
+        reverse = await MapboxApiService.reverseGeocode(
+          pos.latitude,
+          pos.longitude,
+        );
+      } catch (_) {
+        reverse = null;
+      }
+      if (!mounted) return;
+
+      final city = DeviceLocationService.cityFromAddress(
+        reverse?.address,
+        locale.t('clientHome.locationPickerUseCity'),
+      );
       _pickCity(city, lat: pos.latitude, lon: pos.longitude);
     } catch (_) {
       if (!mounted) return;
@@ -161,18 +175,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }
-  }
-
-  String? _extractCityFromAddress(String? address) {
-    if (address == null || address.trim().isEmpty) return null;
-    final parts = address
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return null;
-    if (parts.length >= 2) return parts[parts.length - 2];
-    return parts.first;
   }
 
   InputDecoration _searchDecoration(LocaleProvider locale) {

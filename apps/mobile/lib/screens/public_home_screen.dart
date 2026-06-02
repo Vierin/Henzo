@@ -19,6 +19,7 @@ import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../services/client_location_store.dart';
 import '../services/client_schedule_store.dart';
+import '../services/device_location_service.dart';
 import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
 import '../utils/load_error_message.dart';
@@ -241,60 +242,59 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   Future<void> _requestCurrentLocation() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
+    final locale = context.read<LocaleProvider>();
+    if (!await Geolocator.isLocationServiceEnabled()) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location service is disabled')),
-      );
-      await _openManualLocationInput();
-      return;
-    }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permission denied')),
-      );
-      await _openManualLocationInput();
-      return;
-    }
-    try {
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+        SnackBar(
+          content: Text(locale.t('addressPicker.locationServiceDisabled')),
         ),
       );
-      final reverse = await MapboxApiService.reverseGeocode(
+      await Geolocator.openLocationSettings();
+      return;
+    }
+    if (!await DeviceLocationService.ensureAccess()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(locale.t('addressPicker.locationPermissionDenied')),
+        ),
+      );
+      await _openManualLocationInput();
+      return;
+    }
+
+    final pos = await DeviceLocationService.resolvePosition();
+    if (!mounted) return;
+    if (pos == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${locale.t('addressPicker.locationDetectFailed')}\n'
+            '${locale.t('addressPicker.locationDetectFailedHint')}',
+          ),
+        ),
+      );
+      await _openManualLocationInput();
+      return;
+    }
+
+    ReverseGeocodeResult? reverse;
+    try {
+      reverse = await MapboxApiService.reverseGeocode(
         pos.latitude,
         pos.longitude,
       );
-      final city =
-          _extractCityFromAddress(reverse?.address) ?? 'Current location';
-      await _persistLocation(city: city, lat: pos.latitude, lon: pos.longitude);
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to detect location')),
-      );
-      await _openManualLocationInput();
+      reverse = null;
     }
-  }
+    if (!mounted) return;
 
-  String? _extractCityFromAddress(String? address) {
-    if (address == null || address.trim().isEmpty) return null;
-    final parts = address
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return null;
-    if (parts.length >= 2) return parts[parts.length - 2];
-    return parts.first;
+    final city = DeviceLocationService.cityFromAddress(
+      reverse?.address,
+      locale.t('clientHome.locationPickerUseCity'),
+    );
+    await _persistLocation(city: city, lat: pos.latitude, lon: pos.longitude);
   }
 
   Future<void> _openManualLocationInput() async {
