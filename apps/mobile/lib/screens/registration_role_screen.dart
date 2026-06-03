@@ -7,6 +7,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../utils/legal_web_links.dart';
 import '../widgets/chaotic_underline.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/language_selector_modal.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
@@ -31,41 +32,45 @@ class RegistrationRoleScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Language selector — top right only
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: () => showLanguageSelectorModal(context, locale),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.language,
-                            size: 16,
-                            color: AppColors.textPrimary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _languageLabels[locale.localeCode] ??
-                                locale.localeCode.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 14.sp,
+                Row(
+                  children: [
+                    HenzoHeaderBackButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () => showLanguageSelectorModal(context, locale),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.language,
+                              size: 16,
                               color: AppColors.textPrimary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              _languageLabels[locale.localeCode] ??
+                                  locale.localeCode.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // Heading
                 _ScreenHeading(locale: locale),
@@ -201,7 +206,7 @@ class _RoleCard extends StatelessWidget {
   final bool imageOnLeft;
   final VoidCallback onTap;
 
-  static const double _cardHeight = 172.0;
+  static const double _cardHeight = 160.0;
   static const double _imageWidth = 161.0;
   static const double _imageTopOverflow = 32.0;
   static const double _cardRadius = 18.0;
@@ -211,8 +216,8 @@ class _RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textPadding = imageOnLeft
-        ? EdgeInsets.fromLTRB(_plateSideInset - 6, 14, 16, 14)
-        : EdgeInsets.fromLTRB(16, 14, _plateSideInset + 6, 14);
+        ? EdgeInsets.fromLTRB(_plateSideInset - 6, 0, 16, 0)
+        : EdgeInsets.fromLTRB(16, 0, _plateSideInset + 6, 0);
 
     return Material(
       color: Colors.transparent,
@@ -273,7 +278,7 @@ class _RoleCard extends StatelessWidget {
                           Text(
                             description,
                             style: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: 14.sp,
                               color: AppColors.textSecondary,
                               height: 1.2,
                             ),
