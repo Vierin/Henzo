@@ -221,24 +221,39 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ),
       ],
       child: _L10nHotReload(
-        child: Consumer<LocaleProvider>(
-          builder: (context, locale, _) {
-            if (!locale.isLoaded) {
-            return henzScreenUtilInit(
-              child: MaterialApp(
+        child: henzScreenUtilInit(
+          builder: (context, _) => Consumer<LocaleProvider>(
+            builder: (context, locale, _) {
+              final appLocale = locale.isLoaded
+                  ? Locale(locale.languageTag)
+                  : const Locale('en');
+              return MaterialApp(
                 title: 'Henzo',
+                navigatorKey: henzoRootNavigatorKey,
                 theme: AppTheme.light,
+                themeMode: ThemeMode.light,
                 builder: (context, child) {
                   final media = MediaQuery.of(context);
-                  return MediaQuery(
+                  final scaled = MediaQuery(
                     data: media.copyWith(
                       textScaler: TextScaler.linear(
                         media.textScaler.scale(1.0).clamp(0.85, 1.2),
                       ),
                     ),
-                    child: _withKeyboardDismiss(context, child) ?? const SizedBox.shrink(),
+                    child: _withKeyboardDismiss(context, child),
+                  );
+                  return StudioDeepLinkScope(
+                    navigatorKey: henzoRootNavigatorKey,
+                    child: TrainerInviteDeepLinkScope(
+                      navigatorKey: henzoRootNavigatorKey,
+                      child: ClassSessionDeepLinkScope(
+                        navigatorKey: henzoRootNavigatorKey,
+                        child: scaled,
+                      ),
+                    ),
                   );
                 },
+                locale: appLocale,
                 localizationsDelegates: const [
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
@@ -249,50 +264,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   Locale('ru'),
                   Locale('vi'),
                 ],
-                home: const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                ),
-              ),
-            );
-          }
-          return henzScreenUtilInit(
-            builder: (context, child) => MaterialApp(
-              title: 'Henzo',
-              navigatorKey: henzoRootNavigatorKey,
-              theme: AppTheme.light,
-              themeMode: ThemeMode.light,
-              builder: (context, child) {
-                final media = MediaQuery.of(context);
-                final scaled = MediaQuery(
-                  data: media.copyWith(
-                    textScaler: TextScaler.linear(
-                      media.textScaler.scale(1.0).clamp(0.85, 1.2),
-                    ),
-                  ),
-                  child: _withKeyboardDismiss(context, child) ?? const SizedBox.shrink(),
-                );
-                return StudioDeepLinkScope(
-                  navigatorKey: henzoRootNavigatorKey,
-                  child: TrainerInviteDeepLinkScope(
-                    navigatorKey: henzoRootNavigatorKey,
-                    child: ClassSessionDeepLinkScope(
-                      navigatorKey: henzoRootNavigatorKey,
-                      child: scaled,
-                    ),
-                  ),
-                );
-              },
-              locale: Locale(locale.languageTag),
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
-              home: const AuthWrapper(),
-            ),
-          );
-          },
+                home: locale.isLoaded
+                    ? const AuthWrapper()
+                    : const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      ),
+              );
+            },
+          ),
         ),
       ),
     );

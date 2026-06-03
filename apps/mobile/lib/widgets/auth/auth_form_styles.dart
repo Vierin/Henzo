@@ -13,11 +13,11 @@ abstract final class AuthFormStyles {
   static const Color hintMuted = Color(0x993F3F3F);
   static const Color accentIcon = hintMuted;
 
-  static final TextStyle fieldTextStyle = TextStyle(
-    fontSize: 16.sp,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get fieldTextStyle => TextStyle(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      );
 
   static const BorderRadius _radius = BorderRadius.all(
     Radius.circular(fieldBorderRadius),

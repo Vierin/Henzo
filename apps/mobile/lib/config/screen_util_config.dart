@@ -20,6 +20,7 @@ Widget henzScreenUtilInit({
     designSize: kHenzoDesignSize,
     minTextAdapt: false,
     splitScreenMode: false,
+    ensureScreenSize: true,
     fontSizeResolver: henzSpResolver,
     builder: builder,
     child: child,

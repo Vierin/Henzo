@@ -5,8 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_locales.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 /// Loads and caches translations from assets/l10n/{locale}/app.json.
 /// Use t('key') or t('section.key') for nested keys. Returns key if missing.
 class LocaleProvider extends ChangeNotifier {

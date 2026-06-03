@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 /// Единая тема приложения на основе AppColors.
 /// Подключается в main.dart как theme и darkTheme.
 class AppTheme {
@@ -41,7 +39,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 18.sp,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
           fontFamily: wixTextTheme.titleLarge?.fontFamily,
@@ -116,7 +114,11 @@ class AppTheme {
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 6,
-        contentTextStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: Colors.white),
+        contentTextStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
         backgroundColor: AppColors.neutral800,
         showCloseIcon: false,
       ),
