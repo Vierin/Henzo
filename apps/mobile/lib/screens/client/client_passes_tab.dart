@@ -10,6 +10,8 @@ import '../../utils/client_schedule_owner_session.dart';
 import '../../widgets/client/client_leave_review_sheet.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
+import '../public_studio_detail_screen.dart';
+
 class ClientPassesTab extends StatelessWidget {
   const ClientPassesTab({super.key});
 
@@ -97,7 +99,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     final enrollmentId = (item['enrollmentId'] ?? '').toString();
     if (studioId.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Studio is unavailable')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('clientActivity.studioUnavailable'))),
       );
       return;
     }
@@ -117,10 +119,23 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     if (submitted == true) {
       ClientScheduleStore.invalidate();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Thank you for your review')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('clientActivity.thankYouForReview'))),
       );
       await _load(force: true);
     }
+  }
+
+  void _openStudio(Map<String, dynamic> item) {
+    final studio = item['studio'] is Map
+        ? Map<String, dynamic>.from(item['studio'] as Map)
+        : <String, dynamic>{};
+    final studioId = (studio['id'] ?? item['studioId'] ?? '').toString();
+    if (studioId.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PublicStudioDetailScreen(studioId: studioId),
+      ),
+    );
   }
 
   @override
@@ -187,7 +202,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
             dimPastSessions: false,
             onLeaveReview: hasReview ? null : () => _leaveReview(item),
             leaveReviewLoading: isReviewing,
-            onTap: () {},
+            onTap: () => _openStudio(item),
           );
         },
       ),

@@ -17,6 +17,7 @@ import '../../widgets/public/studio_contact_row.dart';
 import '../../widgets/public/studio_review_card.dart';
 import '../../screens/client_studio_reviews_screen.dart';
 import '../../screens/public_studio_schedule_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Client studio profile body (browse → studio detail mock layout).
 class PublicStudioDetailBody extends StatefulWidget {
@@ -213,7 +214,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
-    final t = (String k) => locale.t('clientStudioDetail.$k');
+    String t(String k) => locale.t('clientStudioDetail.$k');
     final reviewsSeeMore = t('reviewsSeeMore');
     final descriptionLabel = locale.t(
       'clientClassDetail.descriptionSectionLabel',
@@ -223,6 +224,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final photoUrls = _studioPhotoUrls();
     final name = (studio['name'] ?? 'Studio').toString();
     final address = (studio['address'] ?? '').toString().trim();
+    final locationName = (studio['locationName'] ?? '').toString().trim();
     final description = resolveStudioDescription(studio, localeCode);
     final reviews = _parsedReviews();
     final avgRating = _averageRating(reviews);
@@ -259,8 +261,8 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                             name,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 22,
+                            style: TextStyle(
+                              fontSize: 22.sp,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.4,
                               color: AppColors.textPrimary,
@@ -281,8 +283,8 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                               const SizedBox(width: 4),
                               Text(
                                 compactRating,
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textSecondary,
                                 ),
@@ -313,21 +315,23 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
+                                    if (locationName.isNotEmpty) ...[
+                                      Text(
+                                        locationName,
+                                        style: TextStyle(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
+                                      const SizedBox(height: 4),
+                                    ],
                                     SizedBox(
                                       width: addressWidth,
                                       child: Text(
                                         address,
-                                        style: const TextStyle(
-                                          fontSize: 13,
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
                                           height: 1.35,
                                           color: AppColors.textSecondary,
                                         ),
@@ -405,8 +409,8 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                       children: [
                                         Text(
                                           t('viewSchedule'),
-                                          style: const TextStyle(
-                                            fontSize: 14,
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
@@ -414,7 +418,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                         Text(
                                           t('viewScheduleSubtitle'),
                                           style: TextStyle(
-                                            fontSize: 11,
+                                            fontSize: 11.sp,
                                             color: Colors.white.withValues(
                                               alpha: 0.9,
                                             ),
@@ -446,8 +450,8 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                       const SizedBox(height: 24),
                       Text(
                         descriptionLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.4,
                           color: AppColors.textPrimary,
@@ -559,7 +563,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                           ? null
                           : widget.onToggleFavorite,
                       child: widget.isFavoriteLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
@@ -568,7 +572,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                               ),
                             )
                           : isFavorite
-                          ? const Icon(
+                          ? Icon(
                               Icons.favorite,
                               size: 18,
                               color: Colors.white,
@@ -577,7 +581,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                               'assets/icons/icon-heart.svg',
                               width: 18,
                               height: 18,
-                              colorFilter: const ColorFilter.mode(
+                              colorFilter: ColorFilter.mode(
                                 Colors.white,
                                 BlendMode.srcIn,
                               ),
@@ -585,7 +589,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                     );
                   },
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 14),
                 _HeroOverlayButton(
                   onTap: () => _shareStudio(name),
                   child: SvgPicture.asset(
@@ -766,8 +770,8 @@ class _StudioDescriptionSection extends StatefulWidget {
 }
 
 class _StudioDescriptionSectionState extends State<_StudioDescriptionSection> {
-  static const _textStyle = TextStyle(
-    fontSize: 14,
+  static final _textStyle = TextStyle(
+    fontSize: 14.sp,
     height: 1.4,
     color: AppColors.textPrimary,
   );
@@ -812,8 +816,8 @@ class _StudioDescriptionSectionState extends State<_StudioDescriptionSection> {
                   children: [
                     Text(
                       _expanded ? widget.readLessLabel : widget.readMoreLabel,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary500,
                       ),
@@ -860,7 +864,7 @@ class _CategoryChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }

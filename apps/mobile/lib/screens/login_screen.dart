@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
@@ -8,8 +10,10 @@ import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/language_selector_modal.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,6 +29,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
+
+  bool get _isOAuthBusy => _isGoogleLoading || _isAppleLoading;
 
   @override
   void dispose() {
@@ -83,6 +90,29 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _submitApple() async {
+    setState(() => _isAppleLoading = true);
+
+    final auth = context.read<AuthService>();
+    final result = await auth.loginWithApple();
+
+    if (!mounted) return;
+
+    setState(() => _isAppleLoading = false);
+
+    final locale = context.read<LocaleProvider>();
+    if (result.success) {
+      showSuccess(context, locale.t('auth.signInSuccess'));
+    } else {
+      final msg = resolveAuthUiMessage(locale, result);
+      if (msg.isNotEmpty) {
+        showApiError(context, msg);
+      } else {
+        showApiError(context, locale.t('auth.signInError'));
+      }
+    }
+  }
+
   Future<void> _openRegister() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()),
@@ -97,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await showHenzoDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         title: Text(locale.t('auth.forgotPassword')),
         content: Form(
           key: formKey,
@@ -106,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Text(
                 locale.t('auth.resetPasswordHint'),
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 14.sp),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -196,8 +227,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               _languageLabels[locale.localeCode] ??
                                   locale.localeCode.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textPrimary,
                               ),
@@ -213,10 +244,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       'assets/logo.png',
                       height: 60,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Text(
+                      errorBuilder: (_, __, ___) => Text(
                         'Henzo',
                         style: TextStyle(
-                          fontSize: 44,
+                          fontSize: 44.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -273,7 +304,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: (_isSubmitting || _isGoogleLoading)
+                      onPressed: (_isSubmitting || _isOAuthBusy)
                           ? null
                           : _showForgotPassword,
                       style: TextButton.styleFrom(
@@ -283,9 +314,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Text(
                         locale.t('auth.forgotPassword'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.primary500,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -298,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isSubmitting ? null : _submit,
                       style: AuthFormStyles.primaryButtonStyle(),
                       child: _isSubmitting
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 22,
                               width: 22,
                               child: CircularProgressIndicator(
@@ -311,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textInverse,
-                                fontSize: 16,
+                                fontSize: 16.sp,
                               ),
                             ),
                     ),
@@ -319,16 +350,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed:
-                        (_isSubmitting || _isGoogleLoading) ? null : _openRegister,
+                        (_isSubmitting || _isOAuthBusy) ? null : _openRegister,
                     style: TextButton.styleFrom(
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       minimumSize: Size.zero,
                     ),
-                    child: const Text(
-                      'No account? Register',
+                    child: Text(
+                      context.read<LocaleProvider>().t('auth.noAccountRegister'),
                       style: TextStyle(
                         color: AppColors.primary500,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -346,9 +377,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Text(
                         locale.t('auth.orContinue').toLowerCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 15,
+                          fontSize: 15.sp,
                         ),
                       ),
                       const Expanded(
@@ -365,7 +396,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(
                     height: AuthFormStyles.buttonHeight,
                     child: OutlinedButton.icon(
-                      onPressed: (_isSubmitting || _isGoogleLoading)
+                      onPressed: (_isSubmitting || _isOAuthBusy)
                           ? null
                           : _submitGoogle,
                       icon: _isGoogleLoading
@@ -379,8 +410,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         _isGoogleLoading
                             ? locale.t('common.loading')
                             : locale.t('auth.continueWithGoogle'),
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
                         ),
@@ -388,6 +419,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: AuthFormStyles.googleButtonStyle(),
                     ),
                   ),
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 8),
+                    AppleSignInButton(
+                      isLoading: _isAppleLoading,
+                      onPressed: (_isSubmitting || _isOAuthBusy)
+                          ? null
+                          : _submitApple,
+                      label: _isAppleLoading
+                          ? locale.t('common.loading')
+                          : locale.t('auth.continueWithApple'),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                 ],
               ),

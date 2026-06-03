@@ -23,6 +23,7 @@ import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
 import '../../widgets/settings/studio_social_link.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Scroll + optional focus when opening studio profile from onboarding.
 enum StudioProfileFocusTarget {
@@ -244,16 +245,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Изменения не сохранены'),
-          content: const Text('Вы уверены, что хотите выйти без сохранения?'),
+          title: Text(context.read<LocaleProvider>().t('profileForm.unsavedChanges')),
+          content: Text(context.read<LocaleProvider>().t('profileForm.confirmDiscardChanges')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Остаться'),
+              child: Text(context.read<LocaleProvider>().t('common.stay')),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Выйти'),
+              child: Text(context.read<LocaleProvider>().t('common.exit')),
             ),
           ],
         );
@@ -441,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (name.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Введите название салона')));
+      ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('profileForm.enterSalonName'))));
       return;
     }
     final token = context.read<AuthService>().accessToken;
@@ -486,8 +487,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       Salon result;
       if (hadSalon) {
-        if (_salon!.workingHours != null)
+        if (_salon!.workingHours != null) {
           payload['workingHours'] = _salon!.workingHours;
+        }
         result = await DashboardApiService.updateCurrentSalon(token, payload);
       } else {
         result = await DashboardApiService.createCurrentSalon(token, payload);
@@ -522,7 +524,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (picked == null) return;
 
     if (Supabase.instance.client.auth.currentUser?.id == null) {
-      _showSnack('Войдите в аккаунт, чтобы загрузить логотип');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.loginToUploadLogo'));
       return;
     }
 
@@ -533,7 +535,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted) return;
       if (upload.url == null) {
-        _showSnack(upload.error ?? 'Не удалось загрузить логотип');
+        _showSnack(upload.error ?? context.read<LocaleProvider>().t('profileForm.uploadLogoFailed'));
         return;
       }
       setState(() => _logoUrl = upload.url);
@@ -550,7 +552,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_photosProcessing) return;
     final availableSlots = _maxStudioPhotos - _studioPhotos.length;
     if (availableSlots <= 0) {
-      _showSnack('Можно загрузить максимум $_maxStudioPhotos фото');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.photoLimitExceeded').replaceAll('{max}', '$_maxStudioPhotos'));
       return;
     }
 
@@ -562,29 +564,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     var filesToProcess = picked;
     if (picked.length > availableSlots) {
       filesToProcess = picked.take(availableSlots).toList();
-      _showSnack('Лишние фото пропущены. Лимит: $_maxStudioPhotos');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.extraPhotosSkipped').replaceAll('{max}', '$_maxStudioPhotos'));
     }
 
     if (Supabase.instance.client.auth.currentUser?.id == null) {
-      _showSnack('Войдите в аккаунт, чтобы загрузить фото');
+      _showSnack(context.read<LocaleProvider>().t('profileForm.loginToUploadPhotos'));
       return;
     }
 
+    final locale = context.read<LocaleProvider>();
     setState(() => _photosProcessing = true);
-    setState(() => _photoProgressText = 'Оптимизация...');
+    setState(() => _photoProgressText = locale.t('profileForm.optimizing'));
     final uploadedUrls = <String>[];
     var oversizedCount = 0;
     var failedUploadsCount = 0;
     final uploadErrors = <String>{};
     for (final file in filesToProcess) {
       if (mounted) {
-        setState(() => _photoProgressText = 'Загрузка...');
+        setState(() => _photoProgressText = locale.t('profileForm.uploading'));
       }
       final upload = await OwnerPhotoStorageService.uploadStudioGalleryPhoto(
         file: file,
       );
       if (upload.url == null) {
-        if (upload.error == 'Фото больше 3 MB') {
+        if (upload.error == locale.t('profileForm.photoTooLarge') || upload.error == 'Фото больше 3 MB') {
           oversizedCount++;
         } else {
           failedUploadsCount++;
@@ -604,10 +607,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _photoProgressText = null;
     });
     if (oversizedCount > 0) {
-      _showSnack('$oversizedCount фото больше 3MB и не были добавлены');
+      _showSnack(locale.t('profileForm.oversizedPhotosSkipped').replaceAll('{count}', '$oversizedCount'));
     }
     if (failedUploadsCount > 0) {
-      _showSnack('$failedUploadsCount фото не загрузились в storage');
+      _showSnack(locale.t('profileForm.uploadsFailed').replaceAll('{count}', '$failedUploadsCount'));
       if (uploadErrors.isNotEmpty) {
         _showSnack(uploadErrors.first);
       }
@@ -730,8 +733,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             )
                           : Text(
                               locale.t('common.save'),
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -774,9 +777,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   children: [
                                     Text(
                                       locale.t('profileForm.studioLogoHint'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppColors.textSecondary,
-                                        fontSize: 13,
+                                        fontSize: 13.sp,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -808,9 +811,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   children: [
                                     Text(
                                       locale.t('profileForm.studioPhotosHint'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppColors.textSecondary,
-                                        fontSize: 13,
+                                        fontSize: 13.sp,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -865,9 +868,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           const SizedBox(width: 8),
                                           Text(
                                             _photoProgressText!,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: AppColors.textSecondary,
-                                              fontSize: 13,
+                                              fontSize: 13.sp,
                                             ),
                                           ),
                                         ],
@@ -978,8 +981,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                           children: [
                                                             Text(
                                                               displayName,
-                                                              style: const TextStyle(
-                                                                fontSize: 16,
+                                                              style: TextStyle(
+                                                                fontSize: 16.sp,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .w700,
@@ -994,8 +997,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                               ),
                                                               Text(
                                                                 address,
-                                                                style: const TextStyle(
-                                                                  fontSize: 14,
+                                                                style: TextStyle(
+                                                                  fontSize: 14.sp,
                                                                   height: 1.25,
                                                                   fontWeight:
                                                                       FontWeight
@@ -1014,9 +1017,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                                   locale.t(
                                                                     'addTraining.noAddress',
                                                                   ),
-                                                                  style: const TextStyle(
-                                                                    fontSize:
-                                                                        14,
+                                                                  style: TextStyle(
+                                                                    fontSize: 14.sp,
                                                                     color: AppColors
                                                                         .textTertiary,
                                                                   ),
@@ -1123,7 +1125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       icon: const Icon(Icons.add, size: 20),
                                       label: Text(
                                         locale.t('profileForm.addSocialLink'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -1266,8 +1268,8 @@ class _StudioLogoTile extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           actionLabel,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.primary500,
           ),
@@ -1362,8 +1364,8 @@ class _StudioPhotoTile extends StatelessWidget {
                 ),
                 child: Text(
                   mainLabel,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -1441,8 +1443,8 @@ class _SocialLinkRow extends StatelessWidget {
               children: [
                 Text(
                   link.platform.label(locale),
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -1450,8 +1452,8 @@ class _SocialLinkRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   link.displayValue(),
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     color: AppColors.textSecondary,
                   ),
                   maxLines: 1,

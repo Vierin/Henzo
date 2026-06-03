@@ -103,7 +103,8 @@ export class StudioAnalyticsService {
       }),
     ]);
     const isPro =
-      subscription?.type === SubscriptionType.PRO &&
+      (subscription?.type === SubscriptionType.STUDIO ||
+        subscription?.type === SubscriptionType.ENTERPRISE) &&
       subscription?.status === SubscriptionStatus.ACTIVE;
 
     const appointmentRevenue = bookingsInPeriod.reduce((s, b) => {
@@ -303,7 +304,7 @@ export class StudioAnalyticsService {
       needsSetup: false,
       data: {
         period: { from: from.toISOString(), to: to.toISOString() },
-        analyticsTier: isPro ? 'PRO' : 'FREEMIUM',
+        analyticsTier: subscription?.type ?? SubscriptionType.SOLO,
         isPro,
         proLocked: !isPro,
         revenueTotal,

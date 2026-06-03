@@ -9,6 +9,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/settings/owner_booking_period_sheet.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class OnlineBookingScreen extends StatefulWidget {
   const OnlineBookingScreen({super.key});
@@ -98,8 +99,8 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                           Expanded(
                             child: Text(
                               locale.t('settings.owner.bookingPeriodTitle'),
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
@@ -109,8 +110,8 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                             locale
                                 .t('settings.owner.bookingWindowDays')
                                 .replaceAll('{count}', '$_bookingPeriodDays'),
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                             ),

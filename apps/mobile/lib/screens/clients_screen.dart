@@ -20,6 +20,7 @@ import '../../widgets/clients/add_owner_client_sheet.dart';
 import '../../widgets/clients/client_list_tile.dart';
 import '../../widgets/clients/clients_filter_chip.dart';
 import 'client_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum ClientFilter { all, sleepers, whiteList, blocked }
 
@@ -448,18 +449,21 @@ class ClientsScreenState extends State<ClientsScreen> {
     return out;
   }
 
-  static String _membersOverline(int n) {
+  String _membersOverline(int n) {
+    final t = context.read<LocaleProvider>().t;
     final h = n % 100;
-    if (h >= 11 && h <= 14) return '$n КЛИЕНТОВ';
+    if (h >= 11 && h <= 14) {
+      return t('ownerClient.clientCountMany').replaceAll('{n}', '$n');
+    }
     switch (n % 10) {
       case 1:
-        return '$n КЛИЕНТ';
+        return t('ownerClient.clientCountOne').replaceAll('{n}', '$n');
       case 2:
       case 3:
       case 4:
-        return '$n КЛИЕНТА';
+        return t('ownerClient.clientCountFew').replaceAll('{n}', '$n');
       default:
-        return '$n КЛИЕНТОВ';
+        return t('ownerClient.clientCountMany').replaceAll('{n}', '$n');
     }
   }
 
@@ -499,11 +503,11 @@ class ClientsScreenState extends State<ClientsScreen> {
                               textTheme.labelSmall?.copyWith(
                                 color: AppColors.textPrimary,
                                 letterSpacing: -0.3,
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                               ) ??
                               TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: -0.3,
@@ -517,8 +521,8 @@ class ClientsScreenState extends State<ClientsScreen> {
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ) ??
-                              const TextStyle(
-                                fontSize: 24,
+                              TextStyle(
+                                fontSize: 24.sp,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                                 letterSpacing: -0.3,
@@ -575,9 +579,9 @@ class ClientsScreenState extends State<ClientsScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Поиск по имени, email или телефону',
+                  hintText: context.watch<LocaleProvider>().t('ownerClient.searchHint'),
                   hintStyle: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textTertiary,
                   ),
                   prefixIcon: const AppSearchPrefixIcon(),
@@ -623,14 +627,14 @@ class ClientsScreenState extends State<ClientsScreen> {
               child: Row(
                 children: [
                   ClientsFilterChip(
-                    label: 'Все',
+                    label: tr('ownerClient.filterAll'),
                     count: _countFor(ClientFilter.all),
                     isSelected: _filter == ClientFilter.all,
                     onTap: () => setState(() => _filter = ClientFilter.all),
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
-                    label: 'Спящие',
+                    label: tr('ownerClient.filterSleepers'),
                     count: _countFor(ClientFilter.sleepers),
                     isSelected: _filter == ClientFilter.sleepers,
                     onTap: () =>
@@ -638,7 +642,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
-                    label: 'Белый список',
+                    label: tr('ownerClient.filterWhiteList'),
                     count: _countFor(ClientFilter.whiteList),
                     isSelected: _filter == ClientFilter.whiteList,
                     onTap: () =>
@@ -646,7 +650,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
-                    label: 'Заблокированные',
+                    label: tr('ownerClient.filterBlocked'),
                     count: _countFor(ClientFilter.blocked),
                     isSelected: _filter == ClientFilter.blocked,
                     onTap: () => setState(() => _filter = ClientFilter.blocked),
@@ -692,7 +696,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                                               ? 'Нет клиентов'
                                               : 'Ничего не найдено',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: 16.sp,
                                             color: AppColors.textSecondary,
                                           ),
                                         ),
@@ -729,11 +733,11 @@ class ClientsScreenState extends State<ClientsScreen> {
                                         style:
                                             textTheme.titleSmall?.copyWith(
                                               fontWeight: FontWeight.w700,
-                                              fontSize: 16,
+                                              fontSize: 16.sp,
                                               color: AppColors.textPrimary,
                                             ) ??
-                                            const TextStyle(
-                                              fontSize: 16,
+                                            TextStyle(
+                                              fontSize: 16.sp,
                                               fontWeight: FontWeight.w700,
                                               color: AppColors.textPrimary,
                                             ),

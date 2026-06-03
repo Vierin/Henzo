@@ -74,15 +74,31 @@ class HealthService {
       if (status != HealthConnectSdkStatus.sdkAvailable) {
         return false;
       }
+      try {
+        final granted = await _health.hasPermissions(
+          _readTypes,
+          permissions: _permissions,
+        );
+        return granted == true;
+      } catch (e) {
+        log('HealthService.hasAccess: $e');
+        return false;
+      }
     }
+
+    // iOS: hasPermissions() always returns null (Apple privacy design).
+    // Instead, try reading a small amount of data — if it works, we have access.
     try {
-      final granted = await _health.hasPermissions(
-        _readTypes,
-        permissions: _permissions,
+      final now = DateTime.now();
+      final start = now.subtract(const Duration(hours: 1));
+      await _health.getHealthDataFromTypes(
+        startTime: start,
+        endTime: now,
+        types: [HealthDataType.STEPS],
       );
-      return granted == true;
+      return true;
     } catch (e) {
-      log('HealthService.hasAccess: $e');
+      log('HealthService.hasAccess iOS check: $e');
       return false;
     }
   }
@@ -142,16 +158,22 @@ class HealthService {
         }
       }
 
-      final verified = await _health.hasPermissions(
-        _readTypes,
-        permissions: _permissions,
-      );
-      if (verified != true) {
-        return const HealthConnectResult(
-          ok: false,
-          issue: HealthConnectIssue.permissionDenied,
-          userMessage: 'Permissions were not granted for Henzo.',
+      // iOS: hasPermissions() always returns null by Apple design (privacy).
+      // If requestAuthorization returned true, trust it and proceed.
+      if (Platform.isAndroid) {
+        final verified = await _health.hasPermissions(
+          _readTypes,
+          permissions: _permissions,
         );
+        if (verified != true) {
+          return const HealthConnectResult(
+            ok: false,
+            issue: HealthConnectIssue.permissionDenied,
+            userMessage:
+                'In Health Connect → App permissions → Henzo: allow Steps, '
+                'Calories, and Exercise.',
+          );
+        }
       }
 
       return HealthConnectResult.success;
@@ -203,33 +225,72 @@ class HealthService {
   }
 
   static Future<int> _readSteps(DateTime start, DateTime end) async {
-    if (Platform.isAndroid) {
-      try {
-        final total = await _health.getTotalStepsInInterval(start, end);
-        if (total != null && total > 0) {
-          return total;
-        }
-      } catch (e) {
-        log('getTotalStepsInInterval: $e');
+    // getTotalStepsInInterval uses HKStatisticsQuery on iOS and the equivalent
+    // on Android — it correctly deduplicates across sources (iPhone + Watch).
+    // Falling back to summing raw data points leads to double-counting.
+    try {
+      final total = await _health.getTotalStepsInInterval(start, end);
+      if (total != null && total > 0) {
+        log('steps via getTotalStepsInInterval: $total');
+        return total;
       }
+    } catch (e) {
+      log('getTotalStepsInInterval failed: $e');
     }
-    return _sumNumericPoints(
-      start,
-      end,
-      [HealthDataType.STEPS],
-      label: 'steps',
-    );
+    // Fallback: sum raw points (less accurate but better than nothing)
+    return _sumNumericPoints(start, end, [HealthDataType.STEPS], label: 'steps');
   }
 
   static Future<int> _readCalories(DateTime start, DateTime end) async {
+    // On iOS, ACTIVE_ENERGY_BURNED covers calories from movement/exercise.
+    // Watch data syncs to HealthKit via Bluetooth — there may be a small delay.
+    // We sum WITHOUT removeDuplicates to avoid dropping real distinct records.
     for (final type in [
       HealthDataType.ACTIVE_ENERGY_BURNED,
       HealthDataType.TOTAL_CALORIES_BURNED,
     ]) {
-      final kcal = await _sumNumericPoints(start, end, [type], label: 'kcal');
+      final kcal = await _sumCaloriesRaw(start, end, type);
       if (kcal > 0) return kcal;
     }
     return 0;
+  }
+
+  /// Sums calorie data points using source-aware deduplication.
+  /// Unlike removeDuplicates (which can drop valid concurrent records from
+  /// different sources), we group by source and keep all distinct timestamps.
+  static Future<int> _sumCaloriesRaw(
+    DateTime start,
+    DateTime end,
+    HealthDataType type,
+  ) async {
+    try {
+      final raw = await _health.getHealthDataFromTypes(
+        startTime: start,
+        endTime: end,
+        types: [type],
+      );
+      if (raw.isEmpty) return 0;
+
+      // Deduplicate by (sourceId + dateFrom) to avoid counting the same
+      // record twice when fetched, but keep records from different sources
+      // at the same time (e.g. Watch + app both recording a workout).
+      final seen = <String>{};
+      var total = 0;
+      for (final point in raw) {
+        final key = '${point.sourceId}|${point.dateFrom.millisecondsSinceEpoch}';
+        if (seen.add(key)) {
+          final v = point.value;
+          if (v is NumericHealthValue) {
+            total += v.numericValue.round();
+          }
+        }
+      }
+      log('calories type=$type raw=${raw.length} total=$total');
+      return total;
+    } catch (e) {
+      log('_sumCaloriesRaw $type: $e');
+      return 0;
+    }
   }
 
   static Future<int> _readWorkoutCount(DateTime start, DateTime end) async {

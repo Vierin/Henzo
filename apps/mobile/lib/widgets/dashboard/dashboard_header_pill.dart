@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DashboardHeaderPill extends StatelessWidget {
   const DashboardHeaderPill({
@@ -37,8 +38,8 @@ class DashboardHeaderPill extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),

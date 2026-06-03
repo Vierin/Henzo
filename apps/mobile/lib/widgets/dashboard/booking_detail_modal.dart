@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../constants/colors.dart';
 import '../../models/booking.dart';
 import '../../utils/currency_format.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BookingDetailModal {
   static void show(
@@ -169,8 +170,8 @@ class BookingDetailHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
@@ -184,11 +185,11 @@ class BookingDetailHeader extends StatelessWidget {
                 color: AppColors.neutral200,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   '✕',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -221,8 +222,8 @@ class BookingDetailSection extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 12.sp,
             color: AppColors.textTertiary,
             fontWeight: FontWeight.w500,
             letterSpacing: 0.5,
@@ -231,8 +232,8 @@ class BookingDetailSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           mainText,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -242,8 +243,8 @@ class BookingDetailSection extends StatelessWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -302,7 +303,7 @@ class _BookingDetailStatusBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 12.sp,
           fontWeight: FontWeight.w600,
           color: textColor,
         ),
@@ -354,11 +355,11 @@ class _BookingDetailActions extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Confirm',
                       style: TextStyle(
                         color: AppColors.textInverse,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -378,11 +379,11 @@ class _BookingDetailActions extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Reject',
                       style: TextStyle(
                         color: AppColors.textInverse,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -409,11 +410,11 @@ class _BookingDetailActions extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Изменить',
                       style: TextStyle(
                         color: AppColors.textInverse,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -457,11 +458,11 @@ class _BookingDetailActions extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Отменить запись',
                       style: TextStyle(
                         color: AppColors.textInverse,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

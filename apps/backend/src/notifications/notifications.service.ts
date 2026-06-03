@@ -481,4 +481,300 @@ export class NotificationsService {
       );
     }
   }
+
+  /** Schedule 24h and 1h pre-class push reminders for an enrollment. */
+  async schedulePreClassReminders(
+    enrollmentId: string,
+    userId: string,
+  ): Promise<void> {
+    const enrollment = await this.prisma.sessionEnrollment.findFirst({
+      where: { id: enrollmentId, userId, status: 'ACTIVE' },
+      select: {
+        sessionId: true,
+        TrainingSession: { select: { startsAt: true } },
+      },
+    });
+    if (!enrollment?.TrainingSession?.startsAt) return;
+
+    const startsAt = enrollment.TrainingSession.startsAt;
+    const now = new Date();
+
+    const reminders = [
+      {
+        type: '24h',
+        scheduledFor: new Date(startsAt.getTime() - 24 * 60 * 60 * 1000),
+      },
+      {
+        type: '1h',
+        scheduledFor: new Date(startsAt.getTime() - 60 * 60 * 1000),
+      },
+    ].filter((r) => r.scheduledFor > now);
+
+    for (const { type, scheduledFor } of reminders) {
+      await this.prisma.scheduledPushReminder.upsert({
+        where: { enrollmentId_type: { enrollmentId, type } },
+        create: {
+          enrollmentId,
+          userId,
+          sessionId: enrollment.sessionId,
+          type,
+          scheduledFor,
+        },
+        update: { scheduledFor, sentAt: null },
+      });
+    }
+  }
+
+  /** Called by RemindersScheduler — sends all due push reminders. */
+  async sendPendingPushReminders(): Promise<{ sent: number; errors: number }> {
+    const now = new Date();
+    const pending = await this.prisma.scheduledPushReminder.findMany({
+      where: { scheduledFor: { lte: now }, sentAt: null },
+      take: 100,
+      orderBy: { scheduledFor: 'asc' },
+    });
+
+    let sent = 0;
+    let errors = 0;
+
+    for (const reminder of pending) {
+      try {
+        const tokens = await this.getPushTokensByUserId(reminder.userId);
+        if (tokens.length > 0) {
+          const session = await this.prisma.trainingSession.findUnique({
+            where: { id: reminder.sessionId },
+            select: {
+              startsAt: true,
+              Training: { select: { name: true } },
+              Studio: { select: { name: true } },
+            },
+          });
+
+          if (session) {
+            const lang = tokens[0]?.language || 'en';
+            const timeStr = session.startsAt.toLocaleTimeString(
+              lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
+              { hour: '2-digit', minute: '2-digit', hour12: false },
+            );
+            const titleKey =
+              reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
+            const bodyKey =
+              reminder.type === '24h' ? 'reminder24hBody' : 'reminder1hBody';
+
+            const title = getNotificationText(lang, titleKey as any);
+            const body = formatNotificationTemplate(
+              getNotificationText(lang, bodyKey as any),
+              {
+                class: session.Training?.name || 'class',
+                studio: session.Studio?.name || 'studio',
+                time: timeStr,
+              },
+            );
+
+            await this.sendPushNotification(
+              tokens,
+              title,
+              body,
+              { type: 'PRE_CLASS_REMINDER', sessionId: reminder.sessionId },
+              undefined,
+              'henzo_default',
+            );
+          }
+        }
+
+        await this.prisma.scheduledPushReminder.update({
+          where: { id: reminder.id },
+          data: { sentAt: now },
+        });
+        sent++;
+      } catch (err) {
+        errors++;
+        console.error('[Notifications] Failed to send push reminder:', err);
+      }
+    }
+
+    return { sent, errors };
+  }
+
+  /**
+   * Notify all actively-enrolled clients that a session has been cancelled.
+   * Fire-and-forget — errors are swallowed so the caller isn't blocked.
+   */
+  async notifySessionCancelled(
+    sessionId: string,
+    sessionInfo: { className: string; studioName: string; startsAt: Date },
+  ): Promise<void> {
+    try {
+      const enrollments = await this.prisma.sessionEnrollment.findMany({
+        where: { sessionId, status: 'ACTIVE' },
+        select: { userId: true },
+      });
+      if (enrollments.length === 0) return;
+
+      const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      for (const { userId } of enrollments) {
+        const tokens = await this.getPushTokensByUserId(userId);
+        if (tokens.length === 0) continue;
+
+        const lang = tokens[0]?.language || 'en';
+        const title = getNotificationText(lang, 'sessionCancelledTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'sessionCancelledBody' as any),
+          {
+            class: sessionInfo.className,
+            studio: sessionInfo.studioName,
+            date: dateStr,
+          },
+        );
+        await this.sendPushNotification(
+          tokens,
+          title,
+          body,
+          { type: 'SESSION_CANCELLED', sessionId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] notifySessionCancelled failed:', err);
+    }
+  }
+
+  /**
+   * Notify all actively-enrolled clients that a session has been rescheduled.
+   */
+  async notifySessionRescheduled(
+    sessionId: string,
+    sessionInfo: { className: string; studioName: string; newStartsAt: Date },
+  ): Promise<void> {
+    try {
+      const enrollments = await this.prisma.sessionEnrollment.findMany({
+        where: { sessionId, status: 'ACTIVE' },
+        select: { userId: true },
+      });
+      if (enrollments.length === 0) return;
+
+      const dateStr = sessionInfo.newStartsAt.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      for (const { userId } of enrollments) {
+        const tokens = await this.getPushTokensByUserId(userId);
+        if (tokens.length === 0) continue;
+
+        const lang = tokens[0]?.language || 'en';
+        const title = getNotificationText(
+          lang,
+          'sessionRescheduledTitle' as any,
+        );
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'sessionRescheduledBody' as any),
+          {
+            class: sessionInfo.className,
+            studio: sessionInfo.studioName,
+            date: dateStr,
+          },
+        );
+        await this.sendPushNotification(
+          tokens,
+          title,
+          body,
+          { type: 'SESSION_RESCHEDULED', sessionId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] notifySessionRescheduled failed:', err);
+    }
+  }
+
+  /** Push notification to studio owner when a client leaves a new review. */
+  async sendNewReviewNotification(params: {
+    studioId: string;
+    studioName: string;
+    clientName: string;
+    rating: number;
+  }): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensBySalonOwner(params.studioId);
+      if (!tokens || tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const title = getNotificationText(lang, 'newReviewTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'newReviewBody' as any),
+          {
+            client: params.clientName,
+            rating: String(params.rating),
+            studio: params.studioName,
+          },
+        );
+        await this.sendPushNotification(
+          langTokens,
+          title,
+          body,
+          { type: 'NEW_REVIEW', studioId: params.studioId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] Failed to send review push:', err);
+    }
+  }
+
+  /** Push notification to user when promoted from waitlist to enrolled. */
+  async sendWaitlistPromotionPush(
+    userId: string,
+    sessionInfo: { sessionId: string; className: string; studioName: string },
+  ): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensByUserId(userId);
+      if (tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const title = getNotificationText(lang, 'waitlistPromotedTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'waitlistPromotedBody' as any),
+          { class: sessionInfo.className, studio: sessionInfo.studioName },
+        );
+        await this.sendPushNotification(
+          langTokens,
+          title,
+          body,
+          { type: 'WAITLIST_PROMOTED', sessionId: sessionInfo.sessionId },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] Failed to send waitlist push:', err);
+    }
+  }
 }

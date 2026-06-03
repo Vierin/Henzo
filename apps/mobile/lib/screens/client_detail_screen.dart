@@ -20,6 +20,7 @@ import '../../utils/show_api_error.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 import 'main_shell.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared soft shadow for profile + visit cards on this screen.
 const List<BoxShadow> _kClientDetailCardShadow = <BoxShadow>[
@@ -410,8 +411,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         leadingWidth: 56,
         title: Text(
           tr('booking.client'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -445,8 +446,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        textStyle: const TextStyle(
-                          fontSize: 14,
+                        textStyle: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -468,8 +469,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        textStyle: const TextStyle(
-                          fontSize: 14,
+                        textStyle: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -583,8 +584,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   const SizedBox(height: 20),
                   Text(
                     tr('ownerClient.visitsSection'),
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
                       color: AppColors.textPrimary,
@@ -597,8 +598,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       child: Center(
                         child: Text(
                           tr('booking.noBookings'),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -728,8 +729,8 @@ class _ClientProfileHeader extends StatelessWidget {
                 backgroundColor: AppColors.primary100,
                 child: Text(
                   initials,
-                  style: const TextStyle(
-                    fontSize: 28,
+                  style: TextStyle(
+                    fontSize: 28.sp,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary500,
                     height: 1,
@@ -744,8 +745,8 @@ class _ClientProfileHeader extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                       height: 1.2,
@@ -755,8 +756,8 @@ class _ClientProfileHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     memberSinceLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondary,
                     ),
@@ -789,15 +790,15 @@ class _InlineStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text.rich(
       TextSpan(
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: 14.sp,
           fontWeight: FontWeight.w600,
           height: 1.3,
         ),
         children: [
           TextSpan(
             text: label,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: TextStyle(color: AppColors.textPrimary),
           ),
           const TextSpan(
             text: ' · ',
@@ -808,7 +809,7 @@ class _InlineStat extends StatelessWidget {
           ),
           TextSpan(
             text: '$value',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
               color: AppColors.textSecondary,
             ),
@@ -879,7 +880,7 @@ class _ClientActionTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
                         color: filled
                             ? AppColors.textInverse
@@ -965,8 +966,8 @@ class _ClientVisitCard extends StatelessWidget {
                       children: [
                         Text(
                           startLabel,
-                          style: const TextStyle(
-                            fontSize: 17,
+                          style: TextStyle(
+                            fontSize: 17.sp,
                             fontWeight: FontWeight.w600,
                             height: 1,
                             letterSpacing: -0.3,
@@ -975,8 +976,8 @@ class _ClientVisitCard extends StatelessWidget {
                         ),
                         Text(
                           durationLabel,
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFFA4A4A4),
                           ),
@@ -995,8 +996,8 @@ class _ClientVisitCard extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            fontSize: 17,
+                          style: TextStyle(
+                            fontSize: 17.sp,
                             fontWeight: FontWeight.w700,
                             height: 1,
                             letterSpacing: -0.3,
@@ -1022,8 +1023,8 @@ class _ClientVisitCard extends StatelessWidget {
                               Flexible(
                                 child: Text(
                                   location,
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
                                     color: AppColors.textPrimary,
                                   ),
@@ -1044,8 +1045,8 @@ class _ClientVisitCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   trainer,
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
                                     color: AppColors.textPrimary,
                                   ),
@@ -1065,8 +1066,8 @@ class _ClientVisitCard extends StatelessWidget {
                   child: Center(
                     child: Text(
                       dateLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,
                       ),

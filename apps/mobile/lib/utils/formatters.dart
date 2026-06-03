@@ -53,6 +53,23 @@ String formatRelativeReviewDateLabel(
   return justNowLabel;
 }
 
+/// Studio logo for cards: `logoUrl`, else first `photos[]` entry.
+String? resolveStudioBrandImageUrl(Map<String, dynamic>? studio) {
+  if (studio == null) return null;
+  for (final key in ['logoUrl', 'logo_url', 'logo']) {
+    final raw = studio[key]?.toString().trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+  }
+  final photos = studio['photos'];
+  if (photos is List) {
+    for (final p in photos) {
+      final url = p?.toString().trim();
+      if (url != null && url.isNotEmpty) return url;
+    }
+  }
+  return null;
+}
+
 /// Client UI: `1,8 km` or `450 m`.
 String? formatDistanceKmLabel(double? km) {
   if (km == null) return null;

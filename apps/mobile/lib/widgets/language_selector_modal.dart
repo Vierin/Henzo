@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/app_locales.dart';
 import '../l10n/locale_provider.dart';
-import 'auth/auth_form_styles.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared language picker: bottom sheet with flags, radios, and Cancel.
 /// Optional [onLocaleSelected] (e.g. to re-register push token after change).
@@ -81,8 +81,8 @@ class _LanguageBottomSheet extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     loc.t('settings.chooseLanguage'),
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
@@ -156,13 +156,13 @@ class _LanguageRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
-              Text(flag, style: const TextStyle(fontSize: 22)),
+              Text(flag, style: TextStyle(fontSize: 22.sp)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
@@ -177,7 +177,7 @@ class _LanguageRow extends StatelessWidget {
   }
 }
 
-/// Same accent radio as [AddTrainingScreen] step 2.
+/// Brand purple selection dot (#4D39A8).
 class _LanguageRadioDot extends StatelessWidget {
   const _LanguageRadioDot({required this.selected});
 
@@ -185,7 +185,7 @@ class _LanguageRadioDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = AuthFormStyles.accentIcon;
+    const accent = Color(0xFF4D39A8);
     return Container(
       width: 22,
       height: 22,

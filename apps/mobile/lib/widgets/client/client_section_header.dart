@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Section title row matching client home (e.g. TOP PICKS NEAR YOU).
 class ClientSectionHeader extends StatelessWidget {
@@ -34,8 +35,8 @@ class ClientSectionHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   title.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.2,
                     color: AppColors.textPrimary,
@@ -50,8 +51,8 @@ class ClientSectionHeader extends StatelessWidget {
                     children: [
                       Text(
                         actionLabel!,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary500,
                         ),

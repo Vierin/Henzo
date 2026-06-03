@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +31,7 @@ import '../../widgets/client/browse_day_pill.dart';
 import '../../widgets/client/browse_studio_list_card.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
 import '../../widgets/training/training_category_color_chip.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const int _kExploreHorizonDays = 31;
 
@@ -277,8 +277,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                 child: Center(
                   child: Text(
                     dow[i],
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w400,
                       letterSpacing: -0.3,
                       color: AppColors.textSecondary,
@@ -340,7 +340,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             child: Text(
                               '${day.day}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                                 color: selected
                                     ? Colors.white
@@ -399,13 +399,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   String get _timeFilterChipLabel {
     if (_timePeriods.length == 1 && _timePeriods.contains('morning')) {
-      return 'Morning';
+      return context.read<LocaleProvider>().t('clientHome.timePeriodMorning');
     }
     if (_timePeriods.length == 1 && _timePeriods.contains('afternoon')) {
-      return 'Afternoon';
+      return context.read<LocaleProvider>().t('clientHome.timePeriodAfternoon');
     }
     if (_timePeriods.length == 1 && _timePeriods.contains('evening')) {
-      return 'Evening';
+      return context.read<LocaleProvider>().t('clientHome.timePeriodEvening');
     }
     if (_hasActiveTimeFilter) return _timeChipLabel;
     return 'Time';
@@ -414,13 +414,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   String get _distanceChipLabel {
     switch (_distanceFilter) {
       case '5':
-        return '5 km';
+        return context.read<LocaleProvider>().t('clientHome.distance5km');
       case '10':
-        return '10 km';
+        return context.read<LocaleProvider>().t('clientHome.distance10km');
       case '15':
-        return '15 km';
+        return context.read<LocaleProvider>().t('clientHome.distance15km');
       case '30+':
-        return '30+ km';
+        return context.read<LocaleProvider>().t('clientHome.distance30plus');
       case 'auto':
       default:
         return 'Distance';
@@ -432,7 +432,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       case 'distance':
         return 'Nearest';
       case 'ratings':
-        return 'Ratings';
+        return context.read<LocaleProvider>().t('clientHome.sortRatings');
       case 'recommended':
       default:
         return 'Sort';
@@ -501,6 +501,21 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     }
   }
 
+  double _maxDistanceKmForFilter() => _currentRadiusKm().toDouble();
+
+  bool _hasClientCoordinates(ClientLocationStore loc) =>
+      loc.lat != null && loc.lon != null;
+
+  bool _isWithinDistanceFilter(
+    ExploreStudioItem studio,
+    ClientLocationStore loc,
+  ) {
+    if (!_hasClientCoordinates(loc)) return false;
+    final km = _resolvedDistanceKm(studio, loc);
+    if (km == null) return false;
+    return km <= _maxDistanceKmForFilter();
+  }
+
   Future<List<ExploreClassItem>> _fetchExploreClassesForStudio(
     ExploreStudioItem studio,
     String fromQuery,
@@ -542,7 +557,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             trainerName: map['trainer'] is Map
                 ? (map['trainer']['name'] ?? '').toString()
                 : '',
-            className: (training['name'] ?? 'Class').toString(),
+            className: (training['name'] ?? context.read<LocaleProvider>().t('common.class')).toString(),
             price: (training['price'] as num?)?.toDouble(),
             capacity: (map['capacity'] as num?)?.toInt(),
             bookedCount: (map['bookedCount'] as num?)?.toInt() ?? 0,
@@ -614,7 +629,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Failed to update favorites')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('clientHome.failedToUpdateFavorites'))),
         );
     }
   }
@@ -652,17 +667,25 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       _loadError = null;
     });
     try {
-      final radiusKm = _currentRadiusKm();
-      final nearbyQuery = StringBuffer(
-        '/studios/nearby?limit=20&radius=$radiusKm',
-      );
-      if (loc.lat != null && loc.lon != null) {
-        nearbyQuery
-          ..write('&lat=')
-          ..write(loc.lat!.toStringAsFixed(6))
-          ..write('&lng=')
-          ..write(loc.lon!.toStringAsFixed(6));
+      if (!_hasClientCoordinates(loc)) {
+        if (!mounted) return;
+        setState(() {
+          _studios = const [];
+          _classes = const [];
+          _loading = false;
+          _loadError = null;
+          _derivedInputsHash = 0;
+          _distanceKmMemo.clear();
+        });
+        return;
       }
+
+      final radiusKm = _currentRadiusKm();
+      final nearbyQuery = StringBuffer('/studios/nearby?limit=50&radius=$radiusKm')
+        ..write('&lat=')
+        ..write(loc.lat!.toStringAsFixed(6))
+        ..write('&lng=')
+        ..write(loc.lon!.toStringAsFixed(6));
       final nearbyPath = nearbyQuery.toString();
       var nearbyRaw = ClientNearbyCache.get(nearbyPath);
       if (nearbyRaw == null) {
@@ -740,6 +763,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         );
       }
 
+      studios.removeWhere((s) => !_isWithinDistanceFilter(s, loc));
+
       final classes = <ExploreClassItem>[];
       final from = DateTime.now();
       final to = from.add(const Duration(days: 30));
@@ -799,8 +824,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 30 / 1.6,
+            style: TextStyle(
+              fontSize: 30.sp / 1.6,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
@@ -825,6 +850,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return false;
   }
 
+  bool get _hasActiveFilters =>
+      _selectedCategoryId != null ||
+      _hasActiveTimeFilter ||
+      _distanceFilter != 'auto' ||
+      _sortBy != 'recommended';
+
   String get _timeChipLabel {
     if (!_hasActiveTimeFilter) return 'Time';
     return '${formatMinutesSliderLabel(_timeRange.start)} - ${formatMinutesSliderLabel(_timeRange.end)}';
@@ -846,6 +877,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   }
 
   int _computeDerivedInputsHash() {
+    final loc = _locationStore;
     return Object.hash(
       _dayKey(_selectedDay),
       _classes.length,
@@ -857,6 +889,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       Object.hashAll(_timePeriods),
       _timeRange.start.round(),
       _timeRange.end.round(),
+      loc?.lat,
+      loc?.lon,
     );
   }
 
@@ -874,8 +908,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final h = _computeDerivedInputsHash();
     if (h == _derivedInputsHash) return;
     _derivedInputsHash = h;
+    final loc = context.read<ClientLocationStore>();
     final selectedDate = _selectedDay;
+
+    final inRangeStudios = _studios
+        .where((s) => _isWithinDistanceFilter(s, loc))
+        .toList(growable: false);
+    final inRangeStudioIds = inRangeStudios.map((s) => s.id).toSet();
+
     final dayClasses = _classes.where((c) {
+      if (!inRangeStudioIds.contains(c.studioId)) return false;
       if (!CalendarDayPill.isSameDay(c.startsAt, selectedDate)) return false;
       if (!_isClassInSelectedPeriods(c.startsAt)) return false;
       if (!_isClassInTimeRange(c.startsAt)) return false;
@@ -887,7 +929,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         .where(_matchesSearchClass)
         .toList(growable: false);
 
-    final visibleStudios = _studios
+    final visibleStudios = inRangeStudios
         .where(_studioMatchesCategory)
         .toList(growable: false);
     _derivedVisibleStudiosCount = visibleStudios.length;
@@ -1060,8 +1102,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           child: TextButton(
                             onPressed: () =>
                                 setModalState(() => tempSelection = -1),
-                            child: const Text(
-                              'Reset',
+                            child: Text(
+                              context.read<LocaleProvider>().t('common.reset'),
                               style: TextStyle(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -1078,7 +1120,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                             ),
-                            child: const Text('Apply'),
+                            child: Text(context.watch<LocaleProvider>().t('common.apply')),
                           ),
                         ),
                       ],
@@ -1194,10 +1236,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _filterSheetTitleRow(ctx, 'Filter by time'),
+                      _filterSheetTitleRow(ctx, context.read<LocaleProvider>().t('clientHome.filterByTime')),
                       const SizedBox(height: 14),
-                      const Text(
-                        'Activities by time period',
+                      Text(
+                        context.read<LocaleProvider>().t('clientHome.activitiesByTimePeriod'),
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w700,
@@ -1208,27 +1250,27 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         children: [
                           periodTile(
                             id: 'morning',
-                            label: 'Morning',
+                            label: context.read<LocaleProvider>().t('clientHome.timePeriodMorning'),
                             icon: Icons.wb_twilight_outlined,
                             setModalState: setModalState,
                           ),
                           periodTile(
                             id: 'afternoon',
-                            label: 'Afternoon',
+                            label: context.read<LocaleProvider>().t('clientHome.timePeriodAfternoon'),
                             icon: Icons.wb_sunny_outlined,
                             setModalState: setModalState,
                           ),
                           periodTile(
                             id: 'evening',
-                            label: 'Evening',
+                            label: context.read<LocaleProvider>().t('clientHome.timePeriodEvening'),
                             icon: Icons.nights_stay_outlined,
                             setModalState: setModalState,
                           ),
                         ],
                       ),
                       const SizedBox(height: 18),
-                      const Text(
-                        'Activities by start time',
+                      Text(
+                        context.read<LocaleProvider>().t('clientHome.activitiesByStartTime'),
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w700,
@@ -1239,7 +1281,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         alignment: Alignment.centerRight,
                         child: Text(
                           '${formatMinutesSliderLabel(tempRange.start)} - ${formatMinutesSliderLabel(tempRange.end)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.primary500,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1265,8 +1307,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               tempRange = _kExploreDefaultTimeRange;
                             });
                           },
-                          child: const Text(
-                            'Reset',
+                          child: Text(
+                            context.read<LocaleProvider>().t('common.reset'),
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -1286,7 +1328,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
                         ),
                       ),
                     ],
@@ -1387,16 +1429,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 ? AppColors.primary500
                                 : AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: 15.sp,
                           ),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 13,
+                              fontSize: 13.sp,
                             ),
                           ),
                         ],
@@ -1438,20 +1480,20 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       const SizedBox(height: 12),
                       option(
                         value: 'recommended',
-                        title: 'Recommended for you',
-                        subtitle: 'Default',
+                        title: context.read<LocaleProvider>().t('clientHome.sortRecommended'),
+                        subtitle: context.read<LocaleProvider>().t('common.default'),
                         setModalState: setModalState,
                       ),
                       option(
                         value: 'ratings',
-                        title: 'Ratings',
-                        subtitle: 'Highest to lowest',
+                        title: context.read<LocaleProvider>().t('clientHome.sortRatings'),
+                        subtitle: context.read<LocaleProvider>().t('clientHome.sortRatingsDesc'),
                         setModalState: setModalState,
                       ),
                       option(
                         value: 'distance',
                         title: 'Distance',
-                        subtitle: 'Nearest to farthest',
+                        subtitle: context.read<LocaleProvider>().t('clientHome.sortDistanceAsc'),
                         setModalState: setModalState,
                       ),
                       const SizedBox(height: 4),
@@ -1460,8 +1502,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => temp = 'recommended'),
-                          child: const Text(
-                            'Reset',
+                          child: Text(
+                            context.read<LocaleProvider>().t('common.reset'),
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -1477,7 +1519,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
                         ),
                       ),
                     ],
@@ -1546,16 +1588,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 ? AppColors.primary500
                                 : AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: 15.sp,
                           ),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 13,
+                              fontSize: 13.sp,
                             ),
                           ),
                         ],
@@ -1597,27 +1639,27 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       const SizedBox(height: 12),
                       option(
                         value: 'auto',
-                        title: 'Auto (20 km)',
+                        title: context.read<LocaleProvider>().t('clientHome.distanceAuto'),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '5',
-                        title: '5 km',
+                        title: context.read<LocaleProvider>().t('clientHome.distance5km'),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '10',
-                        title: '10 km',
+                        title: context.read<LocaleProvider>().t('clientHome.distance10km'),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '15',
-                        title: '15 km',
+                        title: context.read<LocaleProvider>().t('clientHome.distance15km'),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '30+',
-                        title: '30+ km',
+                        title: context.read<LocaleProvider>().t('clientHome.distance30plus'),
                         setModalState: setModalState,
                       ),
                       const SizedBox(height: 4),
@@ -1626,8 +1668,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => tempDistance = 'auto'),
-                          child: const Text(
-                            'Reset',
+                          child: Text(
+                            context.read<LocaleProvider>().t('common.reset'),
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -1643,7 +1685,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
                         ),
                       ),
                     ],
@@ -1681,7 +1723,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
@@ -1732,9 +1774,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 12,
+                              fontSize: 12.sp,
                             ),
                           ),
                         ],
@@ -1823,66 +1865,66 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _filterSheetTitleRow(ctx, 'Filters'),
+                        _filterSheetTitleRow(ctx, context.read<LocaleProvider>().t('clientHome.filtersTitle')),
                         const SizedBox(height: 14),
-                        sectionTitle('Sort by'),
+                        sectionTitle(context.read<LocaleProvider>().t('clientHome.sortBySection')),
                         radioBox(
-                          title: 'Recommended for you',
-                          subtitle: 'Default',
+                          title: context.read<LocaleProvider>().t('clientHome.sortRecommended'),
+                          subtitle: context.read<LocaleProvider>().t('common.default'),
                           selected: tempSort == 'recommended',
                           onTap: () =>
                               setModalState(() => tempSort = 'recommended'),
                         ),
                         radioBox(
-                          title: 'Ratings',
-                          subtitle: 'highest to lowest',
+                          title: context.read<LocaleProvider>().t('clientHome.sortRatings'),
+                          subtitle: context.read<LocaleProvider>().t('clientHome.sortRatingsDesc'),
                           selected: tempSort == 'ratings',
                           onTap: () =>
                               setModalState(() => tempSort = 'ratings'),
                         ),
                         radioBox(
                           title: 'Distance',
-                          subtitle: 'nearest to farthest',
+                          subtitle: context.read<LocaleProvider>().t('clientHome.sortDistanceAsc'),
                           selected: tempSort == 'distance',
                           onTap: () =>
                               setModalState(() => tempSort = 'distance'),
                         ),
                         const SizedBox(height: 6),
-                        sectionTitle('Distance from your location'),
+                        sectionTitle(context.read<LocaleProvider>().t('clientHome.distanceFromLocation')),
                         radioBox(
-                          title: 'Auto (20km)',
+                          title: context.read<LocaleProvider>().t('clientHome.distanceAuto'),
                           selected: tempDistance == 'auto',
                           onTap: () =>
                               setModalState(() => tempDistance = 'auto'),
                         ),
                         radioBox(
-                          title: '5 km',
+                          title: context.read<LocaleProvider>().t('clientHome.distance5km'),
                           selected: tempDistance == '5',
                           onTap: () => setModalState(() => tempDistance = '5'),
                         ),
                         radioBox(
-                          title: '10 km',
+                          title: context.read<LocaleProvider>().t('clientHome.distance10km'),
                           selected: tempDistance == '10',
                           onTap: () => setModalState(() => tempDistance = '10'),
                         ),
                         radioBox(
-                          title: '15 km',
+                          title: context.read<LocaleProvider>().t('clientHome.distance15km'),
                           selected: tempDistance == '15',
                           onTap: () => setModalState(() => tempDistance = '15'),
                         ),
                         radioBox(
-                          title: '30+ km',
+                          title: context.read<LocaleProvider>().t('clientHome.distance30plus'),
                           selected: tempDistance == '30+',
                           onTap: () =>
                               setModalState(() => tempDistance = '30+'),
                         ),
                         const SizedBox(height: 6),
-                        sectionTitle('Activities by time period'),
+                        sectionTitle(context.read<LocaleProvider>().t('clientHome.activitiesByTimePeriod')),
                         Row(
                           children: [
                             periodTile(
                               id: 'morning',
-                              label: 'Morning',
+                              label: context.read<LocaleProvider>().t('clientHome.timePeriodMorning'),
                               icon: Icons.wb_twilight_outlined,
                               selected: tempPeriods.contains('morning'),
                               onTap: () {
@@ -1901,7 +1943,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             ),
                             periodTile(
                               id: 'afternoon',
-                              label: 'Afternoon',
+                              label: context.read<LocaleProvider>().t('clientHome.timePeriodAfternoon'),
                               icon: Icons.wb_sunny_outlined,
                               selected: tempPeriods.contains('afternoon'),
                               onTap: () {
@@ -1920,7 +1962,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             ),
                             periodTile(
                               id: 'evening',
-                              label: 'Evening',
+                              label: context.read<LocaleProvider>().t('clientHome.timePeriodEvening'),
                               icon: Icons.nights_stay_outlined,
                               selected: tempPeriods.contains('evening'),
                               onTap: () {
@@ -1940,12 +1982,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           ],
                         ),
                         const SizedBox(height: 14),
-                        sectionTitle('Activities by start time'),
+                        sectionTitle(context.read<LocaleProvider>().t('clientHome.activitiesByStartTime')),
                         Align(
                           alignment: Alignment.centerRight,
                           child: Text(
                             '${formatMinutesSliderLabel(tempRange.start)} - ${formatMinutesSliderLabel(tempRange.end)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.primary500,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1973,8 +2015,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 tempRange = _kExploreDefaultTimeRange;
                               });
                             },
-                            child: const Text(
-                              'Reset',
+                            child: Text(
+                              context.read<LocaleProvider>().t('common.reset'),
                               style: TextStyle(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -1996,7 +2038,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                             ),
-                            child: const Text('Apply'),
+                            child: Text(context.watch<LocaleProvider>().t('common.apply')),
                           ),
                         ),
                       ],
@@ -2118,12 +2160,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       child: InkWell(
         onTap: _goToToday,
         borderRadius: BorderRadius.circular(999),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Text(
-            'Today',
+            context.read<LocaleProvider>().t('common.today'),
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: Colors.white,
               height: 1.1,
@@ -2168,9 +2210,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
               ),
               const SizedBox(width: 6),
               Text(
-                _isMonthExpanded ? 'Collapse' : 'Expand',
-                style: const TextStyle(
-                  fontSize: 13,
+                _isMonthExpanded ? context.read<LocaleProvider>().t('common.collapse') : context.read<LocaleProvider>().t('common.expand'),
+                style: TextStyle(
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                   height: 1.1,
@@ -2183,10 +2225,96 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     );
   }
 
-  Widget _buildBrowseClassesList(ClientLocationStore locationStore) {
+  Widget _buildBrowseListEmptyState({
+    required bool forClasses,
+    required LocaleProvider locale,
+    required ClientLocationStore locationStore,
+  }) {
+    final noCoords = !_hasClientCoordinates(locationStore);
+    final noSourceData = forClasses ? _classes.isEmpty : _studios.isEmpty;
+
+    late final String title;
+    late final String body;
+    VoidCallback? onAction;
+    String? actionLabel;
+
+    if (noCoords) {
+      title = locale.t('clientHome.browseEmptyNoLocationTitle');
+      body = locale.t('clientHome.browseEmptyNoLocationBody');
+      onAction = _openLocationPicker;
+      actionLabel = locale.t('clientHome.setLocation');
+    } else if (noSourceData) {
+      title = forClasses
+          ? locale.t('clientHome.browseEmptyNoClassesTitle')
+          : locale.t('clientHome.browseEmptyNoStudiosTitle');
+      body = forClasses
+          ? locale.t('clientHome.browseEmptyNoClassesBody')
+          : locale.t('clientHome.browseEmptyNoStudiosBody');
+    } else {
+      title = locale.t('clientHome.browseEmptyFiltersTitle');
+      body = locale.t('clientHome.browseEmptyFiltersBody');
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 56),
+      children: [
+        Column(
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            if (onAction != null) ...[
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: onAction,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBrowseClassesList(
+    ClientLocationStore locationStore,
+    LocaleProvider locale,
+  ) {
+    if (_derivedDayClasses.isEmpty) {
+      return _buildBrowseListEmptyState(
+        forClasses: true,
+        locale: locale,
+        locationStore: locationStore,
+      );
+    }
     return ListView.separated(
       key: const PageStorageKey<String>('browse-classes'),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
       itemCount: _derivedDayClasses.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
@@ -2216,10 +2344,18 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   Widget _buildBrowseStudiosList(
     ClientLocationStore locationStore,
     ClientFavoritesStore favStore,
+    LocaleProvider locale,
   ) {
+    if (_derivedVisibleStudios.isEmpty) {
+      return _buildBrowseListEmptyState(
+        forClasses: false,
+        locale: locale,
+        locationStore: locationStore,
+      );
+    }
     return ListView.separated(
-      key: const PageStorageKey<String>('browse-studios'),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      key: const PageStorageKey<String>('browse-studios-v2'),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 56),
       itemCount: _derivedVisibleStudios.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
@@ -2326,6 +2462,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           child: Row(
@@ -2345,7 +2482,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     height: 1.1,
                     color: fg,
                   ),
@@ -2365,7 +2502,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final locationStore = context.watch<ClientLocationStore>();
     final locationLabel = locationStore.displayLabel(
       locale.t('clientHome.setLocation'),
-    );
+    ).toUpperCase();
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
@@ -2406,8 +2543,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               locationLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 letterSpacing: 0.4,
                                 color: AppColors.textPrimary,
                               ),
@@ -2427,11 +2564,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Browse',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: 28.sp,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                               letterSpacing: -0.5,
@@ -2464,15 +2601,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     padding: screenPaddingH(),
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                       ),
                       decoration: InputDecoration(
                         hintText: locale.t('clientHome.searchHint'),
-                        hintStyle: const TextStyle(
+                        hintStyle: TextStyle(
                           color: AppColors.textTertiary,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                         isDense: true,
                         prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
@@ -2481,6 +2618,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               leftMargin: 12,
                               trailingGap: 4,
                             ),
+                        suffixIcon: _FilterIconButton(
+                          isActive: _hasActiveFilters,
+                          onTap: _openAllFiltersSheet,
+                        ),
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
                         filled: true,
                         fillColor: AppColors.backgroundPrimary,
                         enabledBorder: OutlineInputBorder(
@@ -2551,8 +2696,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           index: showClasses ? 0 : 1,
                           sizing: StackFit.expand,
                           children: [
-                            _buildBrowseClassesList(locationStore),
-                            _buildBrowseStudiosList(locationStore, favStore),
+                            _buildBrowseClassesList(locationStore, locale),
+                            _buildBrowseStudiosList(
+                              locationStore,
+                              favStore,
+                              locale,
+                            ),
                           ],
                         );
                       },
@@ -2560,6 +2709,46 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _FilterIconButton extends StatelessWidget {
+  const _FilterIconButton({required this.isActive, required this.onTap});
+
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              Icons.tune_rounded,
+              size: 22,
+              color: isActive ? AppColors.primary500 : AppColors.textSecondary,
+            ),
+            if (isActive)
+              Positioned(
+                top: 8,
+                right: 0,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary500,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class OwnerSessionScopeOptionButton extends StatelessWidget {
   const OwnerSessionScopeOptionButton({
@@ -28,9 +29,9 @@ class OwnerSessionScopeOptionButton extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 15,
+            fontSize: 15.sp,
           ),
         ),
       ),

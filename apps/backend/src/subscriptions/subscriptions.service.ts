@@ -148,7 +148,7 @@ export class SubscriptionsService {
     );
 
     const updateData: Prisma.SubscriptionUncheckedUpdateInput = {
-      type: 'PRO',
+      type: 'STUDIO',
       status: 'ACTIVE',
       startDate: startAt,
       updatedAt: new Date(),

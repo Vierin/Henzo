@@ -5,9 +5,11 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SubscriptionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
+import { isPaidSubscriptionType } from './subscription-tier.util';
 
 type RcEntitlement = {
   expires_date: string | null;
@@ -40,9 +42,18 @@ export class RevenueCatService {
     return this.config.get<string>('REVENUECAT_SECRET_API_KEY')?.trim();
   }
 
-  private get entitlementId(): string {
+  private get studioEntitlementId(): string {
     return (
-      this.config.get<string>('REVENUECAT_ENTITLEMENT_ID')?.trim() || 'pro'
+      this.config.get<string>('REVENUECAT_STUDIO_ENTITLEMENT_ID')?.trim() ||
+      this.config.get<string>('REVENUECAT_ENTITLEMENT_ID')?.trim() ||
+      'premium_studio'
+    );
+  }
+
+  private get enterpriseEntitlementId(): string {
+    return (
+      this.config.get<string>('REVENUECAT_ENTERPRISE_ENTITLEMENT_ID')?.trim() ||
+      'premium_enterprise'
     );
   }
 
@@ -89,21 +100,23 @@ export class RevenueCatService {
     return !Number.isNaN(expires.getTime()) && expires > new Date();
   }
 
-  isEntitlementActive(subscriber: RcSubscriberResponse): boolean {
+  private isEntitlementIdActive(
+    subscriber: RcSubscriberResponse,
+    entitlementId: string,
+  ): boolean {
     const entitlements = subscriber.subscriber?.entitlements ?? {};
-    const configured = entitlements[this.entitlementId];
-    if (configured && this.isEntitlementRecordActive(configured)) {
-      return true;
-    }
-    const target = this.entitlementId.toLowerCase();
+    const target = entitlementId.toLowerCase();
     for (const [key, ent] of Object.entries(entitlements)) {
       if (key.toLowerCase() === target && this.isEntitlementRecordActive(ent)) {
         return true;
       }
     }
-    for (const ent of Object.values(entitlements)) {
-      if (this.isEntitlementRecordActive(ent)) return true;
-    }
+    return false;
+  }
+
+  private hasActiveStoreSubscription(
+    subscriber: RcSubscriberResponse,
+  ): boolean {
     const subs = subscriber.subscriber?.subscriptions ?? {};
     const now = new Date();
     for (const sub of Object.values(subs)) {
@@ -114,11 +127,35 @@ export class RevenueCatService {
     return false;
   }
 
+  resolveSubscriptionType(subscriber: RcSubscriberResponse): SubscriptionType {
+    if (this.isEntitlementIdActive(subscriber, this.enterpriseEntitlementId)) {
+      return SubscriptionType.ENTERPRISE;
+    }
+    if (this.isEntitlementIdActive(subscriber, this.studioEntitlementId)) {
+      return SubscriptionType.STUDIO;
+    }
+    if (this.hasActiveStoreSubscription(subscriber)) {
+      return SubscriptionType.STUDIO;
+    }
+    return SubscriptionType.SOLO;
+  }
+
   private resolvePeriodEnd(subscriber: RcSubscriberResponse): Date | null {
-    const ent = subscriber.subscriber?.entitlements?.[this.entitlementId];
-    if (ent?.expires_date) {
-      const d = new Date(ent.expires_date);
-      if (!Number.isNaN(d.getTime())) return d;
+    const entitlements = subscriber.subscriber?.entitlements ?? {};
+    const ids = [this.enterpriseEntitlementId, this.studioEntitlementId];
+    for (const id of ids) {
+      const ent = entitlements[id];
+      if (ent?.expires_date) {
+        const d = new Date(ent.expires_date);
+        if (!Number.isNaN(d.getTime())) return d;
+      }
+      const target = id.toLowerCase();
+      for (const [key, ent] of Object.entries(entitlements)) {
+        if (key.toLowerCase() === target && ent.expires_date) {
+          const d = new Date(ent.expires_date);
+          if (!Number.isNaN(d.getTime())) return d;
+        }
+      }
     }
     const subs = subscriber.subscriber?.subscriptions;
     if (subs) {
@@ -142,15 +179,15 @@ export class RevenueCatService {
     }
 
     const subscriber = await this.fetchSubscriber(userId);
-    const isPro = this.isEntitlementActive(subscriber);
+    const tier = this.resolveSubscriptionType(subscriber);
     const periodEnd = this.resolvePeriodEnd(subscriber);
     this.logger.log(
-      `RevenueCat sync user=${userId} isPro=${isPro} entitlements=${Object.keys(subscriber.subscriber?.entitlements ?? {}).join(',')}`,
+      `RevenueCat sync user=${userId} tier=${tier} entitlements=${Object.keys(subscriber.subscriber?.entitlements ?? {}).join(',')}`,
     );
 
     const now = new Date();
     const subscriptionData = {
-      type: (isPro ? 'PRO' : 'FREEMIUM') as 'PRO' | 'FREEMIUM',
+      type: tier,
       status: 'ACTIVE' as const,
       updatedAt: now,
       ...(periodEnd ? { currentPeriodEnd: periodEnd } : {}),
@@ -167,10 +204,11 @@ export class RevenueCatService {
       update: subscriptionData,
     });
 
-    if (isPro) {
+    if (isPaidSubscriptionType(updated.type)) {
       this.analytics.track(userId, 'subscription_started', {
         studio_id: studio.id,
         provider: 'revenuecat',
+        tier: updated.type,
       });
     }
 

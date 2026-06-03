@@ -24,6 +24,7 @@ import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 import '../widgets/training/owner_session_cancel_scope_dialog.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches [AddTrainingScreen] step-2 pickers.
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
@@ -167,8 +168,8 @@ class _OwnerEditTrainingSessionScreenState
     padding: const EdgeInsets.only(bottom: 10, left: 12),
     child: Text(
       text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 13,
+      style: TextStyle(
+        fontSize: 13.sp,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
         color: AppColors.textPrimary,
@@ -225,7 +226,7 @@ class _OwnerEditTrainingSessionScreenState
                         onPressed: () => Navigator.of(ctx).pop(selected),
                         child: Text(
                           loc.t('common.done'),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -362,14 +363,14 @@ class _OwnerEditTrainingSessionScreenState
     return locale.t('addTraining.studioNameFallback');
   }
 
-  static const TextStyle _compactCaptionStyle = TextStyle(
-    fontSize: 11,
+  static final TextStyle _compactCaptionStyle = TextStyle(
+    fontSize: 11.sp,
     fontWeight: FontWeight.w600,
     color: AppColors.textSecondary,
   );
 
-  static const TextStyle _compactValueStyle = TextStyle(
-    fontSize: 14,
+  static final TextStyle _compactValueStyle = TextStyle(
+    fontSize: 14.sp,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
   );
@@ -408,8 +409,8 @@ class _OwnerEditTrainingSessionScreenState
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -418,8 +419,8 @@ class _OwnerEditTrainingSessionScreenState
                       const SizedBox(height: 4),
                       Text(
                         address,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           height: 1.25,
                           color: AppColors.textSecondary,
                         ),
@@ -428,8 +429,8 @@ class _OwnerEditTrainingSessionScreenState
                       const SizedBox(height: 4),
                       Text(
                         locale.t('addTraining.noAddress'),
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textTertiary,
                         ),
                       ),
@@ -487,7 +488,7 @@ class _OwnerEditTrainingSessionScreenState
                         style: valueStyle,
                       ),
                     ),
-                    if (trailing != null) trailing,
+                    ?trailing,
                   ],
                 ),
               ],
@@ -519,8 +520,8 @@ class _OwnerEditTrainingSessionScreenState
           decoration: _trainerInputDecoration(),
           child: Text(
             _trainerDisplayName(locale),
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textPrimary,
             ),
           ),
@@ -529,8 +530,8 @@ class _OwnerEditTrainingSessionScreenState
           const SizedBox(height: 8),
           Text(
             locale.t('addTraining.step2.trainerProNote'),
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               height: 1.35,
               color: AppColors.textSecondary,
             ),
@@ -750,18 +751,18 @@ class _OwnerEditTrainingSessionScreenState
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             locale.t('ownerSession.editSessionCompleted'),
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 13,
+              fontSize: 13.sp,
               height: 1.35,
             ),
           ),
         ),
       Text(
         locale.t('ownerSession.editSessionHint'),
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 13,
+          fontSize: 13.sp,
           height: 1.35,
         ),
       ),

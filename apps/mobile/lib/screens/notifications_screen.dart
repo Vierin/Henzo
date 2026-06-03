@@ -18,6 +18,7 @@ import '../widgets/common/henzo_header_back_button.dart';
 import '../utils/show_api_error.dart';
 import 'public_class_detail_screen.dart';
 import 'owner_training_session_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum NotificationsScreenAudience { owner, client }
 
@@ -99,8 +100,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         leadingWidth: 56,
         title: Text(
           locale.t('notifications.title'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
             color: AppColors.textPrimary,
@@ -137,8 +138,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Center(
                       child: Text(
                         locale.t('notifications.filterEmpty'),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           color: AppColors.textSecondary,
                         ),
                         textAlign: TextAlign.center,
@@ -327,8 +328,8 @@ class _NotificationsEmptyState extends StatelessWidget {
             Text(
               locale.t('notifications.emptyTitle'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 20,
+              style: TextStyle(
+                fontSize: 20.sp,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.3,
                 color: AppColors.textPrimary,
@@ -338,8 +339,8 @@ class _NotificationsEmptyState extends StatelessWidget {
             Text(
               locale.t('notifications.emptySubtitle'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 height: 1.45,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
@@ -455,7 +456,7 @@ class _FilterPill extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: labelColor,
                     ),
@@ -466,7 +467,7 @@ class _FilterPill extends StatelessWidget {
                   Text(
                     '$count',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: countColor,
                     ),
@@ -554,7 +555,7 @@ class _NotificationCard extends StatelessWidget {
                             Text(
                               '• ${locale.t(theme.typeLabelKey)}',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.3,
                                 color: theme.accent,
@@ -563,8 +564,8 @@ class _NotificationCard extends StatelessWidget {
                             const Spacer(),
                             Text(
                               timeStr,
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.textTertiary,
                               ),
@@ -574,8 +575,8 @@ class _NotificationCard extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text.rich(
                           TextSpan(
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               height: 1.4,
                               fontWeight: FontWeight.w400,
                               color: AppColors.textPrimary,
@@ -599,8 +600,8 @@ class _NotificationCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 session.time,
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textSecondary,
                                 ),
@@ -614,8 +615,8 @@ class _NotificationCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 session.date,
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textSecondary,
                                 ),

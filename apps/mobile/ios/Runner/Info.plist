@@ -22,12 +22,47 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>GIDClientID</key> 
-	<string>601312951370-dgu1ua1lnb32mmk7oqpjbrbpvod67vg3.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>app.henzo.class</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>henzo</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.601312951370-dgu1ua1lnb32mmk7oqpjbrbpvod67vg3</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GIDClientID</key>
+	<string>601312951370-dgu1ua1lnb32mmk7oqpjbrbpvod67vg3.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>601312951370-1fg9fqajecnjlspki91hendb4csikqd5.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Henzo reads your steps, calories and workouts to display your activity summary on the Profile screen.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Henzo does not write any health data to Apple Health.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Henzo uses your location to find nearby fitness studios and to set your studio address on the map.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Henzo uses your location to find nearby fitness studios and to set your studio address on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Henzo needs access to your photo library so you can upload profile and studio photos.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -51,75 +86,26 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIStatusBarStyle</key>
+	<string></string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>localhost</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-			<key>127.0.0.1</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-		</dict>
-	</dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>app.henzo.subscription-checkout</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>henzo</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>google-sign-in</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.601312951370-dgu1ua1lnb32mmk7oqpjbrbpvod67vg3</string>
-			</array>
-		</dict>
-	</array>
-	<key>GIDServerClientID</key>
-	<string>601312951370-1fg9fqajecnjlspki91hendb4csikqd5.apps.googleusercontent.com</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Henzo uses your location to find nearby fitness studios and to set your studio address on the map.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Henzo uses your location to find nearby fitness studios and to set your studio address on the map.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Henzo needs access to your photo library so you can upload profile and studio photos.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Henzo reads your steps, calories and workouts to display your activity summary on the Profile screen.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Henzo does not write any health data.</string>
 </dict>
 </plist>

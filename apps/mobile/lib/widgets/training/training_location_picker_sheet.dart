@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_location_item.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 sealed class TrainingLocationPickerResult {
   const TrainingLocationPickerResult();
@@ -85,8 +86,8 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                           titleL10nKey ?? 'addTraining.locationSheetTitle',
                         ),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
                           color: AppColors.textPrimary,
@@ -239,8 +240,8 @@ class _LocationOptionCard extends StatelessWidget {
                         children: [
                           Text(
                             location.name,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
@@ -249,8 +250,8 @@ class _LocationOptionCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               location.address,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 height: 1.25,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.textSecondary,
@@ -270,8 +271,8 @@ class _LocationOptionCard extends StatelessWidget {
                               ),
                               child: Text(
                                 defaultBadgeLabel,
-                                style: const TextStyle(
-                                  fontSize: 12,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textSecondary,
                                 ),
@@ -352,8 +353,8 @@ class _AddLocationButton extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary500,
                 ),

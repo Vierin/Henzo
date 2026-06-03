@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Field and primary-button geometry shared with [AddTrainingScreen] step 1.
 abstract final class AuthFormStyles {
@@ -12,11 +13,11 @@ abstract final class AuthFormStyles {
   static const Color hintMuted = Color(0x993F3F3F);
   static const Color accentIcon = hintMuted;
 
-  static const TextStyle fieldTextStyle = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get fieldTextStyle => TextStyle(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      );
 
   static const BorderRadius _radius = BorderRadius.all(
     Radius.circular(fieldBorderRadius),
@@ -36,9 +37,9 @@ abstract final class AuthFormStyles {
     );
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         color: hintMuted,
-        fontSize: 16,
+        fontSize: 16.sp,
         fontWeight: FontWeight.w500,
       ),
       prefixIcon: prefixIcon == null

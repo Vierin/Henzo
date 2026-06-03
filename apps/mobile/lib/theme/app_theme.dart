@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
-
 /// Единая тема приложения на основе AppColors.
 /// Подключается в main.dart как theme и darkTheme.
 class AppTheme {
@@ -115,7 +114,11 @@ class AppTheme {
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 6,
-        contentTextStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+        contentTextStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
         backgroundColor: AppColors.neutral800,
         showCloseIcon: false,
       ),

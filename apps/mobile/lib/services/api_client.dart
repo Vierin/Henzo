@@ -11,10 +11,12 @@ import '../config/app_config.dart';
 
 /// Thrown when API returns non-2xx. [message] is from body (msg/message) or status.
 class ApiException implements Exception {
-  ApiException(this.message, [this.statusCode]);
+  ApiException(this.message, [this.statusCode, this.errorCode]);
 
   final String message;
   final int? statusCode;
+  /// Machine-readable error code from response body `error` field (e.g. SOLO_TRAINER_LIMIT_EXCEEDED).
+  final String? errorCode;
 
   @override
   String toString() => message;
@@ -62,11 +64,12 @@ class ApiClient {
         s.contains('ClientException');
   }
 
-  /// Parse error message from response body (msg or message) or fallback to status.
-  static String errorMessageFromResponse(http.Response response) {
+  /// Parse error from response body — returns (message, errorCode).
+  static (String, String?) _parseErrorResponse(http.Response response) {
     try {
       final body = json.decode(response.body);
       if (body is Map<String, dynamic>) {
+        final errorCode = body['error']?.toString();
         String? msg;
         final rawMsg = body['msg'] ?? body['message'];
         if (rawMsg is String) {
@@ -84,22 +87,24 @@ class ApiClient {
                 .join(', ');
             if (list.isNotEmpty) {
               final base = msg ?? 'Studio is not ready for publish';
-              return '$base. Missing: $list';
+              return ('$base. Missing: $list', errorCode);
             }
           }
         }
-        if (msg != null && msg.isNotEmpty) return msg;
+        if (msg != null && msg.isNotEmpty) return (msg, errorCode);
       }
     } catch (_) {}
-    return 'HTTP ${response.statusCode}';
+    return ('HTTP ${response.statusCode}', null);
   }
+
+  /// Parse error message from response body (msg or message) or fallback to status.
+  static String errorMessageFromResponse(http.Response response) =>
+      _parseErrorResponse(response).$1;
 
   static void _throwIfNotSuccess(http.Response response, String requestId) {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
-    final exception = ApiException(
-      errorMessageFromResponse(response),
-      response.statusCode,
-    );
+    final (msg, errorCode) = _parseErrorResponse(response);
+    final exception = ApiException(msg, response.statusCode, errorCode);
     if (response.statusCode >= 500 && _crashlyticsReady) {
       FirebaseCrashlytics.instance.recordError(
         exception,

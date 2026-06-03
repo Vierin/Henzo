@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../schedule/calendar_day_pill.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Compact day cell for client Browse strip (weekday + date, 2:3 aspect).
 class BrowseDayPill extends StatelessWidget {
@@ -31,7 +32,7 @@ class BrowseDayPill extends StatelessWidget {
             Text(
               CalendarDayPill.weekdayShort(day),
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w500,
                 letterSpacing: -0.3,
                 height: 1.1,
@@ -42,7 +43,7 @@ class BrowseDayPill extends StatelessWidget {
             Text(
               '${day.day}',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 17.sp,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,
                 height: 1.1,

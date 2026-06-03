@@ -5,6 +5,7 @@ import 'common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';import '../l10n/locale_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Same month abbreviations as [CalendarScreen] header.
 const _kEnMon = [
@@ -250,7 +251,7 @@ class _ScheduleStyleDatePickerSheetState
               child: Text(
                 '${day.day}',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                   color: selected ? Colors.white : AppColors.textPrimary,
                 ),
@@ -273,8 +274,8 @@ class _ScheduleStyleDatePickerSheetState
               child: Center(
                 child: Text(
                   _kDow[i],
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w400,
                     letterSpacing: -0.3,
                     color: AppColors.textSecondary,
@@ -344,8 +345,8 @@ class _ScheduleStyleDatePickerSheetState
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                       color: AppColors.textPrimary,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 
@@ -7,6 +8,8 @@ import '../constants/layout.dart';
 
 import '../services/api_client.dart';
 
+import '../services/auth_service.dart';
+import '../services/client_schedule_store.dart';
 import '../services/dashboard_api_service.dart';
 
 import '../utils/formatters.dart';
@@ -16,6 +19,7 @@ import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
 import '../widgets/schedule/calendar_day_pill.dart';
 import 'public_class_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
   const PublicStudioScheduleScreen({
@@ -54,7 +58,9 @@ class _PublicStudioScheduleScreenState
   final Map<int, List<Map<String, dynamic>>> _sessionsByDay =
       <int, List<Map<String, dynamic>>>{};
 
-  late final PageController _dayPagerController;
+  late final ScrollController _dayStripScrollController;
+
+  double? _dayStripViewportWidth;
 
   late final ValueNotifier<DateTime> _stripDayNotifier;
 
@@ -74,6 +80,8 @@ class _PublicStudioScheduleScreenState
 
   bool _isMonthExpanded = false;
 
+  Set<String> _bookedSessionIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -91,31 +99,31 @@ class _PublicStudioScheduleScreenState
       const Duration(days: _defaultBookingPeriodDays),
     );
 
-    _dayPagerController = PageController(
-      initialPage: 0,
-      viewportFraction: 1 / 7,
-    );
-    _dayPagerController.addListener(_onStripPagerScrolled);
+    _dayStripScrollController = ScrollController();
+    _dayStripScrollController.addListener(_onStripScrolled);
 
     _loadSchedule();
   }
 
   @override
   void dispose() {
-    _dayPagerController.removeListener(_onStripPagerScrolled);
+    _dayStripScrollController.removeListener(_onStripScrolled);
     _stripDayNotifier.dispose();
     _scheduleDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
-    _dayPagerController.dispose();
+    _dayStripScrollController.dispose();
 
     super.dispose();
   }
 
-  void _onStripPagerScrolled() {
-    if (!mounted || !_dayPagerController.hasClients) return;
-    final page = _dayPagerController.page;
-    if (page == null) return;
-    final day = _bookableDayAt(page.round().clamp(0, _bookableDayCount - 1));
+  void _onStripScrolled() {
+    final w = _dayStripViewportWidth;
+    if (w == null || !_dayStripScrollController.hasClients) return;
+    final stride = w / 7;
+    final index = (_dayStripScrollController.offset / stride)
+        .round()
+        .clamp(0, _bookableDayCount - 1);
+    final day = _bookableDayAt(index);
     final normalized = DateTime(day.year, day.month, day.day);
     if (_stripPagerDayNotifier.value == normalized) return;
     _stripPagerDayNotifier.value = normalized;
@@ -241,10 +249,13 @@ class _PublicStudioScheduleScreenState
         _loadError = null;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_dayPagerController.hasClients) return;
+        if (!mounted || !_dayStripScrollController.hasClients) return;
+        final w = _dayStripViewportWidth;
+        if (w == null) return;
         final index = scheduleDay.difference(_minBookableDay).inDays;
-        _dayPagerController.jumpToPage(index);
+        _dayStripScrollController.jumpTo(index * w / 7);
       });
+      _loadBookedSessionIds();
     } catch (e) {
       if (!mounted) return;
 
@@ -254,6 +265,22 @@ class _PublicStudioScheduleScreenState
         _loadError = e.toString();
       });
     }
+  }
+
+  Future<void> _loadBookedSessionIds() async {
+    if (!mounted) return;
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final items = await ClientScheduleStore.loadFullSchedule(token);
+      if (!mounted) return;
+      final ids = <String>{};
+      for (final item in items) {
+        final sid = item['sessionId']?.toString();
+        if (sid != null && sid.isNotEmpty) ids.add(sid);
+      }
+      setState(() => _bookedSessionIds = ids);
+    } catch (_) {}
   }
 
   int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
@@ -302,9 +329,10 @@ class _PublicStudioScheduleScreenState
     _stripDayNotifier.value = normalized;
     _scheduleDayNotifier.value = normalized;
     _stripPagerDayNotifier.value = normalized;
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.animateToPage(
-        index,
+    final w = _dayStripViewportWidth;
+    if (w != null && _dayStripScrollController.hasClients) {
+      _dayStripScrollController.animateTo(
+        index * w / 7,
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
       );
@@ -350,8 +378,8 @@ class _PublicStudioScheduleScreenState
                 child: Center(
                   child: Text(
                     dow[i],
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w400,
                       letterSpacing: -0.3,
                       color: AppColors.textSecondary,
@@ -413,7 +441,7 @@ class _PublicStudioScheduleScreenState
                             child: Text(
                               '${day.day}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                                 color: selected
                                     ? Colors.white
@@ -441,12 +469,12 @@ class _PublicStudioScheduleScreenState
       child: InkWell(
         onTap: _goToToday,
         borderRadius: BorderRadius.circular(999),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Text(
             'Today',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: Colors.white,
               height: 1.1,
@@ -499,8 +527,8 @@ class _PublicStudioScheduleScreenState
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                     height: 1.1,
@@ -540,8 +568,8 @@ class _PublicStudioScheduleScreenState
                   alignment: Alignment.centerLeft,
                   child: Text(
                     CalendarDayPill.monthYearUpperEn(pagerDay),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                       color: AppColors.textPrimary,
@@ -663,43 +691,69 @@ class _PublicStudioScheduleScreenState
   }
 
   Widget _buildDayStrip() {
-    return SizedBox(
-      height: 86,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification n) {
-          if (n.metrics.axis == Axis.horizontal) {
-            _onStripPagerScrolled();
-          }
-          return false;
-        },
-        child: PageView.builder(
-          controller: _dayPagerController,
-          physics: const SmoothDayPageScrollPhysics(),
-          padEnds: false,
-          itemCount: _bookableDayCount,
-          itemBuilder: (_, index) {
-            final day = _bookableDayAt(index);
-            return ValueListenableBuilder<DateTime>(
-              valueListenable: _stripDayNotifier,
-              builder: (context, stripDay, _) {
-                final selected = CalendarDayPill.isSameDay(day, stripDay);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: CalendarDayPill(
-                    day: day,
-                    selected: selected,
-                    sessionsCount: _sessionsForDay(day).length,
-                    enabled: _isDayInRange(day),
-                    onTap: _isDayInRange(day)
-                        ? () => _jumpScheduleToDay(day)
-                        : null,
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _dayStripViewportWidth = constraints.maxWidth;
+        final stride = constraints.maxWidth / 7;
+        return SizedBox(
+          height: 86,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification n) {
+              if (n.metrics.axis != Axis.horizontal) return false;
+              _onStripScrolled();
+              if (n is ScrollEndNotification) {
+                final w = _dayStripViewportWidth;
+                if (w == null || !_dayStripScrollController.hasClients) {
+                  return false;
+                }
+                final s = w / 7;
+                final index = (_dayStripScrollController.offset / s)
+                    .round()
+                    .clamp(0, _bookableDayCount - 1);
+                final target = index * s;
+                if ((_dayStripScrollController.offset - target).abs() > 0.5) {
+                  _dayStripScrollController.animateTo(
+                    target,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              }
+              return false;
+            },
+            child: ListView.builder(
+              controller: _dayStripScrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              itemCount: _bookableDayCount,
+              itemExtent: stride,
+              itemBuilder: (_, index) {
+                final day = _bookableDayAt(index);
+                return ValueListenableBuilder<DateTime>(
+                  valueListenable: _stripDayNotifier,
+                  builder: (context, stripDay, _) {
+                    final selected = CalendarDayPill.isSameDay(day, stripDay);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: CalendarDayPill(
+                        day: day,
+                        selected: selected,
+                        sessionsCount: _sessionsForDay(day).length,
+                        enabled: _isDayInRange(day),
+                        onTap: _isDayInRange(day)
+                            ? () => _jumpScheduleToDay(day)
+                            : null,
+                      ),
+                    );
+                  },
                 );
               },
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -729,7 +783,7 @@ class _PublicStudioScheduleScreenState
                                 mainAxisSize: MainAxisSize.min,
 
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Failed to load schedule',
 
                                     style: TextStyle(
@@ -746,7 +800,7 @@ class _PublicStudioScheduleScreenState
 
                                     textAlign: TextAlign.center,
 
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
@@ -798,6 +852,11 @@ class _PublicStudioScheduleScreenState
                               null,
                             );
                             final price = session.trainingPrice;
+                            final rawSessionId =
+                                (raw['id'] ?? raw['sessionId'] ?? '')
+                                    .toString();
+                            final alreadyBooked =
+                                _bookedSessionIds.contains(rawSessionId);
                             return OwnerDailyScheduleSessionCard(
                               session: session,
                               subtitleLabel: subtitle,
@@ -811,7 +870,10 @@ class _PublicStudioScheduleScreenState
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: 'Book',
-                              onBookAgain: () => _openClassDetail(raw),
+                              onBookAgain: alreadyBooked
+                                  ? null
+                                  : () => _openClassDetail(raw),
+                              isBooked: alreadyBooked,
                               onTap: () => _openClassDetail(raw),
                             );
                           },

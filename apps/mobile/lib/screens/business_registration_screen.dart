@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,9 +9,11 @@ import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BusinessRegistrationScreen extends StatefulWidget {
   const BusinessRegistrationScreen({super.key});
@@ -30,11 +33,13 @@ class _BusinessRegistrationScreenState
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isGoogleSubmitting = false;
+  bool _isAppleSubmitting = false;
   bool _isVerificationStep = false;
+
+  bool get _isOAuthBusy => _isGoogleSubmitting || _isAppleSubmitting;
   bool _isVerifyingCode = false;
   bool _isResendingCode = false;
   int _resendSecondsLeft = 0;
-  bool _agreedToTerms = false;
   Timer? _resendTimer;
   final FocusNode _otpFocusNode = FocusNode();
 
@@ -51,10 +56,6 @@ class _BusinessRegistrationScreenState
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
 
     setState(() => _isSubmitting = true);
     final locale = context.read<LocaleProvider>();
@@ -158,10 +159,6 @@ class _BusinessRegistrationScreenState
   }
 
   Future<void> _registerWithGoogle() async {
-    if (!_agreedToTerms) {
-      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
-      return;
-    }
     setState(() => _isGoogleSubmitting = true);
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
@@ -169,6 +166,31 @@ class _BusinessRegistrationScreenState
 
     if (!mounted) return;
     setState(() => _isGoogleSubmitting = false);
+
+    if (result.success) {
+      showSuccess(context, locale.t('auth.signInSuccess'));
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+
+    showApiError(
+      context,
+      resolveAuthUiMessage(
+        locale,
+        result,
+        fallbackKey: 'auth.businessRegisterError',
+      ),
+    );
+  }
+
+  Future<void> _registerWithApple() async {
+    setState(() => _isAppleSubmitting = true);
+    final locale = context.read<LocaleProvider>();
+    final auth = context.read<AuthService>();
+    final result = await auth.loginWithApple(registerAsOwner: true);
+
+    if (!mounted) return;
+    setState(() => _isAppleSubmitting = false);
 
     if (result.success) {
       showSuccess(context, locale.t('auth.signInSuccess'));
@@ -285,16 +307,11 @@ class _BusinessRegistrationScreenState
               return null;
             },
           ),
-          const SizedBox(height: 16),
-          LegalAgreementCheckbox(
-            value: _agreedToTerms,
-            onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-          ),
           const SizedBox(height: 20),
           SizedBox(
             height: AuthFormStyles.buttonHeight,
             child: FilledButton(
-              onPressed: (_isSubmitting || _isGoogleSubmitting) ? null : _submit,
+              onPressed: (_isSubmitting || _isOAuthBusy) ? null : _submit,
               style: AuthFormStyles.primaryButtonStyle(),
               child: _isSubmitting
                   ? const SizedBox(
@@ -306,10 +323,10 @@ class _BusinessRegistrationScreenState
                       ),
                     )
                   : Text(
-                      'Create account',
+                      context.read<LocaleProvider>().t('auth.createAccount'),
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         color: AppColors.textInverse,
                       ),
                     ),
@@ -328,9 +345,9 @@ class _BusinessRegistrationScreenState
               ),
               Text(
                 locale.t('auth.orContinue'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: 15.sp,
                 ),
               ),
               const Expanded(
@@ -347,7 +364,7 @@ class _BusinessRegistrationScreenState
           SizedBox(
             height: AuthFormStyles.buttonHeight,
             child: OutlinedButton.icon(
-              onPressed: (_isSubmitting || _isGoogleSubmitting)
+              onPressed: (_isSubmitting || _isOAuthBusy)
                   ? null
                   : _registerWithGoogle,
               icon: _isGoogleSubmitting
@@ -359,8 +376,8 @@ class _BusinessRegistrationScreenState
                   : _buildGoogleIcon(),
               label: Text(
                 locale.t('auth.continueWithGoogle'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
@@ -368,6 +385,18 @@ class _BusinessRegistrationScreenState
               style: AuthFormStyles.googleButtonStyle(),
             ),
           ),
+          if (Platform.isIOS) ...[
+            const SizedBox(height: 8),
+            AppleSignInButton(
+              isLoading: _isAppleSubmitting,
+              onPressed:
+                  (_isSubmitting || _isOAuthBusy) ? null : _registerWithApple,
+              label: locale.t('auth.continueWithApple'),
+            ),
+          ],
+          const SizedBox(height: 20),
+          const LegalAgreementFooter(),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -428,8 +457,8 @@ class _BusinessRegistrationScreenState
                                 index < _otpController.text.length
                                     ? _otpController.text[index]
                                     : '',
-                                style: const TextStyle(
-                                  fontSize: 24,
+                                style: TextStyle(
+                                  fontSize: 24.sp,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
                                 ),
@@ -460,7 +489,7 @@ class _BusinessRegistrationScreenState
                             locale.t('common.verify'),
                             style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               color: AppColors.textInverse,
                             ),
                           ),
@@ -474,8 +503,8 @@ class _BusinessRegistrationScreenState
         if (_resendSecondsLeft > 0)
           Text(
             '${locale.t('auth.resendCodeIn')} 00:${_resendSecondsLeft.toString().padLeft(2, '0')}',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
@@ -487,8 +516,8 @@ class _BusinessRegistrationScreenState
               children: [
                 Text(
                   locale.t('auth.didntReceiveCode'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -507,8 +536,8 @@ class _BusinessRegistrationScreenState
                         )
                       : Text(
                           locale.t('auth.resend'),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary500,
                           ),
@@ -521,8 +550,8 @@ class _BusinessRegistrationScreenState
         Center(
           child: Text(
             email,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               color: AppColors.textTertiary,
             ),
           ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/locale_provider.dart';
 
 import '../constants/colors.dart';
 import '../services/api_client.dart';
@@ -9,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../widgets/public/public_studio_detail_body.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PublicStudioDetailScreen extends StatefulWidget {
   const PublicStudioDetailScreen({super.key, required this.studioId});
@@ -61,7 +63,7 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
         });
       } else {
         setState(() {
-          if (_studio == null) _error = 'Invalid response';
+          if (_studio == null) _error = context.read<LocaleProvider>().t('common.invalidResponse');
           _isLoading = false;
         });
       }
@@ -125,19 +127,19 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Failed to load studio',
+                Text(
+                  context.read<LocaleProvider>().t('common.errorGeneric'),
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _error ?? 'Unknown error',
+                  _error ?? context.read<LocaleProvider>().t('common.unknownError'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 12),
                 FilledButton(

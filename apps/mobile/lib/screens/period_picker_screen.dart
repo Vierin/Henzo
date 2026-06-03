@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../constants/colors.dart';
+import '../l10n/locale_provider.dart';
 import '../widgets/common/henzo_header_back_button.dart';
-
-const _monthNamesRu = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Full-screen period picker in app style.
 /// Returns [DateTimeRange] when Apply is pressed, null when back.
@@ -109,10 +108,10 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         leadingWidth: 56,
-        title: const Text(
-          'Период',
+        title: Text(
+          context.watch<LocaleProvider>().t('periodPicker.title'),
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
@@ -130,7 +129,7 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
               children: [
                 Expanded(
                   child: _QuickButton(
-                    label: 'Текущий месяц',
+                    label: context.read<LocaleProvider>().t('periodPicker.currentMonth'),
                     onTap: () {
                       final s = DateTime(now.year, now.month);
                       final e = DateTime(now.year, now.month + 1, 0);
@@ -141,7 +140,7 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _QuickButton(
-                    label: 'Прошлый месяц',
+                    label: context.read<LocaleProvider>().t('periodPicker.previousMonth'),
                     onTap: () {
                       final s = DateTime(now.year, now.month - 1);
                       final e = DateTime(now.year, now.month, 0);
@@ -158,7 +157,7 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
               children: [
                 Expanded(
                   child: _QuickButton(
-                    label: 'Текущая неделя',
+                    label: context.read<LocaleProvider>().t('periodPicker.currentWeek'),
                     onTap: () {
                       final wd = now.weekday;
                       final mon = now.subtract(Duration(days: wd - 1));
@@ -170,7 +169,7 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _QuickButton(
-                    label: 'Прошлая неделя',
+                    label: context.read<LocaleProvider>().t('periodPicker.previousWeek'),
                     onTap: () {
                       final wd = now.weekday;
                       final mon = now.subtract(Duration(days: wd - 1 + 7));
@@ -206,9 +205,9 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${_monthNamesRu[_displayMonth.month - 1]} ${_displayMonth.year}',
-                          style: const TextStyle(
-                            fontSize: 18,
+                          DateFormat('MMMM yyyy', context.read<LocaleProvider>().languageTag).format(_displayMonth),
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
@@ -241,8 +240,8 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                                 child: Center(
                                   child: Text(
                                     d,
-                                    style: const TextStyle(
-                                      fontSize: 12,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
                                       color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -315,7 +314,7 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                 child: FilledButton.icon(
                   onPressed: _apply,
                   icon: const Icon(Icons.calendar_today, size: 20),
-                  label: const Text('Применить'),
+                  label: Text(context.read<LocaleProvider>().t('common.apply')),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary500,
                     foregroundColor: Colors.white,
@@ -367,8 +366,8 @@ class _QuickButton extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
               ),
@@ -427,7 +426,7 @@ class _DayCell extends StatelessWidget {
               child: Text(
                 '${date.day}',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 15.sp,
                   fontWeight: (isStart || isEnd) ? FontWeight.bold : FontWeight.w500,
                   color: isOtherMonth
                       ? AppColors.textTertiary

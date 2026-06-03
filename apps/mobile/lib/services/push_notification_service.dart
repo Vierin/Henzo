@@ -51,9 +51,9 @@ class PushNotificationService {
       final initSettings = InitializationSettings(
         android: androidInit,
         iOS: DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
           notificationCategories: [
             DarwinNotificationCategory(
               'WORKOUT_REMINDER',

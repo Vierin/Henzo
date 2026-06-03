@@ -12,6 +12,7 @@ import '../../utils/show_api_error.dart';
 import '../common/henzo_modal.dart';
 import '../common/sheet_action_button_style.dart';
 import 'settings_form_tokens.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const int _minMessageLength = 10;
 const int _maxMessageLength = 1000;
@@ -137,19 +138,41 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                t('settings.feedback.sheetTitle'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t('settings.feedback.sheetTitle'),
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundTertiary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
                 t('settings.feedback.sheetSubtitle'),
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   color: AppColors.textSecondary,
                   height: 1.35,
                 ),
@@ -178,9 +201,9 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
                 SelectableText.rich(
                   TextSpan(
                     text: _validationError,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.red,
-                      fontSize: 13,
+                      fontSize: 13.sp,
                     ),
                   ),
                 ),

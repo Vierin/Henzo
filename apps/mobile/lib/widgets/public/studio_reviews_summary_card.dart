@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Rating summary + star distribution (client studio reviews screen).
 class StudioReviewsSummaryCard extends StatelessWidget {
@@ -55,8 +56,8 @@ class StudioReviewsSummaryCard extends StatelessWidget {
               children: [
                 Text(
                   ratingText,
-                  style: const TextStyle(
-                    fontSize: 40,
+                  style: TextStyle(
+                    fontSize: 40.sp,
                     fontWeight: FontWeight.w700,
                     height: 1,
                     letterSpacing: -1,
@@ -81,7 +82,7 @@ class StudioReviewsSummaryCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w500,
                     height: 1.2,
                     color: Colors.white.withValues(alpha: 0.92),
@@ -135,8 +136,8 @@ class _DistributionRow extends StatelessWidget {
             child: Text(
               '$star',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
+              style: TextStyle(
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
                 height: 1,
@@ -172,7 +173,7 @@ class _DistributionRow extends StatelessWidget {
               '$count',
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w500,
                 color: Colors.white.withValues(alpha: 0.95),
                 height: 1,

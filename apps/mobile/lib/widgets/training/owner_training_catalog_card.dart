@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/colors.dart';
 import '../../models/service_item.dart';
 import '../../utils/color_hex.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 Widget _catalogTrainerIcon() {
   return Padding(
@@ -72,8 +73,8 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       durationLabel,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.w600,
                         height: 1,
                         letterSpacing: -0.3,
@@ -95,8 +96,8 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                     children: [
                       Text(
                         item.displayName,
-                        style: const TextStyle(
-                          fontSize: 17,
+                        style: TextStyle(
+                          fontSize: 17.sp,
                           fontWeight: FontWeight.w700,
                           height: 1,
                           letterSpacing: -0.3,
@@ -122,8 +123,8 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 address,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
                                   fontWeight: FontWeight.w400,
                                   color: AppColors.textPrimary,
                                 ),
@@ -143,8 +144,8 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 trainer,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
                                   fontWeight: FontWeight.w400,
                                   color: AppColors.textPrimary,
                                 ),
@@ -165,7 +166,7 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                   child: Text(
                     priceLabel,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w800,
                       color: accent,
                       height: 1.1,

@@ -126,7 +126,6 @@
 				AFA936FE054B4E45319E35A1 /* PhoneConnectivityManager.swift */,
 				4A306FE6C0EA6434EC391B23 /* HenzoWatch.entitlements */,
 			);
-			name = HenzoWatch;
 			path = HenzoWatch;
 			sourceTree = "<group>";
 		};
@@ -275,6 +274,8 @@
 				CC827EFEE45A863F39546EE4 /* [CP] Embed Pods Frameworks */,
 				A04FD51DD9433C2979CFFA3A /* [CP] Copy Pods Resources */,
 				36F6CBB534831BE1C047B433 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
+				C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */,
+				6C1BB68D1E046211639C12DA /* Strip Simulator Platform Flags v5 */,
 			);
 			buildRules = (
 			);
@@ -416,6 +417,24 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		6C1BB68D1E046211639C12DA /* Strip Simulator Platform Flags v5 */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Simulator Platform Flags v5";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "      if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\n\n      FRAMEWORKS=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\n      [ -d \"${FRAMEWORKS}\" ] || exit 0\n\n      # Python patches LC_BUILD_VERSION platform bytes directly in the Mach-O.\n      # PLATFORM_IOSSIMULATOR = 7  →  PLATFORM_IOS = 2\n      # Handles both single-arch and FAT binaries.\n      # After patching the stale code signature is removed so Xcode re-signs\n      # the binary during the archive export step (deep signing).\n      fix_binary() {\n        local binary=\"$1\"\n        [ -f \"${binary}\" ] || return 0\n\n        python3 - \"${binary}\" << 'PYEOF'\nimport sys, struct, os\n\nPLATFORM_IOSSIMULATOR = 7\nPLATFORM_IOS          = 2\nLC_BUILD_VERSION      = 0x32\n\ndef patch_arch(data, base):\n    magic = struct.unpack_from('<I', data, base)[0]\n    if magic != 0xFEEDFACF:   # only 64-bit LE (arm64)\n        return False\n    ncmds   = struct.unpack_from('<I', data, base + 16)[0]\n    off     = base + 32        # 64-bit Mach-O header size\n    changed = False\n    for _ in range(ncmds):\n        cmd, size = struct.unpack_from('<II', data, off)\n        if cmd == LC_BUILD_VERSION:\n            plat = struct.unpack_from('<I', data, off + 8)[0]\n            if plat == PLATFORM_IOSSIMULATOR:\n                struct.pack_into('<I', data, off + 8, PLATFORM_IOS)\n                changed = True\n        off += size\n    return changed\n\npath = sys.argv[1]\nwith open(path, 'rb') as f:\n    raw = bytearray(f.read())\n\nmodified = False\nfat_magic = struct.unpack_from('>I', raw, 0)[0]\nif fat_magic == 0xCAFEBABE:           # FAT binary\n    nfat = struct.unpack_from('>I', raw, 4)[0]\n    for i in range(nfat):\n        arch_offset = struct.unpack_from('>I', raw, 8 + i * 20 + 8)[0]\n        if patch_arch(raw, arch_offset):\n            modified = True\nelse:\n    modified = patch_arch(raw, 0)\n\nif modified:\n    with open(path, 'wb') as f:\n        f.write(raw)\n    print(f\"[strip] Patched platform flags: {os.path.basename(path)}\")\n    # Remove stale code signature — Xcode will re-sign during archive export\n    os.system(f'codesign --remove-signature \"{path}\" 2>/dev/null || true')\nPYEOF\n      }\n\n      # Fix .framework binaries\n      find \"${FRAMEWORKS}\" -name \"*.framework\" -type d | while IFS= read -r fw; do\n        fix_binary \"${fw}/$(basename \"${fw}\" .framework)\"\n      done\n\n      # Fix loose .dylib files\n      find \"${FRAMEWORKS}\" -name \"*.dylib\" -type f | while IFS= read -r dylib; do\n        fix_binary \"${dylib}\"\n      done\n\n      # Sync MinimumOSVersion in Info.plist to avoid error 90208\n      find \"${FRAMEWORKS}\" -name \"Info.plist\" | while IFS= read -r plist; do\n        current=$(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" \"${plist}\" 2>/dev/null)\n        [ -z \"${current}\" ] && continue\n        if [ \"${current}\" != \"${IPHONEOS_DEPLOYMENT_TARGET}\" ]; then\n          /usr/libexec/PlistBuddy -c \\\n            \"Set :MinimumOSVersion ${IPHONEOS_DEPLOYMENT_TARGET}\" \"${plist}\" 2>/dev/null || true\n        fi\n      done\n\n      echo \"[strip] Done.\"\n";
+		};
 		7EF3EB91A141498A4A0C4CD7 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -461,14 +480,36 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Missing Framework dSYMs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\nfind \"${DWARF_DSYM_FOLDER_PATH}\" -maxdepth 0 2>/dev/null || mkdir -p \"${DWARF_DSYM_FOLDER_PATH}\"\nfind \"${TARGET_BUILD_DIR}\" -name \"*.framework\" -type d | while read fw; do\n  name=$(basename \"$fw\" .framework)\n  dsym=\"${DWARF_DSYM_FOLDER_PATH}/${name}.framework.dSYM\"\n  if [ ! -d \"$dsym\" ]; then\n    echo \"Generating dSYM for ${name}.framework\"\n    dsymutil \"${fw}/${name}\" -o \"$dsym\" 2>/dev/null || true\n  fi\ndone\n";
 		};
 		CC827EFEE45A863F39546EE4 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -478,9 +519,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -606,6 +651,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
@@ -613,14 +659,21 @@
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Henzo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
@@ -827,15 +880,22 @@
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Henzo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
@@ -845,6 +905,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
@@ -852,14 +913,21 @@
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Henzo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};

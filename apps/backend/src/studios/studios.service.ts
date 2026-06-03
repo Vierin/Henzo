@@ -8,6 +8,7 @@ import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   countTrainingLocations,
   resolveBrowseStudioLocationName,
@@ -27,6 +28,7 @@ export class StudiosService {
     private mapboxService: MapboxService,
     private translationService: TranslationService,
     private analytics: AnalyticsService,
+    private notifications: NotificationsService,
   ) {}
 
   private normalizeReminderSettings(input: any): Record<string, unknown> {
@@ -1244,7 +1246,7 @@ export class StudiosService {
         await tx.subscription.create({
           data: {
             studioId: studio.id,
-            type: 'FREEMIUM',
+            type: 'SOLO',
             status: 'ACTIVE',
             startDate: now,
             amount: 0.0,
@@ -1321,7 +1323,7 @@ export class StudiosService {
       (result as any).services = services;
 
       console.log(
-        `✅ Created Studio "${result.name}" with default FREEMIUM subscription`,
+        `✅ Created Studio "${result.name}" with default SOLO subscription`,
       );
       const createdDescription = createStudioDto.description?.trim();
       if (createdDescription) {
@@ -1542,6 +1544,7 @@ export class StudiosService {
           descriptionVi: true,
           descriptionRu: true,
           slug: true,
+          reminderSettings: true,
           _count: {
             select: {
               Review: true,
@@ -1616,9 +1619,11 @@ export class StudiosService {
         name: Studio.name,
         description: Studio.description,
         address: Studio.address,
+        locationName: resolveBrowseStudioLocationName(Studio.reminderSettings),
         phone: Studio.phone,
         website: Studio.website,
         instagram: Studio.instagram,
+        logoUrl: Studio.logoUrl,
         photos: Studio.photos,
         workingHours: Studio.workingHours,
         latitude: Studio.latitude,
@@ -2608,7 +2613,7 @@ export class StudiosService {
 
     const studio = await this.prisma.studio.findFirst({
       where: { id: studioId, status: 'ACTIVE' },
-      select: { id: true },
+      select: { id: true, name: true },
     });
     if (!studio) {
       throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
@@ -2649,15 +2654,31 @@ export class StudiosService {
     }
 
     const comment = data.comment?.trim();
-    const review = await this.prisma.review.create({
-      data: {
-        studioId,
-        userId,
-        rating,
-        comment: comment && comment.length > 0 ? comment : null,
-        bookingId: null,
-      },
-      select: { id: true },
+    const [review, reviewer] = await Promise.all([
+      this.prisma.review.create({
+        data: {
+          studioId,
+          userId,
+          rating,
+          comment: comment && comment.length > 0 ? comment : null,
+          bookingId: null,
+        },
+        select: { id: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      }),
+    ]);
+
+    // Notify studio owner — fire-and-forget
+    const clientName =
+      reviewer?.name?.trim() || reviewer?.email?.split('@')[0] || 'Client';
+    void this.notifications.sendNewReviewNotification({
+      studioId,
+      studioName: studio.name || 'Studio',
+      clientName,
+      rating,
     });
 
     return { success: true, reviewId: review.id };

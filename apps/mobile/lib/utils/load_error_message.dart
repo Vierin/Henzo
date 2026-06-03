@@ -49,3 +49,19 @@ bool isBookingAlreadyBookedError(Object e) {
   final s = e.toString().toLowerCase();
   return s.contains('409') || s.contains('already booked');
 }
+
+bool isSoloTrainerLimitError(Object e) {
+  if (e is ApiException) {
+    if (e.errorCode == 'SOLO_TRAINER_LIMIT_EXCEEDED') return true;
+    if (e.statusCode == 403 && e.message.contains('SOLO_TRAINER')) return true;
+  }
+  return false;
+}
+
+bool isSoloSessionLimitError(Object e) {
+  if (e is ApiException) {
+    if (e.errorCode == 'SOLO_SESSION_LIMIT_EXCEEDED') return true;
+    if (e.statusCode == 403 && e.message.contains('SOLO_SESSION')) return true;
+  }
+  return false;
+}

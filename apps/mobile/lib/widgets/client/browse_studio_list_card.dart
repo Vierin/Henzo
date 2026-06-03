@@ -8,6 +8,7 @@ import '../../models/training_category_option.dart';
 import '../../screens/client/client_explore_models.dart';
 import '../../utils/formatters.dart';
 import '../public/cached_salon_network_image.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Studio row on client Browse (Studios tab) — horizontal card per design.
 class BrowseStudioListCard extends StatelessWidget {
@@ -28,7 +29,6 @@ class BrowseStudioListCard extends StatelessWidget {
   static const _cardMinHeight = 145.0;
   static const _todaySlotHeight = 44.0;
   static const _distanceColor = Color(0x993F3F3F);
-  static const _locationPurple = Color(0xFF4D39A8);
   static const _classSlotBg = Color(0xFFF8F3EB);
   static const _reviewCountColor = Color(0x993F3F3F);
 
@@ -68,8 +68,10 @@ class BrowseStudioListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localeCode = context.watch<LocaleProvider>().localeCode;
-    final seeAllLabel = context.watch<LocaleProvider>().t('clientHome.seeAll');
+    final locale = context.watch<LocaleProvider>();
+    final localeCode = locale.localeCode;
+    final seeAllLabel = locale.t('clientHome.seeAll');
+    final classesTitle = locale.t('clientHome.classesSectionTitle');
     final firstClass = todayClasses.isNotEmpty ? todayClasses.first : null;
     final categoryIds = studio.trainingCategoryIds;
     final visibleCategoryIds = categoryIds.take(3).toList();
@@ -146,8 +148,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                   studio.name,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 15,
+                                  style: TextStyle(
+                                    fontSize: 15.sp,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: -0.3,
                                     color: AppColors.textPrimary,
@@ -160,8 +162,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   distanceLabel!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
                                     fontWeight: FontWeight.w400,
                                     letterSpacing: -0.3,
                                     color: _distanceColor,
@@ -190,8 +192,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                     _locationLabel!,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
                                       fontWeight: FontWeight.w400,
                                       color: AppColors.textPrimary,
                                     ),
@@ -231,56 +233,24 @@ class BrowseStudioListCard extends StatelessWidget {
                               ],
                             ),
                           ],
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            height: _todaySlotHeight,
-                            child: firstClass != null
-                                ? _TodayClassRow(
-                                    item: firstClass,
-                                    onTap: onClassTap == null
-                                        ? null
-                                        : () => onClassTap!(firstClass),
-                                  )
-                                : const Align(
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      'No classes today',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                          ),
                           if (firstClass != null) ...[
-                            const SizedBox(height: 4),
-                            Center(
-                              child: InkWell(
-                                onTap: onTap,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 6,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        seeAllLabel,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: -0.3,
-                                          color: AppColors.primary500,
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 16,
-                                        color: AppColors.primary500,
-                                      ),
-                                    ],
-                                  ),
+                            const SizedBox(height: 10),
+                            _BrowseStudioClassesBlock(
+                              classesTitle: classesTitle,
+                              seeAllLabel: seeAllLabel,
+                              onSeeAll: onTap,
+                              firstClass: firstClass,
+                              onClassTap: onClassTap,
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'No classes today',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -304,6 +274,85 @@ class BrowseStudioListCard extends StatelessWidget {
       return studio.categoryNames[idx];
     }
     return 'Category';
+  }
+}
+
+/// CLASSES + See all › on one row, session slot underneath (browse mockup).
+class _BrowseStudioClassesBlock extends StatelessWidget {
+  const _BrowseStudioClassesBlock({
+    required this.classesTitle,
+    required this.seeAllLabel,
+    required this.onSeeAll,
+    required this.firstClass,
+    this.onClassTap,
+  });
+
+  final String classesTitle;
+  final String seeAllLabel;
+  final VoidCallback onSeeAll;
+  final ExploreClassItem firstClass;
+  final void Function(ExploreClassItem item)? onClassTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                classesTitle.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  color: AppColors.textPrimary,
+                  height: 1.1,
+                ),
+              ),
+            ),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onSeeAll,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    seeAllLabel,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.3,
+                      color: AppColors.primary500,
+                      height: 1.1,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: AppColors.primary500,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: BrowseStudioListCard._todaySlotHeight,
+          child: _TodayClassRow(
+            item: firstClass,
+            onTap: onClassTap == null
+                ? null
+                : () => onClassTap!(firstClass),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -351,8 +400,8 @@ class _ImageRatingBadge extends StatelessWidget {
           const SizedBox(width: 2),
           Text(
             rating.toStringAsFixed(1).replaceAll('.', ','),
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.3,
               color: AppColors.textPrimary,
@@ -362,8 +411,8 @@ class _ImageRatingBadge extends StatelessWidget {
           if (reviewCount > 0)
             Text(
               ' ($reviewCount)',
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.3,
                 color: BrowseStudioListCard._reviewCountColor,
@@ -407,7 +456,7 @@ class _CategoryPill extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 11.sp,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: fg,
@@ -434,8 +483,8 @@ class _MoreCategoriesPill extends StatelessWidget {
       ),
       child: Text(
         '+$count other',
-        style: const TextStyle(
-          fontSize: 11,
+        style: TextStyle(
+          fontSize: 11.sp,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: AppColors.textPrimary,
@@ -468,8 +517,8 @@ class _TodayClassRow extends StatelessWidget {
             children: [
               Text(
                 formatTime24(item.startsAt),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
                   color: AppColors.primary500,
@@ -482,8 +531,8 @@ class _TodayClassRow extends StatelessWidget {
                   item.className,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
@@ -495,8 +544,8 @@ class _TodayClassRow extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   price,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,

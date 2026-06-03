@@ -16,6 +16,7 @@ import '../utils/auth_ui_result.dart';
 import '../utils/owner_image_picker.dart';
 import '../utils/owner_navigation_restore.dart';
 import 'main_shell.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -111,7 +112,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       if (picked == null) return;
 
       if (Supabase.instance.client.auth.currentUser?.id == null) {
-        _showSnack('Войдите снова, чтобы загрузить фото');
+        _showSnack(context.read<LocaleProvider>().t('accountSettings.reloginToUploadPhoto'));
         return;
       }
 
@@ -134,11 +135,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           );
         }
       } else {
-        _showSnack(upload.error ?? 'Не удалось загрузить фото');
+        _showSnack(upload.error ?? context.read<LocaleProvider>().t('accountSettings.uploadPhotoFailed'));
       }
     } catch (e) {
       if (mounted) {
-        _showSnack('Ошибка загрузки: $e');
+        _showSnack(context.read<LocaleProvider>().t('accountSettings.uploadError'));
       }
     } finally {
       await OwnerNavigationRestore.clearPendingProfilePhotoUpload();
@@ -311,8 +312,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         ),
         title: Text(
           locale.t('profileForm.accountSettings'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),

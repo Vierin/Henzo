@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/colors.dart';
 import '../services/dashboard_api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Owner-facing card: start clock time + duration in minutes, title/trainer, occupancy + "booked".
 
@@ -133,7 +134,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                           textAlign: TextAlign.center,
 
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 18.sp,
 
                             fontWeight: FontWeight.w800,
 
@@ -154,7 +155,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                           textAlign: TextAlign.center,
 
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
 
                             fontWeight: FontWeight.w500,
 
@@ -184,7 +185,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                                 session.trainingName,
 
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
 
                                   fontWeight: FontWeight.w700,
 
@@ -211,7 +212,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 13.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -240,7 +241,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                           Text(
                             fillLabel,
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 18.sp,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.2,
                               color: past
@@ -324,8 +325,8 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                     ),
                     child: Text(
                       pastLabel!,
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
                         color: AppColors.textSecondary,

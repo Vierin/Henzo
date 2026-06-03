@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../common/henzo_modal.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TrainingCategoryPickResult {
   const TrainingCategoryPickResult.cancelled()
@@ -42,6 +43,7 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
         sheetCtx,
       ).pop(const TrainingCategoryPickResult.cancelled());
       return SafeArea(
+        top: false,
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             16,
@@ -62,8 +64,8 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
                         padding: const EdgeInsets.only(top: 4, left: 4),
                         child: Text(
                           locale.t('addTraining.categorySheetTitle'),
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.4,
                             color: AppColors.textSecondary,
@@ -133,7 +135,7 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
                                 style: TextStyle(
                                   color: fg,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontSize: 13.sp,
                                 ),
                               ),
                             ),

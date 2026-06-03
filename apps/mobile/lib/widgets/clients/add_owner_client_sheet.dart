@@ -14,6 +14,7 @@ import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
 import '../common/henzo_header_back_button.dart';
 import '../common/sheet_action_button_style.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum AddOwnerClientMode { directoryOnly, enrollInSession }
 
@@ -155,6 +156,7 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
     final tr = context.read<LocaleProvider>().t;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return SafeArea(
+      top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
         child: _SheetChrome(
@@ -168,7 +170,7 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
                 Text(
                   tr('ownerClient.directoryFormHint'),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.sp,
                     color: AppColors.textSecondary,
                     height: 1.35,
                   ),
@@ -469,6 +471,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
     final maxH = MediaQuery.sizeOf(context).height * 0.88;
 
     return SafeArea(
+      top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
         child: ConstrainedBox(
@@ -550,15 +553,15 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                 Text(
                   tr('ownerSession.addParticipant').toUpperCase(),
                   style: _sheetTitleStyle.copyWith(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     letterSpacing: 0.4,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   tr('ownerClient.addParticipantHow'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
                     height: 1.3,
@@ -647,7 +650,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             Text(
               tr('ownerClient.anonymousSpotSubtitle'),
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
                 height: 1.4,
               ),
@@ -674,7 +677,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                   ? tr('ownerClient.searchResults')
                   : tr('ownerClient.recentClients'),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
               ),
@@ -690,7 +693,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             Text(
               tr('ownerClient.walkInFormHint'),
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 13.sp,
                 color: AppColors.textSecondary,
                 height: 1.35,
               ),
@@ -750,7 +753,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               ? tr('ownerClient.noSearchResults')
               : tr('ownerClient.noClientsInRoster'),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
     }
@@ -797,9 +800,9 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                            fontSize: 15.sp,
                           ),
                         ),
                         if (sub.isNotEmpty)
@@ -807,8 +810,8 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                             sub,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: TextStyle(
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -818,8 +821,8 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                   if (p.isGuest && !p.isSyntheticSpot)
                     Text(
                       tr('ownerClient.guestTag'),
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         color: AppColors.textTertiary,
                       ),
                     ),
@@ -890,8 +893,8 @@ class _SourceCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                         height: 1.2,
@@ -900,8 +903,8 @@ class _SourceCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w400,
                         height: 1.35,
                         color: AppColors.textSecondary,
@@ -968,7 +971,7 @@ class _SheetActions extends StatelessWidget {
       onPressed: (saving || !primaryEnabled) ? null : onPrimary,
       style: sheetPrimaryButtonStyle(),
       child: saving
-          ? const SizedBox(
+          ? SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
@@ -997,8 +1000,8 @@ class _SheetActions extends StatelessWidget {
   }
 }
 
-const TextStyle _sheetTitleStyle = TextStyle(
-  fontSize: 18,
+final TextStyle _sheetTitleStyle = TextStyle(
+  fontSize: 18.sp,
   fontWeight: FontWeight.w800,
   color: AppColors.textPrimary,
 );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// PageView physics for day strip (7 pills visible per viewport).
 class SmoothDayPageScrollPhysics extends PageScrollPhysics {
@@ -109,7 +110,7 @@ class CalendarDayPill extends StatelessWidget {
           Text(
             weekdayShort(day),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w400,
               letterSpacing: -0.3,
               color: selected ? Colors.white : AppColors.textSecondary,
@@ -119,7 +120,7 @@ class CalendarDayPill extends StatelessWidget {
           Text(
             '${day.day}',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
               color: selected ? Colors.white : AppColors.textPrimary,
@@ -129,7 +130,7 @@ class CalendarDayPill extends StatelessWidget {
           Text(
             '$sessionsCount',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w400,
               color: selected ? Colors.white : AppColors.primary500,
             ),

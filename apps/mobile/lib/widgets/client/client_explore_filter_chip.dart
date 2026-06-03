@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientExploreFilterChip extends StatelessWidget {
   const ClientExploreFilterChip({
@@ -54,9 +55,9 @@ class ClientExploreFilterChip extends StatelessWidget {
                 ),
                 child: Text(
                   '$badgeCount',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 11,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

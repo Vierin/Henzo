@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Конфигурация из env: debug → `assets/.env.local`, release → `assets/.env`.
-/// Ключи соответствуют именам в .env: EXPO_PUBLIC_*.
+/// Конфигурация из `assets/.env`. Ключи соответствуют именам в .env: EXPO_PUBLIC_*.
 abstract final class AppConfig {
   static String get supabaseUrl =>
       (dotenv.env['EXPO_PUBLIC_SUPABASE_URL'] ?? '').trim();
@@ -20,7 +19,7 @@ abstract final class AppConfig {
 
   /// URL веб-приложения для ссылки на онлайн-запись (без завершающего слэша).
   static String get webUrl =>
-      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://henzo.app')
+      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://www.henzo.app')
           .trim()
           .replaceAll(RegExp(r'/$'), '');
 
@@ -51,7 +50,6 @@ abstract final class AppConfig {
     return v == 'development' || v == 'dev';
   }
 
-  /// `local` | `staging` | `production` — см. assets/.env.local.example
   static String get henzoEnv =>
       (dotenv.env['EXPO_PUBLIC_HENZO_ENV'] ?? '').trim().toLowerCase();
 
@@ -88,11 +86,21 @@ abstract final class AppConfig {
     return '';
   }
 
-  /// Entitlement identifier in RevenueCat (default `pro`).
+  /// Entitlement identifier in RevenueCat (legacy / fallback).
   static String get revenueCatEntitlementId =>
       (dotenv.env['EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID'] ??
               dotenv.env['REVENUECAT_ENTITLEMENT_ID'] ??
-              'pro')
+              'premium_studio')
+          .trim();
+
+  static String get revenueCatStudioEntitlementId =>
+      (dotenv.env['EXPO_PUBLIC_REVENUECAT_STUDIO_ENTITLEMENT_ID'] ??
+              'premium_studio')
+          .trim();
+
+  static String get revenueCatEnterpriseEntitlementId =>
+      (dotenv.env['EXPO_PUBLIC_REVENUECAT_ENTERPRISE_ENTITLEMENT_ID'] ??
+              'premium_enterprise')
           .trim();
 
   static bool get isRevenueCatEnabled => revenueCatApiKey.isNotEmpty;

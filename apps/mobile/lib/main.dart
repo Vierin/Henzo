@@ -12,14 +12,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
 import 'config/load_app_env.dart';
+import 'config/release_env.dart';
+import 'config/screen_util_config.dart';
 import 'deep_links/class_session_deep_link.dart';
-import 'deep_links/subscription_checkout_deep_link.dart';
+import 'deep_links/studio_deep_link.dart';
+import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
+import 'screens/trainer/trainer_shell.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/client_favorites_store.dart';
@@ -30,6 +34,7 @@ import 'services/cache/owner_sessions_cache.dart';
 import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/client_location_store.dart';
+import 'services/client_schedule_store.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
 import 'services/revenuecat_service.dart';
@@ -48,6 +53,7 @@ Future<void> main() async {
         initializeDateFormatting('vi'),
       ]);
       final loadedEnv = await loadAppEnv();
+      assertValidReleaseConfiguration();
       assert(() {
         // ignore: avoid_print
         print(
@@ -119,7 +125,7 @@ Future<void> main() async {
   );
 }
 
-/// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
+/// Корневой [Navigator] для deep links (например `henzo://class`).
 final GlobalKey<NavigatorState> henzoRootNavigatorKey =
     GlobalKey<NavigatorState>();
 
@@ -215,53 +221,57 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ),
       ],
       child: _L10nHotReload(
-        child: Consumer<LocaleProvider>(
-          builder: (context, locale, _) {
-            if (!locale.isLoaded) {
-            return MaterialApp(
-              title: 'Henzo',
-              theme: AppTheme.light,
-              builder: _withKeyboardDismiss,
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ru'),
-                Locale('vi'),
-              ],
-              home: const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              ),
-            );
-          }
-          return MaterialApp(
-            title: 'Henzo',
-            navigatorKey: henzoRootNavigatorKey,
-            theme: AppTheme.light,
-            themeMode: ThemeMode.light,
-            builder: (context, child) {
-              final layered = _withKeyboardDismiss(context, child);
-              return ClassSessionDeepLinkScope(
+        child: henzScreenUtilInit(
+          builder: (context, _) => Consumer<LocaleProvider>(
+            builder: (context, locale, _) {
+              final appLocale = locale.isLoaded
+                  ? Locale(locale.languageTag)
+                  : const Locale('en');
+              return MaterialApp(
+                title: 'Henzo',
                 navigatorKey: henzoRootNavigatorKey,
-                child: SubscriptionCheckoutDeepLinkScope(
-                  navigatorKey: henzoRootNavigatorKey,
-                  child: layered,
-                ),
+                theme: AppTheme.light,
+                themeMode: ThemeMode.light,
+                builder: (context, child) {
+                  final media = MediaQuery.of(context);
+                  final scaled = MediaQuery(
+                    data: media.copyWith(
+                      textScaler: TextScaler.linear(
+                        media.textScaler.scale(1.0).clamp(0.85, 1.2),
+                      ),
+                    ),
+                    child: _withKeyboardDismiss(context, child),
+                  );
+                  return StudioDeepLinkScope(
+                    navigatorKey: henzoRootNavigatorKey,
+                    child: TrainerInviteDeepLinkScope(
+                      navigatorKey: henzoRootNavigatorKey,
+                      child: ClassSessionDeepLinkScope(
+                        navigatorKey: henzoRootNavigatorKey,
+                        child: scaled,
+                      ),
+                    ),
+                  );
+                },
+                locale: appLocale,
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                  Locale('en'),
+                  Locale('ru'),
+                  Locale('vi'),
+                ],
+                home: locale.isLoaded
+                    ? const AuthWrapper()
+                    : const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      ),
               );
             },
-            locale: Locale(locale.languageTag),
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
-            home: const AuthWrapper(),
-          );
-          },
+          ),
         ),
       ),
     );
@@ -278,6 +288,19 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _lastOwnerAllowed = false;
   bool _wasClient = false;
+  String? _lastUserId;
+
+  void _clearAllCaches(BuildContext ctx) {
+    if (!ctx.mounted) return;
+    ctx.read<SalonCache>().invalidate();
+    ctx.read<BookingsCache>().invalidate();
+    ctx.read<ServicesStaffCache>().invalidateAll();
+    ctx.read<OwnerSessionsCache>().invalidate();
+    ctx.read<ClientFavoritesStore>().clear();
+    ClientNearbyCache.clear();
+    StudioPublicDetailCache.clear();
+    ClientScheduleStore.invalidate();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -291,30 +314,39 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
         final isClient = auth.isAuthenticated && auth.isClient;
+        final currentUserId = auth.user?.id;
 
         if (auth.isInitialSessionReady) {
-          if (_lastOwnerAllowed && !ownerAllowed) {
+          // User switched accounts — clear everything
+          final userChanged = currentUserId != null &&
+              _lastUserId != null &&
+              currentUserId != _lastUserId;
+
+          if (userChanged || (_lastOwnerAllowed && !ownerAllowed)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              context.read<SalonCache>().invalidate();
-              context.read<BookingsCache>().invalidate();
-              context.read<ServicesStaffCache>().invalidateAll();
+              _clearAllCaches(context);
             });
-          }
-          if (_wasClient && !isClient) {
+          } else if (_wasClient && !isClient) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;
               context.read<ClientFavoritesStore>().clear();
               ClientNearbyCache.clear();
               StudioPublicDetailCache.clear();
+              ClientScheduleStore.invalidate();
             });
           }
+
           _lastOwnerAllowed = ownerAllowed;
           _wasClient = isClient;
+          _lastUserId = currentUserId ?? _lastUserId;
         }
 
         if (ownerAllowed) {
           return const MainShell();
+        }
+
+        if (auth.isAuthenticated && auth.isTrainer) {
+          return const TrainerShell();
         }
 
         if (auth.isAuthenticated && auth.isClient) {

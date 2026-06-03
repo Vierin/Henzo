@@ -25,7 +25,40 @@
 		"saveFailed": "Failed to save",
 		"deleteFailed": "Failed to delete",
 		"setupSalonFirst": "Set up your business first",
-		"verify": "Verify"
+		"verify": "Verify",
+		"apply": "Apply",
+		"reset": "Reset",
+		"linkCopied": "Link copied!",
+		"copyLink": "Copy link",
+		"invite": "Invite",
+		"pleaseLoginFirst": "Please log in first",
+		"addressCopied": "Address copied",
+		"share": "Share",
+		"stay": "Stay",
+		"exit": "Exit",
+		"info": "Info",
+		"understood": "Got it",
+		"dash": "—",
+		"studio": "Studio",
+		"client": "Client",
+		"error": "Error: {error}",
+		"errorGeneric": "Something went wrong",
+		"free": "Free",
+		"couldNotOpenCalendar": "Could not open calendar",
+		"noAddressAvailable": "No address available",
+		"couldNotOpenMaps": "Could not open maps",
+		"addToCalendar": "Add to calendar",
+		"getDirections": "Get directions",
+		"today": "Today",
+		"collapse": "Collapse",
+		"expand": "Expand",
+		"invalidResponse": "Invalid response",
+		"unknownError": "Unknown error",
+		"appName": "Henzo",
+		"class": "Class",
+		"default": "Default",
+		"reviewsCount": "{count} reviews",
+		"signInToUploadPhoto": "Please sign in again to upload photo"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -47,6 +80,7 @@
 		"password": "Password",
 		"signIn": "Sign in",
 		"continueWithGoogle": "Continue with Google",
+		"continueWithApple": "Continue with Apple",
 		"signInSuccess": "Signed in",
 		"signInError": "Sign in failed",
 		"enterEmail": "Enter email",
@@ -95,7 +129,20 @@
 		"roleClientFeature3": "Reach your goals",
 		"roleOwnerFeature1": "Manage clients",
 		"roleOwnerFeature2": "Schedule classes",
-		"roleOwnerFeature3": "Grow your business"
+		"roleOwnerFeature3": "Grow your business",
+		"roleIAm": "I'm a",
+		"roleClientWord": "Client",
+		"roleManagerWord": "Manager",
+		"roleClientDesc": "Search, book, and enjoy fitness classes near you.",
+		"roleOwnerDesc": "Manage your studio, classes, trainers, and bookings.",
+		"roleAllInOne": "All in one app.",
+		"termsPrefix": "By continuing, you agree to our ",
+		"privacyPolicy": "Privacy Policy",
+		"termsAnd": "and",
+		"termsOfService": "Terms of Service",
+		"noAccountRegister": "No account? Register",
+		"phone": "Phone",
+		"createAccount": "Create account"
 	},
 	"clientHome": {
 		"nowIn": "NOW IN",
@@ -108,19 +155,54 @@
 		"topPicksSubtitle": "Within 3 km · highest rated",
 		"popularTodayTitle": "Popular today",
 		"seeAll": "See all",
+		"classesSectionTitle": "Classes",
 		"noClassesToday": "No classes scheduled nearby today.",
 		"locationPickerTitle": "Choose location",
 		"locationPickerHint": "Search city",
-		"locationPickerUseCity": "Use this city",
+		"locationPickerUseCity": "Use current location",
 		"locationPickerEmpty": "Start typing a city name",
 		"favoritePromoTitle": "Favorite a class",
-		"favoritePromoSubtitle": "Save classes and get reminders"
+		"favoritePromoSubtitle": "Save classes and get reminders",
+		"browseEmptyFiltersTitle": "Nothing found",
+		"browseEmptyFiltersBody": "Try changing your filters — date, distance, type, or time.",
+		"browseEmptyFiltersAction": "Change filters",
+		"browseEmptyNoStudiosTitle": "No studios nearby",
+		"browseEmptyNoStudiosBody": "Try another city or widen the distance filter.",
+		"browseEmptyNoClassesTitle": "No classes found",
+		"browseEmptyNoClassesBody": "Try another day or check your filters.",
+		"browseEmptyNoLocationTitle": "Set your location",
+		"browseEmptyNoLocationBody": "Choose a city to see studios and classes near you.",
+		"filterTypes": "Types",
+		"filterTime": "Time",
+		"filterDistance": "Distance",
+		"filterSort": "Sort",
+		"filtersTitle": "Filters",
+		"sortBySection": "Sort by",
+		"sortRecommended": "Recommended for you",
+		"sortRatings": "Ratings",
+		"sortRatingsDesc": "Highest to lowest",
+		"sortDistance": "Distance",
+		"sortDistanceAsc": "Nearest to farthest",
+		"distanceFromLocation": "Distance from your location",
+		"distanceAuto": "Auto (20 km)",
+		"distance5km": "5 km",
+		"distance10km": "10 km",
+		"distance15km": "15 km",
+		"distance30plus": "30+ km",
+		"timePeriodMorning": "Morning",
+		"timePeriodAfternoon": "Afternoon",
+		"timePeriodEvening": "Evening",
+		"filterByTime": "Filter by time",
+		"activitiesByTimePeriod": "Activities by time period",
+		"activitiesByStartTime": "Activities by start time",
+		"failedToUpdateFavorites": "Failed to update favorites"
 	},
 	"clientShell": {
 		"home": "Home",
 		"browse": "Browse",
 		"activity": "Activity",
-		"profile": "Profile"
+		"profile": "Profile",
+		"map": "Map"
 	},
 	"clientActivity": {
 		"title": "Activity",
@@ -133,7 +215,12 @@
 		"scheduleEmptyTitle": "No classes scheduled yet",
 		"scheduleEmptySubtitle": "Your upcoming bookings will appear here.",
 		"passesEmptyTitle": "No classes yet",
-		"passesEmptySubtitle": "Your class cards will appear here."
+		"passesEmptySubtitle": "Your class cards will appear here.",
+		"cancelConfirmTitle": "Cancel booking?",
+		"cancelConfirmBody": "Are you sure you want to cancel this booking?",
+		"cancelConfirmAction": "Yes, cancel",
+		"studioUnavailable": "Studio is unavailable",
+		"thankYouForReview": "Thank you for your review!"
 	},
 	"clientFavorites": {
 		"emptyTitle": "Time to find your favorite spot",
@@ -148,6 +235,7 @@
 		"favorites": "Favorites",
 		"caloriesBurned": "Calories burned",
 		"hoursTrained": "Hours trained",
+		"activePasses": "Active passes",
 		"health": "Health",
 		"connectHealthTitle": "Connect to Health",
 		"connectHealthSubtitle": "Sync steps, calories and workouts with Apple Health.",
@@ -165,7 +253,8 @@
 		"completed": "Completed",
 		"notificationsTitle": "Stay in the loop",
 		"notificationsSubtitle": "Enable notifications to get reminders about your upcoming classes and studio updates.",
-		"manageNotifications": "Manage notifications"
+		"manageNotifications": "Manage notifications",
+		"failedToUpdateFavorites": "Failed to update favorites"
 	},
 	"clientStudioDetail": {
 		"share": "Share",
@@ -190,11 +279,25 @@
 		"shareSomeone": "Someone",
 		"bookingFailed": "Could not complete booking",
 		"alreadyBooked": "You are already booked for this class",
-		"signInToBook": "Please sign in to book a class"
+		"signInToBook": "Please sign in to book a class",
+		"classStarted": "Class has started",
+		"youAreBooked": "You are booked",
+		"bookClass": "Book class",
+		"joinWaitlist": "Join waitlist",
+		"leaveWaitlist": "Leave waitlist",
+		"joinedWaitlist": "Added to waitlist — we will notify you if a spot opens",
+		"leftWaitlist": "Removed from waitlist",
+		"waitlistError": "Could not join waitlist. Try again.",
+		"waitlistNotifyHint": "You will be notified if a spot opens"
 	},
 	"clientMap": {
 		"nearbyStudios": "Nearby studios",
-		"noStudiosNearby": "No studios found nearby"
+		"noStudiosNearby": "No studios found nearby",
+		"searchStudiosHint": "Search studios...",
+		"locationPromptTitle": "Share your location",
+		"locationPromptBody": "To show studios on the map, allow location access or choose your city.",
+		"locationPromptManual": "Choose city manually",
+		"searchThisArea": "Search this area"
 	},
 	"publicHome": {
 		"loginLink": "Login",
@@ -210,7 +313,7 @@
 		"ownerCtaButton": "Join as studio owner"
 	},
 	"errors": {
-		"network": "No connection to server. Check EXPO_PUBLIC_API_URL and that the backend is running.",
+		"network": "No connection to the server. Check your internet connection and try again.",
 		"responseNoUser": "Invalid server response (missing user).",
 		"userNotFoundInSystem": "Your profile could not be loaded.",
 		"accountNotFoundForEmail": "No account exists with this email.",
@@ -221,6 +324,9 @@
 		"googleNoIdToken": "No ID token from Google.",
 		"googleNoSessionAfterSignIn": "No session after Google sign-in.",
 		"googleDeveloperSHA1": "Google sign-in error (10): add your app SHA-1 in Google Cloud Console for the Android OAuth client. Run gradlew signingReport in the android folder.",
+		"appleSignInCancelled": "Sign in was cancelled.",
+		"appleNoIdToken": "No ID token from Apple.",
+		"appleNoSessionAfterSignIn": "No session after Apple sign-in.",
 		"passwordUpdateFailed": "Could not update password.",
 		"profileUpdateFailed": "Could not update profile.",
 		"deleteAccountFailed": "Could not delete account.",
@@ -274,7 +380,16 @@
 		"reviewsSubtitle": "{rating} average · {count} reviews",
 		"reviewsEmpty": "No reviews yet",
 		"reviewsLoadError": "Could not load reviews.",
-		"reviewsRetry": "Try again"
+		"reviewsRetry": "Try again",
+		"helloGreeting": "Hello,",
+		"classesToday": "Classes today",
+		"bookingsToday": "Bookings",
+		"waitlist": "Waitlist",
+		"bookedLabel": "booked",
+		"showMore": "Show more",
+		"noTrainingsToday": "No trainings scheduled for today",
+		"enjoyYourDay": "Enjoy your day!",
+		"studioNowActive": "Studio is now active"
 	},
 	"ownerSession": {
 		"detailTitle": "Class",
@@ -376,7 +491,15 @@
 		"trainerYou": "You",
 		"visitMinutes": "{n} min",
 		"actionCall": "Call",
-		"actionEmail": "Email"
+		"actionEmail": "Email",
+		"clientCountOne": "{n} CLIENT",
+		"clientCountFew": "{n} CLIENTS",
+		"clientCountMany": "{n} CLIENTS",
+		"searchHint": "Search by name, email or phone",
+		"filterAll": "All",
+		"filterSleepers": "Sleepers",
+		"filterWhiteList": "White list",
+		"filterBlocked": "Blocked"
 	},
 	"booking": {
 		"details": "Booking Details",
@@ -438,7 +561,38 @@
 		"rcEntitlementNotLinked": "Purchase recorded in RevenueCat but Pro was not applied. Link products to the \"pro\" entitlement in the RevenueCat dashboard.",
 		"autoRenewDisclosure": "Payment will be charged to your Apple ID or Google Play account. Subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel in your store account settings.",
 		"legalLinksPrefix": "See ",
-		"legalLinksSuffix": "."
+		"legalLinksSuffix": ".",
+		"soloClassLimitTitle": "Class limit reached",
+		"soloClassLimitBody": "The Solo plan allows 12 classes per month. Upgrade to Studio for unlimited classes.",
+		"soloTrainerLimitTitle": "Trainer limit reached",
+		"soloTrainerLimitBody": "The Solo plan includes 1 trainer (you). Upgrade to Studio to add more trainers.",
+		"upgradeToStudio": "Upgrade to Studio",
+		"studioTitle": "Studio",
+		"studioTagline": "For growing studios",
+		"enterpriseTitle": "Enterprise",
+		"enterpriseTagline": "For established businesses",
+		"studioFallbackPrice": "599.000₫",
+		"enterpriseFallbackPrice": "1.999.000₫",
+		"perMonth": "/month",
+		"subscribeToStudio": "Subscribe to Studio",
+		"subscribeToEnterprise": "Subscribe to Enterprise",
+		"feature_studio_1": "100 classes/month",
+		"feature_studio_2": "Up to 5 trainers",
+		"feature_studio_3": "Waitlist",
+		"feature_studio_4": "Automated reminders",
+		"feature_studio_5": "Analytics (90 days)",
+		"feature_enterprise_1": "Unlimited classes",
+		"feature_enterprise_2": "Unlimited trainers",
+		"feature_enterprise_3": "Multiple locations",
+		"feature_enterprise_4": "Advanced analytics",
+		"feature_enterprise_5": "Team roles & permissions",
+		"feature_enterprise_6": "Priority support",
+		"currentPlanLabel": "Current plan: {plan}",
+		"currentSoloDesc": "You are on the free plan. Upgrade to Studio or Enterprise at any time.",
+		"currentProDesc": "You have access to all Pro features.",
+		"solo": "Solo",
+		"subscribeToStudioBtn": "Subscribe to Studio",
+		"subscribeToEnterpriseBtn": "Subscribe to Enterprise"
 	},
 	"profile": {
 		"title": "Profile",
@@ -523,7 +677,19 @@
 		"searchByName": "Search by name...",
 		"emptyTitle": "No services yet",
 		"emptySubtitle": "Add your first service",
-		"changeFilters": "Change filters"
+		"changeFilters": "Change filters",
+		"deleteTrainingTitle": "Delete training",
+		"deleteTrainingConfirm": "Delete training \"{name}\"?",
+		"trainingDeleted": "Training deleted",
+		"deleteFailed": "Failed to delete training",
+		"categoryRequestMessage": "If you don't see your category, let us know and we'll add it soon.",
+		"editTraining": "Edit training",
+		"editAllFuture": "Apply changes to all future sessions",
+		"applyFromToday": "Apply from today",
+		"changeStartDate": "Change start date",
+		"scheduleUpdateResult": "Created: {created}, skipped: {skipped}",
+		"scheduleUpdateFailed": "Failed to update training schedule",
+		"updateDefaultsFailed": "Failed to update capacity or location"
 	},
 	"notifications": {
 		"title": "Notifications",
@@ -558,8 +724,6 @@
 		"privacyComingSoon": "Privacy policy coming soon",
 		"termsOfUse": "Terms of use",
 		"termsComingSoon": "Terms coming soon",
-		"analyticsOptIn": "Analytics & crash reports",
-		"analyticsOptInHint": "Helps us improve the app. No cross-app tracking.",
 		"feedback": {
 			"sendFeedback": "Help & Feedback",
 			"sheetTitle": "Help & Feedback",
@@ -593,8 +757,16 @@
 			"bookingPeriodTitle": "Booking period",
 			"bookingPeriodHint": "Choose a period from 1 to 60 days",
 			"bookingPeriodDaysLabel": "Days",
-			"bookingPeriodSaved": "Booking settings saved"
-		}
+			"bookingPeriodSaved": "Booking settings saved",
+			"bookingLink": "Salon preview"
+		},
+		"usage": {
+			"classesThisMonth": "Classes this month",
+			"trainers": "Trainers",
+			"upgradeHint": "Upgrade to Studio for more"
+		},
+		"studioQrCode": "Studio QR Code",
+		"studioQrCodeSubtitle": "Share your studio page"
 	},
 	"calendar": {
 		"months": [
@@ -611,7 +783,15 @@
 			"Nov",
 			"Dec"
 		],
-		"weekDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+		"weekDays": [
+			"Sun",
+			"Mon",
+			"Tue",
+			"Wed",
+			"Thu",
+			"Fri",
+			"Sat"
+		],
 		"editSchedule": "Edit schedule",
 		"addUnavailable": "Add unavailable hours for",
 		"unavailableComingSoon": "Unavailable hours coming soon",
@@ -678,7 +858,7 @@
 		"profileSettings": "Profile settings",
 		"mainInfo": "Main info",
 		"salonName": "Salon name",
-		"enterSalonName": "Enter salon name",
+		"enterSalonName": "Enter studio name",
 		"description": "Description",
 		"enterDescription": "Describe your salon",
 		"address": "Address",
@@ -687,7 +867,7 @@
 		"addSalon": "Add salon",
 		"contactInfo": "Contact info",
 		"salonPhone": "Salon phone",
-		"enterPhone": "Enter phone",
+		"enterPhone": "Enter phone number",
 		"salonEmail": "Salon email",
 		"enterEmail": "Enter email",
 		"email": "Email",
@@ -703,7 +883,6 @@
 		"lastName": "Last name",
 		"enterName": "Enter name",
 		"phone": "Phone",
-		"enterPhone": "Enter phone number",
 		"security": "Security",
 		"newPassword": "New password",
 		"confirmPassword": "Confirm password",
@@ -715,7 +894,7 @@
 		"salonCreated": "Salon created",
 		"deleteAccountConfirm": "Are you sure you want to delete your account? This cannot be undone. All data will be permanently deleted.",
 		"passwordMin8": "Password must be at least 8 characters",
-        "instagram": "Instagram",
+		"instagram": "Instagram",
 		"facebook": "Facebook",
 		"youtube": "YouTube",
 		"tiktok": "TikTok",
@@ -732,7 +911,19 @@
 		"addSocialLinkSheetTitle": "ADD SOCIAL LINK",
 		"mainPhoto": "Main",
 		"salonDescriptionHint": "Enter your salon details: name, description, address, contacts, photos and opening hours.",
-		"deleteWarning": "Account deletion is permanent. All data will be lost."
+		"deleteWarning": "Account deletion is permanent. All data will be lost.",
+		"unsavedChanges": "Unsaved changes",
+		"confirmDiscardChanges": "Are you sure you want to exit without saving?",
+		"loginToUploadLogo": "Please log in to upload a logo",
+		"uploadLogoFailed": "Failed to upload logo",
+		"photoLimitExceeded": "You can upload up to {max} photos",
+		"extraPhotosSkipped": "Extra photos skipped. Limit: {max}",
+		"loginToUploadPhotos": "Please log in to upload photos",
+		"optimizing": "Optimizing...",
+		"uploading": "Uploading...",
+		"photoTooLarge": "Photo exceeds 3 MB",
+		"oversizedPhotosSkipped": "{count} photo(s) over 3 MB were not added",
+		"uploadsFailed": "{count} photo(s) failed to upload"
 	},
 	"locations": {
 		"mainStudio": "Main studio"
@@ -789,6 +980,91 @@
 			"scheduleHint": "Edit time for each selected day",
 			"sessionsPlanned": "{count} sessions in this range",
 			"back": "Back"
-		}
+		},
+		"checkErrors": "Please check fields highlighted in red",
+		"noExistingTrainings": "No trainings yet. Enter the name of a new one.",
+		"nameExample": "e.g. Vinyasa Flow",
+		"enterName": "Enter training name",
+		"invalidValues": "Price, duration and capacity must be > 0",
+		"selectDays": "Select at least one day of the week",
+		"nextStep": "Next step",
+		"trainingName": "Training name",
+		"category": "Category",
+		"duration": "Duration",
+		"capacity": "Capacity",
+		"price": "Price",
+		"enterPrice": "Enter price",
+		"description": "Description",
+		"descriptionOptional": "Training description (optional)",
+		"weekdayMon": "MO",
+		"weekdayTue": "TU",
+		"weekdayWed": "WE",
+		"weekdayThu": "TH",
+		"weekdayFri": "FR",
+		"weekdaySat": "SA",
+		"weekdaySun": "SU"
+	},
+	"trainer": {
+		"role": "Trainer",
+		"noClientsEnrolled": "No clients enrolled",
+		"noShowStatus": "No show",
+		"markPresent": "Mark present",
+		"markNoShow": "Mark no-show",
+		"inviteTitle": "You've been invited!",
+		"joinAs": "Join {studio} as {name}",
+		"joinAsTrainer": "Join {studio} as a trainer",
+		"acceptInvitation": "Accept invitation",
+		"invalidExpiredLink": "This invite link is invalid or has expired.",
+		"couldNotLoadInvite": "Could not load invite. Check your connection."
+	},
+	"staff": {
+		"inviteTitle": "Invite {name}",
+		"shareInviteMessage": "Share this link with {name} to join Henzo as a trainer.",
+		"inviteExpires": "Expires in 7 days"
+	},
+	"client": {
+		"bookingCancelled": "Booking cancelled",
+		"cancelBookingFailed": "Failed to cancel booking"
+	},
+	"public": {
+		"noAddressAvailable": "No address available",
+		"couldNotOpenMaps": "Could not open maps",
+		"getDirections": "Get directions"
+	},
+	"periodPicker": {
+		"title": "Period",
+		"currentMonth": "Current month",
+		"previousMonth": "Previous month",
+		"currentWeek": "Current week",
+		"previousWeek": "Previous week"
+	},
+	"bookings": {
+		"bookingCancelled": "Booking cancelled",
+		"bookingConfirmed": "Booking confirmed",
+		"bookingRejected": "Booking rejected",
+		"yourAppointments": "Bookings",
+		"filterAll": "All",
+		"filterNew": "New",
+		"filterPending": "Pending",
+		"filterCompleted": "Completed",
+		"noBookings": "No bookings",
+		"statusPending": "Pending",
+		"statusConfirmed": "Confirmed",
+		"statusCompleted": "Completed",
+		"statusCancelled": "Cancelled",
+		"statusNoShow": "No Show"
+	},
+	"accountSettings": {
+		"reloginToUploadPhoto": "Please log in again to upload a photo",
+		"uploadPhotoFailed": "Failed to upload photo",
+		"uploadError": "Upload error"
+	},
+	"clientBooking": {
+		"confirmed": "Confirmed",
+		"inviteFriends": "Invite friends",
+		"youreIn": "You're in!"
+	},
+	"publicClassDetail": {
+		"notFound": "This class is no longer available."
 	}
 }

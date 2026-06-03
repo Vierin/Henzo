@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,17 +7,23 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../l10n/locale_provider.dart';
+import '../../utils/class_session_link.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/auth/auth_form_styles.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shown after a successful client self-booking (mockup: ticket + actions).
 class ClassBookingConfirmationScreen extends StatelessWidget {
   factory ClassBookingConfirmationScreen.fromMaps({
     required Map<String, dynamic> session,
     Map<String, dynamic>? studio,
+    String? studioId,
+    String? sessionId,
   }) {
     final training = session['training'] is Map
         ? Map<String, dynamic>.from(session['training'] as Map)
@@ -57,6 +62,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       accentIcon: accentIcon,
       latitude: (studio?['latitude'] as num?)?.toDouble(),
       longitude: (studio?['longitude'] as num?)?.toDouble(),
+      studioId: studioId ?? (studio?['id'] ?? '').toString(),
+      sessionId: sessionId ?? (session['id'] ?? '').toString(),
     );
   }
 
@@ -74,6 +81,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     this.price,
     this.latitude,
     this.longitude,
+    this.studioId,
+    this.sessionId,
   });
 
   final String classTitle;
@@ -88,6 +97,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   final double? price;
   final double? latitude;
   final double? longitude;
+  final String? studioId;
+  final String? sessionId;
 
   static const _weekdays = [
     'MONDAY',
@@ -144,14 +155,16 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
             : AppColors.textInverse);
   }
 
-  String get _costPrimary {
+  String _costPrimary(LocaleProvider locale) {
     if (price != null && price! > 0) return formatVnd(price!);
-    return 'Free';
+    return locale.t('common.free');
   }
 
   String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
 
   String _shareMessage() {
+    final sid = studioId;
+    final sesId = sessionId;
     final buf = StringBuffer()
       ..writeln('Join me for $classTitle!')
       ..writeln(_headerDateLine);
@@ -163,11 +176,21 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     }
     final address = studioAddress?.trim();
     if (address != null && address.isNotEmpty) buf.writeln(address);
+    if (sid != null && sid.isNotEmpty && sesId != null && sesId.isNotEmpty) {
+      final link = ClassSessionLink(
+        studioId: sid,
+        sessionId: sesId,
+        startsAt: startsAt,
+      );
+      buf
+        ..writeln()
+        ..write(link.toShareUri().toString());
+    }
     return buf.toString().trim();
   }
 
   Future<void> _shareBooking() async {
-    await Share.share(_shareMessage());
+    await Share.share(_shareMessage(), subject: classTitle);
   }
 
   Future<void> _openCalendar(BuildContext context) async {
@@ -191,7 +214,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     if (!await canLaunchUrl(uri)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open calendar')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('common.couldNotOpenCalendar'))),
         );
       }
       return;
@@ -216,7 +239,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('No address available')));
+          ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
         }
         return;
       }
@@ -229,7 +252,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Could not open maps')));
+        ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.couldNotOpenMaps'))));
       }
       return;
     }
@@ -242,11 +265,12 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     Clipboard.setData(ClipboardData(text: address));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Address copied')));
+    ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.addressCopied'))));
   }
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
     final wixTextTheme = Theme.of(context).textTheme;
     final ticketTextTheme = GoogleFonts.interTextTheme(wixTextTheme);
 
@@ -282,7 +306,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                             height: 12,
                             fit: BoxFit.contain,
                             excludeFromSemantics: true,
-                            colorFilter: const ColorFilter.mode(
+                            colorFilter: ColorFilter.mode(
                               Colors.white,
                               BlendMode.srcIn,
                             ),
@@ -300,8 +324,8 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 14,
+                            textStyle: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -309,7 +333,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      'Confirmed',
+                      locale.t('clientBooking.confirmed'),
                       style: ticketTextTheme.titleSmall?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -331,14 +355,14 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                       _BookingConfirmationHero(
                         titleStyle: wixTextTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 39,
+                          fontSize: 39.sp,
                           color: AppColors.textPrimary,
                           letterSpacing: -0.5,
                         ),
                         dateLine: _headerDateLine,
                         dateStyle: wixTextTheme.labelLarge?.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                           letterSpacing: -0.2,
                         ),
@@ -352,7 +376,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         gridTimePrimary: formatTime24(startsAt),
                         gridTimeMuted: ' · ($durationMin min)',
                         trainerName: trainerName,
-                        costPrimary: _costPrimary,
+                        costPrimary: _costPrimary(locale),
                         costMuted: _costMuted,
                         locationTitle: locationTitle,
                         studioAddress: studioAddress,
@@ -369,10 +393,10 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         child: FilledButton(
                           onPressed: _shareBooking,
                           style: AuthFormStyles.primaryButtonStyle(),
-                          child: const Text(
-                            'Invite friends',
+                          child: Text(
+                            locale.t('clientBooking.inviteFriends'),
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -534,8 +558,8 @@ class _BookingTicketCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 22, 12, 15),
             child: Text(
               classTitle,
-              style: const TextStyle(
-                fontSize: 24,
+              style: TextStyle(
+                fontSize: 24.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
                 height: 1.1,
@@ -623,7 +647,7 @@ class _BookingTicketCard extends StatelessWidget {
                     svgAsset: 'assets/icons/icon-calendar.svg',
                     iconWidth: 13,
                     iconHeight: 12,
-                    label: 'Add to calendar',
+                    label: context.read<LocaleProvider>().t('common.addToCalendar'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -633,7 +657,7 @@ class _BookingTicketCard extends StatelessWidget {
                     svgAsset: 'assets/icons/icon-pin-simple.svg',
                     iconWidth: 10,
                     iconHeight: 14,
-                    label: 'Get directions',
+                    label: context.read<LocaleProvider>().t('common.getDirections'),
                   ),
                 ),
               ],
@@ -668,7 +692,7 @@ class _TicketActionButton extends StatelessWidget {
         backgroundColor: AppColors.primary500,
         foregroundColor: AppColors.textInverse,
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -690,9 +714,9 @@ class _TicketActionButton extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textInverse,
               ),
             ),
@@ -715,14 +739,14 @@ class _AccentMetaCell extends StatelessWidget {
   }) : assert(icon != null || svgAsset != null);
 
   static TextStyle _labelPrimary(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
+    fontSize: 13.sp,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
   static TextStyle _labelMuted(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
+    fontSize: 13.sp,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary.withValues(alpha: 0.4),
     height: 1.3,
@@ -818,8 +842,8 @@ class _LocationRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                   height: 1.25,
@@ -833,8 +857,8 @@ class _LocationRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         address!,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           height: 1.3,
                           color: AppColors.textSecondary,
                         ),
@@ -940,10 +964,9 @@ class _TicketSideNotch extends StatelessWidget {
 }
 
 class _DashedDividerPainter extends CustomPainter {
-  const _DashedDividerPainter({required this.color, this.lineInset = 20});
+  const _DashedDividerPainter({required this.color});
 
   final Color color;
-  final double lineInset;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -952,6 +975,7 @@ class _DashedDividerPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     const dash = 6.0;
     const gap = 5.0;
+    const lineInset = 0.0;
     var x = lineInset;
     final y = size.height / 2;
     final end = size.width - lineInset;
@@ -963,5 +987,5 @@ class _DashedDividerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedDividerPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.lineInset != lineInset;
+      oldDelegate.color != color;
 }

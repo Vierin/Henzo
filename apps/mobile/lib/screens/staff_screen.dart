@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
@@ -12,10 +13,14 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
+import '../../services/trainer_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/subscription_tier.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
+import 'subscription_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -58,7 +63,7 @@ class _StaffScreenState extends State<StaffScreen> {
         setState(() {
           _salon = salon;
           _staff = staff;
-          _isProPlan = (sub?.type.toUpperCase() ?? 'FREEMIUM') == 'PRO';
+          _isProPlan = subscriptionTypeIsPaid(sub?.type);
           _isLoading = false;
         });
       }
@@ -124,11 +129,8 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   void _openAddStaff() {
-    final locale = context.read<LocaleProvider>();
     if (!_isProPlan) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('staffScreen.addStaffProRequired'))),
-      );
+      _showTrainerLimitDialog();
       return;
     }
     final salonId = _salon?.id;
@@ -139,6 +141,134 @@ class _StaffScreenState extends State<StaffScreen> {
     ).then((_) {
       if (mounted) _loadData();
     });
+  }
+
+  Future<void> _showInviteSheet(StaffMember member) async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null) return;
+    String? inviteUrl;
+    bool loading = true;
+    String? error;
+
+    await showHenzoModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheet) {
+            final locale = sheetCtx.read<LocaleProvider>();
+            if (loading) {
+              TrainerApiService.generateInviteFromStaff(token, member.id).then((result) {
+                inviteUrl = result['inviteUrl']?.toString();
+                setSheet(() => loading = false);
+              }).catchError((e) {
+                error = e.toString();
+                setSheet(() => loading = false);
+              });
+            }
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      locale.t('staff.inviteTitle').replaceAll('{name}', member.name),
+                      style: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      locale.t('staff.shareInviteMessage').replaceAll('{name}', member.name),
+                      style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 20),
+                    if (loading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (error != null)
+                      Text(error!, style: const TextStyle(color: AppColors.error500))
+                    else if (inviteUrl != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.neutral100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          inviteUrl!,
+                          style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: inviteUrl!));
+                                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                  SnackBar(content: Text(locale.t('common.linkCopied'))),
+                                );
+                              },
+                              icon: const Icon(Icons.copy_outlined, size: 16),
+                              label: Text(locale.t('common.copyLink')),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        locale.t('staff.inviteExpires'),
+                        style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTrainerLimitDialog() {
+    final locale = context.read<LocaleProvider>();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('subscription.soloTrainerLimitTitle')),
+        content: Text(locale.t('subscription.soloTrainerLimitBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(locale.t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SubscriptionScreen(),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+            ),
+            child: Text(locale.t('subscription.upgradeToStudio')),
+          ),
+        ],
+      ),
+    );
   }
 
   List<StaffMember> _staffExcludingOwner(String? ownerEmail) {
@@ -185,7 +315,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           child: Text(
                             locale.t('staffScreen.editStaffTitle'),
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 22.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
@@ -210,7 +340,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('staffScreen.fullNameRequired'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -241,7 +371,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('common.email'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -273,7 +403,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('common.phone'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -305,7 +435,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('staffScreen.servicesOptional'),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -371,7 +501,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                     ? locale.t('staffScreen.allServices')
                                     : '${selectedServiceIds.length} ${locale.t('staffScreen.servicesSelected')}',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
@@ -381,7 +511,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           Text(
                             locale.t('staffScreen.selectServicesHint'),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -584,7 +714,7 @@ class _StaffScreenState extends State<StaffScreen> {
                 child: Text(
                   locale.t('common.setupSalonFirst'),
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -625,6 +755,15 @@ class _StaffScreenState extends State<StaffScreen> {
                           : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                if (_isProPlan)
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    icon: const Icon(Icons.link_outlined, size: 20),
+                                    tooltip: 'Invite',
+                                    onPressed: () => _showInviteSheet(member),
+                                    color: AppColors.primary500,
+                                  ),
                                 IconButton(
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(
@@ -709,7 +848,7 @@ class _StaffServicesPickerSheetBodyState
                         'staffScreen.staffServicesTitle',
                       ),
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -745,7 +884,7 @@ class _StaffServicesPickerSheetBodyState
                     },
                     title: Text(
                       s.displayName,
-                      style: const TextStyle(fontSize: 15),
+                      style: TextStyle(fontSize: 15.sp),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: const EdgeInsets.symmetric(

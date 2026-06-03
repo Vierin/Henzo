@@ -10,6 +10,7 @@ import '../../l10n/locale_provider.dart';
 import '../../utils/load_error_message.dart';
 import '../../widgets/common/load_error_view.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum _BookingFilter { all, new_, pending, completed }
 
@@ -86,8 +87,8 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Запись отменена'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('bookings.bookingCancelled')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -101,8 +102,8 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
     if (mounted) {
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Бронирование подтверждено'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('bookings.bookingConfirmed')),
           backgroundColor: Colors.green,
         ),
       );
@@ -117,8 +118,8 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Бронирование отклонено'),
+        SnackBar(
+          content: Text(context.read<LocaleProvider>().t('bookings.bookingRejected')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -131,10 +132,10 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
         leading: null,
-        title: const Text(
-          'Your appointments',
+        title: Text(
+          context.watch<LocaleProvider>().t('bookings.yourAppointments'),
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -151,13 +152,13 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
             child: Row(
               children: [
-                _filterChip('All', _BookingFilter.all),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterAll'), _BookingFilter.all),
                 const SizedBox(width: 8),
-                _filterChip('New', _BookingFilter.new_),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterNew'), _BookingFilter.new_),
                 const SizedBox(width: 8),
-                _filterChip('Pending', _BookingFilter.pending),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterPending'), _BookingFilter.pending),
                 const SizedBox(width: 8),
-                _filterChip('Completed', _BookingFilter.completed),
+                _filterChip(context.watch<LocaleProvider>().t('bookings.filterCompleted'), _BookingFilter.completed),
               ],
             ),
           ),
@@ -182,10 +183,10 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
                               const SizedBox(height: 48),
                               Center(
                                 child: Text(
-                                  'No bookings',
+                                  context.watch<LocaleProvider>().t('bookings.noBookings'),
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
-                                    fontSize: 16,
+                                    fontSize: 16.sp,
                                   ),
                                 ),
                               ),
@@ -260,9 +261,9 @@ class _BookingTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      booking.user?.name ?? booking.user?.email ?? 'Client',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      booking.user?.name ?? booking.user?.email ?? context.read<LocaleProvider>().t('common.client'),
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -270,16 +271,16 @@ class _BookingTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       booking.service?.name ?? '—',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       DateFormat('dd/MM/yyyy, HH:mm').format(booking.dateTime),
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         color: AppColors.textTertiary,
                       ),
                     ),
@@ -298,7 +299,7 @@ class _BookingTile extends StatelessWidget {
                                 color: AppColors.success500,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 '✓',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -319,7 +320,7 @@ class _BookingTile extends StatelessWidget {
                                 color: AppColors.error500,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 '✕',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -334,7 +335,7 @@ class _BookingTile extends StatelessWidget {
                   ],
                 ),
               ),
-              _statusBadge(booking.status),
+              _statusBadge(booking.status, context.read<LocaleProvider>()),
             ],
           ),
         ),
@@ -342,7 +343,7 @@ class _BookingTile extends StatelessWidget {
     );
   }
 
-  Widget _statusBadge(BookingStatus status) {
+  Widget _statusBadge(BookingStatus status, LocaleProvider locale) {
     Color bgColor;
     Color textColor;
     String label;
@@ -350,27 +351,27 @@ class _BookingTile extends StatelessWidget {
       case BookingStatus.pending:
         bgColor = AppColors.warning100;
         textColor = AppColors.warning600;
-        label = 'Pending';
+        label = locale.t('bookings.statusPending');
         break;
       case BookingStatus.confirmed:
         bgColor = AppColors.success100;
         textColor = AppColors.success600;
-        label = 'Confirmed';
+        label = locale.t('bookings.statusConfirmed');
         break;
       case BookingStatus.completed:
         bgColor = AppColors.primary100;
         textColor = AppColors.primary600;
-        label = 'Completed';
+        label = locale.t('bookings.statusCompleted');
         break;
       case BookingStatus.canceled:
         bgColor = AppColors.error100;
         textColor = AppColors.error600;
-        label = 'Cancelled';
+        label = locale.t('bookings.statusCancelled');
         break;
       case BookingStatus.noShow:
         bgColor = AppColors.warning200;
         textColor = AppColors.warning700;
-        label = 'No Show';
+        label = locale.t('bookings.statusNoShow');
         break;
     }
     return Container(
@@ -382,7 +383,7 @@ class _BookingTile extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 10.sp,
           fontWeight: FontWeight.w500,
           color: textColor,
         ),

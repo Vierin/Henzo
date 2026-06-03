@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientsFilterChip extends StatelessWidget {
   const ClientsFilterChip({
@@ -20,14 +21,14 @@ class ClientsFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final inverse = isSelected;
     final labelStyle = TextStyle(
-      fontSize: 14,
+      fontSize: 14.sp,
       fontWeight: FontWeight.w600,
       letterSpacing: -0.3,
       height: 1.1,
       color: inverse ? AppColors.textInverse : AppColors.textSecondary,
     );
     final countStyle = TextStyle(
-      fontSize: 14,
+      fontSize: 14.sp,
       fontWeight: FontWeight.w600,
       letterSpacing: -0.3,
       height: 1.1,

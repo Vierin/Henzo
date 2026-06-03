@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -9,7 +10,9 @@ import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/common/henzo_header_back_button.dart';
+import '../services/device_location_service.dart';
 import '../services/mapbox_api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key, required this.initialCity});
@@ -107,7 +110,71 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     );
   }
 
-  void _submitManual() => _pickCity(_controller.text);
+  bool _isLocating = false;
+
+  Future<void> _useCurrentLocation() async {
+    final locale = context.read<LocaleProvider>();
+    setState(() => _isLocating = true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale.t('addressPicker.locationServiceDisabled')),
+          ),
+        );
+        await Geolocator.openLocationSettings();
+        return;
+      }
+      if (!await DeviceLocationService.ensureAccess()) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale.t('addressPicker.locationPermissionDenied')),
+          ),
+        );
+        return;
+      }
+
+      final pos = await DeviceLocationService.resolvePosition();
+      if (!mounted) return;
+      if (pos == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${locale.t('addressPicker.locationDetectFailed')}\n'
+              '${locale.t('addressPicker.locationDetectFailedHint')}',
+            ),
+          ),
+        );
+        return;
+      }
+
+      ReverseGeocodeResult? reverse;
+      try {
+        reverse = await MapboxApiService.reverseGeocode(
+          pos.latitude,
+          pos.longitude,
+        );
+      } catch (_) {
+        reverse = null;
+      }
+      if (!mounted) return;
+
+      final city = DeviceLocationService.cityFromAddress(
+        reverse?.address,
+        locale.t('clientHome.locationPickerUseCity'),
+      );
+      _pickCity(city, lat: pos.latitude, lon: pos.longitude);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('addressPicker.locationDetectFailed'))),
+      );
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
 
   InputDecoration _searchDecoration(LocaleProvider locale) {
     Widget? suffix;
@@ -136,9 +203,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
     return InputDecoration(
       hintText: locale.t('clientHome.locationPickerHint'),
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         color: AppColors.textTertiary,
-        fontSize: 14,
+        fontSize: 14.sp,
       ),
       isDense: true,
       prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
@@ -188,8 +255,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         leadingWidth: 56,
         title: Text(
           locale.t('clientHome.locationPickerTitle'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
             color: AppColors.textPrimary,
@@ -205,9 +272,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             TextField(
               controller: _controller,
               onChanged: _onChanged,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 14,
+                fontSize: 14.sp,
               ),
               textCapitalization: TextCapitalization.words,
               decoration: _searchDecoration(locale),
@@ -217,7 +284,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: _hasSearchText ? _submitManual : null,
+                onTap: _isLocating ? null : _useCurrentLocation,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -226,27 +293,35 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                   child: Row(
                     children: [
-                      SvgPicture.asset(
-                        'assets/icons/icon-pin.svg',
-                        width: 14,
-                        height: 18,
-                        colorFilter: ColorFilter.mode(
-                          _hasSearchText
-                              ? AppColors.primary500
-                              : AppColors.textTertiary,
-                          BlendMode.srcIn,
+                      if (_isLocating)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary500,
+                          ),
+                        )
+                      else
+                        SvgPicture.asset(
+                          'assets/icons/icon-pin-simple.svg',
+                          width: 14,
+                          height: 18,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.primary500,
+                            BlendMode.srcIn,
+                          ),
                         ),
-                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           locale.t('clientHome.locationPickerUseCity'),
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
-                            color: _hasSearchText
-                                ? AppColors.primary500
-                                : AppColors.textTertiary,
+                            color: _isLocating
+                                ? AppColors.textTertiary
+                                : AppColors.primary500,
                           ),
                         ),
                       ),
@@ -262,8 +337,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       child: Text(
                         locale.t('clientHome.locationPickerEmpty'),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           height: 1.4,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textSecondary,
@@ -294,7 +369,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               child: Row(
                                 children: [
                                   SvgPicture.asset(
-                                    'assets/icons/icon-pin.svg',
+                                    'assets/icons/icon-pin-simple.svg',
                                     width: 12,
                                     height: 16,
                                     colorFilter: const ColorFilter.mode(
@@ -308,8 +383,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                       city,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 15,
+                                      style: TextStyle(
+                                        fontSize: 15.sp,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.2,
                                         color: AppColors.textPrimary,

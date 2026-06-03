@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Put,
@@ -663,19 +664,22 @@ export class StudiosController {
   ) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const row = await this.prisma.sessionEnrollment.findUnique({
-        where: {
-          sessionId_userId: {
-            sessionId,
-            userId: currentUser.user.id,
-          },
-        },
-        select: { id: true, status: true },
-      });
+      const userId = currentUser.user.id;
+      const [row, waitlistEntry] = await Promise.all([
+        this.prisma.sessionEnrollment.findUnique({
+          where: { sessionId_userId: { sessionId, userId } },
+          select: { id: true, status: true },
+        }),
+        this.prisma.waitlistEntry.findUnique({
+          where: { sessionId_userId: { sessionId, userId } },
+          select: { id: true },
+        }),
+      ]);
       return {
         enrolled: row?.status === 'ACTIVE',
         enrollmentId: row?.id ?? null,
         status: row?.status ?? null,
+        waitlisted: !!waitlistEntry,
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -864,6 +868,84 @@ export class StudiosController {
       }
       throw new HttpException(
         error?.message || 'Failed to book session',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('sessions/:sessionId/waitlist')
+  async joinWaitlist(
+    @Param('sessionId') sessionId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const userId = currentUser.user.id;
+
+      const session = await this.prisma.trainingSession.findUnique({
+        where: { id: sessionId },
+        select: { id: true, status: true, capacity: true, bookedCount: true },
+      });
+      if (!session || session.status !== 'ACTIVE') {
+        throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+      }
+      if (session.bookedCount < session.capacity) {
+        throw new HttpException(
+          'Spots are still available — book directly',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.waitlistEntry.upsert({
+          where: { sessionId_userId: { sessionId, userId } },
+          create: { sessionId, userId },
+          update: {},
+        });
+        await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: { waitlistCount: { increment: 1 } },
+        });
+      });
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        error?.message || 'Failed to join waitlist',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Delete('sessions/:sessionId/waitlist')
+  async leaveWaitlist(
+    @Param('sessionId') sessionId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const userId = currentUser.user.id;
+
+      const entry = await this.prisma.waitlistEntry.findUnique({
+        where: { sessionId_userId: { sessionId, userId } },
+        select: { id: true },
+      });
+      if (!entry) return { success: true };
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.waitlistEntry.delete({ where: { id: entry.id } });
+        await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: { waitlistCount: { decrement: 1 } },
+        });
+      });
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        error?.message || 'Failed to leave waitlist',
         HttpStatus.BAD_REQUEST,
       );
     }

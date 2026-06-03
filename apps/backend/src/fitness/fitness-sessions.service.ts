@@ -1,3 +1,4 @@
+import { fromZonedTime } from 'date-fns-tz';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   Prisma,
@@ -16,6 +17,8 @@ import {
   isDeliverableClientEmail,
   StudioClientsService,
 } from './studio-clients.service';
+import { PlanLimitsService } from '../subscriptions/plan-limits.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   countTrainingLocations,
   resolveSessionLocationDisplayName,
@@ -79,6 +82,8 @@ export class FitnessSessionsService {
     private readonly analytics: AnalyticsService,
     private readonly studioClients: StudioClientsService,
     private readonly emailService: EmailService,
+    private readonly planLimits: PlanLimitsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -175,6 +180,8 @@ export class FitnessSessionsService {
       throw new Error('Training not found');
     }
 
+    await this.planLimits.assertMonthlySessionsLimit(dto.studioId);
+
     const resolvedTrainerId = studio.User
       ? await resolveTrainerIdForSession(
           this.prisma,
@@ -235,8 +242,17 @@ export class FitnessSessionsService {
         const time = slotTimeByDay.get(weekday);
         if (!time) return null;
         const { hour, minute } = this.parseHm(time);
-        const startsAt = new Date(d);
-        startsAt.setHours(hour, minute, 0, 0);
+        const tz = dto.timezone || 'Asia/Ho_Chi_Minh';
+        const localDate = new Date(
+          d.getFullYear(),
+          d.getMonth(),
+          d.getDate(),
+          hour,
+          minute,
+          0,
+          0,
+        );
+        const startsAt = fromZonedTime(localDate, tz);
         const endsAt = new Date(startsAt);
         endsAt.setMinutes(endsAt.getMinutes() + training.duration);
         return { startsAt, endsAt };
@@ -452,8 +468,8 @@ export class FitnessSessionsService {
     const session = await this.prisma.trainingSession.findFirst({
       where: { id: sessionId },
       include: {
-        Studio: { select: { ownerId: true } },
-        Training: { select: { duration: true } },
+        Studio: { select: { ownerId: true, name: true } },
+        Training: { select: { duration: true, name: true } },
       },
     });
     if (!session || session.Studio?.ownerId !== currentUser.user.id) {
@@ -535,6 +551,14 @@ export class FitnessSessionsService {
         }
       }
 
+      const wasActive = session.status === TrainingSessionStatus.ACTIVE;
+      const timeChanged =
+        dto.startsAt !== undefined &&
+        startsAt.getTime() !== session.startsAt.getTime();
+      const beingCancelled =
+        status === TrainingSessionStatus.CANCELLED &&
+        session.status !== TrainingSessionStatus.CANCELLED;
+
       await this.prisma.trainingSession.update({
         where: { id: sessionId },
         data: {
@@ -545,6 +569,22 @@ export class FitnessSessionsService {
           status,
         },
       });
+
+      if (wasActive) {
+        if (beingCancelled) {
+          void this.notificationsService.notifySessionCancelled(sessionId, {
+            className: session.Training?.name || 'class',
+            studioName: session.Studio?.name || 'studio',
+            startsAt: session.startsAt,
+          });
+        } else if (timeChanged) {
+          void this.notificationsService.notifySessionRescheduled(sessionId, {
+            className: session.Training?.name || 'class',
+            studioName: session.Studio?.name || 'studio',
+            newStartsAt: startsAt,
+          });
+        }
+      }
 
       return { success: true };
     }
@@ -636,6 +676,32 @@ export class FitnessSessionsService {
       ),
     );
 
+    // Notify clients for each affected session
+    const className = session.Training?.name || 'class';
+    const studioName = session.Studio?.name || 'studio';
+    const beingCancelledBulk =
+      dto.status === 'CANCELLED' &&
+      session.status !== TrainingSessionStatus.CANCELLED;
+    const timeChangedBulk = timeDeltaMs !== null && timeDeltaMs !== 0;
+
+    for (const row of rows) {
+      const p = planned.find((x) => x.id === row.id);
+      if (!p) continue;
+      if (beingCancelledBulk) {
+        void this.notificationsService.notifySessionCancelled(row.id, {
+          className,
+          studioName,
+          startsAt: row.startsAt,
+        });
+      } else if (timeChangedBulk && p.status === TrainingSessionStatus.ACTIVE) {
+        void this.notificationsService.notifySessionRescheduled(row.id, {
+          className,
+          studioName,
+          newStartsAt: p.startsAt,
+        });
+      }
+    }
+
     return { success: true };
   }
 
@@ -651,16 +717,30 @@ export class FitnessSessionsService {
 
     const session = await this.prisma.trainingSession.findFirst({
       where: { id: sessionId },
-      include: { Studio: { select: { ownerId: true } } },
+      include: {
+        Studio: { select: { ownerId: true, name: true } },
+        Training: { select: { name: true } },
+      },
     });
     if (!session || session.Studio?.ownerId !== currentUser.user.id) {
       throw new Error('Session not found');
     }
 
+    const wasCancelled = session.status === TrainingSessionStatus.CANCELLED;
+
     await this.prisma.trainingSession.update({
       where: { id: sessionId },
       data: { status },
     });
+
+    // Notify enrolled clients when owner cancels a session
+    if (status === 'CANCELLED' && !wasCancelled) {
+      void this.notificationsService.notifySessionCancelled(sessionId, {
+        className: session.Training?.name || 'class',
+        studioName: session.Studio?.name || 'studio',
+        startsAt: session.startsAt,
+      });
+    }
 
     return { success: true };
   }
@@ -1036,6 +1116,9 @@ export class FitnessSessionsService {
       });
     });
 
+    // Auto-promote first waitlist entry if one exists
+    void this.promoteFromWaitlist(row.sessionId);
+
     const enrollment = await this.prisma.sessionEnrollment.findUnique({
       where: { id: enrollmentId },
       select: {
@@ -1050,6 +1133,158 @@ export class FitnessSessionsService {
       source: 'client_cancelled',
     });
 
+    return { success: true };
+  }
+
+  private async promoteFromWaitlist(sessionId: string): Promise<void> {
+    try {
+      const next = await this.prisma.waitlistEntry.findFirst({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, userId: true },
+      });
+      if (!next) return;
+
+      const session = await this.prisma.trainingSession.findUnique({
+        where: { id: sessionId },
+        select: {
+          capacity: true,
+          bookedCount: true,
+          Training: { select: { name: true } },
+          Studio: { select: { name: true } },
+        },
+      });
+      if (!session || session.bookedCount >= session.capacity) return;
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.waitlistEntry.delete({ where: { id: next.id } });
+        await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: {
+            bookedCount: { increment: 1 },
+            waitlistCount: { decrement: 1 },
+          },
+        });
+        await tx.sessionEnrollment.upsert({
+          where: { sessionId_userId: { sessionId, userId: next.userId } },
+          create: { sessionId, userId: next.userId, status: 'ACTIVE' },
+          update: { status: 'ACTIVE', cancelledAt: null },
+        });
+      });
+
+      await this.notificationsService.sendWaitlistPromotionPush(next.userId, {
+        sessionId,
+        className: session.Training?.name || 'class',
+        studioName: session.Studio?.name || 'studio',
+      });
+    } catch (err) {
+      console.error('[FitnessSessions] Waitlist promote failed:', err);
+    }
+  }
+
+  // ── Trainer Panel ─────────────────────────────────────────────
+
+  private async getLinkedTrainerOrThrow(authHeader: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const trainer = await this.prisma.trainer.findUnique({
+      where: { userId: currentUser.user.id },
+      select: { id: true, studioId: true, name: true },
+    });
+    if (!trainer) {
+      throw new HttpException('Not a trainer', HttpStatus.FORBIDDEN);
+    }
+    return trainer;
+  }
+
+  async getTrainerSessions(
+    authHeader: string,
+    fromIso?: string,
+    toIso?: string,
+  ) {
+    const trainer = await this.getLinkedTrainerOrThrow(authHeader);
+    const from = fromIso ? new Date(fromIso) : new Date();
+    const to = toIso
+      ? new Date(toIso)
+      : new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const sessions = await this.prisma.trainingSession.findMany({
+      where: {
+        trainerId: trainer.id,
+        startsAt: { gte: from, lte: to },
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true,
+        startsAt: true,
+        endsAt: true,
+        capacity: true,
+        bookedCount: true,
+        status: true,
+        locationId: true,
+        Training: {
+          select: { id: true, name: true, duration: true, displayColor: true },
+        },
+      },
+    });
+
+    return { trainerId: trainer.id, studioId: trainer.studioId, sessions };
+  }
+
+  async getTrainerSessionEnrollments(authHeader: string, sessionId: string) {
+    const trainer = await this.getLinkedTrainerOrThrow(authHeader);
+    const session = await this.prisma.trainingSession.findFirst({
+      where: { id: sessionId, trainerId: trainer.id },
+      select: { id: true },
+    });
+    if (!session)
+      throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+
+    const rows = await this.prisma.sessionEnrollment.findMany({
+      where: { sessionId },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        User: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+      },
+      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return rows.map((r) => ({
+      enrollmentId: r.id,
+      status: r.status,
+      user: {
+        id: r.User.id,
+        name: r.User.name,
+        email: r.User.email,
+        avatarUrl: r.User.avatarUrl,
+      },
+    }));
+  }
+
+  async markAttendance(
+    authHeader: string,
+    enrollmentId: string,
+    status: 'ACTIVE' | 'NO_SHOW',
+  ) {
+    const trainer = await this.getLinkedTrainerOrThrow(authHeader);
+    const row = await this.prisma.sessionEnrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        TrainingSession: { trainerId: trainer.id },
+      },
+      select: { id: true, status: true },
+    });
+    if (!row)
+      throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+
+    await this.prisma.sessionEnrollment.update({
+      where: { id: enrollmentId },
+      data: { status, ...(status === 'ACTIVE' ? { cancelledAt: null } : {}) },
+    });
     return { success: true };
   }
 

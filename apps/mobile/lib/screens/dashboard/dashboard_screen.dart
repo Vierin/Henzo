@@ -30,6 +30,7 @@ import '../settings_screen.dart';
 import '../notifications_screen.dart';
 import '../public_studio_detail_screen.dart';
 import '../studio_details_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -47,8 +48,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
+  List<OwnerTrainingSession> _upcomingSessions = [];
   String? _sessionsLoadError;
   bool _isPublishing = false;
+  bool _dataLoaded = false;
   SubscriptionRefreshNotifier? _subRefresh;
 
   @override
@@ -87,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final salon = await context.read<SalonCache>().getSalon(token);
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
-      final to = from.add(const Duration(days: 1));
+      final to = from.add(const Duration(days: 8));
       List<OwnerTrainingSession> sessions = [];
       String? sessionsLoadError;
       StudioOnboardingChecklist? checklist;
@@ -109,6 +112,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
       }
+      final todayOnly = sessions.where((s) {
+        final local = s.startsAt.toLocal();
+        return local.year == from.year &&
+            local.month == from.month &&
+            local.day == from.day;
+      }).toList();
       if (salon != null) {
         try {
           checklist =
@@ -123,8 +132,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _salon = salon;
           _checklist = checklist;
-          _todaySessions = sessions;
+          _todaySessions = todayOnly;
+          _upcomingSessions = sessions;
           _sessionsLoadError = sessionsLoadError;
+          _dataLoaded = true;
         });
       }
     } catch (e) {
@@ -132,10 +143,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
+          _upcomingSessions = [];
           _sessionsLoadError = loadErrorMessage(
             context.read<LocaleProvider>(),
             e,
           );
+          _dataLoaded = true;
         });
         if (!isOwnerStudioNotReadyError(e)) {
           showApiError(context, e);
@@ -283,12 +296,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   OwnerTrainingSession? get _featuredSession {
-    if (_todaySessions.isEmpty) return null;
+    if (_upcomingSessions.isEmpty) return null;
     final now = DateTime.now();
-    for (final s in _todaySessions) {
+    for (final s in _upcomingSessions) {
       if (s.endsAt.isAfter(now)) return s;
     }
-    return _todaySessions.last;
+    return null;
+  }
+
+  bool _isSessionToday(OwnerTrainingSession s) {
+    final local = s.startsAt.toLocal();
+    final now = DateTime.now();
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+  }
+
+  String _formatNextDate(OwnerTrainingSession s, String localeCode) {
+    final local = s.startsAt.toLocal();
+    return DateFormat('E, d MMM', localeCode).format(local).toUpperCase();
   }
 
   String _formatDateHeader(String localeCode) {
@@ -358,8 +384,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: Text(
               _formatDateHeader(loc.localeCode),
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
                 color: AppColors.textPrimary,
@@ -405,8 +431,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 6),
                         Text(
                           count > 99 ? '99+' : '$count',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -431,17 +457,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return '';
   }
 
-  Widget _greeting(UserModel? user) {
+  Widget _greeting(LocaleProvider loc, UserModel? user) {
     final name = _greetingUserLine(user);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Hello,',
+          Text(
+            loc.t('dashboard.helloGreeting'),
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 28.sp,
               fontWeight: FontWeight.w400,
               height: 1.1,
               color: AppColors.textPrimary,
@@ -451,8 +477,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 2),
             Text(
               name,
-              style: const TextStyle(
-                fontSize: 28,
+              style: TextStyle(
+                fontSize: 28.sp,
                 fontWeight: FontWeight.w400,
                 height: 1.15,
                 color: AppColors.textPrimary,
@@ -492,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Text(
                 value,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 30.sp,
                   fontWeight: FontWeight.w500,
                   height: 0.8,
                   color: textColor,
@@ -502,7 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w400,
                 height: 1,
                 color: textColor,
@@ -516,7 +542,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _statsRow() {
+  Widget _statsRow(LocaleProvider loc) {
     final classesToday = _todaySessions.length;
     final classesBg =
         classesToday > 0 ? _statGreen : _statClassesEmpty;
@@ -530,7 +556,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: _statCard(
               value: '$classesToday',
-              label: 'Classes today',
+              label: loc.t('dashboard.classesToday'),
               background: classesBg,
               textColor: classesText,
             ),
@@ -539,7 +565,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: _statCard(
               value: '$_todayBookings',
-              label: 'Bookings',
+              label: loc.t('dashboard.bookingsToday'),
               background: _statPink,
             ),
           ),
@@ -547,7 +573,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: _statCard(
               value: '$_todayWaitlist',
-              label: 'Waitlist',
+              label: loc.t('dashboard.waitlist'),
               background: AppColors.backgroundPrimary,
               bordered: true,
             ),
@@ -557,7 +583,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _featuredCard(OwnerTrainingSession s) {
+  Widget _featuredCard(LocaleProvider loc, OwnerTrainingSession s, {required bool isToday}) {
     final cap = s.capacity;
     final enrolled = s.enrolledCount;
     final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
@@ -565,11 +591,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final fillLabel = cap > 0 ? '$enrolled / $cap' : '$enrolled';
     final trainer = _displayTrainer(s);
 
-    const double _ringsBox = 200;
-    const double _editHalf = 15;
+    const double ringsBox = 200;
+    const double editHalf = 15;
     // Stack coords: edit button center ≈ (w - _editHalf, _editHalf) in top row.
-    const double _ringsRight = _editHalf - _ringsBox / 2;
-    const double _ringsTop = _editHalf - _ringsBox / 2;
+    const double ringsRight = editHalf - ringsBox / 2;
+    const double ringsTop = editHalf - ringsBox / 2;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
@@ -586,10 +612,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   Positioned(
-                    right: _ringsRight,
-                    top: _ringsTop,
-                    width: _ringsBox,
-                    height: _ringsBox,
+                    right: ringsRight,
+                    top: ringsTop,
+                    width: ringsBox,
+                    height: ringsBox,
                     child: IgnorePointer(
                       child: Opacity(
                         opacity: 0.18,
@@ -611,9 +637,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'TODAY',
+                            isToday
+                                ? 'TODAY'
+                                : 'NEXT · ${_formatNextDate(s, loc.localeCode)}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                               color: Colors.white.withValues(alpha: 0.95),
@@ -644,8 +672,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 4),
                       Text(
                         s.trainingName,
-                        style: const TextStyle(
-                          fontSize: 24,
+                        style: TextStyle(
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.w700,
                           height: 1,
                           color: Colors.white,
@@ -657,7 +685,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         '${_formatTimeRange(s)} · With $trainer',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
                           letterSpacing: -0.15,
@@ -689,8 +717,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Center(
                                   child: Text(
                                     '$percent%',
-                                    style: const TextStyle(
-                                      fontSize: 15,
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                       height: 1,
@@ -709,8 +737,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   fillLabel,
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
                                     height: 1,
@@ -718,9 +746,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'booked',
+                                  loc.t('dashboard.bookedLabel'),
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
                                     color: Colors.white,
                                     letterSpacing: -0.15,
@@ -742,19 +770,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Show more',
+                                    loc.t('dashboard.showMore'),
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
                                     ),
                                   ),
-                                  SizedBox(width: 2),
-                                  Icon(
+                                  const SizedBox(width: 2),
+                                  const Icon(
                                     Icons.chevron_right,
                                     size: 20,
                                     color: AppColors.textPrimary,
@@ -777,6 +805,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _checklistBlock() {
+    if (!_dataLoaded) return const SizedBox.shrink();
+
     final salon = _salon;
     final c = _checklist;
     final status = _studioStatus(salon, c);
@@ -844,9 +874,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _header(loc),
-                _greeting(authUser),
-                _statsRow(),
-                if (featured != null) _featuredCard(featured),
+                _greeting(loc, authUser),
+                _statsRow(loc),
+                if (featured != null)
+                  _featuredCard(loc, featured, isToday: _isSessionToday(featured)),
                 _checklistBlock(),
                 if (_sessionsLoadError != null)
                   Padding(
@@ -865,8 +896,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 else
                   OwnerDailyScheduleBlock(
                     sessions: _todaySessions,
-                    emptyMessage: 'No trainings scheduled for today',
-                    emptySubtitle: 'Enjoy your day!',
+                    emptyMessage: loc.t('dashboard.noTrainingsToday'),
+                    emptySubtitle: loc.t('dashboard.enjoyYourDay'),
                     onSeeAll: _salon == null
                         ? null
                         : () => context

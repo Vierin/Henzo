@@ -11,6 +11,9 @@ abstract final class AuthErrorKeys {
   static const googleNoIdToken = 'errors.googleNoIdToken';
   static const googleNoSessionAfterSignIn = 'errors.googleNoSessionAfterSignIn';
   static const googleDeveloperSHA1 = 'errors.googleDeveloperSHA1';
+  static const appleSignInCancelled = 'errors.appleSignInCancelled';
+  static const appleNoIdToken = 'errors.appleNoIdToken';
+  static const appleNoSessionAfterSignIn = 'errors.appleNoSessionAfterSignIn';
   static const passwordUpdateFailed = 'errors.passwordUpdateFailed';
   static const profileUpdateFailed = 'errors.profileUpdateFailed';
   static const deleteAccountFailed = 'errors.deleteAccountFailed';

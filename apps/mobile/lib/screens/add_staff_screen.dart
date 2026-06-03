@@ -6,8 +6,12 @@ import '../../services/auth_service.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/staff_api_service.dart';
 import '../../services/services_api_service.dart';
+import '../../l10n/locale_provider.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/show_api_error.dart';
+import 'subscription_screen.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Полноэкранная форма добавления сотрудника (как на вебе: имя, email, телефон, выбор услуг).
 class AddStaffScreen extends StatefulWidget {
@@ -113,11 +117,39 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _saving = false;
-        });
+      if (!mounted) return;
+      setState(() => _saving = false);
+      if (isSoloTrainerLimitError(e)) {
+        final locale = context.read<LocaleProvider>();
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(locale.t('subscription.soloTrainerLimitTitle')),
+            content: Text(locale.t('subscription.soloTrainerLimitBody')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(locale.t('common.cancel')),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SubscriptionScreen(),
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                ),
+                child: Text(locale.t('subscription.upgradeToStudio')),
+              ),
+            ],
+          ),
+        );
+      } else {
+        setState(() => _error = e.toString());
         showApiError(context, e);
       }
     }
@@ -178,7 +210,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               Text(
                 'Услуги (опционально)',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
@@ -187,7 +219,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               Text(
                 'Выберите услуги, которые выполняет сотрудник. Пусто = все услуги.',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -215,7 +247,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                     },
                     title: Text(
                       s.displayName,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14.sp),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
@@ -233,7 +265,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 ),
                 child: Text(
                   _error!,
-                  style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                  style: TextStyle(color: Colors.red.shade800, fontSize: 13.sp),
                 ),
               ),
             ],

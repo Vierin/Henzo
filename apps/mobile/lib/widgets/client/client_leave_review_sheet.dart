@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const _maxCommentLength = 500;
 
@@ -51,15 +52,15 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
   bool _submitting = false;
   String? _error;
 
-  static const _titleStyle = TextStyle(
-    fontSize: 17,
+  static final _titleStyle = TextStyle(
+    fontSize: 17.sp,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -0.2,
   );
 
-  static const _badgeStyle = TextStyle(
-    fontSize: 13,
+  static final _badgeStyle = TextStyle(
+    fontSize: 13.sp,
     fontWeight: FontWeight.w500,
     color: AppColors.textTertiary,
   );
@@ -129,6 +130,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
     final commentLen = _commentController.text.length;
 
     return SafeArea(
+      top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
         child: Column(
@@ -172,11 +174,11 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
               }),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Tap a star to rate',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 13.sp,
                 color: AppColors.textTertiary,
                 fontWeight: FontWeight.w500,
               ),
@@ -205,16 +207,16 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
                     }) =>
                         null,
                     textCapitalization: TextCapitalization.sentences,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: 15.sp,
                       color: AppColors.textPrimary,
                       height: 1.4,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText:
                           'What did you enjoy most? Any suggestions?',
                       hintStyle: TextStyle(
-                        fontSize: 15,
+                        fontSize: 15.sp,
                         color: AppColors.textTertiary,
                         height: 1.4,
                       ),
@@ -229,8 +231,8 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
                     bottom: 10,
                     child: Text(
                       '$commentLen/$_maxCommentLength',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         color: AppColors.textTertiary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -244,7 +246,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
               SelectableText.rich(
                 TextSpan(
                   text: _error,
-                  style: const TextStyle(color: AppColors.error500),
+                  style: TextStyle(color: AppColors.error500),
                 ),
               ),
             ],
@@ -259,7 +261,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
                 ),
               ),
               child: _submitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
@@ -267,7 +269,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
+                  : Text(
                       'Submit review',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),

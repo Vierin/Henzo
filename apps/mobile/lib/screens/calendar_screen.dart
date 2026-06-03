@@ -18,6 +18,7 @@ import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Базовая дата для вычисления смещений страниц
 final _kBaseDate = DateTime(2020, 1, 1);
@@ -344,7 +345,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                   child: Text(
                     dow[i],
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w400,
                       letterSpacing: -0.3,
                       color: AppColors.textSecondary,
@@ -402,7 +403,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                           child: Text(
                             '${day.day}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
                               color: selected
                                   ? Colors.white
@@ -482,9 +483,9 @@ class CalendarScreenState extends State<CalendarScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      child: const Text(
+      child: Text(
         'Today',
-        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.sp),
       ),
     );
   }
@@ -519,7 +520,7 @@ class CalendarScreenState extends State<CalendarScreen> {
           const SizedBox(width: 6),
           Text(
             _isMonthExpanded ? 'Collapse' : 'Expand',
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.sp),
           ),
         ],
       ),
@@ -547,8 +548,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                         _monthYearUpperEn(stripDay),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
                           color: AppColors.textPrimary,
@@ -563,8 +564,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                         _monthYearUpperEn(pagerDay),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
                           color: AppColors.textPrimary,
@@ -619,10 +620,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                         kScreenPaddingHorizontal,
                         7,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Schedule',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.w700,
                           height: 1,
                           letterSpacing: -0.8,

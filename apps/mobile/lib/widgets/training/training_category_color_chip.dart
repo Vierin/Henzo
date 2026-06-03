@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../../models/training_category_option.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Colored category pill (add-training / owner catalog style).
 class TrainingCategoryColorChip extends StatelessWidget {
@@ -32,7 +33,7 @@ class TrainingCategoryColorChip extends StatelessWidget {
       fg = category!.foregroundColorOn(chipBg);
     }
 
-    final borderW = selected ? 2.0 : 1.0;
+    const borderW = 2.0;
     final borderColor = selected
         ? AppColors.primary500
         : (isOther || category == null
@@ -57,7 +58,7 @@ class TrainingCategoryColorChip extends StatelessWidget {
               color: fg,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
-              fontSize: 13,
+              fontSize: 13.sp,
               height: 1.1,
             ),
           ),

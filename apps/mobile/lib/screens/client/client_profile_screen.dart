@@ -20,6 +20,7 @@ import '../../widgets/client/client_section_header.dart';
 import '../../widgets/public/top_studio_card.dart';
 import '../public_studio_detail_screen.dart';
 import 'client_profile_settings_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientProfileScreen extends StatefulWidget {
   const ClientProfileScreen({super.key});
@@ -33,6 +34,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   static const Duration _statsCacheTtl = Duration(minutes: 2);
   static int? _cachedClassesVisited;
   static int? _cachedHoursTrained;
+  static int? _cachedActivePasses;
   static DateTime? _statsCachedAt;
 
   static HealthData? _cachedHealth;
@@ -40,6 +42,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
   int _classesVisited = 0;
   int _hoursTrained = 0;
+  int _activePasses = 0;
   bool _loadingStats = true;
   final Set<String> _favoriteLoadingIds = {};
 
@@ -59,9 +62,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ClientFavoritesStore>().sync(
-            context.read<AuthService>().accessToken,
-            force: true,
-          );
+        context.read<AuthService>().accessToken,
+        force: true,
+      );
     });
   }
 
@@ -73,8 +76,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       final raw = await ApiClient.get('/trainings/categories', null);
       if (!mounted) return;
       setState(
-        () => _trainingCategories =
-            TrainingCategoryOption.listFromApiResponse(raw),
+        () => _trainingCategories = TrainingCategoryOption.listFromApiResponse(
+          raw,
+        ),
       );
     } catch (_) {}
   }
@@ -89,6 +93,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
         setState(() {
           _classesVisited = _cachedClassesVisited!;
           _hoursTrained = _cachedHoursTrained!;
+          _activePasses = _cachedActivePasses ?? 0;
           _loadingStats = false;
         });
       }
@@ -114,14 +119,23 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       setState(() {
         _classesVisited = (map['classesVisited'] as num?)?.toInt() ?? 0;
         _hoursTrained = (map['hoursTrained'] as num?)?.toInt() ?? 0;
+        _activePasses = (map['activePasses'] as num?)?.toInt() ?? 0;
         _loadingStats = false;
       });
       _cachedClassesVisited = _classesVisited;
       _cachedHoursTrained = _hoursTrained;
+      _cachedActivePasses = _activePasses;
       _statsCachedAt = DateTime.now();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _loadingStats = false);
+      setState(() {
+        if (_cachedClassesVisited != null) {
+          _classesVisited = _cachedClassesVisited!;
+          _hoursTrained = _cachedHoursTrained ?? 0;
+          _activePasses = _cachedActivePasses ?? 0;
+        }
+        _loadingStats = false;
+      });
     }
   }
 
@@ -193,9 +207,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       _loadStats(force: true),
       _refreshHealth(),
       context.read<ClientFavoritesStore>().sync(
-            context.read<AuthService>().accessToken,
-            force: true,
-          ),
+        context.read<AuthService>().accessToken,
+        force: true,
+      ),
     ]);
   }
 
@@ -250,7 +264,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Failed to update favorites')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('clientProfile.failedToUpdateFavorites'))),
         );
     }
   }
@@ -270,7 +284,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final locale = context.watch<LocaleProvider>();
-    final t = (String k) => locale.t('clientProfile.$k');
+    String t(String k) => locale.t('clientProfile.$k');
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final locStore = context.watch<ClientLocationStore>();
@@ -285,26 +299,33 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
     final calories = _healthFullySynced ? (_health?.calories ?? 0) : 0;
 
+    const statGreen = Color(0xFFC2F600);
+    const statPink = Color(0xFFFAD0C5);
+
     final stats = [
       ClientProfileStatItem.svg(
         asset: 'assets/icons/icon-calendar.svg',
         value: _loadingStats ? '—' : formatProfileCount(_classesVisited),
         label: t('classesBooked'),
+        background: statGreen,
+        iconPaddingTop: 1,
       ),
       ClientProfileStatItem.svg(
-        asset: 'assets/icons/icon-heart.svg',
-        value: formatProfileCount(favorites.length),
-        label: t('favorites'),
+        asset: 'assets/icons/icon-ticket.svg',
+        value: _loadingStats ? '—' : formatProfileCount(_activePasses),
+        label: t('activePasses'),
+        background: statPink,
+        iconSize: 11,
+        iconPaddingTop: 3,
       ),
       ClientProfileStatItem.svg(
         asset: 'assets/icons/icon-flame.svg',
         value: formatProfileCount(calories),
         label: t('caloriesBurned'),
-      ),
-      ClientProfileStatItem.icon(
-        icon: Icons.schedule_rounded,
-        value: _loadingStats ? '—' : formatProfileCount(_hoursTrained),
-        label: t('hoursTrained'),
+        background: AppColors.backgroundPrimary,
+        iconSize: 17,
+        iconColor: AppColors.brandAccent,
+        iconPaddingTop: 0,
       ),
     ];
 
@@ -350,7 +371,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 ClientProfileStatsCard(items: stats),
                 const SizedBox(height: 24),
                 ClientProfileHealthSection(
-                  title: t('health'),
+                  title: '',
                   connectTitle: t('connectHealthTitle'),
                   connectSubtitle: healthSubtitle,
                   connectLabel: t('connect'),
@@ -373,20 +394,23 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 const SizedBox(height: 24),
                 ClientSectionHeader(
                   title: locale.t('clientActivity.favorites'),
+                  actionLabel: favorites.isNotEmpty ? t('seeAll') : null,
+                  onAction: favorites.isNotEmpty ? () {} : null,
                 ),
                 if (favorites.isEmpty)
                   Text(
                     locale.t('clientFavorites.emptySubtitle'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   )
                 else
                   SizedBox(
-                    height: 186,
+                    height: 188,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
+                      padding: screenPaddingH(),
                       itemCount: favorites.length,
                       itemBuilder: (_, index) {
                         final studio = _studioPreview(

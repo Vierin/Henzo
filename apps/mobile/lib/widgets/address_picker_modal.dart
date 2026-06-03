@@ -18,6 +18,7 @@ import 'common/sheet_action_button_style.dart';
 import '../l10n/locale_provider.dart';
 import '../services/mapbox_api_service.dart';
 import 'map/henzo_map_layers.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Result of address + location name pick.
 class AddressPickerSelection {
@@ -562,7 +563,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   InputDecoration _fieldDecoration({required String hint, Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 16, color: AppColors.textTertiary),
+      hintStyle: TextStyle(fontSize: 16.sp, color: AppColors.textTertiary),
       filled: true,
       fillColor: AppColors.backgroundPrimary,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -613,8 +614,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                   child: Text(
                     t('addressPicker.title'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                       color: AppColors.textPrimary,
@@ -637,8 +638,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
               children: [
                 Text(
                   t('addressPicker.locationNameLabel'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
@@ -669,8 +670,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                     Expanded(
                       child: Text(
                         t('profileForm.address'),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
                         ),
@@ -701,7 +702,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                               )
                             else
                               SvgPicture.asset(
-                                'assets/icons/icon-pin.svg',
+                                'assets/icons/icon-pin-simple.svg',
                                 width: 11,
                                 height: 15,
                                 colorFilter: const ColorFilter.mode(
@@ -713,7 +714,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                             Text(
                               t('addressPicker.useCurrentLocation'),
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w600,
                                 color: _currentLocationLoading
                                     ? AppColors.textTertiary
@@ -890,8 +891,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                                 _hasLocationName
                                     ? t('addressPicker.enableMapHint')
                                     : t('addressPicker.enterNameFirstHint'),
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
@@ -930,8 +931,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                                     ),
                                     title: Text(
                                       s.address,
-                                      style: const TextStyle(
-                                        fontSize: 14,
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
                                         color: AppColors.textPrimary,
                                       ),
                                     ),
@@ -960,7 +961,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                               child: Text(
                                 t('addressPicker.mapHint'),
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   color: Colors.white.withValues(alpha: 0.95),
                                 ),
                                 textAlign: TextAlign.center,
@@ -993,8 +994,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                                 const SizedBox(height: 8),
                                 Text(
                                   t('addressPicker.selectAddressOnMap'),
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     color: AppColors.textSecondary,
                                   ),
                                   textAlign: TextAlign.center,

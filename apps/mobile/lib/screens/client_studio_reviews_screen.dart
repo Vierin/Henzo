@@ -8,6 +8,7 @@ import '../utils/formatters.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/public/studio_review_card.dart';
 import '../widgets/public/studio_reviews_summary_card.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Full review list for client studio profile (See more).
 class ClientStudioReviewsScreen extends StatelessWidget {
@@ -25,7 +26,7 @@ class ClientStudioReviewsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final t = (String k) => locale.t('clientStudioDetail.$k');
+    String t(String k) => locale.t('clientStudioDetail.$k');
     final title = t('reviewsTitle');
     final empty = locale.t('dashboard.reviewsEmpty');
     final readMore = t('readMore');
@@ -50,8 +51,8 @@ class ClientStudioReviewsScreen extends StatelessWidget {
                     child: Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -66,7 +67,7 @@ class ClientStudioReviewsScreen extends StatelessWidget {
                   ? Center(
                       child: Text(
                         empty,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                         ),
                       ),

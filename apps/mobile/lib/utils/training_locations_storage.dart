@@ -67,8 +67,8 @@ Future<Salon?> persistTrainingLocationDefaultSwap(
     if (salon.instagram != null) 'instagram': salon.instagram,
     if (salon.photos != null) 'photos': salon.photos,
     if (salon.workingHours != null) 'workingHours': salon.workingHours,
-    if (latitude != null) 'latitude': latitude,
-    if (longitude != null) 'longitude': longitude,
+    'latitude': ?latitude,
+    'longitude': ?longitude,
     if (salon.autoConfirmBookings != null)
       'autoConfirmBookings': salon.autoConfirmBookings,
     'reminderSettings': reminderSettings,

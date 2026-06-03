@@ -19,6 +19,7 @@ import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../services/client_location_store.dart';
 import '../services/client_schedule_store.dart';
+import '../services/device_location_service.dart';
 import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
 import '../utils/load_error_message.dart';
@@ -38,6 +39,7 @@ import 'location_picker_screen.dart';
 import 'notifications_screen.dart';
 import 'public_class_detail_screen.dart';
 import 'public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PublicHomeScreen extends StatefulWidget {
   const PublicHomeScreen({
@@ -184,25 +186,26 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       backgroundColor: AppColors.backgroundPrimary,
       builder: (ctx) {
         return SafeArea(
+          top: false,
           child: Padding(
             padding: screenPaddingH(top: 10, bottom: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Share your location',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'To show nearby studios, allow location access or choose city manually.',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -216,6 +219,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary500,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('Use current location'),
                   ),
@@ -228,6 +234,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       Navigator.of(ctx).pop();
                       await _openManualLocationInput();
                     },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                     child: const Text('Enter city manually'),
                   ),
                 ),
@@ -240,60 +251,59 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   Future<void> _requestCurrentLocation() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
+    final locale = context.read<LocaleProvider>();
+    if (!await Geolocator.isLocationServiceEnabled()) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location service is disabled')),
-      );
-      await _openManualLocationInput();
-      return;
-    }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permission denied')),
-      );
-      await _openManualLocationInput();
-      return;
-    }
-    try {
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+        SnackBar(
+          content: Text(locale.t('addressPicker.locationServiceDisabled')),
         ),
       );
-      final reverse = await MapboxApiService.reverseGeocode(
+      await Geolocator.openLocationSettings();
+      return;
+    }
+    if (!await DeviceLocationService.ensureAccess()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(locale.t('addressPicker.locationPermissionDenied')),
+        ),
+      );
+      await _openManualLocationInput();
+      return;
+    }
+
+    final pos = await DeviceLocationService.resolvePosition();
+    if (!mounted) return;
+    if (pos == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${locale.t('addressPicker.locationDetectFailed')}\n'
+            '${locale.t('addressPicker.locationDetectFailedHint')}',
+          ),
+        ),
+      );
+      await _openManualLocationInput();
+      return;
+    }
+
+    ReverseGeocodeResult? reverse;
+    try {
+      reverse = await MapboxApiService.reverseGeocode(
         pos.latitude,
         pos.longitude,
       );
-      final city =
-          _extractCityFromAddress(reverse?.address) ?? 'Current location';
-      await _persistLocation(city: city, lat: pos.latitude, lon: pos.longitude);
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to detect location')),
-      );
-      await _openManualLocationInput();
+      reverse = null;
     }
-  }
+    if (!mounted) return;
 
-  String? _extractCityFromAddress(String? address) {
-    if (address == null || address.trim().isEmpty) return null;
-    final parts = address
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return null;
-    if (parts.length >= 2) return parts[parts.length - 2];
-    return parts.first;
+    final city = DeviceLocationService.cityFromAddress(
+      reverse?.address,
+      locale.t('clientHome.locationPickerUseCity'),
+    );
+    await _persistLocation(city: city, lat: pos.latitude, lon: pos.longitude);
   }
 
   Future<void> _openManualLocationInput() async {
@@ -578,8 +588,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       child: Text(
                         count > 9 ? '9+' : '$count',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 9,
+                        style: TextStyle(
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           height: 1.2,
@@ -724,8 +734,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                                 locationLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
                                   letterSpacing: 0.4,
                                   color: AppColors.textPrimary,
                                 ),
@@ -750,8 +760,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                   padding: screenPaddingH(top: 0, bottom: 12),
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.w500,
                         height: 1.1,
                         color: AppColors.textPrimary,
@@ -760,7 +770,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         TextSpan(text: locale.t('clientHome.greetingHello')),
                         TextSpan(
                           text: firstName,
-                          style: const TextStyle(fontWeight: FontWeight.w400),
+                          style: TextStyle(fontWeight: FontWeight.w400),
                         ),
                       ],
                     ),
@@ -779,9 +789,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                           readOnly: true,
                           decoration: InputDecoration(
                             hintText: locale.t('clientHome.searchHint'),
-                            hintStyle: const TextStyle(
+                            hintStyle: TextStyle(
                               color: AppColors.textTertiary,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                             ),
                             isDense: true,
                             prefixIcon: const AppSearchPrefixIcon(
@@ -873,7 +883,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 186,
+                  height: 188,
                   child: _isLoadingStudios
                       ? const Center(child: CircularProgressIndicator())
                       : _studiosLoadError != null
@@ -1048,38 +1058,26 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       showLocationPin: sub.showLocationPin,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: OwnerDailyScheduleSessionCard(
-        session: session,
-        subtitleLabel: rows.subtitleLabel,
-        showLocationPin: rows.showLocationPin,
-        showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
-        trainerLine: rows.trainerLine,
-        onTap: () {
-          if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
-            return;
-          }
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PublicClassDetailScreen(
-                studioId: studioId,
-                sessionId: sessionId,
-                sessionStartsAtHint: startsHint,
-              ),
+    return OwnerDailyScheduleSessionCard(
+      session: session,
+      subtitleLabel: rows.subtitleLabel,
+      showLocationPin: rows.showLocationPin,
+      showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
+      trainerLine: rows.trainerLine,
+      onTap: () {
+        if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PublicClassDetailScreen(
+              studioId: studioId,
+              sessionId: sessionId,
+              sessionStartsAtHint: startsHint,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

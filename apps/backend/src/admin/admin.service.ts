@@ -188,7 +188,7 @@ export class AdminService {
     const skip = (page - 1) * limit;
     const where: {
       status?: { equals: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED' };
-      type?: { equals: 'FREEMIUM' | 'PRO' };
+      type?: { equals: 'SOLO' | 'STUDIO' | 'ENTERPRISE' };
     } = {};
     if (
       status === 'ACTIVE' ||
@@ -198,7 +198,7 @@ export class AdminService {
     ) {
       where.status = { equals: status };
     }
-    if (type === 'FREEMIUM' || type === 'PRO') {
+    if (type === 'SOLO' || type === 'STUDIO' || type === 'ENTERPRISE') {
       where.type = { equals: type };
     }
 

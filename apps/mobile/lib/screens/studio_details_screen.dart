@@ -15,6 +15,7 @@ import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/common/henzo_modal.dart';
 import '../widgets/settings/settings_typography.dart';
 import '../widgets/settings/studio_name_address_fields.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Onboarding / owner: studio name + address (matches settings main info fields).
 class StudioDetailsScreen extends StatefulWidget {
@@ -288,8 +289,8 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
                               )
                             : Text(
                                 locale.t('common.save'),
-                                style: const TextStyle(
-                                  fontSize: 16,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

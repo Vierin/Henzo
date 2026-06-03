@@ -1,5 +1,5 @@
 name: mobile
-description: "A new Flutter project."
+description: "Henzo mobile app for fitness studios and clients."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.8
@@ -67,7 +67,11 @@ dependencies:
   app_links: ^7.0.0
   purchases_flutter: ^10.1.0
   health: ^12.2.0
+  sign_in_with_apple: ^7.0.1
+  location: ^8.0.1
+  flutter_screenutil: ^5.9.3
 
+  image_picker_platform_interface: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -86,10 +90,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-    - assets/.env
-    - assets/.env.local
     - assets/.env.local.example
-    - assets/.env.production.example
     - assets/icon.png
     - assets/logo.png
     - assets/cloud.webp

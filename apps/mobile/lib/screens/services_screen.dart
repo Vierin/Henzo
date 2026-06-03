@@ -31,6 +31,7 @@ import '../../widgets/training/training_filter_chip.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/training/training_time_picker_sheet.dart';
 import 'add_training_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum ServicesSort {
   nameAz,
@@ -60,7 +61,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   bool _isActionLoading = false;
   bool _didAutoOpenCreate = false;
   bool _didOpenEditFromRouteArgs = false;
-  ServicesSort _sort = ServicesSort.nameAz;
+  final ServicesSort _sort = ServicesSort.nameAz;
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -183,12 +184,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final confirm = await showHenzoDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить тренировку'),
-        content: Text('Удалить тренировку «${item.displayName}»?'),
+        title: Text(context.read<LocaleProvider>().t('servicesScreen.deleteTrainingTitle')),
+        content: Text(context.read<LocaleProvider>().t('servicesScreen.deleteTrainingConfirm').replaceAll('{name}', item.displayName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(context.read<LocaleProvider>().t('common.cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -210,15 +211,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
         context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
         await _loadData();
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('Тренировка удалена'),
+          SnackBar(
+            content: Text(context.read<LocaleProvider>().t('servicesScreen.trainingDeleted')),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('Не удалось удалить тренировку'),
+          SnackBar(
+            content: Text(context.read<LocaleProvider>().t('servicesScreen.deleteFailed')),
             backgroundColor: Colors.red,
           ),
         );
@@ -284,11 +285,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Информация',
+                        context.read<LocaleProvider>().t('common.info'),
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                         ),
@@ -306,10 +307,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     height: 1.4,
                     color: AppColors.textSecondary,
                   ),
@@ -323,7 +324,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary500,
                     ),
-                    child: const Text('Понятно'),
+                    child: Text(context.read<LocaleProvider>().t('common.understood')),
                   ),
                 ),
               ],
@@ -432,7 +433,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     Text(
                       locale.t('common.setupSalonFirst'),
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         color: AppColors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
@@ -440,7 +441,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     const SizedBox(height: 24),
                     FilledButton.icon(
                       onPressed: _isLoading ? null : _loadData,
-                      icon: const Icon(Icons.refresh, size: 20),
+                      icon: Icon(Icons.refresh, size: 20),
                       label: Text(locale.t('common.retry')),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary500,
@@ -464,7 +465,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           Text(
                             locale.t('servicesScreen.category'),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                             ),
@@ -576,7 +577,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                   ? locale.t('servicesScreen.emptyTitle')
                                   : locale.t('common.nothingFound'),
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 18.sp,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
@@ -587,7 +588,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                   ? locale.t('servicesScreen.emptySubtitle')
                                   : locale.t('servicesScreen.changeFilters'),
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -663,7 +664,7 @@ class _EditTemplateVndThousandsFormatter extends TextInputFormatter {
 }
 
 class EditTrainingScreen extends StatefulWidget {
-  const EditTrainingScreen({
+  const EditTrainingScreen({super.key, 
     required this.token,
     required this.item,
     required this.salon,
@@ -690,8 +691,8 @@ class EditTrainingScreen extends StatefulWidget {
 class EditTrainingScreenState extends State<EditTrainingScreen> {
   static const Color _kFormAccent = Color(0xFF6C5CE7);
   static const Color _kHintMuted = Color(0x993F3F3F);
-  static const TextStyle _kFieldInputStyle = TextStyle(
-    fontSize: 16,
+  static final TextStyle _kFieldInputStyle = TextStyle(
+    fontSize: 16.sp,
     color: AppColors.textPrimary,
   );
 
@@ -736,9 +737,9 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     );
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         color: _kHintMuted,
-        fontSize: 16,
+        fontSize: 16.sp,
         fontWeight: FontWeight.w500,
       ),
       prefixIcon: prefixIcon == null
@@ -750,8 +751,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffix: suffix,
       suffixText: suffixText,
-      suffixStyle: const TextStyle(
-        fontSize: 16,
+      suffixStyle: TextStyle(
+        fontSize: 16.sp,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
@@ -784,15 +785,15 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           Expanded(
             child: Text(
               text.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,
                 color: AppColors.textPrimary,
               ),
             ),
           ),
-          if (trailing != null) trailing,
+          ?trailing,
         ],
       ),
     );
@@ -840,9 +841,9 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     hintText: '60',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       color: _kHintMuted,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
                     ),
                     border: InputBorder.none,
@@ -861,8 +862,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
                   loc.t('addTraining.durationSuffix'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -974,7 +975,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
             child: Text(
               _narrowWeekday(day, loc),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w700,
                 color: selected ? AppColors.textInverse : AppColors.textPrimary,
               ),
@@ -1087,9 +1088,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   Future<void> _loadSessionDefaults() async {
     final locale = context.read<LocaleProvider>();
     var salon = widget.salon;
-    if (salon == null) {
-      salon = await context.read<SalonCache>().getSalon(widget.token);
-    }
+    salon ??= await context.read<SalonCache>().getSalon(widget.token);
     if (!mounted) return;
     _applyLocationsFromStudio(salon, locale);
 
@@ -1183,7 +1182,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Введите название тренировки')),
+        SnackBar(content: Text('Введите название тренировки')),
       );
       return;
     }
@@ -1196,7 +1195,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     if (price <= 0 || duration <= 0 || capacity <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Цена, длительность и вместительность должны быть > 0',
           ),
@@ -1208,7 +1207,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final recurringDays = _recurringDays.toList()..sort();
     if (_applyScheduleChanges && recurringDays.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Выберите хотя бы один день')),
+        SnackBar(content: Text('Выберите хотя бы один день')),
       );
       return;
     }
@@ -1256,8 +1255,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           );
           if (scheduleRes == null && mounted) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              const SnackBar(
-                content: Text('Не удалось обновить расписание тренировок'),
+              SnackBar(
+                content: Text(context.read<LocaleProvider>().t('servicesScreen.scheduleUpdateFailed')),
               ),
             );
             return;
@@ -1287,8 +1286,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           );
           if (!ok && mounted) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              const SnackBar(
-                content: Text('Не удалось обновить вместимость или адрес'),
+              SnackBar(
+                content: Text(context.read<LocaleProvider>().t('servicesScreen.updateDefaultsFailed')),
               ),
             );
             return;
@@ -1329,9 +1328,9 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         leadingWidth: 56,
         centerTitle: true,
         title: Text(
-          widget.title ?? 'Редактировать тренировку',
-          style: const TextStyle(
-            fontSize: 14,
+          widget.title ?? context.read<LocaleProvider>().t('servicesScreen.editTraining'),
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -1388,7 +1387,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w400,
                     color: _selectedCategoryId == null
                         ? AppColors.textSecondary
@@ -1440,8 +1439,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                   children: [
                                     Text(
                                       displayName,
-                                      style: const TextStyle(
-                                        fontSize: 19,
+                                      style: TextStyle(
+                                        fontSize: 19.sp,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.textPrimary,
                                       ),
@@ -1450,8 +1449,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                       const SizedBox(height: 4),
                                       Text(
                                         address,
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
                                           height: 1.35,
                                           color: AppColors.textSecondary,
                                         ),
@@ -1552,8 +1551,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               const SizedBox(height: 6),
               Text(
                 locale.t('addTraining.step2.scheduleHint'),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   height: 1.35,
                   color: AppColors.textSecondary,
                 ),
@@ -1577,8 +1576,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                             width: 110,
                             child: Text(
                               _fullWeekday(day, locale),
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ),
@@ -1608,8 +1607,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                 ),
                                 child: Text(
                                   trainingTimeToHm(time),
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
                                   ),
@@ -1671,8 +1670,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                       DateFormat.yMMMd(locale.localeCode).format(
                         _effectiveFromDate,
                       ),
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -1695,7 +1694,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   ),
                 ),
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
@@ -1709,12 +1708,12 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                         locale.t('common.update'),
                         style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               color: AppColors.textInverse,
                             ) ??
-                            const TextStyle(
+                            TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               color: AppColors.textInverse,
                             ),
                       ),

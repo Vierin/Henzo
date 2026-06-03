@@ -14,14 +14,13 @@ import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
 import 'app_settings_screen.dart';
-import 'profile_screen.dart';
 import 'add_training_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
-import 'analytics_screen.dart';
 import 'owner_edit_training_session_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -196,12 +195,6 @@ class MainShellState extends State<MainShell> {
             return MaterialPageRoute<void>(
               builder: (_) => _ClientsTabOpener(args: settings.arguments),
             );
-          case '/analytics':
-            return MaterialPageRoute<void>(
-              builder: (_) => const AnalyticsScreen(),
-            );
-          case '/profile':
-            return MaterialPageRoute(builder: (_) => const ProfileScreen());
           case '/all-bookings':
             return MaterialPageRoute(builder: (_) => const AllBookingsScreen());
           default:
@@ -236,48 +229,71 @@ class MainShellState extends State<MainShell> {
             child: Consumer<LocaleProvider>(
               builder: (context, locale, _) {
                 final t = locale.t;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: _NavItem(
-                        svgAsset: 'assets/icons/icon-house.svg',
-                        label: t('shell.tabHome'),
-                        isSelected: _currentIndex == 0,
-                        onTap: _openHomeTab,
-                      ),
-                    ),
-                    Expanded(
-                      child: _NavItem(
-                        svgAsset: 'assets/icons/icon-schedule.svg',
-                        label: t('shell.tabSchedule'),
-                        isSelected: _currentIndex == 1,
-                        onTap: () {
-                          setState(() => _currentIndex = 1);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _scheduleCalendarKey.currentState
-                                ?.ensureSessionsLoaded();
-                          });
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: _NavItem(
-                        svgAsset: 'assets/icons/icon-clients.svg',
-                        label: t('shell.tabClients'),
-                        isSelected: _currentIndex == 2,
-                        onTap: () => setState(() => _currentIndex = 2),
-                      ),
-                    ),
-                    Expanded(
-                      child: _NavItem(
-                        svgAsset: 'assets/icons/icon-settings.svg',
-                        label: t('shell.tabSettings'),
-                        isSelected: _currentIndex == 3,
-                        onTap: () => setState(() => _currentIndex = 3),
-                      ),
-                    ),
-                  ],
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = constraints.maxWidth / 4;
+                    return Stack(
+                      children: [
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOutCubic,
+                          left: _currentIndex * itemWidth,
+                          top: 0,
+                          bottom: 0,
+                          width: itemWidth,
+                          child: Container(
+                            margin: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary500,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _NavItem(
+                                svgAsset: 'assets/icons/icon-house.svg',
+                                label: t('shell.tabHome'),
+                                isSelected: _currentIndex == 0,
+                                onTap: _openHomeTab,
+                              ),
+                            ),
+                            Expanded(
+                              child: _NavItem(
+                                svgAsset: 'assets/icons/icon-schedule.svg',
+                                label: t('shell.tabSchedule'),
+                                isSelected: _currentIndex == 1,
+                                onTap: () {
+                                  setState(() => _currentIndex = 1);
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    _scheduleCalendarKey.currentState
+                                        ?.ensureSessionsLoaded();
+                                  });
+                                },
+                              ),
+                            ),
+                            Expanded(
+                              child: _NavItem(
+                                svgAsset: 'assets/icons/icon-clients.svg',
+                                label: t('shell.tabClients'),
+                                isSelected: _currentIndex == 2,
+                                onTap: () => setState(() => _currentIndex = 2),
+                              ),
+                            ),
+                            Expanded(
+                              child: _NavItem(
+                                svgAsset: 'assets/icons/icon-settings.svg',
+                                label: t('shell.tabSettings'),
+                                isSelected: _currentIndex == 3,
+                                onTap: () => setState(() => _currentIndex = 3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -305,53 +321,40 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = isSelected
-        ? AppColors.textInverse
-        : _inactiveIconAndLabel;
-    final textColor = isSelected
-        ? AppColors.textInverse
-        : _inactiveIconAndLabel;
+    final iconColor = isSelected ? AppColors.textInverse : _inactiveIconAndLabel;
+    final textColor = isSelected ? AppColors.textInverse : _inactiveIconAndLabel;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 170),
-            curve: Curves.easeOutCubic,
-            height: 58,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary500 : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  svgAsset,
-                  width: 20,
-                  height: 20,
-                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: SizedBox(
+          height: 62,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(
+                svgAsset,
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w400,
+                  color: textColor,
+                  height: 1,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: textColor,
-                    height: 1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
@@ -386,8 +389,8 @@ class _SalonLoadingCurtain extends StatelessWidget {
                 Consumer<LocaleProvider>(
                   builder: (context, loc, _) => Text(
                     loc.t('shell.loadingWorkspace'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Owner onboarding card: 3 required steps, then 3 optional (design mock).
 class OwnerChecklistCard extends StatelessWidget {
@@ -51,10 +52,8 @@ class OwnerChecklistCard extends StatelessWidget {
   final VoidCallback onPublishTap;
   final bool showOptionalPhase;
 
-  static const _iconPurple = Color(0xFF3D2E6F);
-  static const _optionalHeaderBg = Color(0xFFFFF9F5);
-  static const _starBadgeBg = Color(0xFFFFF0D1);
-  static const _starColor = Color(0xFFFF9900);
+  static const _taskIconColor = AppColors.primary500;
+  static const _chevronColor = Color(0xFF3B5BDB);
   static const _mandatoryStepWeight = 25;
   static const _optionalTotalWeight = 25;
   static const _optionalStepCount = 3;
@@ -97,7 +96,7 @@ class OwnerChecklistCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(13, 16, 13, 16),
       decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
+        color: const Color(0xFFC2F600).withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -210,8 +209,8 @@ class _MandatoryPhaseHeader extends StatelessWidget {
       children: [
         Text(
           tr('onboardingTagline'),
-          style: const TextStyle(
-            fontSize: 11,
+          style: TextStyle(
+            fontSize: 11.sp,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
             color: AppColors.textSecondary,
@@ -220,8 +219,8 @@ class _MandatoryPhaseHeader extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           tr('onboardingStudioReadyPrefix').trim(),
-          style: const TextStyle(
-            fontSize: 24,
+          style: TextStyle(
+            fontSize: 24.sp,
             fontWeight: FontWeight.w400,
             height: 1.2,
             color: AppColors.textPrimary,
@@ -229,8 +228,8 @@ class _MandatoryPhaseHeader extends StatelessWidget {
         ),
         RichText(
           text: TextSpan(
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: 24.sp,
               fontWeight: FontWeight.w400,
               height: 1.2,
               color: AppColors.textPrimary,
@@ -238,7 +237,7 @@ class _MandatoryPhaseHeader extends StatelessWidget {
             children: [
               TextSpan(
                 text: '$percent%',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
               TextSpan(text: tr('onboardingStudioReadySuffix')),
             ],
@@ -247,8 +246,8 @@ class _MandatoryPhaseHeader extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           stepsText,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 12.sp,
             height: 1.2,
             color: AppColors.textSecondary,
           ),
@@ -320,8 +319,8 @@ class _OptionalPhaseHeader extends StatelessWidget {
               children: [
                 Text(
                   tr('onboardingOptionalHeadline'),
-                  style: const TextStyle(
-                    fontSize: 17,
+                  style: TextStyle(
+                    fontSize: 17.sp,
                     fontWeight: FontWeight.w700,
                     height: 1.2,
                     color: AppColors.textPrimary,
@@ -330,8 +329,8 @@ class _OptionalPhaseHeader extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   tr('onboardingOptionalSubhead'),
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     height: 1.35,
                     color: AppColors.textPrimary,
                   ),
@@ -363,19 +362,22 @@ class _PreviewPublicPageButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 16),
             ],
           ),
         ),
@@ -428,8 +430,8 @@ class _ActivateStudioButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary500,
                     ),
@@ -475,8 +477,8 @@ class _OnboardingProgressRing extends StatelessWidget {
               children: [
                 Text(
                   '$percent%',
-                  style: const TextStyle(
-                    fontSize: 24,
+                  style: TextStyle(
+                    fontSize: 24.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                     height: 1,
@@ -484,8 +486,8 @@ class _OnboardingProgressRing extends StatelessWidget {
                 ),
                 Text(
                   completedLabel,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 11.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -563,21 +565,22 @@ class _OnboardingTaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.transparent,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 42,
+                  height: 42,
                   decoration: const BoxDecoration(
-                    color: OwnerChecklistCard._iconPurple,
+                    color: OwnerChecklistCard._taskIconColor,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: Colors.white, size: 20),
@@ -589,16 +592,16 @@ class _OnboardingTaskRow extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -607,8 +610,8 @@ class _OnboardingTaskRow extends StatelessWidget {
                 ),
                 const Icon(
                   Icons.chevron_right_rounded,
-                  color: OwnerChecklistCard._iconPurple,
-                  size: 28,
+                  color: OwnerChecklistCard._chevronColor,
+                  size: 24,
                 ),
               ],
             ),
