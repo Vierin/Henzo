@@ -325,42 +325,22 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               ),
             ],
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: busy ? null : () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, AuthFormStyles.buttonHeight),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AuthFormStyles.buttonBorderRadius,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: busy ? null : _submitManual,
+                style: AuthFormStyles.primaryButtonStyle(),
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                      ),
-                      side: const BorderSide(color: AppColors.borderPrimary),
-                    ),
-                    child: Text(locale.t('common.cancel')),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton(
-                    onPressed: busy ? null : _submitManual,
-                    style: AuthFormStyles.primaryButtonStyle(),
-                    child: _saving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(locale.t('common.save')),
-                  ),
-                ),
-              ],
+                      )
+                    : Text(locale.t('common.save')),
+              ),
             ),
             const SizedBox(height: 24),
           ],
