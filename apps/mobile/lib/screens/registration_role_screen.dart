@@ -7,6 +7,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../utils/legal_web_links.dart';
 import '../widgets/chaotic_underline.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/language_selector_modal.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
@@ -20,7 +21,6 @@ class RegistrationRoleScreen extends StatelessWidget {
     'vi': 'Tiếng Việt',
   };
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,41 +32,45 @@ class RegistrationRoleScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Language selector — top right only
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: () => showLanguageSelectorModal(context, locale),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.language,
-                            size: 16,
-                            color: AppColors.textPrimary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _languageLabels[locale.localeCode] ??
-                                locale.localeCode.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 14.sp,
+                Row(
+                  children: [
+                    HenzoHeaderBackButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () => showLanguageSelectorModal(context, locale),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.language,
+                              size: 16,
                               color: AppColors.textPrimary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              _languageLabels[locale.localeCode] ??
+                                  locale.localeCode.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // Heading
                 _ScreenHeading(locale: locale),
@@ -89,7 +93,7 @@ class RegistrationRoleScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 22),
 
                 // Manager card — image on right
                 _RoleCard(
@@ -202,40 +206,43 @@ class _RoleCard extends StatelessWidget {
   final bool imageOnLeft;
   final VoidCallback onTap;
 
-  static const double _cardHeight = 172.0;
-  static const double _imageWidth = 144.0;
+  static const double _cardHeight = 160.0;
+  static const double _imageWidth = 161.0;
   static const double _imageTopOverflow = 32.0;
+  static const double _cardRadius = 18.0;
+
+  double get _plateSideInset => _imageWidth / 2;
 
   @override
   Widget build(BuildContext context) {
     final textPadding = imageOnLeft
-        ? const EdgeInsets.fromLTRB(_imageWidth - 8, 20, 20, 20)
-        : const EdgeInsets.fromLTRB(20, 20, _imageWidth - 8, 20);
+        ? EdgeInsets.fromLTRB(_plateSideInset - 6, 0, 16, 0)
+        : EdgeInsets.fromLTRB(16, 0, _plateSideInset + 6, 0);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(_cardRadius),
         child: SizedBox(
           height: _cardHeight + _imageTopOverflow,
           child: Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.bottomCenter,
             children: [
-              // Card background + text
+              // Card background + text (narrow plate; half-image inset on photo side)
               Positioned(
-                left: 0,
-                right: 0,
+                left: imageOnLeft ? _plateSideInset : 0,
+                right: imageOnLeft ? 0 : _plateSideInset,
                 bottom: 0,
                 height: _cardHeight,
                 child: Ink(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(_cardRadius),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(_cardRadius),
                     child: Padding(
                       padding: textPadding,
                       child: Column(
@@ -245,44 +252,47 @@ class _RoleCard extends StatelessWidget {
                           Text(
                             locale.t('auth.roleIAm'),
                             style: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: 14.sp,
                               color: AppColors.textSecondary,
-                              height: 1.2,
+                              height: 1.15,
                             ),
                           ),
-                          const SizedBox(height: 1),
+                          const SizedBox(height: 4),
                           Text(
                             roleWord,
                             style: TextStyle(
-                              fontSize: 38.sp,
+                              fontSize: 30.sp,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                               height: 1.0,
-                              letterSpacing: -0.5,
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 2),
                           ChaoticUnderline(
                             width: underlineWidth,
-                            height: 6,
+                            height: 5,
                             color: accentColor,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 6),
                           Text(
                             description,
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               color: AppColors.textSecondary,
-                              height: 1.4,
+                              height: 1.2,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 2),
                           Text(
                             locale.t('auth.roleAllInOne'),
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
+                              height: 1.2,
                             ),
                           ),
                         ],
@@ -340,7 +350,8 @@ class _TermsText extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
             recognizer: TapGestureRecognizer()
-              ..onTap = () => openLegalWebPage(context, locale, '/privacy-policy'),
+              ..onTap = () =>
+                  openLegalWebPage(context, locale, '/privacy-policy'),
           ),
           TextSpan(text: ' ${locale.t('auth.termsAnd')} '),
           TextSpan(
@@ -350,7 +361,8 @@ class _TermsText extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
             recognizer: TapGestureRecognizer()
-              ..onTap = () => openLegalWebPage(context, locale, '/terms-of-service'),
+              ..onTap = () =>
+                  openLegalWebPage(context, locale, '/terms-of-service'),
           ),
           const TextSpan(text: '.'),
         ],

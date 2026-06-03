@@ -45,7 +45,6 @@ export class RevenueCatService {
   private get studioEntitlementId(): string {
     return (
       this.config.get<string>('REVENUECAT_STUDIO_ENTITLEMENT_ID')?.trim() ||
-      this.config.get<string>('REVENUECAT_ENTITLEMENT_ID')?.trim() ||
       'premium_studio'
     );
   }
