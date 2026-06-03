@@ -2,7 +2,7 @@
 class Subscription {
   final String id;
   final String salonId;
-  final String type; // FREEMIUM, PRO
+  final String type; // SOLO, STUDIO, ENTERPRISE
   final String status; // ACTIVE, INACTIVE, CANCELLED, EXPIRED
   final String startDate;
   final double? amount;
@@ -35,7 +35,7 @@ class Subscription {
     return Subscription(
       id: (json['id']?.toString() ?? '').trim(),
       salonId: (json['salonId']?.toString() ?? '').trim(),
-      type: (json['type'] as String?) ?? 'FREEMIUM',
+      type: (json['type'] as String?) ?? 'SOLO',
       status: (json['status'] as String?) ?? 'INACTIVE',
       startDate: (json['startDate'] as String?) ?? '',
       amount: amount,

@@ -16,6 +16,7 @@ import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
 import '../utils/formatters.dart';
 import '../utils/show_api_error.dart';
+import '../utils/subscription_tier.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/subscription_legal_disclosure.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
@@ -127,9 +128,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
-  bool get _isPro =>
+  bool get _hasPaidPlan =>
       _activeTier != null ||
-      _subscription?.type.toUpperCase() == 'PRO';
+      subscriptionTypeIsPaid(_subscription?.type);
 
   Package? _packageForInterval(String interval) =>
       interval == 'annual' ? _annualPackage : _monthlyPackage;
@@ -308,8 +309,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 8),
-                        if (!_isPro) ...[
-                          _CurrentPlanCard(isPro: false),
+                        if (!_hasPaidPlan) ...[
+                          _CurrentPlanCard(
+                            planType: _subscription?.type,
+                          ),
                           const SizedBox(height: 20),
 
                           // Studio
@@ -423,9 +426,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 }
 
 class _CurrentPlanCard extends StatelessWidget {
-  final bool isPro;
+  final String? planType;
 
-  const _CurrentPlanCard({required this.isPro});
+  const _CurrentPlanCard({this.planType});
 
   @override
   Widget build(BuildContext context) {
@@ -450,9 +453,9 @@ class _CurrentPlanCard extends StatelessWidget {
                   children: [
                     Builder(builder: (context) {
                       final locale = context.read<LocaleProvider>();
-                      final planName = isPro
-                          ? locale.t('profile.pro')
-                          : locale.t('subscription.solo');
+                      final planName = locale.t(
+                        subscriptionPlanLabelKey(planType),
+                      );
                       return Text(
                         locale.t('subscription.currentPlanLabel')
                             .replaceAll('{plan}', planName),
@@ -467,9 +470,7 @@ class _CurrentPlanCard extends StatelessWidget {
                     Builder(builder: (context) {
                       final locale = context.read<LocaleProvider>();
                       return Text(
-                        isPro
-                            ? locale.t('subscription.currentProDesc')
-                            : locale.t('subscription.currentSoloDesc'),
+                        locale.t('subscription.currentSoloDesc'),
                         style: TextStyle(
                           fontSize: 13.sp,
                           color: AppColors.textSecondary,

@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { SubscriptionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isSoloSubscriptionType } from './subscription-tier.util';
 
 @Injectable()
 export class PlanLimitsService {
@@ -14,7 +14,7 @@ export class PlanLimitsService {
       where: { studioId },
       select: { type: true, status: true },
     });
-    return !sub || sub.type === SubscriptionType.FREEMIUM;
+    return isSoloSubscriptionType(sub?.type);
   }
 
   /**

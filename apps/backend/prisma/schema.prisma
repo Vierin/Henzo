@@ -170,7 +170,7 @@ model Trainer {
 model Subscription {
   id                String             @id @default(cuid())
   studioId          String             @unique
-  type              SubscriptionType   @default(FREEMIUM)
+  type              SubscriptionType   @default(SOLO)
   status           SubscriptionStatus  @default(ACTIVE)
   startDate         DateTime
   amount            Float
@@ -320,8 +320,9 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionType {
-  FREEMIUM
-  PRO
+  SOLO
+  STUDIO
+  ENTERPRISE
 }
 
 enum TrainingSessionStatus {

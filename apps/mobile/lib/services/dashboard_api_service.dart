@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../utils/formatters.dart';
+import '../utils/subscription_tier.dart';
 import 'api_client.dart';
 import '../models/booking.dart';
 import '../models/owner_studio_client.dart';
@@ -431,8 +432,11 @@ class StudioAnalytics {
       clientsInactive: clients is Map<String, dynamic>
           ? _asInt(clients['inactive'])
           : 0,
-      analyticsTier: (json['analyticsTier'] ?? 'FREEMIUM').toString(),
-      isPro: json['isPro'] == true,
+      analyticsTier: (json['analyticsTier'] ?? 'SOLO').toString(),
+      isPro: json['isPro'] == true ||
+          subscriptionTypeIsPaid(
+            (json['analyticsTier'] ?? '').toString(),
+          ),
       proLocked: json['proLocked'] == true,
     );
   }

@@ -15,6 +15,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/subscription_tier.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
@@ -62,7 +63,7 @@ class _StaffScreenState extends State<StaffScreen> {
         setState(() {
           _salon = salon;
           _staff = staff;
-          _isProPlan = (sub?.type.toUpperCase() ?? 'FREEMIUM') == 'PRO';
+          _isProPlan = subscriptionTypeIsPaid(sub?.type);
           _isLoading = false;
         });
       }

@@ -1246,7 +1246,7 @@ export class StudiosService {
         await tx.subscription.create({
           data: {
             studioId: studio.id,
-            type: 'FREEMIUM',
+            type: 'SOLO',
             status: 'ACTIVE',
             startDate: now,
             amount: 0.0,
@@ -1323,7 +1323,7 @@ export class StudiosService {
       (result as any).services = services;
 
       console.log(
-        `✅ Created Studio "${result.name}" with default FREEMIUM subscription`,
+        `✅ Created Studio "${result.name}" with default SOLO subscription`,
       );
       const createdDescription = createStudioDto.description?.trim();
       if (createdDescription) {
@@ -2673,9 +2673,7 @@ export class StudiosService {
 
     // Notify studio owner — fire-and-forget
     const clientName =
-      reviewer?.name?.trim() ||
-      reviewer?.email?.split('@')[0] ||
-      'Client';
+      reviewer?.name?.trim() || reviewer?.email?.split('@')[0] || 'Client';
     void this.notifications.sendNewReviewNotification({
       studioId,
       studioName: studio.name || 'Studio',

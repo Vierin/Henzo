@@ -13,6 +13,7 @@ import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/push_notification_service.dart';
 import '../utils/legal_web_links.dart';
+import '../utils/subscription_tier.dart';
 import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/feedback_sheet.dart';
@@ -169,7 +170,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   bool get _hasActiveProPlan {
     final sub = _subscription;
     if (sub == null) return false;
-    return sub.type.toUpperCase() == 'PRO' && sub.isActive;
+    return subscriptionTypeIsPaid(sub.type) && sub.isActive;
   }
 
   String _planBadgeLabel(LocaleProvider locale) {
@@ -178,16 +179,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       return locale.t('settings.owner.activeProPlan');
     }
     final sub = _subscription;
-    final isFree =
-        sub == null ||
-        (sub.type.toUpperCase() == 'FREEMIUM' && (sub.amount ?? 0) <= 0);
-    if (isFree) return locale.t('profile.free');
-    switch (sub.type.toUpperCase()) {
-      case 'PRO':
-        return locale.t('profile.pro');
-      default:
-        return sub.type;
+    if (sub == null || subscriptionTypeIsSolo(sub.type)) {
+      return locale.t('profile.free');
     }
+    final localeKey = subscriptionPlanLabelKey(sub.type);
+    if (localeKey.startsWith('subscription.')) {
+      return locale.t(localeKey);
+    }
+    return sub.type;
   }
 
   String _ownerSubtitle(LocaleProvider locale) {

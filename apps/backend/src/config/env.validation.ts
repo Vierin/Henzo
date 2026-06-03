@@ -128,6 +128,14 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  REVENUECAT_STUDIO_ENTITLEMENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_ENTERPRISE_ENTITLEMENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
   REVENUECAT_WEBHOOK_AUTHORIZATION?: string;
 
   @IsString()

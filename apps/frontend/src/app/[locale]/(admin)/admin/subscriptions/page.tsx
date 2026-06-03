@@ -60,8 +60,9 @@ function SubscriptionsContent() {
           className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
         >
           <option value="">All types</option>
-          <option value="PRO">PRO</option>
-          <option value="FREEMIUM">FREEMIUM</option>
+          <option value="SOLO">Solo</option>
+          <option value="STUDIO">Studio</option>
+          <option value="ENTERPRISE">Enterprise</option>
         </select>
       </div>
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
