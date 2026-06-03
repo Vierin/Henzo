@@ -90,6 +90,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+    - assets/.env.local.example
     - assets/icon.png
     - assets/logo.png
     - assets/cloud.webp
