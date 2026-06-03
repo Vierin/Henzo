@@ -29,7 +29,6 @@ import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'subscription_screen.dart';
-import '../main.dart';
 import '../utils/owner_navigation_restore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -73,11 +72,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     ).push(MaterialPageRoute(builder: (_) => const AccountSettingsScreen()));
     if (!mounted) return;
 
-    final rootCtx = henzoRootNavigatorKey.currentContext;
-    final messenger = rootCtx != null
-        ? ScaffoldMessenger.maybeOf(rootCtx)
-        : ScaffoldMessenger.maybeOf(context);
-    messenger?.showSnackBar(
+    if (!context.mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       const SnackBar(
         content: Text('Приложение перезапустилось. Выберите фото ещё раз.'),
       ),

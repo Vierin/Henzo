@@ -522,6 +522,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final picked = await OwnerImagePicker.pickSingleFromGallery();
     if (picked == null) return;
+    if (!mounted) return;
 
     if (Supabase.instance.client.auth.currentUser?.id == null) {
       _showSnack(context.read<LocaleProvider>().t('profileForm.loginToUploadLogo'));
@@ -560,6 +561,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       limit: availableSlots,
     );
     if (picked.isEmpty) return;
+    if (!mounted) return;
 
     var filesToProcess = picked;
     if (picked.length > availableSlots) {
@@ -827,7 +829,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                     _maxStudioPhotos
                                                 ? 1
                                                 : 0),
-                                        separatorBuilder: (_, __) =>
+                                        separatorBuilder: (_, _) =>
                                             const SizedBox(width: 10),
                                         itemBuilder: (context, index) {
                                           final hasAddSlot =
@@ -1196,7 +1198,7 @@ class _StudioLogoTile extends StatelessWidget {
                             fit: BoxFit.cover,
                             width: tileSize,
                             height: tileSize,
-                            errorBuilder: (_, __, ___) => Center(
+                            errorBuilder: (_, _, _) => Center(
                               child: SvgPicture.asset(
                                 'assets/icons/icon-add-photo.svg',
                                 width: 35,
@@ -1315,7 +1317,7 @@ class _StudioPhotoTile extends StatelessWidget {
                 fit: BoxFit.cover,
                 width: tileSize,
                 height: tileSize,
-                errorBuilder: (_, __, ___) => ColoredBox(
+                errorBuilder: (_, _, _) => ColoredBox(
                   color: AppColors.backgroundSecondary,
                   child: Center(
                     child: SvgPicture.asset(

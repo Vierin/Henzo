@@ -51,9 +51,11 @@ class _StaffScreenState extends State<StaffScreen> {
       return;
     }
     try {
-      final studio = await context.read<StudioCache>().getStudio(token);
+      final studioCache = context.read<StudioCache>();
+      final trainersCache = context.read<ServicesStaffCache>();
+      final studio = await studioCache.getStudio(token);
       final staff = studio != null
-          ? await context.read<ServicesStaffCache>().getTrainersForStudio(
+          ? await trainersCache.getTrainersForStudio(
               token,
               studio.id,
             )
@@ -105,10 +107,12 @@ class _StaffScreenState extends State<StaffScreen> {
       await TrainersApiService.delete(token, member.id);
       if (!mounted) return;
       context.read<ServicesStaffCache>().invalidateTrainers(_studio?.id);
+      final deletedMsg = locale.t('staffScreen.staffDeleted');
       await _loadData();
+      if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
-          content: Text(locale.t('staffScreen.staffDeleted')),
+          content: Text(deletedMsg),
           backgroundColor: Colors.green,
         ),
       );
@@ -481,14 +485,15 @@ class _StaffScreenState extends State<StaffScreen> {
                                       context
                                           .read<ServicesStaffCache>()
                                           .invalidateTrainers(_studio?.id);
+                                      final savedMsg =
+                                          locale.t('common.changesSaved');
                                       await _loadData();
+                                      if (!mounted) return;
                                       ScaffoldMessenger.maybeOf(
                                         context,
                                       )?.showSnackBar(
                                         SnackBar(
-                                          content: Text(
-                                            locale.t('common.changesSaved'),
-                                          ),
+                                          content: Text(savedMsg),
                                           backgroundColor: Colors.green,
                                         ),
                                       );

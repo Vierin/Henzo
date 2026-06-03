@@ -697,9 +697,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
+            final token = context.read<AuthService>().accessToken;
             await _loadTopStudiosNearby();
             if (!mounted) return;
-            final token = context.read<AuthService>().accessToken;
             await _loadClientSchedule(token);
           },
           color: AppColors.primary500,
@@ -903,6 +903,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                           ),
                         )
                       : ListView.builder(
+                          // ignore: deprecated_member_use
                           cacheExtent: 400,
                           padding: screenPaddingH(),
                           scrollDirection: Axis.horizontal,

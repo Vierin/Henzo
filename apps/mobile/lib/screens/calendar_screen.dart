@@ -164,11 +164,13 @@ class CalendarScreenState extends State<CalendarScreen> {
       return;
     }
     try {
-      final studio = await context.read<StudioCache>().getStudio(token);
+      final studioCache = context.read<StudioCache>();
+      final sessionsCache = context.read<OwnerSessionsCache>();
+      final studio = await studioCache.getStudio(token);
       final now = DateTime.now();
       final fromUtc = now.subtract(const Duration(days: 14)).toUtc();
       final toUtc = now.add(const Duration(days: 56)).toUtc();
-      final sessions = await context.read<OwnerSessionsCache>().getSessions(
+      final sessions = await sessionsCache.getSessions(
         token,
         fromUtc: fromUtc,
         toUtc: toUtc,

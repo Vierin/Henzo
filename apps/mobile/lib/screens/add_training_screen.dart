@@ -19,7 +19,6 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
-import '../utils/load_error_message.dart';
 import '../utils/plan_limit_dialogs.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
@@ -29,7 +28,6 @@ import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
-import 'subscription_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).

@@ -97,9 +97,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
       return;
     }
     try {
-      final studio = await context.read<StudioCache>().getStudio(token);
+      final studioCache = context.read<StudioCache>();
+      final servicesCache = context.read<ServicesStaffCache>();
+      final studio = await studioCache.getStudio(token);
       final services = studio != null
-          ? await context.read<ServicesStaffCache>().getServicesForStudio(
+          ? await servicesCache.getServicesForStudio(
               token,
               studio.id,
             )
@@ -203,23 +205,29 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
     setState(() => _isActionLoading = true);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final sessionsCache = context.read<OwnerSessionsCache>();
+    final servicesCache = context.read<ServicesStaffCache>();
+    final locale = context.read<LocaleProvider>();
     try {
       final ok = await ServicesApiService.delete(token, item.id);
       if (!mounted) return;
       if (ok) {
-        context.read<OwnerSessionsCache>().invalidate();
-        context.read<ServicesStaffCache>().invalidateServices(_studio?.id);
+        sessionsCache.invalidate();
+        servicesCache.invalidateServices(_studio?.id);
+        final deletedMsg = locale.t('servicesScreen.trainingDeleted');
         await _loadData();
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        if (!mounted) return;
+        messenger?.showSnackBar(
           SnackBar(
-            content: Text(context.read<LocaleProvider>().t('servicesScreen.trainingDeleted')),
+            content: Text(deletedMsg),
             backgroundColor: Colors.green,
           ),
         );
       } else {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
-            content: Text(context.read<LocaleProvider>().t('servicesScreen.deleteFailed')),
+            content: Text(locale.t('servicesScreen.deleteFailed')),
             backgroundColor: Colors.red,
           ),
         );
@@ -367,6 +375,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
     final categories = await ServicesApiService.getTrainingCategories(token);
+    if (!mounted) return;
     final changed = await Navigator.of(context).push<ServiceItem?>(
       MaterialPageRoute(
         builder: (_) => EditTrainingScreen(
@@ -1274,6 +1283,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               (scheduleData['skippedConflicts'] as num?)?.toInt() ?? 0;
           final summary = 'Расписание: обновлено $updatedCount, добавлено $createdCount, '
               'удалено $removedCount, пропущено занятых $skippedBooked, конфликтов $conflicts';
+          if (!mounted) return;
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(content: Text(summary)),
           );
