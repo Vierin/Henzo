@@ -1,4 +1,4 @@
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/training_location_item.dart';
 
 /// Swaps salon primary address with an extra training location.
@@ -19,7 +19,7 @@ class DefaultLocationSwapResult {
 }
 
 DefaultLocationSwapResult? swapSalonDefaultTrainingLocation({
-  required Salon salon,
+  required Studio studio,
   required List<TrainingLocationItem> locations,
   required String newDefaultId,
   required String mainStudioName,
@@ -43,9 +43,9 @@ DefaultLocationSwapResult? swapSalonDefaultTrainingLocation({
     }
   }
 
-  final oldAddress = salon.address?.trim() ?? '';
-  final oldLat = salon.latitude;
-  final oldLon = salon.longitude;
+  final oldAddress = studio.address?.trim() ?? '';
+  final oldLat = studio.latitude;
+  final oldLon = studio.longitude;
 
   final currentDefaultName = currentDefault?.name.trim() ?? '';
   final demotedName = currentDefaultName.isNotEmpty

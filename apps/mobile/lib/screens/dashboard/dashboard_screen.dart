@@ -9,13 +9,13 @@ import '../../utils/owner_studio_setup_errors.dart';
 import '../../utils/load_error_message.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/common/load_error_view.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../models/studio_status.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../services/cache/owner_sessions_cache.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
 import '../../services/subscription_refresh_notifier.dart';
@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const _statClassesEmpty = Color(0xFFF15942);
   static const _statPink = Color(0xFFFAD0C5); // salmon stat card
 
-  Salon? _salon;
+  Studio? _studio;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
   List<OwnerTrainingSession> _upcomingSessions = [];
@@ -81,13 +81,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final token = auth.accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) {
-        setState(() => _salon = null);
+        setState(() => _studio = null);
       }
       return;
     }
     try {
       final cache = context.read<OwnerSessionsCache>();
-      final salon = await context.read<SalonCache>().getSalon(token);
+      final studio = await context.read<StudioCache>().getStudio(token);
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 8));
@@ -118,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             local.month == from.month &&
             local.day == from.day;
       }).toList();
-      if (salon != null) {
+      if (studio != null) {
         try {
           checklist =
               await DashboardApiService.getCurrentStudioOnboardingChecklist(
@@ -130,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       if (mounted) {
         setState(() {
-          _salon = salon;
+          _studio = salon;
           _checklist = checklist;
           _todaySessions = todayOnly;
           _upcomingSessions = sessions;
@@ -160,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _handleRefresh() async {
     if (!mounted) return;
     context.read<OwnerSessionsCache>().invalidate();
-    context.read<SalonCache>().invalidate();
+    context.read<StudioCache>().invalidate();
     await _loadData();
   }
 
@@ -180,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MaterialPageRoute(builder: (_) => const StudioDetailsScreen()),
     );
     if (saved == true && mounted) {
-      context.read<SalonCache>().invalidate();
+      context.read<StudioCache>().invalidate();
       context.read<OwnerSessionsCache>().invalidate();
       await _loadData();
     }
@@ -199,49 +199,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _previewPublicPage() async {
-    final salon = _salon;
-    if (salon == null) return;
+    final studio = _studio;
+    if (studio == null) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => PublicStudioDetailScreen(studioId: salon.id),
+        builder: (_) => PublicStudioDetailScreen(studioId: studio.id),
       ),
     );
   }
 
   bool _salonHasDescription(
-    Salon? salon,
+    Studio? studio,
     StudioOnboardingChecklist? checklist,
   ) {
-    final fromSalon = salon?.description?.trim();
+    final fromSalon = studio?.description?.trim();
     if (fromSalon != null && fromSalon.isNotEmpty) return true;
     return checklist?.hasDescription.completed ?? false;
   }
 
-  bool _studioDetailsCompleted(Salon? salon) {
-    if (salon == null) return false;
-    final name = salon.name?.trim();
-    final address = salon.address?.trim();
+  bool _studioDetailsCompleted(Studio? studio) {
+    if (studio == null) return false;
+    final name = studio.name?.trim();
+    final address = studio.address?.trim();
     return name != null &&
         name.isNotEmpty &&
         address != null &&
         address.isNotEmpty;
   }
 
-  StudioStatus _studioStatus(Salon? salon, StudioOnboardingChecklist? c) {
-    if (salon != null) return salon.status;
+  StudioStatus _studioStatus(Studio? studio, StudioOnboardingChecklist? c) {
+    if (studio != null) return studio.status;
     return StudioStatus.parse(c?.status);
   }
 
   Future<void> _publishStudio() async {
     final token = context.read<AuthService>().accessToken;
-    final salon = _salon;
-    if (token == null || token.isEmpty || salon == null) return;
+    final studio = _studio;
+    if (token == null || token.isEmpty || studio == null) return;
     if (_isPublishing) return;
     setState(() => _isPublishing = true);
     try {
-      await DashboardApiService.publishStudio(token, salon.id);
+      await DashboardApiService.publishStudio(token, studio.id);
       if (!mounted) return;
-      context.read<SalonCache>().invalidate();
+      context.read<StudioCache>().invalidate();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Studio is now active')));
@@ -258,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String? _venueLabel() {
-    final s = _salon;
+    final s = _studio;
     if (s == null) return null;
     final n = s.name?.trim();
     if (n != null && n.isNotEmpty) return n;
@@ -268,11 +268,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<TrainingLocationItem> _studioLocations(BuildContext context) {
-    final salon = _salon;
-    if (salon == null) return const [];
+    final studio = _studio;
+    if (studio == null) return const [];
     final locale = context.read<LocaleProvider>();
-    return TrainingLocationItem.listFromSalon(
-      salon,
+    return TrainingLocationItem.listFromStudio(
+      studio,
       mainStudioName: locale.t('locations.mainStudio'),
     );
   }
@@ -807,18 +807,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _checklistBlock() {
     if (!_dataLoaded) return const SizedBox.shrink();
 
-    final salon = _salon;
+    final studio = _studio;
     final c = _checklist;
-    final status = _studioStatus(salon, c);
+    final status = _studioStatus(studio, c);
 
     if (!status.showsOnboarding) return const SizedBox.shrink();
 
-    final studioDetails = _studioDetailsCompleted(salon);
+    final studioDetails = _studioDetailsCompleted(studio);
     final hasTraining = c?.hasTraining.completed ?? false;
     final hasPhoto = c?.hasPhoto.completed ?? false;
     final hasLogo = c?.hasLogo.completed ?? false;
     final contacts = c?.contactsConfigured.completed ?? false;
-    final hasDescription = _salonHasDescription(salon, c);
+    final hasDescription = _salonHasDescription(studio, c);
     final showOptionalPhase = status == StudioStatus.ready;
 
     return Padding(
@@ -839,7 +839,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isStudioActive: status.isActive,
         isPublishing: _isPublishing,
         showOptionalPhase: showOptionalPhase,
-        showPreviewButton: salon != null,
+        showPreviewButton: studio != null,
         onStudioDetailsTap: _openStudioDetails,
         onCreateTrainingTap: _openTrainingSetup,
         onAddPhotoTap: _openStudioProfileSettings,
@@ -898,7 +898,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     sessions: _todaySessions,
                     emptyMessage: loc.t('dashboard.noTrainingsToday'),
                     emptySubtitle: loc.t('dashboard.enjoyYourDay'),
-                    onSeeAll: _salon == null
+                    onSeeAll: _studio == null
                         ? null
                         : () => context
                               .findAncestorStateOfType<MainShellState>()

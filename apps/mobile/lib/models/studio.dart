@@ -1,6 +1,6 @@
 import 'studio_status.dart';
 
-class Salon {
+class Studio {
   final String id;
   final String? name;
   final String? description;
@@ -20,7 +20,7 @@ class Salon {
   final double? longitude;
   final double? rating;
 
-  Salon({
+  Studio({
     required this.id,
     this.name,
     this.description,
@@ -41,13 +41,16 @@ class Salon {
     this.rating,
   });
 
-  factory Salon.fromJson(Map<String, dynamic> json) {
+  factory Studio.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
-    if (id == null) throw ArgumentError('Salon id is required');
+    if (id == null) throw ArgumentError('Studio id is required');
     List<String>? photosList;
     final p = json['photos'];
     if (p is List) {
-      photosList = p.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      photosList = p
+          .map((e) => e?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
     }
     Map<String, dynamic>? wh;
     final whRaw = json['workingHours'];
@@ -61,14 +64,26 @@ class Salon {
     }
     double? lat;
     final latVal = json['latitude'];
-    if (latVal != null) lat = (latVal is num) ? latVal.toDouble() : double.tryParse(latVal.toString());
+    if (latVal != null) {
+      lat = (latVal is num)
+          ? latVal.toDouble()
+          : double.tryParse(latVal.toString());
+    }
     double? lon;
     final lonVal = json['longitude'];
-    if (lonVal != null) lon = (lonVal is num) ? lonVal.toDouble() : double.tryParse(lonVal.toString());
+    if (lonVal != null) {
+      lon = (lonVal is num)
+          ? lonVal.toDouble()
+          : double.tryParse(lonVal.toString());
+    }
     double? rating;
     final ratingVal = json['rating'];
-    if (ratingVal != null) rating = (ratingVal is num) ? ratingVal.toDouble() : double.tryParse(ratingVal.toString());
-    return Salon(
+    if (ratingVal != null) {
+      rating = (ratingVal is num)
+          ? ratingVal.toDouble()
+          : double.tryParse(ratingVal.toString());
+    }
+    return Studio(
       id: id.toString(),
       name: json['name'] as String?,
       description: json['description'] as String?,
@@ -113,11 +128,11 @@ class Salon {
     };
   }
 
-  /// Payload for PUT /salons/current (only updatable fields).
   Map<String, dynamic> toUpdatePayload() {
     return {
       if (name != null) 'name': name,
-      if (autoConfirmBookings != null) 'autoConfirmBookings': autoConfirmBookings,
+      if (autoConfirmBookings != null)
+        'autoConfirmBookings': autoConfirmBookings,
       if (description != null) 'description': description,
       if (address != null) 'address': address,
       if (phone != null) 'phone': phone,

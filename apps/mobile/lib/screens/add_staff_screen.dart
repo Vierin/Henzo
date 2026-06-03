@@ -8,7 +8,7 @@ import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/cache/services_staff_cache.dart';
-import '../services/staff_api_service.dart';
+import '../services/trainers_api_service.dart';
 import '../services/trainer_api_service.dart';
 import '../utils/plan_limit_dialogs.dart';
 import '../utils/show_api_error.dart';
@@ -18,9 +18,9 @@ import '../widgets/settings/settings_list_widgets.dart';
 
 /// Добавление сотрудника: приглашение (Share) или ручная форма.
 class AddStaffScreen extends StatefulWidget {
-  final String salonId;
+  final String studioId;
 
-  const AddStaffScreen({super.key, required this.salonId});
+  const AddStaffScreen({super.key, required this.studioId});
 
   @override
   State<AddStaffScreen> createState() => _AddStaffScreenState();
@@ -66,9 +66,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       _inviting = true;
     });
     try {
-      final created = await StaffApiService.create(
+      final created = await TrainersApiService.create(
         token,
-        studioId: widget.salonId,
+        studioId: widget.studioId,
         name: name,
         email: email,
       );
@@ -83,7 +83,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       await Share.share('$intro\n$inviteUrl');
 
       if (!mounted) return;
-      context.read<ServicesStaffCache>().invalidateStaff(widget.salonId);
+      context.read<ServicesStaffCache>().invalidateTrainers(widget.studioId);
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(locale.t('staffScreen.staffInvitedShared')),
@@ -128,9 +128,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       return;
     }
     try {
-      await StaffApiService.create(
+      await TrainersApiService.create(
         token,
-        studioId: widget.salonId,
+        studioId: widget.studioId,
         name: name,
         email: _emailController.text.trim().isEmpty
             ? null
@@ -140,7 +140,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
             : _phoneController.text.trim(),
       );
       if (!mounted) return;
-      context.read<ServicesStaffCache>().invalidateStaff(widget.salonId);
+      context.read<ServicesStaffCache>().invalidateTrainers(widget.studioId);
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(locale.t('staffScreen.staffAdded')),

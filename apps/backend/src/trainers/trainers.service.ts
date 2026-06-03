@@ -10,11 +10,11 @@ export class TrainersService {
   ) {}
 
   async isStudioOwnedByOwner(studioId: string, ownerId: string) {
-    const salon = await this.prisma.studio.findUnique({
+    const studio = await this.prisma.studio.findUnique({
       where: { id: studioId },
       select: { ownerId: true },
     });
-    return salon?.ownerId === ownerId;
+    return studio?.ownerId === ownerId;
   }
 
   async findTrainerStudioId(id: string) {
@@ -68,7 +68,6 @@ export class TrainersService {
       phone: row.phone,
       accessLevel: row.accessLevel,
       studioId: row.studioId,
-      salonId: row.studioId,
       userId: row.userId,
       invite: invite
         ? {
@@ -185,13 +184,13 @@ export class TrainersService {
     let trainingUpdate: { set: { id: string }[] } | undefined;
     if (trainingIds !== undefined) {
       if (trainingIds.length === 0) {
-        const staff = await this.prisma.trainer.findUnique({
+        const trainer = await this.prisma.trainer.findUnique({
           where: { id },
           select: { studioId: true },
         });
-        if (staff) {
+        if (trainer) {
           const allTrainings = await this.prisma.training.findMany({
-            where: { studioId: staff.studioId },
+            where: { studioId: trainer.studioId },
             select: { id: true },
           });
           trainingUpdate = {
@@ -228,48 +227,6 @@ export class TrainersService {
   }
 
   // ── Trainer Invite ────────────────────────────────────────────
-
-  /** Generate invite via Staff model ID (Flutter team management side). */
-  async generateInviteFromStaff(staffId: string, ownerId: string) {
-    const staff = await this.prisma.trainer.findFirst({
-      where: { id: staffId },
-      select: { id: true, name: true, email: true, studioId: true },
-    });
-    if (!staff)
-      throw new HttpException('Staff not found', HttpStatus.NOT_FOUND);
-
-    // Verify ownership
-    const isOwner = await this.isStudioOwnedByOwner(staff.studioId, ownerId);
-    if (!isOwner) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
-
-    // Find or create matching Trainer record
-    let trainer = staff.email
-      ? await this.prisma.trainer.findFirst({
-          where: {
-            studioId: staff.studioId,
-            email: { equals: staff.email, mode: 'insensitive' },
-          },
-          select: { id: true, userId: true },
-        })
-      : await this.prisma.trainer.findFirst({
-          where: { studioId: staff.studioId, name: staff.name },
-          select: { id: true, userId: true },
-        });
-
-    if (!trainer) {
-      trainer = await this.prisma.trainer.create({
-        data: {
-          studioId: staff.studioId,
-          name: staff.name,
-          ...(staff.email ? { email: staff.email } : {}),
-          accessLevel: 'EMPLOYEE',
-        },
-        select: { id: true, userId: true },
-      });
-    }
-
-    return this.generateInvite(trainer.id, ownerId);
-  }
 
   async generateInvite(trainerId: string, ownerId: string) {
     const trainer = await this.prisma.trainer.findFirst({

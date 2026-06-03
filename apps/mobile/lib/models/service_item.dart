@@ -8,7 +8,7 @@ class ServiceItem {
   final String? nameRu;
   final double? price;
   final int? duration;
-  final String? salonId;
+  final String? studioId;
   /// Id категории тренировки (канонично).
   final int? trainingCategoryId;
   /// @deprecated см. trainingCategoryId
@@ -28,7 +28,7 @@ class ServiceItem {
     this.nameRu,
     this.price,
     this.duration,
-    this.salonId,
+    this.studioId,
     this.trainingCategoryId,
     this.serviceCategoryId,
     this.categoryName,
@@ -112,7 +112,7 @@ class ServiceItem {
       nameRu: json['nameRu'] as String?,
       price: _parseDouble(json['price']),
       duration: _parseInt(json['duration']),
-      salonId: (json['studioId'] ?? json['salonId']) as String?,
+      studioId: (json['studioId'] ?? json['studioId']) as String?,
       trainingCategoryId: trainingCatId,
       serviceCategoryId: _parseInt(json['serviceCategoryId']) ?? trainingCatId,
       categoryName: categoryName,
@@ -131,7 +131,7 @@ class ServiceItem {
       'nameRu': nameRu,
       'price': price,
       'duration': duration,
-      'studioId': salonId,
+      'studioId': studioId,
       'trainingCategoryId': trainingCategoryId,
       'serviceCategoryId': serviceCategoryId,
       'categoryName': categoryName,

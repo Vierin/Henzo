@@ -97,7 +97,7 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
         await ApiClient.delete('/auth/favorites/$studioId', token);
       } else {
         await ApiClient.post('/auth/favorites/$studioId', token, body: {
-          'salonId': studioId,
+          'studioId': studioId,
         });
       }
     } catch (_) {

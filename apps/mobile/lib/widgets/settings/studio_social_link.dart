@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../common/henzo_modal.dart';
 import '../common/sheet_action_button_style.dart';
 import 'settings_form_tokens.dart';
@@ -76,9 +76,9 @@ class StudioSocialLink {
   }
 }
 
-List<StudioSocialLink> studioSocialLinksFromSalon(Salon salon) {
+List<StudioSocialLink> studioSocialLinksFromStudio(Studio studio) {
   final links = <StudioSocialLink>[];
-  final instagram = salon.instagram?.trim();
+  final instagram = studio.instagram?.trim();
   if (instagram != null && instagram.isNotEmpty) {
     links.add(
       StudioSocialLink(
@@ -88,7 +88,7 @@ List<StudioSocialLink> studioSocialLinksFromSalon(Salon salon) {
     );
   }
 
-  final website = salon.website?.trim();
+  final website = studio.website?.trim();
   if (website != null && website.isNotEmpty) {
     final isFacebook = RegExp(
       r'facebook\.com|fb\.com|fb\.me',
@@ -104,7 +104,7 @@ List<StudioSocialLink> studioSocialLinksFromSalon(Salon salon) {
     );
   }
 
-  final extra = salon.reminderSettings?['socialLinks'];
+  final extra = studio.reminderSettings?['socialLinks'];
   if (extra is List) {
     for (final item in extra) {
       if (item is! Map) continue;

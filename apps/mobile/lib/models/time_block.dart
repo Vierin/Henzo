@@ -7,8 +7,8 @@ enum TimeBlockType {
 
 class TimeBlock {
   final String id;
-  final String salonId;
-  final String? staffId;
+  final String studioId;
+  final String? trainerId;
   final TimeBlockType type;
   final String? reason;
   final DateTime startDate;
@@ -17,8 +17,8 @@ class TimeBlock {
 
   TimeBlock({
     required this.id,
-    required this.salonId,
-    this.staffId,
+    required this.studioId,
+    this.trainerId,
     required this.type,
     this.reason,
     required this.startDate,
@@ -42,7 +42,7 @@ class TimeBlock {
   factory TimeBlock.fromJson(Map<String, dynamic> json) {
     final id = json['id']?.toString();
     if (id == null || id.isEmpty) throw ArgumentError('TimeBlock id is required');
-    final salonId = json['salonId']?.toString() ?? '';
+    final studioId = json['studioId']?.toString() ?? '';
     final startRaw = json['startDate'];
     final endRaw = json['endDate'];
     DateTime startDate = DateTime.now();
@@ -51,8 +51,8 @@ class TimeBlock {
     if (endRaw is String) endDate = DateTime.parse(endRaw);
     return TimeBlock(
       id: id,
-      salonId: salonId,
-      staffId: json['staffId']?.toString(),
+      studioId: studioId,
+      trainerId: json['trainerId']?.toString(),
       type: _typeFromString(json['type'] as String?),
       reason: json['reason'] as String?,
       startDate: startDate,

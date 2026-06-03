@@ -41,7 +41,7 @@ class StaffMember {
   factory StaffMember.fromJson(Map<String, dynamic> json) {
     final idRaw = json['id'];
     final id = idRaw == null ? '' : idRaw.toString();
-    final studioIdRaw = json['studioId'] ?? json['salonId'];
+    final studioIdRaw = json['studioId'];
     final studioId =
         studioIdRaw == null ? '' : studioIdRaw.toString();
     final userIdRaw = json['userId'];

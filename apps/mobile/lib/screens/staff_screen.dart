@@ -6,13 +6,13 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../models/staff_member.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
-import '../../services/staff_api_service.dart';
+import '../../services/trainers_api_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/plan_limit_dialogs.dart';
 import '../../utils/show_api_error.dart';
@@ -30,7 +30,7 @@ class StaffScreen extends StatefulWidget {
 }
 
 class _StaffScreenState extends State<StaffScreen> {
-  Salon? _salon;
+  Studio? _studio;
   List<StaffMember> _staff = [];
   bool _isLoading = false;
   bool _isActionLoading = false;
@@ -51,17 +51,17 @@ class _StaffScreenState extends State<StaffScreen> {
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      final staff = salon != null
-          ? await context.read<ServicesStaffCache>().getStaffForSalon(
+      final studio = await context.read<StudioCache>().getStudio(token);
+      final staff = studio != null
+          ? await context.read<ServicesStaffCache>().getTrainersForStudio(
               token,
-              salon.id,
+              studio.id,
             )
           : <StaffMember>[];
       final sub = await DashboardApiService.getCurrentSubscription(token);
       if (mounted) {
         setState(() {
-          _salon = salon;
+          _studio = salon;
           _staff = staff;
           _isProPlan = subscriptionTypeIsPaid(sub?.type);
           _isLoading = false;
@@ -102,9 +102,9 @@ class _StaffScreenState extends State<StaffScreen> {
     if (token == null) return;
     setState(() => _isActionLoading = true);
     try {
-      await StaffApiService.delete(token, member.id);
+      await TrainersApiService.delete(token, member.id);
       if (!mounted) return;
-      context.read<ServicesStaffCache>().invalidateStaff(_salon?.id);
+      context.read<ServicesStaffCache>().invalidateTrainers(_studio?.id);
       await _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
@@ -124,11 +124,11 @@ class _StaffScreenState extends State<StaffScreen> {
       _showTrainerLimitDialog();
       return;
     }
-    final salonId = _salon?.id;
-    if (salonId == null) return;
+    final studioId = _studio?.id;
+    if (studioId == null) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (ctx) => AddStaffScreen(salonId: salonId)),
+      MaterialPageRoute(builder: (ctx) => AddStaffScreen(studioId: studioId)),
     ).then((_) {
       if (mounted) _loadData();
     });
@@ -460,7 +460,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                     if (token == null) return;
                                     setState(() => _isActionLoading = true);
                                     try {
-                                      await StaffApiService.update(
+                                      await TrainersApiService.update(
                                         token,
                                         member.id,
                                         name: name,
@@ -480,7 +480,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                       if (!mounted) return;
                                       context
                                           .read<ServicesStaffCache>()
-                                          .invalidateStaff(_salon?.id);
+                                          .invalidateTrainers(_studio?.id);
                                       await _loadData();
                                       ScaffoldMessenger.maybeOf(
                                         context,
@@ -561,7 +561,7 @@ class _StaffScreenState extends State<StaffScreen> {
     final locale = context.watch<LocaleProvider>();
     final owner = context.watch<AuthService>().user;
     final extraStaff = _staffExcludingOwner(owner?.email);
-    final showAddFab = _salon != null && !_isLoading;
+    final showAddFab = _studio != null && !_isLoading;
     final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
         ? owner!.name!.trim()
         : owner?.email ?? locale.t('settings.owner.ownerRole');
@@ -598,7 +598,7 @@ class _StaffScreenState extends State<StaffScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
             )
-          : _salon == null
+          : _studio == null
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),

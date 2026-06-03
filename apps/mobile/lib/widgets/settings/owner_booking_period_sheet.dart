@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../common/sheet_action_button_style.dart';
@@ -18,8 +18,8 @@ const int kDefaultBookingPeriodDays = 30;
 const int kMinBookingPeriodDays = 1;
 const int kMaxBookingPeriodDays = 60;
 
-int? extractBookingPeriodDays(Salon? salon) {
-  final settings = salon?.reminderSettings;
+int? extractBookingPeriodDays(Studio? studio) {
+  final settings = studio?.reminderSettings;
   if (settings == null) return null;
   final raw = settings['bookingPeriodDays'];
   if (raw is int) return raw;
@@ -30,36 +30,36 @@ int? extractBookingPeriodDays(Salon? salon) {
 
 Future<bool> saveBookingPeriodDays(
   BuildContext context,
-  Salon salon,
+  Studio studio,
   int days,
 ) async {
   final token = context.read<AuthService>().accessToken;
   if (token == null || token.isEmpty) return false;
   try {
     final reminderSettings = <String, dynamic>{
-      ...?salon.reminderSettings,
+      ...?studio.reminderSettings,
       'bookingPeriodDays': days,
     };
     final payload = <String, dynamic>{
-      'name': salon.name ?? '',
-      if (salon.description != null) 'description': salon.description,
-      if (salon.address != null) 'address': salon.address,
-      if (salon.phone != null) 'phone': salon.phone,
-      if (salon.email != null && salon.email!.trim().isNotEmpty)
-        'email': salon.email,
-      if (salon.website != null) 'website': salon.website,
-      if (salon.instagram != null) 'instagram': salon.instagram,
-      if (salon.photos != null) 'photos': salon.photos,
-      if (salon.workingHours != null) 'workingHours': salon.workingHours,
-      if (salon.latitude != null) 'latitude': salon.latitude,
-      if (salon.longitude != null) 'longitude': salon.longitude,
-      if (salon.autoConfirmBookings != null)
-        'autoConfirmBookings': salon.autoConfirmBookings,
+      'name': studio.name ?? '',
+      if (studio.description != null) 'description': studio.description,
+      if (studio.address != null) 'address': studio.address,
+      if (studio.phone != null) 'phone': studio.phone,
+      if (studio.email != null && studio.email!.trim().isNotEmpty)
+        'email': studio.email,
+      if (studio.website != null) 'website': studio.website,
+      if (studio.instagram != null) 'instagram': studio.instagram,
+      if (studio.photos != null) 'photos': studio.photos,
+      if (studio.workingHours != null) 'workingHours': studio.workingHours,
+      if (studio.latitude != null) 'latitude': studio.latitude,
+      if (studio.longitude != null) 'longitude': studio.longitude,
+      if (studio.autoConfirmBookings != null)
+        'autoConfirmBookings': studio.autoConfirmBookings,
       'reminderSettings': reminderSettings,
     };
-    await DashboardApiService.updateCurrentSalon(token, payload);
+    await DashboardApiService.updateCurrentStudio(token, payload);
     if (!context.mounted) return false;
-    context.read<SalonCache>().invalidate();
+    context.read<StudioCache>().invalidate();
     final loc = context.read<LocaleProvider>();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(loc.t('settings.owner.bookingPeriodSaved'))),
@@ -74,13 +74,13 @@ Future<bool> saveBookingPeriodDays(
 /// Bottom sheet: booking window (1–60 days).
 Future<bool?> showOwnerBookingPeriodSheet(
   BuildContext context, {
-  required Salon salon,
+  required Studio studio,
   int? initialDays,
 }) async {
   final locale = context.read<LocaleProvider>();
   final startDays =
       initialDays ??
-      extractBookingPeriodDays(salon) ??
+      extractBookingPeriodDays(studio) ??
       kDefaultBookingPeriodDays;
 
   return showHenzoModalBottomSheet<bool>(
@@ -112,7 +112,7 @@ Future<bool?> showOwnerBookingPeriodSheet(
           Future<void> onApply() async {
             if (applying) return;
             setModalState(() => applying = true);
-            final ok = await saveBookingPeriodDays(context, salon, localDays);
+            final ok = await saveBookingPeriodDays(context, studio, localDays);
             if (!sheetContext.mounted) return;
             setModalState(() => applying = false);
             if (ok) Navigator.of(sheetContext).pop(true);

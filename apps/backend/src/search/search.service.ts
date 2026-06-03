@@ -235,7 +235,7 @@ export class SearchService {
 
       const categoryIds = categories.map((c) => c.id);
 
-      const services = await this.prisma.service.findMany({
+      const services = await this.prisma.training.findMany({
         where: {
           trainingCategoryId: {
             in: categoryIds,
@@ -351,7 +351,7 @@ export class SearchService {
     try {
       console.log(`🔍 Searching services by name: "${query}"`);
 
-      const services = await this.prisma.service.findMany({
+      const services = await this.prisma.training.findMany({
         where: {
           name: {
             contains: query,
@@ -502,7 +502,7 @@ export class SearchService {
       }
 
       // derive used categories from existing services, not from salons.categoryIds
-      const distinct = await this.prisma.service.findMany({
+      const distinct = await this.prisma.training.findMany({
         where: { trainingCategoryId: { not: null } },
         select: { trainingCategoryId: true },
         distinct: ['trainingCategoryId'],
@@ -634,7 +634,7 @@ export class SearchService {
       // Search recommended services and salons in parallel
       const [recommendedServices, salons] = await Promise.all([
         this.searchRecommendedServices(q, lang, Math.ceil(limit * 0.7)), // 70% for services
-        this.searchSalonNames(q, Math.ceil(limit * 0.3)), // 30% for salons
+        this.searchStudioNames(q, Math.ceil(limit * 0.3)),
       ]);
 
       return {
@@ -650,15 +650,14 @@ export class SearchService {
     }
   }
 
-  // Search salon names only
-  private async searchSalonNames(query: string, limit: number = 5) {
+  private async searchStudioNames(query: string, limit: number = 5) {
     try {
       const q = query.trim();
       if (q.length < 3) {
         return [];
       }
 
-      const salons = await this.prisma.salon.findMany({
+      const studios = await this.prisma.studio.findMany({
         where: {
           name: { contains: q, mode: 'insensitive' as const },
         },
@@ -671,14 +670,14 @@ export class SearchService {
         take: limit,
       });
 
-      return salons.map((salon) => ({
-        id: salon.id,
-        name: salon.name,
-        type: 'salon' as const,
-        address: salon.address,
+      return studios.map((studio) => ({
+        id: studio.id,
+        name: studio.name,
+        type: 'studio' as const,
+        address: studio.address,
       }));
     } catch (error) {
-      console.error('❌ Error searching salon names:', error);
+      console.error('❌ Error searching studio names:', error);
       return [];
     }
   }

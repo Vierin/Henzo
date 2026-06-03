@@ -5,7 +5,7 @@ import '../utils/subscription_tier.dart';
 import 'api_client.dart';
 import '../models/booking.dart';
 import '../models/owner_studio_client.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/subscription.dart';
 import '../models/time_block.dart';
 
@@ -469,7 +469,7 @@ class DashboardApiService {
       e.statusCode == 404 && e.message.contains('Cannot GET');
 
   /// GET /fitness/studios/current — студия владельца.
-  static Future<Salon?> getCurrentSalon(String accessToken) async {
+  static Future<Studio?> getCurrentStudio(String accessToken) async {
     try {
       final body = await ApiClient.get('/fitness/studios/current', accessToken);
       if (body is! Map<String, dynamic>) return null;
@@ -483,10 +483,10 @@ class DashboardApiService {
       // 3) direct studio object {...}
       final data = body['data'];
       if (data is Map<String, dynamic>) {
-        return Salon.fromJson(Map<String, dynamic>.from(data));
+        return Studio.fromJson(Map<String, dynamic>.from(data));
       }
       if (body['id'] != null) {
-        return Salon.fromJson(Map<String, dynamic>.from(body));
+        return Studio.fromJson(Map<String, dynamic>.from(body));
       }
       // Only treat explicit success=false as setup/failure.
       if (body.containsKey('success') && body['success'] == false) {
@@ -499,19 +499,19 @@ class DashboardApiService {
         try {
           final legacy = await ApiClient.get('/salons/current', accessToken);
           if (legacy is Map<String, dynamic>) {
-            return Salon.fromJson(Map<String, dynamic>.from(legacy));
+            return Studio.fromJson(Map<String, dynamic>.from(legacy));
           }
           return null;
         } on ApiException catch (legacyError) {
           if (kDebugMode) {
             debugPrint(
-              '[DashboardAPI] getCurrentSalon legacy failed: $legacyError',
+              '[DashboardAPI] getCurrentStudio legacy failed: $legacyError',
             );
           }
           return null;
         }
       }
-      if (kDebugMode) debugPrint('[DashboardAPI] getCurrentSalon: $e');
+      if (kDebugMode) debugPrint('[DashboardAPI] getCurrentStudio: $e');
       return null;
     }
   }
@@ -570,7 +570,7 @@ class DashboardApiService {
   }
 
   /// PUT /studios/current — обновить студию владельца.
-  static Future<Salon> updateCurrentSalon(
+  static Future<Studio> updateCurrentStudio(
     String accessToken,
     Map<String, dynamic> payload,
   ) async {
@@ -578,11 +578,11 @@ class DashboardApiService {
         await ApiClient.put('/studios/current', accessToken, body: payload)
             as Map<String, dynamic>?;
     if (data == null) throw ApiException('Invalid response');
-    return Salon.fromJson(data);
+    return Studio.fromJson(data);
   }
 
   /// POST /studios/current — создать студию владельца.
-  static Future<Salon> createCurrentSalon(
+  static Future<Studio> createCurrentStudio(
     String accessToken,
     Map<String, dynamic> payload,
   ) async {
@@ -590,7 +590,7 @@ class DashboardApiService {
         await ApiClient.post('/studios/current', accessToken, body: payload)
             as Map<String, dynamic>?;
     if (data == null) throw ApiException('Invalid response');
-    return Salon.fromJson(data);
+    return Studio.fromJson(data);
   }
 
   /// GET /subscriptions/current — текущая подписка владельца.
@@ -755,7 +755,7 @@ class DashboardApiService {
                 phone: e.phone,
               ),
               staff: Staff(id: s.trainerId, name: s.trainerName),
-              staffId: s.trainerId,
+              trainerId: s.trainerId,
               serviceId: s.trainingId,
               locationId: s.locationId,
               locationName: s.locationName,
@@ -784,12 +784,12 @@ class DashboardApiService {
     String accessToken, {
     String? startDate,
     String? endDate,
-    String? staffId,
+    String? trainerId,
   }) async {
     final params = <String, String>{};
     if (startDate != null) params['startDate'] = startDate;
     if (endDate != null) params['endDate'] = endDate;
-    if (staffId != null) params['staffId'] = staffId;
+    if (trainerId != null) params['trainerId'] = trainerId;
     final path = params.isEmpty
         ? '/time-blocks'
         : '/time-blocks?${params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
@@ -818,20 +818,20 @@ class DashboardApiService {
   /// POST /fitness/session-bookings — создать тренировочную запись.
   static Future<Booking> createBooking(
     String accessToken, {
-    required String salonId,
+    required String studioId,
     required String serviceId,
     required String timeIso,
-    String? staffId,
+    String? trainerId,
     String? clientName,
     String? clientPhone,
     String? clientEmail,
     String? notes,
   }) async {
     final body = <String, dynamic>{
-      'salonId': salonId,
+      'studioId': studioId,
       'serviceId': serviceId,
       'time': timeIso,
-      if (staffId != null && staffId.isNotEmpty) 'staffId': staffId,
+      if (trainerId != null && trainerId.isNotEmpty) 'trainerId': trainerId,
       if (clientName != null && clientName.isNotEmpty) 'clientName': clientName,
       if (clientPhone != null && clientPhone.isNotEmpty)
         'clientPhone': clientPhone,
@@ -877,7 +877,7 @@ class DashboardApiService {
     String accessToken,
     String bookingId, {
     String? serviceId,
-    String? staffId,
+    String? trainerId,
     String? timeIso,
     String? notes,
     String? status,
@@ -886,7 +886,7 @@ class DashboardApiService {
     if (serviceId != null && serviceId.isNotEmpty) {
       body['serviceId'] = serviceId;
     }
-    if (staffId != null && staffId.isNotEmpty) body['staffId'] = staffId;
+    if (trainerId != null && trainerId.isNotEmpty) body['trainerId'] = trainerId;
     if (timeIso != null && timeIso.isNotEmpty) body['time'] = timeIso;
     if (notes != null) body['notes'] = notes;
     if (status != null && status.isNotEmpty) body['status'] = status;

@@ -3,9 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'api_client.dart';
 import '../models/staff_member.dart';
 
-class StaffApiService {
-  /// GET /trainers?studioId= — список тренеров студии.
-  static Future<List<StaffMember>> getBySalon(
+class TrainersApiService {
+  static Future<List<StaffMember>> getByStudio(
     String accessToken,
     String studioId,
   ) async {
@@ -25,12 +24,11 @@ class StaffApiService {
       }
       return result;
     } on ApiException catch (e) {
-      if (kDebugMode) debugPrint('[StaffAPI] getBySalon: $e');
+      if (kDebugMode) debugPrint('[TrainersAPI] getByStudio: $e');
       return [];
     }
   }
 
-  /// POST /trainers — создать тренера.
   static Future<StaffMember> create(
     String accessToken, {
     required String studioId,
@@ -54,7 +52,6 @@ class StaffApiService {
     return StaffMember.fromJson(map);
   }
 
-  /// PUT /trainers/:id — обновить тренера.
   static Future<StaffMember> update(
     String accessToken,
     String id, {
@@ -78,7 +75,6 @@ class StaffApiService {
     return StaffMember.fromJson(map);
   }
 
-  /// DELETE /trainers/:id — удалить тренера.
   static Future<void> delete(String accessToken, String id) async {
     await ApiClient.delete('/trainers/$id', accessToken);
   }

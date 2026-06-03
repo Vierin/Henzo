@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/address_picker_modal.dart';
@@ -29,7 +29,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
 
-  Salon? _salon;
+  Studio? _studio;
   bool _loading = true;
   bool _saving = false;
   String _locationName = '';
@@ -42,7 +42,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
   void initState() {
     super.initState();
     _nameController.addListener(_onFieldsChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSalon());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadStudio());
   }
 
   @override
@@ -67,27 +67,27 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
       _nameController.text.trim().isNotEmpty &&
       _addressText.trim().isNotEmpty;
 
-  Future<void> _loadSalon() async {
+  Future<void> _loadStudio() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) setState(() => _loading = false);
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
+      final studio = await context.read<StudioCache>().getStudio(token);
       if (!mounted) return;
-      _salon = salon;
-      if (salon != null) {
+      _studio = salon;
+      if (studio != null) {
         final locale = context.read<LocaleProvider>();
-        _nameController.text = salon.name ?? '';
+        _nameController.text = studio.name ?? '';
         final primary = TrainingLocationItem.defaultFromSalon(
-          salon,
+          studio,
           mainStudioName: locale.t('locations.mainStudio'),
         );
         _locationName = primary.name;
-        _addressText = salon.address?.trim() ?? '';
-        _lat = salon.latitude;
-        _lon = salon.longitude;
+        _addressText = studio.address?.trim() ?? '';
+        _lat = studio.latitude;
+        _lon = studio.longitude;
       }
       _initialSnapshot = _snapshot();
       setState(() => _loading = false);
@@ -139,7 +139,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
     setState(() => _saving = true);
     try {
       final reminderSettings = <String, dynamic>{
-        ...?_salon?.reminderSettings,
+        ...?_studio?.reminderSettings,
       };
       TrainingLocationItem.writeDefaultLocationName(
         reminderSettings,
@@ -154,14 +154,14 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
         'reminderSettings': reminderSettings,
       };
 
-      if (_salon == null) {
-        await DashboardApiService.createCurrentSalon(token, payload);
+      if (_studio == null) {
+        await DashboardApiService.createCurrentStudio(token, payload);
       } else {
-        await DashboardApiService.updateCurrentSalon(token, payload);
+        await DashboardApiService.updateCurrentStudio(token, payload);
       }
 
       if (!mounted) return;
-      context.read<SalonCache>().invalidate();
+      context.read<StudioCache>().invalidate();
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;

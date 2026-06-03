@@ -3,25 +3,33 @@ import 'package:flutter/foundation.dart';
 import '../../models/service_item.dart';
 import '../../models/staff_member.dart';
 import '../services_api_service.dart';
-import '../staff_api_service.dart';
+import '../trainers_api_service.dart';
 
-/// In-memory cache for services and staff by studioId. Invalidated on create/update/delete.
+/// In-memory cache for trainings and trainers by studioId.
 class ServicesStaffCache extends ChangeNotifier {
-  final Map<String, List<ServiceItem>> _servicesBySalon = {};
-  final Map<String, List<StaffMember>> _staffBySalon = {};
+  final Map<String, List<ServiceItem>> _servicesByStudio = {};
+  final Map<String, List<StaffMember>> _trainersByStudio = {};
 
-  List<ServiceItem>? getServices(String salonId) => _servicesBySalon[salonId];
-  List<StaffMember>? getStaff(String salonId) => _staffBySalon[salonId];
+  List<ServiceItem>? getServices(String studioId) =>
+      _servicesByStudio[studioId];
+  List<StaffMember>? getTrainers(String studioId) =>
+      _trainersByStudio[studioId];
 
-  Future<List<ServiceItem>> getServicesForSalon(String? accessToken, String? salonId) async {
-    if (accessToken == null || accessToken.isEmpty || salonId == null || salonId.isEmpty) {
+  Future<List<ServiceItem>> getServicesForStudio(
+    String? accessToken,
+    String? studioId,
+  ) async {
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        studioId == null ||
+        studioId.isEmpty) {
       return [];
     }
-    final cached = _servicesBySalon[salonId];
+    final cached = _servicesByStudio[studioId];
     if (cached != null) return cached;
     try {
-      final list = await ServicesApiService.getByStudio(accessToken, salonId);
-      _servicesBySalon[salonId] = list;
+      final list = await ServicesApiService.getByStudio(accessToken, studioId);
+      _servicesByStudio[studioId] = list;
       notifyListeners();
       return list;
     } catch (_) {
@@ -29,15 +37,21 @@ class ServicesStaffCache extends ChangeNotifier {
     }
   }
 
-  Future<List<StaffMember>> getStaffForSalon(String? accessToken, String? salonId) async {
-    if (accessToken == null || accessToken.isEmpty || salonId == null || salonId.isEmpty) {
+  Future<List<StaffMember>> getTrainersForStudio(
+    String? accessToken,
+    String? studioId,
+  ) async {
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        studioId == null ||
+        studioId.isEmpty) {
       return [];
     }
-    final cached = _staffBySalon[salonId];
+    final cached = _trainersByStudio[studioId];
     if (cached != null) return cached;
     try {
-      final list = await StaffApiService.getBySalon(accessToken, salonId);
-      _staffBySalon[salonId] = list;
+      final list = await TrainersApiService.getByStudio(accessToken, studioId);
+      _trainersByStudio[studioId] = list;
       notifyListeners();
       return list;
     } catch (_) {
@@ -45,19 +59,19 @@ class ServicesStaffCache extends ChangeNotifier {
     }
   }
 
-  void invalidateServices(String? salonId) {
-    if (salonId != null) _servicesBySalon.remove(salonId);
+  void invalidateServices(String? studioId) {
+    if (studioId != null) _servicesByStudio.remove(studioId);
     notifyListeners();
   }
 
-  void invalidateStaff(String? salonId) {
-    if (salonId != null) _staffBySalon.remove(salonId);
+  void invalidateTrainers(String? studioId) {
+    if (studioId != null) _trainersByStudio.remove(studioId);
     notifyListeners();
   }
 
   void invalidateAll() {
-    _servicesBySalon.clear();
-    _staffBySalon.clear();
+    _servicesByStudio.clear();
+    _trainersByStudio.clear();
     notifyListeners();
   }
 }

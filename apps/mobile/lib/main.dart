@@ -31,7 +31,7 @@ import 'services/cache/bookings_cache.dart';
 import 'services/cache/client_nearby_cache.dart';
 import 'services/cache/studio_public_detail_cache.dart';
 import 'services/cache/owner_sessions_cache.dart';
-import 'services/cache/salon_cache.dart';
+import 'services/cache/studio_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/client_location_store.dart';
 import 'services/client_schedule_store.dart';
@@ -208,7 +208,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => ClientFavoritesStore()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => SalonCache()),
+        ChangeNotifierProvider(create: (_) => StudioCache()),
         ChangeNotifierProvider(create: (_) => OwnerSessionsCache()),
         ChangeNotifierProvider(create: (_) => BookingsCache()),
         ChangeNotifierProvider(create: (_) => ServicesStaffCache()),
@@ -292,7 +292,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   void _clearAllCaches(BuildContext ctx) {
     if (!ctx.mounted) return;
-    ctx.read<SalonCache>().invalidate();
+    ctx.read<StudioCache>().invalidate();
     ctx.read<BookingsCache>().invalidate();
     ctx.read<ServicesStaffCache>().invalidateAll();
     ctx.read<OwnerSessionsCache>().invalidate();

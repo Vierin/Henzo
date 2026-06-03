@@ -7,14 +7,14 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/staff_member.dart';
 import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
-import '../services/staff_api_service.dart';
+import '../services/trainers_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -48,7 +48,7 @@ class _OwnerEditTrainingSessionScreenState
   String _selectedLocationId = 'default';
   List<StaffMember> _trainers = [];
   List<TrainingLocationItem> _locations = [];
-  Salon? _salon;
+  Studio? _studio;
   bool _loadingTrainers = true;
   bool _saving = false;
 
@@ -92,15 +92,15 @@ class _OwnerEditTrainingSessionScreenState
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      if (salon == null || !mounted) {
+      final studio = await context.read<StudioCache>().getStudio(token);
+      if (studio == null || !mounted) {
         setState(() => _loadingTrainers = false);
         return;
       }
       final locale = context.read<LocaleProvider>();
-      final list = await StaffApiService.getBySalon(token, salon.id);
-      final locations = TrainingLocationItem.listFromSalon(
-        salon,
+      final list = await TrainersApiService.getByStudio(token, studio.id);
+      final locations = TrainingLocationItem.listFromStudio(
+        studio,
         mainStudioName: locale.t('locations.mainStudio'),
       );
       var selectedLocationId = _selectedLocationId;
@@ -128,7 +128,7 @@ class _OwnerEditTrainingSessionScreenState
       }
       if (!mounted) return;
       setState(() {
-        _salon = salon;
+        _studio = salon;
         _trainers = list;
         _trainerId = selectedTrainerId;
         _locations = locations;
@@ -256,9 +256,9 @@ class _OwnerEditTrainingSessionScreenState
   }
 
   Future<void> _openLocationPicker(LocaleProvider locale) async {
-    if (_locations.isEmpty && _salon != null) {
-      _locations = TrainingLocationItem.listFromSalon(
-        _salon,
+    if (_locations.isEmpty && _studio != null) {
+      _locations = TrainingLocationItem.listFromStudio(
+        _studio,
         mainStudioName: locale.t('locations.mainStudio'),
       );
     }
@@ -282,12 +282,12 @@ class _OwnerEditTrainingSessionScreenState
   }
 
   Future<bool> _deleteTrainingLocation(TrainingLocationItem loc) async {
-    final studio = _salon;
+    final studio = _studio;
     if (studio == null || loc.id == 'default') return false;
 
     final updated = _locations.where((l) => l.id != loc.id).toList();
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
         studio,
         updated,
@@ -295,9 +295,9 @@ class _OwnerEditTrainingSessionScreenState
       if (!mounted) return false;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _salon = updatedSalon ?? studio;
-        _locations = TrainingLocationItem.listFromSalon(
-          _salon,
+        _studio = updatedStudio ?? studio;
+        _locations = TrainingLocationItem.listFromStudio(
+          _studio,
           mainStudioName: locale.t('locations.mainStudio'),
         );
         if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
@@ -312,7 +312,7 @@ class _OwnerEditTrainingSessionScreenState
   }
 
   Future<void> _addNewTrainingLocation(LocaleProvider locale) async {
-    final studio = _salon;
+    final studio = _studio;
     if (studio == null) return;
 
     final selection = await AddressPickerModal.show(
@@ -331,16 +331,16 @@ class _OwnerEditTrainingSessionScreenState
     final updatedList = [..._locations, newLoc];
 
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
         studio,
         updatedList,
       );
       if (!mounted) return;
       setState(() {
-        _salon = updatedSalon ?? studio;
-        _locations = TrainingLocationItem.listFromSalon(
-          _salon,
+        _studio = updatedStudio ?? studio;
+        _locations = TrainingLocationItem.listFromStudio(
+          _studio,
           mainStudioName: locale.t('locations.mainStudio'),
         );
         _selectedLocationId = newLoc.id;

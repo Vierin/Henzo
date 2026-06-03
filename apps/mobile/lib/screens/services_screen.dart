@@ -7,14 +7,14 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../models/training_category_option.dart';
 import '../../models/training_location_item.dart';
 import '../../utils/currency_format.dart';
 import '../../models/service_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/owner_sessions_cache.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/services_api_service.dart';
@@ -55,7 +55,7 @@ class ServicesScreen extends StatefulWidget {
 }
 
 class _ServicesScreenState extends State<ServicesScreen> {
-  Salon? _salon;
+  Studio? _studio;
   List<ServiceItem> _services = [];
   bool _isLoading = true;
   bool _isActionLoading = false;
@@ -89,7 +89,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     if (token == null || token.isEmpty) {
       if (mounted) {
         setState(() {
-          _salon = null;
+          _studio = null;
           _services = [];
           _isLoading = false;
         });
@@ -97,16 +97,16 @@ class _ServicesScreenState extends State<ServicesScreen> {
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      final services = salon != null
-          ? await context.read<ServicesStaffCache>().getServicesForSalon(
+      final studio = await context.read<StudioCache>().getStudio(token);
+      final services = studio != null
+          ? await context.read<ServicesStaffCache>().getServicesForStudio(
               token,
-              salon.id,
+              studio.id,
             )
           : <ServiceItem>[];
       if (mounted) {
         setState(() {
-          _salon = salon;
+          _studio = salon;
           _services = services;
           _isLoading = false;
           if (_selectedCategory != null &&
@@ -114,7 +114,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             _selectedCategory = null;
           }
         });
-        if (widget.openCreateOnStart && !_didAutoOpenCreate && salon != null) {
+        if (widget.openCreateOnStart && !_didAutoOpenCreate && studio != null) {
           _didAutoOpenCreate = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _openAddTrainingPage();
@@ -127,7 +127,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _salon = null;
+          _studio = null;
           _services = [];
           _isLoading = false;
         });
@@ -208,7 +208,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       if (!mounted) return;
       if (ok) {
         context.read<OwnerSessionsCache>().invalidate();
-        context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
+        context.read<ServicesStaffCache>().invalidateServices(_studio?.id);
         await _loadData();
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
@@ -336,11 +336,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   String _locationLabelForCatalog() {
-    final salon = _salon;
-    if (salon == null) return '';
-    final studioName = salon.name?.trim() ?? 'Studio';
-    final locations = TrainingLocationItem.listFromSalon(
-      salon,
+    final studio = _studio;
+    if (studio == null) return '';
+    final studioName = studio.name?.trim() ?? 'Studio';
+    final locations = TrainingLocationItem.listFromStudio(
+      studio,
       mainStudioName: studioName,
     );
     if (locations.isNotEmpty) {
@@ -372,7 +372,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         builder: (_) => EditTrainingScreen(
           token: token,
           item: item,
-          salon: _salon,
+          studio: _studio,
           categories: categories,
           onShowCategoryInfo: _showCategoryInfo,
         ),
@@ -380,7 +380,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
     if (changed == null || !mounted) return;
     context.read<OwnerSessionsCache>().invalidate();
-    context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
+    context.read<ServicesStaffCache>().invalidateServices(_studio?.id);
     await _loadData();
     if (!mounted) return;
     final locale = context.read<LocaleProvider>();
@@ -397,7 +397,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final locale = context.watch<LocaleProvider>();
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      floatingActionButton: _salon != null && !_isLoading
+      floatingActionButton: _studio != null && !_isLoading
           ? SafeArea(
               minimum: const EdgeInsets.only(bottom: 8),
               child: FloatingActionButton(
@@ -417,7 +417,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
             )
-          : _salon == null
+          : _studio == null
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
@@ -667,7 +667,7 @@ class EditTrainingScreen extends StatefulWidget {
   const EditTrainingScreen({super.key, 
     required this.token,
     required this.item,
-    required this.salon,
+    required this.studio,
     required this.categories,
     required this.onShowCategoryInfo,
     this.scheduleEffectiveFrom,
@@ -676,7 +676,7 @@ class EditTrainingScreen extends StatefulWidget {
 
   final String token;
   final ServiceItem item;
-  final Salon? salon;
+  final Studio? studio;
   final List<TrainingCategoryOption> categories;
   final VoidCallback onShowCategoryInfo;
 
@@ -709,7 +709,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   bool _applyFromToday = true;
   late DateTime _effectiveFromDate;
   late TimeOfDay _sessionTime;
-  Salon? _studio;
+  Studio? _studio;
   List<TrainingLocationItem> _locations = [];
   String _selectedLocationId = 'default';
   int? _initialCapacity;
@@ -886,10 +886,10 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     return _locations.isNotEmpty ? _locations.first : null;
   }
 
-  void _applyLocationsFromStudio(Salon? salon, LocaleProvider locale) {
+  void _applyLocationsFromStudio(Studio? studio, LocaleProvider locale) {
     _studio = salon;
-    _locations = TrainingLocationItem.listFromSalon(
-      salon,
+    _locations = TrainingLocationItem.listFromStudio(
+      studio,
       mainStudioName: locale.t('locations.mainStudio'),
     );
     if (_locations.isEmpty) return;
@@ -1027,7 +1027,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
 
     final updated = _locations.where((l) => l.id != loc.id).toList();
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
         studio,
         updated,
@@ -1035,7 +1035,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       if (!mounted) return false;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _studio = updatedSalon ?? studio;
+        _studio = updatedStudio ?? studio;
         _applyLocationsFromStudio(_studio, locale);
         if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
           _selectedLocationId = _locations.first.id;
@@ -1069,14 +1069,14 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final updatedList = [..._locations, newLoc];
 
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
         studio,
         updatedList,
       );
       if (!mounted) return;
       setState(() {
-        _studio = updatedSalon ?? studio;
+        _studio = updatedStudio ?? studio;
         _applyLocationsFromStudio(_studio, locale);
         _selectedLocationId = newLoc.id;
       });
@@ -1087,10 +1087,10 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
 
   Future<void> _loadSessionDefaults() async {
     final locale = context.read<LocaleProvider>();
-    var salon = widget.salon;
-    salon ??= await context.read<SalonCache>().getSalon(widget.token);
+    var studio = widget.studio;
+    salon ??= await context.read<StudioCache>().getStudio(widget.token);
     if (!mounted) return;
-    _applyLocationsFromStudio(salon, locale);
+    _applyLocationsFromStudio(studio, locale);
 
     final now = DateTime.now();
     final sessions = await DashboardApiService.getOwnerTrainingSessions(
@@ -1740,10 +1740,10 @@ Future<OwnerSessionTrainingEditResult?> openEditTrainingFromOwnerSession(
   final token = context.read<AuthService>().accessToken;
   if (token == null || token.isEmpty) return null;
 
-  final salon = await context.read<SalonCache>().getSalon(token);
-  if (salon == null || !context.mounted) return null;
+  final studio = await context.read<StudioCache>().getStudio(token);
+  if (studio == null || !context.mounted) return null;
 
-  final services = await ServicesApiService.getByStudio(token, salon.id);
+  final services = await ServicesApiService.getByStudio(token, studio.id);
   ServiceItem? item;
   for (final s in services) {
     if (s.id == session.trainingId) {
@@ -1764,7 +1764,7 @@ Future<OwnerSessionTrainingEditResult?> openEditTrainingFromOwnerSession(
       builder: (ctx) => EditTrainingScreen(
         token: token,
         item: item!,
-        salon: salon,
+        studio: studio,
         categories: categories,
         onShowCategoryInfo: () {},
         scheduleEffectiveFrom: session.startsAt,

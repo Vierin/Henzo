@@ -185,7 +185,7 @@ export class SubscriptionsService {
   }) {
     return {
       id: sub.id,
-      salonId: sub.studioId,
+      studioId: sub.studioId,
       type: sub.type,
       status: sub.status,
       startDate: sub.startDate.toISOString(),

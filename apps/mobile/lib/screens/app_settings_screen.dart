@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/staff_member.dart';
 import '../models/subscription.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/push_notification_service.dart';
@@ -51,7 +51,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   int? _bookingPeriodDays;
   bool _statsLoading = true;
   String? _studioName;
-  Salon? _salon;
+  Studio? _studio;
   Subscription? _subscription;
   bool _subscriptionLoading = true;
   @override
@@ -94,7 +94,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       });
       return;
     }
-    final salonCache = context.read<SalonCache>();
+    final studioCache = context.read<StudioCache>();
     final staffCache = context.read<ServicesStaffCache>();
     try {
       final now = DateTime.now();
@@ -105,7 +105,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         1,
       ).subtract(const Duration(seconds: 1));
       final results = await Future.wait([
-        salonCache.getSalon(token),
+        studioCache.getStudio(token),
         DashboardApiService.getCurrentSubscription(token),
         DashboardApiService.getCurrentStudioAnalytics(
           token,
@@ -113,21 +113,21 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
           toIso: monthEnd.toIso8601String(),
         ),
       ]);
-      final salon = results[0] as Salon?;
+      final studio = results[0] as Studio?;
       final sub = results[1] as Subscription?;
       final analytics = results[2] as StudioAnalytics?;
-      final services = salon != null
-          ? await staffCache.getServicesForSalon(token, salon.id)
+      final services = studio != null
+          ? await staffCache.getServicesForStudio(token, studio.id)
           : const [];
-      final staff = salon != null
-          ? await staffCache.getStaffForSalon(token, salon.id)
+      final staff = studio != null
+          ? await staffCache.getTrainersForStudio(token, studio.id)
           : <StaffMember>[];
       if (!mounted) return;
       final owner = context.read<AuthService>().user;
       setState(() {
-        _salon = salon;
-        _studioName = salon?.name;
-        _bookingPeriodDays = extractBookingPeriodDays(salon);
+        _studio = salon;
+        _studioName = studio?.name;
+        _bookingPeriodDays = extractBookingPeriodDays(studio);
         _servicesCount = services.length;
         _staffCount = _teamDisplayCount(staff, owner);
         _subscription = sub;
@@ -157,11 +157,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   }
 
   Future<void> _openBookingPeriodSheet() async {
-    final salon = _salon;
-    if (salon == null) return;
+    final studio = _studio;
+    if (studio == null) return;
     final changed = await showOwnerBookingPeriodSheet(
       context,
-      salon: salon,
+      studio: studio,
       initialDays: _bookingPeriodDays,
     );
     if (changed == true && mounted) await _loadData();
@@ -338,12 +338,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         icon: Icons.visibility_outlined,
                         title: locale.t('settings.owner.bookingLink'),
                         onTap: () {
-                          final salon = _salon;
-                          if (salon == null) return;
+                          final studio = _studio;
+                          if (studio == null) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
-                                  PublicStudioDetailScreen(studioId: salon.id),
+                                  PublicStudioDetailScreen(studioId: studio.id),
                             ),
                           );
                         },
@@ -352,7 +352,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         icon: Icons.star_outline,
                         title: locale.t('dashboard.reviewsTitle'),
                         onTap: () {
-                          final studioId = _salon?.id ?? '';
+                          final studioId = _studio?.id ?? '';
                           if (studioId.isEmpty) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(

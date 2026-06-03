@@ -51,7 +51,6 @@ export class PrismaService
       }
       return url.toString();
     } catch {
-      // Fallback for rare malformed URL cases: keep current behavior with safer defaults.
       if (databaseUrl.includes('connection_limit=')) {
         return databaseUrl;
       }
@@ -60,21 +59,6 @@ export class PrismaService
     }
   }
 
-  // Compatibility aliases after domain rename in Prisma schema.
-  // This lets legacy modules keep working while we migrate codepaths.
-  get salon(): any {
-    return (this as any).studio ?? (this as any).Studio;
-  }
-  get service(): any {
-    return (this as any).training ?? (this as any).Training;
-  }
-  get staff(): any {
-    const client = this as any;
-    return client.trainer ?? client.Trainer ?? client.staff;
-  }
-  get booking(): any {
-    return (this as any).sessionBooking ?? (this as any).SessionBooking;
-  }
   constructor() {
     const connectionUrl = PrismaService.buildConnectionUrl(
       process.env.DATABASE_URL,

@@ -8,9 +8,9 @@ import 'package:share_plus/share_plus.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../services/auth_service.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../config/app_config.dart';
 
 class StudioQrCodeScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class StudioQrCodeScreen extends StatefulWidget {
 }
 
 class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
-  Salon? _salon;
+  Studio? _studio;
   bool _loading = true;
 
   @override
@@ -33,25 +33,25 @@ class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
   Future<void> _load() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
-    final salon = await context.read<SalonCache>().getSalon(token);
+    final studio = await context.read<StudioCache>().getStudio(token);
     if (!mounted) return;
     setState(() {
-      _salon = salon;
+      _studio = salon;
       _loading = false;
     });
   }
 
   /// Deep link для QR — открывает приложение напрямую.
-  String _studioDeepLink(Salon salon) =>
-      'henzo://studio/${salon.id}';
+  String _studioDeepLink(Studio studio) =>
+      'henzo://studio/${studio.id}';
 
   /// HTTPS ссылка для кнопки Share (работает и как Universal Link).
-  String _studioShareUrl(Salon salon) {
+  String _studioShareUrl(Studio studio) {
     final base = AppConfig.webUrl;
-    if (salon.slug != null && salon.slug!.isNotEmpty) {
-      return '$base/studio/${salon.slug}';
+    if (studio.slug != null && studio.slug!.isNotEmpty) {
+      return '$base/studio/${studio.slug}';
     }
-    return '$base/studio/${salon.id}';
+    return '$base/studio/${studio.id}';
   }
 
   @override
@@ -78,12 +78,12 @@ class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _salon == null
+          : _studio == null
           ? Center(child: Text(locale.t('common.loadFailed'), style: const TextStyle(color: AppColors.textSecondary)))
           : _QrContent(
-          salon: _salon!,
-          qrDeepLink: _studioDeepLink(_salon!),
-          shareUrl: _studioShareUrl(_salon!),
+          studio: _studio!,
+          qrDeepLink: _studioDeepLink(_studio!),
+          shareUrl: _studioShareUrl(_studio!),
           locale: locale,
         ),
     );
@@ -92,13 +92,13 @@ class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
 
 class _QrContent extends StatelessWidget {
   const _QrContent({
-    required this.salon,
+    required this.studio,
     required this.qrDeepLink,
     required this.shareUrl,
     required this.locale,
   });
 
-  final Salon salon;
+  final Studio salon;
   final String qrDeepLink;
   final String shareUrl;
   final LocaleProvider locale;
@@ -128,7 +128,7 @@ class _QrContent extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    salon.name ?? '',
+                    studio.name ?? '',
                     style: TextStyle(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
@@ -201,7 +201,7 @@ class _QrContent extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => Share.share(shareUrl, subject: salon.name ?? ''),
+                onPressed: () => Share.share(shareUrl, subject: studio.name ?? ''),
                 icon: const Icon(Icons.share_outlined, size: 18),
                 label: Text(locale.t('common.share')),
                 style: FilledButton.styleFrom(

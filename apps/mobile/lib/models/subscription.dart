@@ -1,7 +1,7 @@
 /// Текущая подписка салона (GET /subscriptions/current).
 class Subscription {
   final String id;
-  final String salonId;
+  final String studioId;
   final String type; // SOLO, STUDIO, ENTERPRISE
   final String status; // ACTIVE, INACTIVE, CANCELLED, EXPIRED
   final String startDate;
@@ -11,7 +11,7 @@ class Subscription {
 
   Subscription({
     required this.id,
-    required this.salonId,
+    required this.studioId,
     required this.type,
     required this.status,
     required this.startDate,
@@ -34,7 +34,7 @@ class Subscription {
     final cpe = json['currentPeriodEnd'];
     return Subscription(
       id: (json['id']?.toString() ?? '').trim(),
-      salonId: (json['salonId']?.toString() ?? '').trim(),
+      studioId: (json['studioId']?.toString() ?? '').trim(),
       type: (json['type'] as String?) ?? 'SOLO',
       status: (json['status'] as String?) ?? 'INACTIVE',
       startDate: (json['startDate'] as String?) ?? '',

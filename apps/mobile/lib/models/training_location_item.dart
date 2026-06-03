@@ -1,4 +1,4 @@
-import 'salon.dart';
+import 'studio.dart';
 
 /// Studio venue for add-training (default salon + optional extras in reminderSettings).
 class TrainingLocationItem {
@@ -20,8 +20,8 @@ class TrainingLocationItem {
 
   static const defaultLocationNameKey = 'defaultLocationName';
 
-  static String? readDefaultLocationName(Salon? salon) {
-    final raw = salon?.reminderSettings?[defaultLocationNameKey];
+  static String? readDefaultLocationName(Studio? studio) {
+    final raw = studio?.reminderSettings?[defaultLocationNameKey];
     if (raw is String && raw.trim().isNotEmpty) return raw.trim();
     return null;
   }
@@ -39,17 +39,17 @@ class TrainingLocationItem {
   }
 
   factory TrainingLocationItem.defaultFromSalon(
-    Salon salon, {
+    Studio studio, {
     required String mainStudioName,
   }) {
-    final storedName = readDefaultLocationName(salon);
+    final storedName = readDefaultLocationName(studio);
     return TrainingLocationItem(
       id: 'default',
       name: storedName ?? mainStudioName,
-      address: salon.address?.trim() ?? '',
+      address: studio.address?.trim() ?? '',
       isDefault: true,
-      latitude: salon.latitude,
-      longitude: salon.longitude,
+      latitude: studio.latitude,
+      longitude: studio.longitude,
     );
   }
 
@@ -76,18 +76,18 @@ class TrainingLocationItem {
     if (longitude != null) 'longitude': longitude,
   };
 
-  static List<TrainingLocationItem> listFromSalon(
-    Salon? salon, {
+  static List<TrainingLocationItem> listFromStudio(
+    Studio? studio, {
     required String mainStudioName,
   }) {
-    if (salon == null) return [];
+    if (studio == null) return [];
     final items = <TrainingLocationItem>[
       TrainingLocationItem.defaultFromSalon(
-        salon,
+        studio,
         mainStudioName: mainStudioName,
       ),
     ];
-    final raw = salon.reminderSettings?['trainingLocations'];
+    final raw = studio.reminderSettings?['trainingLocations'];
     if (raw is List) {
       for (final entry in raw) {
         if (entry is! Map) continue;
