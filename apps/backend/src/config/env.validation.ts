@@ -124,10 +124,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  REVENUECAT_ENTITLEMENT_ID?: string;
-
-  @IsString()
-  @IsOptional()
   REVENUECAT_STUDIO_ENTITLEMENT_ID?: string;
 
   @IsString()
