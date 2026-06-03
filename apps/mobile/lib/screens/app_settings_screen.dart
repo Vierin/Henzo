@@ -26,7 +26,6 @@ import 'public_studio_detail_screen.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
-import 'studio_qr_code_screen.dart';
 import 'subscription_screen.dart';
 import '../main.dart';
 import '../utils/owner_navigation_restore.dart';
@@ -319,15 +318,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         onTap: _openBookingPeriodSheet,
                       ),
                       SettingsListTile(
-                        icon: Icons.qr_code_rounded,
-                        title: locale.t('settings.studioQrCode'),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const StudioQrCodeScreen(),
-                          ),
-                        ),
-                      ),
-                      SettingsListTile(
                         svgAsset: 'assets/icons/icon-train.svg',
                         title: locale.t('settings.owner.trainings'),
                         trailingText: _statsLoading
@@ -567,20 +557,30 @@ class _OwnerHeroCard extends StatelessWidget {
                     ),
                     if (!isProPlan && !statsLoading) ...[
                       const SizedBox(height: 10),
-                      _UsageBar(
-                        label: context
-                            .read<LocaleProvider>()
-                            .t('settings.usage.classesThisMonth'),
-                        used: monthlySessionsCount,
-                        limit: monthlySessionsLimit,
-                      ),
-                      const SizedBox(height: 6),
-                      _UsageBar(
-                        label: context
-                            .read<LocaleProvider>()
-                            .t('settings.usage.trainers'),
-                        used: staffCount,
-                        limit: staffLimit,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _UsageStat(
+                              icon: Icons.calendar_today_outlined,
+                              label: context
+                                  .read<LocaleProvider>()
+                                  .t('settings.usage.classesThisMonth'),
+                              used: monthlySessionsCount,
+                              limit: monthlySessionsLimit,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _UsageStat(
+                              icon: Icons.people_outline,
+                              label: context
+                                  .read<LocaleProvider>()
+                                  .t('settings.usage.trainers'),
+                              used: staffCount,
+                              limit: staffLimit,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -599,55 +599,63 @@ class _OwnerHeroCard extends StatelessWidget {
   }
 }
 
-class _UsageBar extends StatelessWidget {
-  const _UsageBar({
+class _UsageStat extends StatelessWidget {
+  const _UsageStat({
+    required this.icon,
     required this.label,
     required this.used,
     required this.limit,
   });
 
+  final IconData icon;
   final String label;
   final int used;
   final int limit;
 
   @override
   Widget build(BuildContext context) {
-    final fraction = (used / limit).clamp(0.0, 1.0);
     final isAtLimit = used >= limit;
-    final barColor = isAtLimit ? AppColors.error500 : AppColors.primary500;
+    final accent = isAtLimit ? AppColors.error500 : AppColors.primary500;
+    final circleBg = isAtLimit ? AppColors.error50 : AppColors.primary100;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              '$used / $limit',
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: isAtLimit ? AppColors.error500 : AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: circleBg,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 18, color: accent),
         ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 5,
-            backgroundColor: AppColors.neutral200,
-            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$used/$limit',
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w700,
+                  color: accent,
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+              ),
+            ],
           ),
         ),
       ],
