@@ -356,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       minimumSize: Size.zero,
                     ),
                     child: Text(
-                      'No account? Register',
+                      context.read<LocaleProvider>().t('auth.noAccountRegister'),
                       style: TextStyle(
                         color: AppColors.primary500,
                         fontSize: 14.sp,

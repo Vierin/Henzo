@@ -277,7 +277,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: 'Phone',
+              hintText: context.read<LocaleProvider>().t('auth.phone'),
               prefixIcon: Icons.phone_rounded,
             ),
             style: AuthFormStyles.fieldTextStyle,
@@ -328,7 +328,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                       ),
                     )
                   : Text(
-                      'Create account',
+                      context.read<LocaleProvider>().t('auth.createAccount'),
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.sp,

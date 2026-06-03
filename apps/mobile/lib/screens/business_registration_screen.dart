@@ -323,7 +323,7 @@ class _BusinessRegistrationScreenState
                       ),
                     )
                   : Text(
-                      'Create account',
+                      context.read<LocaleProvider>().t('auth.createAccount'),
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.sp,
