@@ -106,7 +106,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           : <ServiceItem>[];
       if (mounted) {
         setState(() {
-          _studio = salon;
+          _studio = studio;
           _services = services;
           _isLoading = false;
           if (_selectedCategory != null &&
@@ -887,7 +887,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   }
 
   void _applyLocationsFromStudio(Studio? studio, LocaleProvider locale) {
-    _studio = salon;
+    _studio = studio;
     _locations = TrainingLocationItem.listFromStudio(
       studio,
       mainStudioName: locale.t('locations.mainStudio'),
@@ -1088,7 +1088,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   Future<void> _loadSessionDefaults() async {
     final locale = context.read<LocaleProvider>();
     var studio = widget.studio;
-    salon ??= await context.read<StudioCache>().getStudio(widget.token);
+    studio ??= await context.read<StudioCache>().getStudio(widget.token);
     if (!mounted) return;
     _applyLocationsFromStudio(studio, locale);
 

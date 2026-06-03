@@ -128,7 +128,7 @@ class _OwnerEditTrainingSessionScreenState
       }
       if (!mounted) return;
       setState(() {
-        _studio = salon;
+        _studio = studio;
         _trainers = list;
         _trainerId = selectedTrainerId;
         _locations = locations;

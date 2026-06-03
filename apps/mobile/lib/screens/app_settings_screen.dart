@@ -125,7 +125,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       if (!mounted) return;
       final owner = context.read<AuthService>().user;
       setState(() {
-        _studio = salon;
+        _studio = studio;
         _studioName = studio?.name;
         _bookingPeriodDays = extractBookingPeriodDays(studio);
         _servicesCount = services.length;

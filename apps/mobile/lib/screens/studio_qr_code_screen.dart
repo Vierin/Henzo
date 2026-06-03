@@ -36,7 +36,7 @@ class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
     final studio = await context.read<StudioCache>().getStudio(token);
     if (!mounted) return;
     setState(() {
-      _studio = salon;
+      _studio = studio;
       _loading = false;
     });
   }
@@ -98,7 +98,7 @@ class _QrContent extends StatelessWidget {
     required this.locale,
   });
 
-  final Studio salon;
+  final Studio studio;
   final String qrDeepLink;
   final String shareUrl;
   final LocaleProvider locale;

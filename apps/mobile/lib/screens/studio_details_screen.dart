@@ -76,7 +76,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
     try {
       final studio = await context.read<StudioCache>().getStudio(token);
       if (!mounted) return;
-      _studio = salon;
+      _studio = studio;
       if (studio != null) {
         final locale = context.read<LocaleProvider>();
         _nameController.text = studio.name ?? '';

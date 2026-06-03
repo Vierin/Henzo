@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final studio = await context.read<StudioCache>().getStudio(token);
       if (!mounted) return;
       setState(() {
-        _studio = salon;
+        _studio = studio;
         _studioLoading = false;
       });
       _fillSalonFromData();
@@ -179,7 +179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _locations.isNotEmpty ? _locations.first : null;
   }
 
-  void _applyLocationsFromSalon(Studio? studio, LocaleProvider locale) {
+  void _applyLocationsFromStudio(Studio? studio, LocaleProvider locale) {
     _locations = TrainingLocationItem.listFromStudio(
       studio,
       mainStudioName: locale.t('locations.mainStudio'),
@@ -304,7 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     if (_locations.isEmpty) {
-      _applyLocationsFromSalon(studio, locale);
+      _applyLocationsFromStudio(studio, locale);
     }
 
     const defaultId = 'default';
@@ -351,7 +351,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
           if (!mounted) return;
           setState(() {
-            _studio = updatedStudio ?? salon;
+            _studio = updatedStudio ?? studio;
             _salonAddressController.text = swap.address;
             _salonLat = swap.latitude;
             _salonLon = swap.longitude;
@@ -385,8 +385,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return false;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _studio = updatedStudio ?? salon;
-        _applyLocationsFromSalon(_studio, locale);
+        _studio = updatedStudio ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
       });
       return true;
     } catch (e) {
@@ -401,7 +401,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (studio == null) return;
 
     if (_locations.isEmpty) {
-      _applyLocationsFromSalon(studio, locale);
+      _applyLocationsFromStudio(studio, locale);
     }
 
     final selection = await AddressPickerModal.show(
@@ -427,8 +427,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _studio = updatedStudio ?? salon;
-        _applyLocationsFromSalon(_studio, locale);
+        _studio = updatedStudio ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
       });
     } catch (e) {
       if (mounted) showApiError(context, e);

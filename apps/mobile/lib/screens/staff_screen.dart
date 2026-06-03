@@ -61,7 +61,7 @@ class _StaffScreenState extends State<StaffScreen> {
       final sub = await DashboardApiService.getCurrentSubscription(token);
       if (mounted) {
         setState(() {
-          _studio = salon;
+          _studio = studio;
           _staff = staff;
           _isProPlan = subscriptionTypeIsPaid(sub?.type);
           _isLoading = false;

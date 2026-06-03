@@ -39,7 +39,7 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
       final studio = await context.read<StudioCache>().getStudio(token);
       if (!mounted) return;
       setState(() {
-        _studio = salon;
+        _studio = studio;
         _bookingPeriodDays =
             extractBookingPeriodDays(studio) ?? kDefaultBookingPeriodDays;
         _loading = false;

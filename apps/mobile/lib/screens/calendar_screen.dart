@@ -186,7 +186,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       }
       if (mounted) {
         setState(() {
-          _studio = salon;
+          _studio = studio;
           _sessionsByDay
             ..clear()
             ..addAll(grouped);

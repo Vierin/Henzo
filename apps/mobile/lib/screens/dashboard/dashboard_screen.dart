@@ -130,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       if (mounted) {
         setState(() {
-          _studio = salon;
+          _studio = studio;
           _checklist = checklist;
           _todaySessions = todayOnly;
           _upcomingSessions = sessions;

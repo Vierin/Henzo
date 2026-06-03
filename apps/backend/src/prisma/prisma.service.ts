@@ -75,6 +75,25 @@ export class PrismaService
     });
   }
 
+  /** Map PascalCase Prisma delegates when client was generated with model names. */
+  private wireDelegates(): void {
+    const client = this as Record<string, unknown>;
+    const pairs: [string, string][] = [
+      ['studio', 'Studio'],
+      ['trainer', 'Trainer'],
+      ['training', 'Training'],
+      ['trainerInvite', 'TrainerInvite'],
+      ['sessionBooking', 'SessionBooking'],
+      ['subscription', 'Subscription'],
+      ['trainingSession', 'TrainingSession'],
+    ];
+    for (const [camel, pascal] of pairs) {
+      if (client[camel] == null && client[pascal] != null) {
+        client[camel] = client[pascal];
+      }
+    }
+  }
+
   async onModuleInit() {
     const maxAttempts = PrismaService.parsePositiveInt(
       process.env.PRISMA_CONNECT_RETRIES,
@@ -88,6 +107,7 @@ export class PrismaService
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         await this.$connect();
+        this.wireDelegates();
         if (attempt > 1) {
           console.warn(`[Prisma] connected on retry ${attempt}/${maxAttempts}`);
         }

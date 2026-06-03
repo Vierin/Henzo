@@ -4,7 +4,6 @@ import 'service_item.dart';
 import 'staff_member.dart';
 
 /// Fitness domain aliases used during pivot without DB/model rename.
-typedef Studio = Studio;
 typedef Offering = ServiceItem;
 typedef Trainer = StaffMember;
 typedef SessionBooking = Booking;
