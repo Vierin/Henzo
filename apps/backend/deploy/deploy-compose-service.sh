@@ -52,7 +52,20 @@ echo "Image: $IMAGE_REF"
 
 if [ "$RUN_MIGRATIONS" = "true" ]; then
   echo "Running migration precheck..."
-  docker compose run --rm "$SERVICE" npx prisma migrate status
+  MIGRATE_STATUS="$(
+    docker compose run --rm "$SERVICE" npx prisma migrate status 2>&1 || true
+  )"
+  echo "$MIGRATE_STATUS"
+
+  # Recover from a failed deploy when the table already exists (P3018 / 42P07).
+  if echo "$MIGRATE_STATUS" | grep -q "20260604120000_add_scheduled_push_reminder"; then
+    if echo "$MIGRATE_STATUS" | grep -Eiq "failed|failed to apply"; then
+      echo "Healing failed migration 20260604120000_add_scheduled_push_reminder..."
+      docker compose run --rm "$SERVICE" npx prisma migrate resolve \
+        --applied "20260604120000_add_scheduled_push_reminder"
+    fi
+  fi
+
   echo "Applying migrations..."
   docker compose run --rm "$SERVICE" npx prisma migrate deploy
 fi
