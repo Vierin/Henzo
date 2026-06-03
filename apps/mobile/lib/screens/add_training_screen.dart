@@ -20,6 +20,7 @@ import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/load_error_message.dart';
+import '../utils/plan_limit_dialogs.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -1418,35 +1419,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
   }
 
-  Future<void> _showClassLimitDialog() async {
-    final locale = context.read<LocaleProvider>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(locale.t('subscription.soloClassLimitTitle')),
-        content: Text(locale.t('subscription.soloClassLimitBody')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(locale.t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-            ),
-            child: Text(locale.t('subscription.upgradeToStudio')),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _save() async {
     final token = context.read<AuthService>().accessToken;
     final studioId = _studio?.id;
@@ -1544,8 +1516,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      if (isSoloSessionLimitError(e)) {
-        await _showClassLimitDialog();
+      if (isSessionPlanLimitError(e)) {
+        await showSessionPlanLimitDialog(
+          context,
+          error: e,
+          offerUpgrade: true,
+        );
       } else {
         showApiError(context, e);
       }

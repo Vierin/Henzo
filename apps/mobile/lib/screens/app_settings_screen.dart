@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
@@ -13,6 +14,7 @@ import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/push_notification_service.dart';
 import '../utils/legal_web_links.dart';
+import '../config/plan_limits.dart';
 import '../utils/subscription_tier.dart';
 import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
@@ -42,9 +44,6 @@ class AppSettingsScreen extends StatefulWidget {
 
 class _AppSettingsScreenState extends State<AppSettingsScreen> {
   static const int _defaultBookingPeriodDays = 30;
-
-  static const int _soloClassLimit = 12;
-  static const int _soloTrainerLimit = 1;
 
   int _servicesCount = 0;
   int _staffCount = 0;
@@ -100,8 +99,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     try {
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
-      final monthEnd = DateTime(now.year, now.month + 1, 1)
-          .subtract(const Duration(seconds: 1));
+      final monthEnd = DateTime(
+        now.year,
+        now.month + 1,
+        1,
+      ).subtract(const Duration(seconds: 1));
       final results = await Future.wait([
         salonCache.getSalon(token),
         DashboardApiService.getCurrentSubscription(token),
@@ -129,8 +131,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         _servicesCount = services.length;
         _staffCount = _teamDisplayCount(staff, owner);
         _subscription = sub;
-        _monthlySessionsCount =
-            analytics?.trainingSessionsScheduled ?? 0;
+        _monthlySessionsCount = analytics?.trainingSessionsScheduled ?? 0;
         _statsLoading = false;
         _subscriptionLoading = false;
       });
@@ -174,18 +175,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
 
   String _planBadgeLabel(LocaleProvider locale) {
     if (_subscriptionLoading) return locale.t('common.loading');
-    if (_hasActiveProPlan) {
-      return locale.t('settings.owner.activeProPlan');
-    }
     final sub = _subscription;
-    if (sub == null || subscriptionTypeIsSolo(sub.type)) {
-      return locale.t('profile.free');
-    }
-    final localeKey = subscriptionPlanLabelKey(sub.type);
-    if (localeKey.startsWith('subscription.')) {
-      return locale.t(localeKey);
-    }
-    return sub.type;
+    return locale.t(subscriptionPlanLabelKey(sub?.type));
   }
 
   String _ownerSubtitle(LocaleProvider locale) {
@@ -214,6 +205,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             .map((x) => x[0].toUpperCase())
             .join();
 
+        final usageQuota = PlanLimits.quotaForType(_subscription?.type);
         final bookingDays = _bookingPeriodDays ?? _defaultBookingPeriodDays;
         final bookingTrailing = _statsLoading
             ? ''
@@ -259,10 +251,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         : null,
                     planLabel: _planBadgeLabel(locale),
                     isProPlan: _hasActiveProPlan,
+                    showUsageLimits: usageQuota != null && !_statsLoading,
                     monthlySessionsCount: _monthlySessionsCount,
-                    monthlySessionsLimit: _soloClassLimit,
+                    monthlySessionsLimit: usageQuota?.sessions ?? 0,
                     staffCount: _staffCount,
-                    staffLimit: _soloTrainerLimit,
+                    staffLimit: usageQuota?.trainers ?? 0,
                     statsLoading: _statsLoading,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -349,7 +342,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           if (salon == null) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => PublicStudioDetailScreen(studioId: salon.id),
+                              builder: (_) =>
+                                  PublicStudioDetailScreen(studioId: salon.id),
                             ),
                           );
                         },
@@ -362,9 +356,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           if (studioId.isEmpty) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => OwnerStudioReviewsScreen(
-                                studioId: studioId,
-                              ),
+                              builder: (_) =>
+                                  OwnerStudioReviewsScreen(studioId: studioId),
                             ),
                           );
                         },
@@ -400,22 +393,20 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-shield.svg',
                         title: locale.t('settings.privacyPolicy'),
-                        onTap: () =>
-                            openLegalWebPage(
-                              context,
-                              locale,
-                              '/privacy-policy',
-                            ),
+                        onTap: () => openLegalWebPage(
+                          context,
+                          locale,
+                          '/privacy-policy',
+                        ),
                       ),
                       SettingsListTile(
                         icon: Icons.description_outlined,
                         title: locale.t('settings.termsOfUse'),
-                        onTap: () =>
-                            openLegalWebPage(
-                              context,
-                              locale,
-                              '/terms-of-service',
-                            ),
+                        onTap: () => openLegalWebPage(
+                          context,
+                          locale,
+                          '/terms-of-service',
+                        ),
                       ),
                       SettingsListTile(
                         icon: Icons.chat_bubble_outline,
@@ -447,6 +438,7 @@ class _OwnerHeroCard extends StatelessWidget {
     required this.avatarUrl,
     required this.planLabel,
     required this.isProPlan,
+    required this.showUsageLimits,
     required this.monthlySessionsCount,
     required this.monthlySessionsLimit,
     required this.staffCount,
@@ -461,6 +453,7 @@ class _OwnerHeroCard extends StatelessWidget {
   final String? avatarUrl;
   final String planLabel;
   final bool isProPlan;
+  final bool showUsageLimits;
   final int monthlySessionsCount;
   final int monthlySessionsLimit;
   final int staffCount;
@@ -478,118 +471,128 @@ class _OwnerHeroCard extends StatelessWidget {
     return Material(
       color: AppColors.backgroundPrimary,
       borderRadius: BorderRadius.circular(_radius),
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.none,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(_radius),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: _avatarRadius,
-                backgroundColor: AppColors.primary100,
-                backgroundImage: hasPhoto ? NetworkImage(avatarUrl!) : null,
-                child: hasPhoto
-                    ? null
-                    : Text(
-                        initials,
-                        style: TextStyle(
-                          color: AppColors.primary500,
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w600,
-                          height: 1,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: _avatarRadius,
+                    backgroundColor: AppColors.primary100,
+                    backgroundImage:
+                        hasPhoto ? NetworkImage(avatarUrl!) : null,
+                    child: hasPhoto
+                        ? null
+                        : Text(
+                            initials,
+                            style: TextStyle(
+                              color: AppColors.primary500,
+                              fontSize: 24.sp,
+                              fontWeight: FontWeight.w600,
+                              height: 1,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 72),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (showUsageLimits) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _UsageStat(
+                                      svgAsset:
+                                          'assets/icons/icon-calendar.svg',
+                                      label: context
+                                          .read<LocaleProvider>()
+                                          .t(
+                                            'settings.usage.classesThisMonth',
+                                          ),
+                                      used: monthlySessionsCount,
+                                      limit: monthlySessionsLimit,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _UsageStat(
+                                      svgAsset:
+                                          'assets/icons/icon-clients.svg',
+                                      label: context
+                                          .read<LocaleProvider>()
+                                          .t('settings.usage.trainers'),
+                                      used: staffCount,
+                                      limit: staffLimit,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: _PlanTierBadge(
+                            label: planLabel,
+                            isPaid: isProPlan,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isProPlan ? 14 : 10,
-                        vertical: isProPlan ? 6 : 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isProPlan
-                            ? kSettingsProBadgeBackground
-                            : AppColors.primary100,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        planLabel,
-                        style: TextStyle(
-                          color: isProPlan
-                              ? kSettingsProBadgeText
-                              : AppColors.primary700,
-                          fontSize: isProPlan ? 13 : 12,
-                          fontWeight:
-                              isProPlan ? FontWeight.w500 : FontWeight.w600,
-                          height: 1.15,
-                          letterSpacing: isProPlan ? -0.1 : 0,
-                        ),
-                      ),
-                    ),
-                    if (!isProPlan && !statsLoading) ...[
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _UsageStat(
-                              icon: Icons.calendar_today_outlined,
-                              label: context
-                                  .read<LocaleProvider>()
-                                  .t('settings.usage.classesThisMonth'),
-                              used: monthlySessionsCount,
-                              limit: monthlySessionsLimit,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _UsageStat(
-                              icon: Icons.people_outline,
-                              label: context
-                                  .read<LocaleProvider>()
-                                  .t('settings.usage.trainers'),
-                              used: staffCount,
-                              limit: staffLimit,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
+              const Positioned(
+                right: 0,
+                top: 28,
+                child: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                  size: 22,
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.textSecondary,
-                size: 22,
               ),
             ],
           ),
@@ -599,18 +602,53 @@ class _OwnerHeroCard extends StatelessWidget {
   }
 }
 
+class _PlanTierBadge extends StatelessWidget {
+  const _PlanTierBadge({required this.label, required this.isPaid});
+
+  final String label;
+  final bool isPaid;
+
+  static const Color _activeBadgeBg = Color(0xFFE8F5E9);
+  static const Color _activeBadgeFg = Color(0xFF2E7D32);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isPaid ? 12 : 10,
+        vertical: isPaid ? 5 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: isPaid ? _activeBadgeBg : AppColors.primary100,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isPaid ? _activeBadgeFg : AppColors.primary700,
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w600,
+          height: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
 class _UsageStat extends StatelessWidget {
   const _UsageStat({
-    required this.icon,
+    required this.svgAsset,
     required this.label,
     required this.used,
     required this.limit,
   });
 
-  final IconData icon;
+  final String svgAsset;
   final String label;
   final int used;
   final int limit;
+
+  static const double _iconSize = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -623,12 +661,14 @@ class _UsageStat extends StatelessWidget {
         Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(
-            color: circleBg,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: circleBg, shape: BoxShape.circle),
           alignment: Alignment.center,
-          child: Icon(icon, size: 18, color: accent),
+          child: SvgPicture.asset(
+            svgAsset,
+            width: _iconSize,
+            height: _iconSize,
+            colorFilter: ColorFilter.mode(accent, BlendMode.srcIn),
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -649,7 +689,7 @@ class _UsageStat extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 10.sp,
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                   height: 1.2,

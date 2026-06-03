@@ -4,14 +4,14 @@ import 'api_client.dart';
 import '../models/staff_member.dart';
 
 class StaffApiService {
-  /// GET /fitness/trainers?studioId= — список тренеров студии.
+  /// GET /trainers?studioId= — список тренеров студии.
   static Future<List<StaffMember>> getBySalon(
     String accessToken,
-    String salonId,
+    String studioId,
   ) async {
     try {
       final list = await ApiClient.get(
-        '/fitness/trainers?studioId=${Uri.encodeComponent(salonId)}',
+        '/trainers?studioId=${Uri.encodeComponent(studioId)}',
         accessToken,
       );
       if (list is! List) return [];
@@ -30,75 +30,56 @@ class StaffApiService {
     }
   }
 
-  /// POST /fitness/trainers — создать тренера.
-  static Future<StaffMember?> create(
+  /// POST /trainers — создать тренера.
+  static Future<StaffMember> create(
     String accessToken, {
-    required String salonId,
+    required String studioId,
     required String name,
     String? email,
     String? phone,
     String accessLevel = 'EMPLOYEE',
-    List<String>? serviceIds,
+    List<String>? trainingIds,
   }) async {
-    try {
-      final body = <String, dynamic>{
-        'salonId': salonId,
-        'name': name,
-        if (email != null && email.isNotEmpty) 'email': email,
-        if (phone != null && phone.isNotEmpty) 'phone': phone,
-        'accessLevel': accessLevel,
-        if (serviceIds != null && serviceIds.isNotEmpty)
-          'serviceIds': serviceIds,
-      };
-      final map =
-          await ApiClient.post('/fitness/trainers', accessToken, body: body)
-              as Map<String, dynamic>?;
-      return map != null ? StaffMember.fromJson(map) : null;
-    } on ApiException catch (e) {
-      if (kDebugMode) debugPrint('[StaffAPI] create: $e');
-      return null;
-    }
+    final body = <String, dynamic>{
+      'studioId': studioId,
+      'name': name,
+      'accessLevel': accessLevel,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      if (trainingIds != null && trainingIds.isNotEmpty)
+        'trainingIds': trainingIds,
+    };
+    final map = await ApiClient.post('/trainers', accessToken, body: body)
+        as Map<String, dynamic>;
+    return StaffMember.fromJson(map);
   }
 
-  /// PUT /staff/:id — обновить сотрудника.
-  static Future<StaffMember?> update(
+  /// PUT /trainers/:id — обновить тренера.
+  static Future<StaffMember> update(
     String accessToken,
     String id, {
     String? name,
     String? email,
     String? phone,
     String? accessLevel,
-    List<String>? serviceIds,
+    List<String>? trainingIds,
   }) async {
-    try {
-      final data = <String, dynamic>{};
-      if (name != null) data['name'] = name;
-      if (email != null) data['email'] = email;
-      if (phone != null) data['phone'] = phone;
-      if (accessLevel != null) data['accessLevel'] = accessLevel;
-      if (serviceIds != null) data['serviceIds'] = serviceIds;
-      final map =
-          await ApiClient.put(
-                '/staff/$id',
-                accessToken,
-                body: data.isEmpty ? null : data,
-              )
-              as Map<String, dynamic>?;
-      return map != null ? StaffMember.fromJson(map) : null;
-    } on ApiException catch (e) {
-      if (kDebugMode) debugPrint('[StaffAPI] update: $e');
-      return null;
-    }
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (email != null) data['email'] = email;
+    if (phone != null) data['phone'] = phone;
+    if (accessLevel != null) data['accessLevel'] = accessLevel;
+    if (trainingIds != null) data['trainingIds'] = trainingIds;
+    final map = await ApiClient.put(
+      '/trainers/$id',
+      accessToken,
+      body: data.isEmpty ? null : data,
+    ) as Map<String, dynamic>;
+    return StaffMember.fromJson(map);
   }
 
-  /// DELETE /staff/:id — удалить сотрудника.
-  static Future<bool> delete(String accessToken, String id) async {
-    try {
-      await ApiClient.delete('/staff/$id', accessToken);
-      return true;
-    } on ApiException catch (e) {
-      if (kDebugMode) debugPrint('[StaffAPI] delete: $e');
-      return false;
-    }
+  /// DELETE /trainers/:id — удалить тренера.
+  static Future<void> delete(String accessToken, String id) async {
+    await ApiClient.delete('/trainers/$id', accessToken);
   }
 }

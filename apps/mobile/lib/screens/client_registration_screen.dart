@@ -16,7 +16,9 @@ import '../widgets/settings/branded_settings_app_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientRegistrationScreen extends StatefulWidget {
-  const ClientRegistrationScreen({super.key});
+  const ClientRegistrationScreen({super.key, this.initialEmail});
+
+  final String? initialEmail;
 
   @override
   State<ClientRegistrationScreen> createState() =>
@@ -42,6 +44,15 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   int _resendSecondsLeft = 0;
   Timer? _resendTimer;
   final FocusNode _otpFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    final email = widget.initialEmail?.trim();
+    if (email != null && email.isNotEmpty) {
+      _emailController.text = email;
+    }
+  }
 
   @override
   void dispose() {

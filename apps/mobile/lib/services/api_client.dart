@@ -15,7 +15,8 @@ class ApiException implements Exception {
 
   final String message;
   final int? statusCode;
-  /// Machine-readable error code from response body `error` field (e.g. SOLO_TRAINER_LIMIT_EXCEEDED).
+  /// Machine-readable error code from response body `error` field
+  /// (e.g. SOLO_TRAINER_LIMIT_EXCEEDED, STUDIO_SESSION_LIMIT_EXCEEDED).
   final String? errorCode;
 
   @override

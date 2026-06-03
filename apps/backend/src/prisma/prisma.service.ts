@@ -69,7 +69,8 @@ export class PrismaService
     return (this as any).training ?? (this as any).Training;
   }
   get staff(): any {
-    return (this as any).trainer ?? (this as any).Trainer;
+    const client = this as any;
+    return client.trainer ?? client.Trainer ?? client.staff;
   }
   get booking(): any {
     return (this as any).sessionBooking ?? (this as any).SessionBooking;

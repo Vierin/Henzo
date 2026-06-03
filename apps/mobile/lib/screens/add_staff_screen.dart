@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../constants/colors.dart';
-import '../../models/service_item.dart';
-import '../../services/auth_service.dart';
-import '../../services/cache/services_staff_cache.dart';
-import '../../services/staff_api_service.dart';
-import '../../services/services_api_service.dart';
-import '../../l10n/locale_provider.dart';
-import '../../utils/load_error_message.dart';
-import '../../utils/show_api_error.dart';
-import 'subscription_screen.dart';
-import '../../widgets/common/henzo_header_back_button.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
-/// Полноэкранная форма добавления сотрудника (как на вебе: имя, email, телефон, выбор услуг).
+import '../constants/colors.dart';
+import '../constants/layout.dart';
+import '../l10n/locale_provider.dart';
+import '../services/auth_service.dart';
+import '../services/cache/services_staff_cache.dart';
+import '../services/staff_api_service.dart';
+import '../services/trainer_api_service.dart';
+import '../utils/plan_limit_dialogs.dart';
+import '../utils/show_api_error.dart';
+import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/settings/branded_settings_app_bar.dart';
+import '../widgets/settings/settings_list_widgets.dart';
+
+/// Добавление сотрудника: приглашение (Share) или ручная форма.
 class AddStaffScreen extends StatefulWidget {
   final String salonId;
 
@@ -24,51 +27,89 @@ class AddStaffScreen extends StatefulWidget {
 }
 
 class _AddStaffScreenState extends State<AddStaffScreen> {
+  final _inviteNameController = TextEditingController();
+  final _inviteEmailController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  List<ServiceItem> _services = [];
-  final List<String> _selectedServiceIds = [];
-  bool _loadingServices = true;
   bool _saving = false;
+  bool _inviting = false;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _loadServices();
-  }
-
-  @override
   void dispose() {
+    _inviteNameController.dispose();
+    _inviteEmailController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadServices() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) {
-      if (mounted) setState(() => _loadingServices = false);
+  Future<void> _inviteViaShare() async {
+    final locale = context.read<LocaleProvider>();
+    final name = _inviteNameController.text.trim();
+    final email = _inviteEmailController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = locale.t('staffScreen.enterName'));
       return;
     }
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = locale.t('staffScreen.enterEmailForInvite'));
+      return;
+    }
+    final token = context.read<AuthService>().accessToken;
+    if (token == null) return;
+
+    setState(() {
+      _error = null;
+      _inviting = true;
+    });
     try {
-      final list = await ServicesApiService.getByStudio(token, widget.salonId);
-      if (mounted) {
-        setState(() {
-          _services = list;
-          _loadingServices = false;
-        });
+      final created = await StaffApiService.create(
+        token,
+        studioId: widget.salonId,
+        name: name,
+        email: email,
+      );
+      final invite = await TrainerApiService.generateInvite(
+        token,
+        created.id,
+      );
+      final inviteUrl = invite['inviteUrl']?.toString() ?? '';
+      final intro = locale
+          .t('staff.shareInviteMessage')
+          .replaceAll('{name}', name);
+      await Share.share('$intro\n$inviteUrl');
+
+      if (!mounted) return;
+      context.read<ServicesStaffCache>().invalidateStaff(widget.salonId);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(locale.t('staffScreen.staffInvitedShared')),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      if (isTrainerPlanLimitError(e)) {
+        await showTrainerPlanLimitDialog(
+          context,
+          error: e,
+          offerUpgrade: true,
+        );
+      } else {
+        setState(() => _error = e.toString());
+        showApiError(context, e);
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _loadingServices = false);
-      }
+    } finally {
+      if (mounted) setState(() => _inviting = false);
     }
   }
 
-  Future<void> _submit() async {
+  Future<void> _submitManual() async {
+    final locale = context.read<LocaleProvider>();
     setState(() {
       _error = null;
       _saving = true;
@@ -76,7 +117,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() {
-        _error = 'Введите имя';
+        _error = locale.t('staffScreen.enterName');
         _saving = false;
       });
       return;
@@ -87,9 +128,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       return;
     }
     try {
-      final created = await StaffApiService.create(
+      await StaffApiService.create(
         token,
-        salonId: widget.salonId,
+        studioId: widget.salonId,
         name: name,
         email: _emailController.text.trim().isEmpty
             ? null
@@ -97,56 +138,24 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         phone: _phoneController.text.trim().isEmpty
             ? null
             : _phoneController.text.trim(),
-        serviceIds:
-            _selectedServiceIds.isEmpty ? null : List.from(_selectedServiceIds),
       );
       if (!mounted) return;
-      if (created != null) {
-        context.read<ServicesStaffCache>().invalidateStaff(widget.salonId);
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('Сотрудник добавлен'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true);
-      } else {
-        setState(() {
-          _error = 'Не удалось добавить';
-          _saving = false;
-        });
-      }
+      context.read<ServicesStaffCache>().invalidateStaff(widget.salonId);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(locale.t('staffScreen.staffAdded')),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      if (isSoloTrainerLimitError(e)) {
-        final locale = context.read<LocaleProvider>();
-        await showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(locale.t('subscription.soloTrainerLimitTitle')),
-            content: Text(locale.t('subscription.soloTrainerLimitBody')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(locale.t('common.cancel')),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SubscriptionScreen(),
-                    ),
-                  );
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
-                ),
-                child: Text(locale.t('subscription.upgradeToStudio')),
-              ),
-            ],
-          ),
+      if (isTrainerPlanLimitError(e)) {
+        await showTrainerPlanLimitDialog(
+          context,
+          error: e,
+          offerUpgrade: true,
         );
       } else {
         setState(() => _error = e.toString());
@@ -155,137 +164,190 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     }
   }
 
+  Widget _dividerOr(LocaleProvider locale) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: AppColors.borderPrimary)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              locale.t('staffScreen.sectionDividerOr'),
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const Expanded(child: Divider(color: AppColors.borderPrimary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _formField({
+    required TextEditingController controller,
+    required String hint,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    IconData? prefixIcon,
+    bool enabled = true,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      style: AuthFormStyles.fieldTextStyle,
+      decoration: AuthFormStyles.fieldDecoration(
+        hintText: hint,
+        prefixIcon: prefixIcon,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+    final busy = _saving || _inviting;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        title: const Text('Добавить сотрудника'),
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        leading: HenzoHeaderBackButton(
-          onPressed: () => Navigator.pop(context),
-        ),
-        leadingWidth: 56,
+      appBar: buildBrandedSettingsAppBar(
+        context,
+        title: locale.t('staffScreen.addStaffTitle'),
+        onBack: busy ? () {} : null,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: kScreenPaddingHorizontal,
+          vertical: 10,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Имя *',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: AppColors.backgroundPrimary,
+            const SizedBox(height: 8),
+            SettingsSectionLabel(
+              title: locale.t('staffScreen.inviteSectionTitle'),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              locale.t('staffScreen.inviteSectionSubtitle'),
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: AppColors.textSecondary,
+                height: 1.35,
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
+            const SizedBox(height: 14),
+            _formField(
+              controller: _inviteNameController,
+              hint: locale.t('staffScreen.fullName'),
+              prefixIcon: Icons.person_outline_rounded,
+              textInputAction: TextInputAction.next,
+              enabled: !busy,
+            ),
+            const SizedBox(height: AuthFormStyles.fieldGap),
+            _formField(
+              controller: _inviteEmailController,
+              hint: locale.t('auth.email'),
+              prefixIcon: Icons.email_rounded,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: AppColors.backgroundPrimary,
+              textInputAction: TextInputAction.done,
+              enabled: !busy,
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: busy ? null : _inviteViaShare,
+              icon: _inviting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.ios_share_outlined, size: 20),
+              label: Text(locale.t('staffScreen.inviteButton')),
+              style: AuthFormStyles.primaryButtonStyle(),
+            ),
+            _dividerOr(locale),
+            SettingsSectionLabel(
+              title: locale.t('staffScreen.manualSectionTitle'),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              locale.t('staffScreen.manualSectionSubtitle'),
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: AppColors.textSecondary,
+                height: 1.35,
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
+            const SizedBox(height: 14),
+            _formField(
+              controller: _nameController,
+              hint: locale.t('staffScreen.fullName'),
+              prefixIcon: Icons.person_outline_rounded,
+              textInputAction: TextInputAction.next,
+              enabled: !busy,
+            ),
+            const SizedBox(height: AuthFormStyles.fieldGap),
+            _formField(
+              controller: _emailController,
+              hint: locale.t('auth.email'),
+              prefixIcon: Icons.email_rounded,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              enabled: !busy,
+            ),
+            const SizedBox(height: AuthFormStyles.fieldGap),
+            _formField(
               controller: _phoneController,
+              hint: locale.t('common.phone'),
+              prefixIcon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Телефон',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: AppColors.backgroundPrimary,
-              ),
+              textInputAction: TextInputAction.done,
+              enabled: !busy,
             ),
-            if (_services.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Услуги (опционально)',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Выберите услуги, которые выполняет сотрудник. Пусто = все услуги.',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (_loadingServices)
-                const Center(
-                    child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(
-                      color: AppColors.primary500, strokeWidth: 2),
-                ))
-              else
-                ..._services.map((s) {
-                  final selected = _selectedServiceIds.contains(s.id);
-                  return CheckboxListTile(
-                    value: selected,
-                    onChanged: (v) {
-                      setState(() {
-                        if (v == true) {
-                          _selectedServiceIds.add(s.id);
-                        } else {
-                          _selectedServiceIds.remove(s.id);
-                        }
-                      });
-                    },
-                    title: Text(
-                      s.displayName,
-                      style: TextStyle(fontSize: 14.sp),
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  );
-                }),
-            ],
             if (_error != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: Colors.red.shade800, fontSize: 13.sp),
+              const SizedBox(height: 14),
+              SelectableText.rich(
+                TextSpan(
+                  text: _error!,
+                  style: TextStyle(
+                    color: AppColors.error500,
+                    fontSize: 13.sp,
+                  ),
                 ),
               ),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _saving ? null : () => Navigator.pop(context),
-                    child: const Text('Отмена'),
+                    onPressed: busy ? null : () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, AuthFormStyles.buttonHeight),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AuthFormStyles.buttonBorderRadius,
+                        ),
+                      ),
+                      side: const BorderSide(color: AppColors.borderPrimary),
+                    ),
+                    child: Text(locale.t('common.cancel')),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
                   child: FilledButton(
-                    onPressed: _saving ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
-                    ),
+                    onPressed: busy ? null : _submitManual,
+                    style: AuthFormStyles.primaryButtonStyle(),
                     child: _saving
                         ? const SizedBox(
                             height: 20,
@@ -295,11 +357,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Добавить сотрудника'),
+                        : Text(locale.t('common.save')),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

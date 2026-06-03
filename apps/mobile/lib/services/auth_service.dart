@@ -15,6 +15,7 @@ import '../models/trainer_info.dart';
 import '../models/user_model.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/owner_navigation_restore.dart';
+import '../utils/trainer_invite_pending.dart';
 import 'analytics_service.dart';
 import 'revenuecat_service.dart';
 
@@ -65,11 +66,19 @@ class AuthService extends ChangeNotifier {
       final res = await _supabase.auth.refreshSession();
       if (res.session != null) {
         await _fetchUser(res.session!.accessToken);
+        await _tryFinishPendingTrainerInvite(res.session!.accessToken);
         notifyListeners();
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[Auth] refreshSession error: $e');
       rethrow;
+    }
+  }
+
+  Future<void> _tryFinishPendingTrainerInvite(String accessToken) async {
+    final accepted = await TrainerInvitePending.tryAccept(accessToken);
+    if (accepted) {
+      await _fetchTrainerInfo(accessToken);
     }
   }
 
@@ -612,6 +621,7 @@ class AuthService extends ChangeNotifier {
         );
         return _loginFetchFailure(fetch);
       }
+      await _tryFinishPendingTrainerInvite(response.session!.accessToken);
       return (success: true, errorL10nKey: null, errorRaw: null);
     } catch (e, st) {
       _user = null;
@@ -821,6 +831,7 @@ class AuthService extends ChangeNotifier {
             errorRaw: fetch.errorRaw,
           );
         }
+        await _tryFinishPendingTrainerInvite(accessToken);
         return (success: true, errorL10nKey: null, errorRaw: null);
       }
       String msg = 'HTTP ${response.statusCode}';

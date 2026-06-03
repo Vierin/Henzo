@@ -563,10 +563,15 @@
 		"legalLinksPrefix": "См. ",
 		"legalLinksSuffix": ".",
 		"soloClassLimitTitle": "Достигнут лимит занятий",
-		"soloClassLimitBody": "Пакет Solo позволяет 12 занятий в месяц. Перейдите на Studio для безлимитных занятий.",
+		"soloClassLimitBody": "Пакет Solo позволяет 12 занятий в месяц. Перейдите на Studio — до 100 занятий в месяц.",
 		"soloTrainerLimitTitle": "Достигнут лимит тренеров",
 		"soloTrainerLimitBody": "Пакет Solo включает 1 тренера (вас). Перейдите на Studio чтобы добавить больше.",
+		"studioClassLimitTitle": "Достигнут лимит занятий",
+		"studioClassLimitBody": "Пакет Studio позволяет 100 занятий в месяц. Перейдите на Enterprise для безлимита.",
+		"studioTrainerLimitTitle": "Достигнут лимит тренеров",
+		"studioTrainerLimitBody": "Пакет Studio включает до 4 тренеров. Перейдите на Enterprise для безлимита.",
 		"upgradeToStudio": "Перейти на Studio",
+		"upgradeToEnterprise": "Перейти на Enterprise",
 		"studioTitle": "Studio",
 		"studioTagline": "Для растущих студий",
 		"enterpriseTitle": "Enterprise",
@@ -577,7 +582,7 @@
 		"subscribeToStudio": "Подключить Studio",
 		"subscribeToEnterprise": "Подключить Enterprise",
 		"feature_studio_1": "100 занятий в месяц",
-		"feature_studio_2": "До 5 тренеров",
+		"feature_studio_2": "До 4 тренеров",
 		"feature_studio_3": "Лист ожидания",
 		"feature_studio_4": "Автонапоминания",
 		"feature_studio_5": "Аналитика (90 дней)",
@@ -635,7 +640,22 @@
 		"enterFullName": "Введите полное имя",
 		"staffServicesTitle": "Услуги сотрудника",
 		"addStaff": "Добавить сотрудника",
-		"addStaffProRequired": "Добавление тренеров доступно в подписке Pro."
+		"addStaffProRequired": "Добавление тренеров доступно в подписке Pro.",
+		"addStaffTitle": "Добавить сотрудника",
+		"inviteSectionTitle": "Пригласить в команду",
+		"inviteSectionSubtitle": "Отправьте ссылку — тренер зарегистрируется и присоединится к студии.",
+		"inviteButton": "Пригласить через Share",
+		"manualSectionTitle": "Добавить без регистрации",
+		"manualSectionSubtitle": "Профиль вручную. Доступ в приложение — после приглашения.",
+		"sectionDividerOr": "или",
+		"enterName": "Введите имя",
+		"enterEmailForInvite": "Укажите email для приглашения",
+		"staffAdded": "Сотрудник добавлен",
+		"staffInvitedShared": "Ссылка приглашения отправлена",
+		"statusActive": "В команде",
+		"statusNoAccount": "Без аккаунта",
+		"statusInvitePending": "Приглашение отправлено",
+		"shareInviteWithLink": "Присоединяйся к {studio} в Henzo как тренер: {link}"
 	},
 	"servicesScreen": {
 		"title": "Услуги",
@@ -761,7 +781,7 @@
 			"bookingLink": "Предпросмотр салона"
 		},
 		"usage": {
-			"classesThisMonth": "Занятий в этом месяце",
+			"classesThisMonth": "Занятия",
 			"trainers": "Тренеры",
 			"upgradeHint": "Перейдите на Studio для расширения"
 		},
@@ -1014,8 +1034,11 @@
 		"joinAs": "Присоединиться к {studio} как {name}",
 		"joinAsTrainer": "Присоединиться к {studio} как тренер",
 		"acceptInvitation": "Принять приглашение",
+		"createAccountToJoin": "Создать аккаунт",
+		"signInToAccept": "Войти",
 		"invalidExpiredLink": "Ссылка недействительна или истекла.",
-		"couldNotLoadInvite": "Не удалось загрузить приглашение. Проверьте соединение."
+		"couldNotLoadInvite": "Не удалось загрузить приглашение. Проверьте соединение.",
+		"acceptFailed": "Не удалось принять приглашение. Попробуйте снова."
 	},
 	"staff": {
 		"inviteTitle": "Пригласить {name}",
