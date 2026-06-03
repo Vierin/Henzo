@@ -830,7 +830,6 @@ export class StudiosController {
       try {
         if (session.Studio?.ownerId) {
           await this.notificationsService.sendGroupClassBookingNotification({
-            salonId: session.studioId,
             studioId: session.studioId,
             sessionId: session.id,
             trainingName: session.Training?.name || 'class',

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
 
-Future<Salon?> persistExtraTrainingLocations(
+Future<Studio?> persistExtraTrainingLocations(
   BuildContext context,
-  Salon salon,
+  Studio studio,
   List<TrainingLocationItem> locations,
 ) async {
   final token = context.read<AuthService>().accessToken;
   if (token == null || token.isEmpty) return null;
 
   final reminderSettings = <String, dynamic>{
-    ...?salon.reminderSettings,
+    ...?studio.reminderSettings,
     'trainingLocations': TrainingLocationItem.extraLocationsToJson(locations),
   };
   final primary = () {
@@ -32,12 +32,12 @@ Future<Salon?> persistExtraTrainingLocations(
     );
   }
 
-  return _updateSalonReminderSettings(context, salon, reminderSettings);
+  return _updateSalonReminderSettings(context, studio, reminderSettings);
 }
 
-Future<Salon?> persistTrainingLocationDefaultSwap(
+Future<Studio?> persistTrainingLocationDefaultSwap(
   BuildContext context,
-  Salon salon, {
+  Studio studio, {
   required String address,
   required double? latitude,
   required double? longitude,
@@ -48,7 +48,7 @@ Future<Salon?> persistTrainingLocationDefaultSwap(
   if (token == null || token.isEmpty) return null;
 
   final reminderSettings = <String, dynamic>{
-    ...?salon.reminderSettings,
+    ...?studio.reminderSettings,
     'trainingLocations': TrainingLocationItem.extraLocationsToJson(locations),
   };
   TrainingLocationItem.writeDefaultLocationName(
@@ -57,59 +57,59 @@ Future<Salon?> persistTrainingLocationDefaultSwap(
   );
 
   final payload = <String, dynamic>{
-    'name': salon.name ?? '',
-    if (salon.description != null) 'description': salon.description,
+    'name': studio.name ?? '',
+    if (studio.description != null) 'description': studio.description,
     'address': address,
-    if (salon.phone != null) 'phone': salon.phone,
-    if (salon.email != null && salon.email!.trim().isNotEmpty)
-      'email': salon.email,
-    if (salon.website != null) 'website': salon.website,
-    if (salon.instagram != null) 'instagram': salon.instagram,
-    if (salon.photos != null) 'photos': salon.photos,
-    if (salon.workingHours != null) 'workingHours': salon.workingHours,
+    if (studio.phone != null) 'phone': studio.phone,
+    if (studio.email != null && studio.email!.trim().isNotEmpty)
+      'email': studio.email,
+    if (studio.website != null) 'website': studio.website,
+    if (studio.instagram != null) 'instagram': studio.instagram,
+    if (studio.photos != null) 'photos': studio.photos,
+    if (studio.workingHours != null) 'workingHours': studio.workingHours,
     'latitude': ?latitude,
     'longitude': ?longitude,
-    if (salon.autoConfirmBookings != null)
-      'autoConfirmBookings': salon.autoConfirmBookings,
+    if (studio.autoConfirmBookings != null)
+      'autoConfirmBookings': studio.autoConfirmBookings,
     'reminderSettings': reminderSettings,
   };
 
-  final updated = await DashboardApiService.updateCurrentSalon(token, payload);
+  final updated = await DashboardApiService.updateCurrentStudio(token, payload);
   if (context.mounted) {
-    context.read<SalonCache>().invalidate();
+    context.read<StudioCache>().invalidate();
   }
   return updated;
 }
 
-Future<Salon?> _updateSalonReminderSettings(
+Future<Studio?> _updateSalonReminderSettings(
   BuildContext context,
-  Salon salon,
+  Studio studio,
   Map<String, dynamic> reminderSettings,
 ) async {
   final token = context.read<AuthService>().accessToken;
   if (token == null || token.isEmpty) return null;
 
   final payload = <String, dynamic>{
-    'name': salon.name ?? '',
-    if (salon.description != null) 'description': salon.description,
-    if (salon.address != null) 'address': salon.address,
-    if (salon.phone != null) 'phone': salon.phone,
-    if (salon.email != null && salon.email!.trim().isNotEmpty)
-      'email': salon.email,
-    if (salon.website != null) 'website': salon.website,
-    if (salon.instagram != null) 'instagram': salon.instagram,
-    if (salon.photos != null) 'photos': salon.photos,
-    if (salon.workingHours != null) 'workingHours': salon.workingHours,
-    if (salon.latitude != null) 'latitude': salon.latitude,
-    if (salon.longitude != null) 'longitude': salon.longitude,
-    if (salon.autoConfirmBookings != null)
-      'autoConfirmBookings': salon.autoConfirmBookings,
+    'name': studio.name ?? '',
+    if (studio.description != null) 'description': studio.description,
+    if (studio.address != null) 'address': studio.address,
+    if (studio.phone != null) 'phone': studio.phone,
+    if (studio.email != null && studio.email!.trim().isNotEmpty)
+      'email': studio.email,
+    if (studio.website != null) 'website': studio.website,
+    if (studio.instagram != null) 'instagram': studio.instagram,
+    if (studio.photos != null) 'photos': studio.photos,
+    if (studio.workingHours != null) 'workingHours': studio.workingHours,
+    if (studio.latitude != null) 'latitude': studio.latitude,
+    if (studio.longitude != null) 'longitude': studio.longitude,
+    if (studio.autoConfirmBookings != null)
+      'autoConfirmBookings': studio.autoConfirmBookings,
     'reminderSettings': reminderSettings,
   };
 
-  final updated = await DashboardApiService.updateCurrentSalon(token, payload);
+  final updated = await DashboardApiService.updateCurrentStudio(token, payload);
   if (context.mounted) {
-    context.read<SalonCache>().invalidate();
+    context.read<StudioCache>().invalidate();
   }
   return updated;
 }

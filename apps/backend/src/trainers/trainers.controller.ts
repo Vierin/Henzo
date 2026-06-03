@@ -107,25 +107,6 @@ export class TrainersController {
     return this.trainersService.generateInvite(trainerId, currentUser.user.id);
   }
 
-  /**
-   * Generate invite from the Staff model (Flutter team management).
-   * Finds or creates the matching Trainer record by email/name.
-   */
-  @Post('staff/:staffId/invite')
-  async generateInviteFromStaff(
-    @Headers('authorization') authHeader: string,
-    @Param('staffId') staffId: string,
-  ) {
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    if (currentUser.user.role !== 'OWNER') {
-      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
-    }
-    return this.trainersService.generateInviteFromStaff(
-      staffId,
-      currentUser.user.id,
-    );
-  }
-
   /** Public — return studio name + trainer name for the invite landing page. */
   @Get('invite/:token')
   async getInviteInfo(@Param('token') token: string) {

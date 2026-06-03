@@ -831,7 +831,7 @@ class _PublicStudioScheduleScreenState
                         return ListView.separated(
                           padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
                           itemCount: sessions.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 8),
                           itemBuilder: (_, index) {
                             final raw = sessions[index];

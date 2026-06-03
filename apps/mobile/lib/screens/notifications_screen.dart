@@ -7,10 +7,10 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/app_notification.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../services/auth_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/notifications_store.dart';
 import '../utils/color_hex.dart';
@@ -821,7 +821,7 @@ Future<void> _openClientBookingDetail(
   final sessionId = notification.data['sessionId']?.trim() ?? '';
   final studioId =
       notification.data['studioId']?.trim() ??
-      notification.data['salonId']?.trim() ??
+      notification.data['studioId']?.trim() ??
       '';
   if (sessionId.isEmpty || studioId.isEmpty) return;
 
@@ -913,12 +913,12 @@ Future<void> _openBookingSessionDetail(
     return;
   }
 
-  Salon? salon;
+  Studio? studio;
   try {
-    salon = await context.read<SalonCache>().getSalon(token);
+    studio = await context.read<StudioCache>().getStudio(token);
   } catch (_) {}
 
-  final venue = salon?.name?.trim();
+  final venue = studio?.name?.trim();
 
   if (!context.mounted) return;
   await Navigator.of(context).push<void>(

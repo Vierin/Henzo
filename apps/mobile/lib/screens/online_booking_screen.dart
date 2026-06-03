@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/settings/owner_booking_period_sheet.dart';
@@ -19,29 +19,29 @@ class OnlineBookingScreen extends StatefulWidget {
 }
 
 class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
-  Salon? _salon;
+  Studio? _studio;
   bool _loading = true;
   int _bookingPeriodDays = kDefaultBookingPeriodDays;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSalon());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadStudio());
   }
 
-  Future<void> _loadSalon() async {
+  Future<void> _loadStudio() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) setState(() => _loading = false);
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
+      final studio = await context.read<StudioCache>().getStudio(token);
       if (!mounted) return;
       setState(() {
-        _salon = salon;
+        _studio = studio;
         _bookingPeriodDays =
-            extractBookingPeriodDays(salon) ?? kDefaultBookingPeriodDays;
+            extractBookingPeriodDays(studio) ?? kDefaultBookingPeriodDays;
         _loading = false;
       });
     } catch (e) {
@@ -52,14 +52,14 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
   }
 
   Future<void> _openBookingPeriodModal() async {
-    final salon = _salon;
-    if (salon == null) return;
+    final studio = _studio;
+    if (studio == null) return;
     final changed = await showOwnerBookingPeriodSheet(
       context,
-      salon: salon,
+      studio: studio,
       initialDays: _bookingPeriodDays,
     );
-    if (changed == true && mounted) await _loadSalon();
+    if (changed == true && mounted) await _loadStudio();
   }
 
   @override
@@ -88,7 +88,7 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                   borderRadius: BorderRadius.circular(12),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: _salon == null ? null : _openBookingPeriodModal,
+                    onTap: _studio == null ? null : _openBookingPeriodModal,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,

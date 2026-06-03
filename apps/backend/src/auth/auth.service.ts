@@ -1167,7 +1167,7 @@ export class AuthService {
             });
 
             // Update bookings
-            await prisma.booking.updateMany({
+            await prisma.sessionBooking.updateMany({
               where: { userId: oldUserId },
               data: { userId: user.id },
             });
@@ -1248,7 +1248,7 @@ export class AuthService {
               });
 
               // Update bookings
-              await prisma.booking.updateMany({
+              await prisma.sessionBooking.updateMany({
                 where: { userId: existingUserByEmail.id },
                 data: { userId: user.id },
               });
@@ -1657,7 +1657,7 @@ export class AuthService {
         console.log(`🏢 Deleting studio data for owner: ${studio.id}`);
 
         // Удаляем все связанные со студией данные
-        await this.prisma.booking.deleteMany({
+        await this.prisma.sessionBooking.deleteMany({
           where: { studioId: studio.id },
         });
 
@@ -1665,11 +1665,11 @@ export class AuthService {
           where: { studioId: studio.id },
         });
 
-        await this.prisma.staff.deleteMany({
+        await this.prisma.trainer.deleteMany({
           where: { studioId: studio.id },
         });
 
-        await this.prisma.service.deleteMany({
+        await this.prisma.training.deleteMany({
           where: { studioId: studio.id },
         });
 
@@ -1682,7 +1682,7 @@ export class AuthService {
       // Удаляем все бронирования пользователя
       if (user.Booking.length > 0) {
         console.log(`Deleting ${user.Booking.length} bookings`);
-        await this.prisma.booking.deleteMany({
+        await this.prisma.sessionBooking.deleteMany({
           where: { userId: userId },
         });
       }

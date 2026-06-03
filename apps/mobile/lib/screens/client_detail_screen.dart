@@ -8,12 +8,12 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/booking.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../models/training_location_item.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
@@ -120,12 +120,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       if (mounted) setState(() => _loading = false);
       return;
     }
-    final salonCache = context.read<SalonCache>();
+    final studioCache = context.read<StudioCache>();
     final bookingsCache = context.read<BookingsCache>();
     setState(() => _loading = true);
     try {
       try {
-        await salonCache.getSalon(token);
+        await studioCache.getStudio(token);
       } catch (_) {
         /* studio line still works without name */
       }
@@ -394,7 +394,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     final tr = context.watch<LocaleProvider>().t;
     final localeCode = context.watch<LocaleProvider>().localeCode;
     final auth = context.watch<AuthService>();
-    final salon = context.watch<SalonCache>().salon;
+    final studio = context.watch<StudioCache>().studio;
     final identity = _resolveClientIdentity();
     final resolvedPhone = identity.phone ?? '';
     final resolvedEmail = identity.email ?? '';
@@ -610,7 +610,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       (b) => _ClientVisitCard(
                         booking: b,
                         accent: _visitAccent(b),
-                        locationLabel: _visitLocationLabel(b, salon, tr),
+                        locationLabel: _visitLocationLabel(b, studio, tr),
                         trainerLabel: _trainerLine(b, ownerName, tr),
                         durationLabel: _durationLabel(b, tr),
                         onTap: () => BookingDetailModal.show(
@@ -630,16 +630,16 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
   String _visitLocationLabel(
     Booking b,
-    Salon? salon,
+    Studio? studio,
     String Function(String) tr,
   ) {
     final direct = b.locationName?.trim();
     if (direct != null && direct.isNotEmpty) return direct;
 
-    if (salon == null) return '';
+    if (studio == null) return '';
 
-    final locations = TrainingLocationItem.listFromSalon(
-      salon,
+    final locations = TrainingLocationItem.listFromStudio(
+      studio,
       mainStudioName: tr('locations.mainStudio'),
     );
     if (locations.isEmpty) return '';

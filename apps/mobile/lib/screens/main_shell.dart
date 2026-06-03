@@ -8,7 +8,7 @@ import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/push_notification_service.dart';
 import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
@@ -36,7 +36,7 @@ class MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
   int get currentTabIndex => _currentIndex;
-  bool _salonLoading = true;
+  bool _studioLoading = true;
   final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
       GlobalKey<CalendarScreenState>();
   final GlobalKey<NavigatorState> _homeNavigatorKey =
@@ -57,7 +57,7 @@ class MainShellState extends State<MainShell> {
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _restoreShellTabIfNeeded();
-      if (mounted) await _loadSalon();
+      if (mounted) await _loadStudio();
     });
   }
 
@@ -75,22 +75,22 @@ class MainShellState extends State<MainShell> {
     setState(() => _currentIndex = saved);
   }
 
-  Future<void> _loadSalon() async {
+  Future<void> _loadStudio() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) {
-      if (mounted) setState(() => _salonLoading = false);
+      if (mounted) setState(() => _studioLoading = false);
       return;
     }
-    final salonCache = context.read<SalonCache>();
+    final studioCache = context.read<StudioCache>();
     final bookingsCache = context.read<BookingsCache>();
     try {
-      await salonCache.getSalon(token);
+      await studioCache.getStudio(token);
       await bookingsCache.getBookings(token);
     } catch (_) {
       // показываем интерфейс даже при ошибке
     }
     if (mounted) {
-      setState(() => _salonLoading = false);
+      setState(() => _studioLoading = false);
     }
     if (!mounted) return;
     final locale = context.read<LocaleProvider>();
@@ -210,7 +210,7 @@ class MainShellState extends State<MainShell> {
       body: Stack(
         children: [
           IndexedStack(index: _currentIndex, children: _shellBodyTabs),
-          if (_salonLoading) const _SalonLoadingCurtain(),
+          if (_studioLoading) const _StudioLoadingCurtain(),
         ],
       ),
       bottomNavigationBar: ColoredBox(
@@ -363,8 +363,8 @@ class _NavItem extends StatelessWidget {
 }
 
 /// Занавес при загрузке данных салона: логотип и подпись.
-class _SalonLoadingCurtain extends StatelessWidget {
-  const _SalonLoadingCurtain();
+class _StudioLoadingCurtain extends StatelessWidget {
+  const _StudioLoadingCurtain();
 
   @override
   Widget build(BuildContext context) {

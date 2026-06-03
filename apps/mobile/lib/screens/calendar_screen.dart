@@ -5,10 +5,10 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../utils/owner_studio_setup_errors.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/dashboard_api_service.dart';
@@ -43,7 +43,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class CalendarScreenState extends State<CalendarScreen> {
-  Salon? _salon;
+  Studio? _studio;
   final Map<int, int> _sessionCountByDay = <int, int>{};
   final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
       <int, List<OwnerTrainingSession>>{};
@@ -164,11 +164,13 @@ class CalendarScreenState extends State<CalendarScreen> {
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
+      final studioCache = context.read<StudioCache>();
+      final sessionsCache = context.read<OwnerSessionsCache>();
+      final studio = await studioCache.getStudio(token);
       final now = DateTime.now();
       final fromUtc = now.subtract(const Duration(days: 14)).toUtc();
       final toUtc = now.add(const Duration(days: 56)).toUtc();
-      final sessions = await context.read<OwnerSessionsCache>().getSessions(
+      final sessions = await sessionsCache.getSessions(
         token,
         fromUtc: fromUtc,
         toUtc: toUtc,
@@ -186,7 +188,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       }
       if (mounted) {
         setState(() {
-          _salon = salon;
+          _studio = studio;
           _sessionsByDay
             ..clear()
             ..addAll(grouped);
@@ -207,11 +209,11 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   List<TrainingLocationItem> _studioLocations(BuildContext context) {
-    final salon = _salon;
-    if (salon == null) return const [];
+    final studio = _studio;
+    if (studio == null) return const [];
     final locale = context.read<LocaleProvider>();
-    return TrainingLocationItem.listFromSalon(
-      salon,
+    return TrainingLocationItem.listFromStudio(
+      studio,
       mainStudioName: locale.t('locations.mainStudio'),
     );
   }
@@ -715,21 +717,21 @@ class CalendarScreenState extends State<CalendarScreen> {
                                       final token = context
                                           .read<AuthService>()
                                           .accessToken;
-                                      final salon =
+                                      final studio =
                                           (token != null &&
                                               token.isNotEmpty)
                                           ? await context
-                                                .read<SalonCache>()
-                                                .getSalon(token)
+                                                .read<StudioCache>()
+                                                .getStudio(token)
                                           : null;
                                       if (!context.mounted) return;
                                       String? venue;
-                                      if (salon != null) {
-                                        final n = salon.name?.trim();
+                                      if (studio != null) {
+                                        final n = studio.name?.trim();
                                         if (n != null && n.isNotEmpty) {
                                           venue = n;
                                         } else {
-                                          final a = salon.address?.trim();
+                                          final a = studio.address?.trim();
                                           if (a != null && a.isNotEmpty) {
                                             venue = a;
                                           }

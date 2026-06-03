@@ -28,18 +28,6 @@ class TrainerApiService {
     return Map<String, dynamic>.from(raw as Map);
   }
 
-  static Future<Map<String, dynamic>> generateInviteFromStaff(
-    String token,
-    String staffId,
-  ) async {
-    final raw = await ApiClient.post(
-      '/trainers/staff/$staffId/invite',
-      token,
-      body: {},
-    );
-    return Map<String, dynamic>.from(raw as Map);
-  }
-
   static Future<Map<String, dynamic>> getInviteInfo(String inviteToken) async {
     final raw = await ApiClient.get('/trainers/invite/$inviteToken', null);
     return Map<String, dynamic>.from(raw as Map);

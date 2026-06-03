@@ -563,10 +563,15 @@
 		"legalLinksPrefix": "Xem ",
 		"legalLinksSuffix": ".",
 		"soloClassLimitTitle": "Đã đạt giới hạn lớp học",
-		"soloClassLimitBody": "Gói Solo cho phép 12 lớp mỗi tháng. Nâng cấp lên Studio để không giới hạn.",
+		"soloClassLimitBody": "Gói Solo cho phép 12 lớp mỗi tháng. Nâng cấp lên Studio — tối đa 100 lớp/tháng.",
 		"soloTrainerLimitTitle": "Đã đạt giới hạn huấn luyện viên",
 		"soloTrainerLimitBody": "Gói Solo có 1 huấn luyện viên (bạn). Nâng cấp lên Studio để thêm người.",
+		"studioClassLimitTitle": "Đã đạt giới hạn lớp học",
+		"studioClassLimitBody": "Gói Studio cho phép 100 lớp mỗi tháng. Nâng cấp lên Enterprise để không giới hạn.",
+		"studioTrainerLimitTitle": "Đã đạt giới hạn huấn luyện viên",
+		"studioTrainerLimitBody": "Gói Studio có tối đa 4 huấn luyện viên. Nâng cấp lên Enterprise để không giới hạn.",
 		"upgradeToStudio": "Nâng cấp lên Studio",
+		"upgradeToEnterprise": "Nâng cấp lên Enterprise",
 		"studioTitle": "Studio",
 		"studioTagline": "Dành cho studio đang phát triển",
 		"enterpriseTitle": "Enterprise",
@@ -577,7 +582,7 @@
 		"subscribeToStudio": "Đăng ký Studio",
 		"subscribeToEnterprise": "Đăng ký Enterprise",
 		"feature_studio_1": "100 lớp/tháng",
-		"feature_studio_2": "Tối đa 5 huấn luyện viên",
+		"feature_studio_2": "Tối đa 4 huấn luyện viên",
 		"feature_studio_3": "Danh sách chờ",
 		"feature_studio_4": "Nhắc nhở tự động",
 		"feature_studio_5": "Phân tích (90 ngày)",
@@ -635,7 +640,22 @@
 		"enterFullName": "Nhập họ và tên",
 		"staffServicesTitle": "Dịch vụ của nhân viên",
 		"addStaff": "Thêm nhân viên",
-		"addStaffProRequired": "Thêm huấn luyện viên chỉ có trong gói Pro."
+		"addStaffProRequired": "Thêm huấn luyện viên chỉ có trong gói Pro.",
+		"addStaffTitle": "Thêm nhân viên",
+		"inviteSectionTitle": "Mời vào đội ngũ",
+		"inviteSectionSubtitle": "Chia sẻ liên kết để họ đăng ký và tham gia studio.",
+		"inviteButton": "Mời qua Share",
+		"manualSectionTitle": "Thêm không cần đăng ký",
+		"manualSectionSubtitle": "Tạo hồ sơ thủ công. Truy cập app sau khi được mời.",
+		"sectionDividerOr": "hoặc",
+		"enterName": "Nhập tên",
+		"enterEmailForInvite": "Nhập email để gửi lời mời",
+		"staffAdded": "Đã thêm nhân viên",
+		"staffInvitedShared": "Đã chia sẻ liên kết mời",
+		"statusActive": "Trong đội",
+		"statusNoAccount": "Chưa có tài khoản",
+		"statusInvitePending": "Đã gửi lời mời",
+		"shareInviteWithLink": "Tham gia {studio} trên Henzo với tư cách huấn luyện viên: {link}"
 	},
 	"servicesScreen": {
 		"title": "Dịch vụ",
@@ -761,7 +781,7 @@
 			"bookingLink": "Xem trước salon"
 		},
 		"usage": {
-			"classesThisMonth": "Lớp học trong tháng",
+			"classesThisMonth": "Lớp",
 			"trainers": "Huấn luyện viên",
 			"upgradeHint": "Nâng cấp lên Studio để mở rộng"
 		},
@@ -1014,8 +1034,11 @@
 		"joinAs": "Tham gia {studio} với tư cách {name}",
 		"joinAsTrainer": "Tham gia {studio} với tư cách huấn luyện viên",
 		"acceptInvitation": "Chấp nhận lời mời",
+		"createAccountToJoin": "Tạo tài khoản",
+		"signInToAccept": "Đăng nhập",
 		"invalidExpiredLink": "Liên kết mời không hợp lệ hoặc đã hết hạn.",
-		"couldNotLoadInvite": "Không thể tải lời mời. Kiểm tra kết nối."
+		"couldNotLoadInvite": "Không thể tải lời mời. Kiểm tra kết nối.",
+		"acceptFailed": "Không thể chấp nhận lời mời. Thử lại."
 	},
 	"staff": {
 		"inviteTitle": "Mời {name}",

@@ -5,7 +5,7 @@ class Booking {
   final Service? service;
   final User? user;
   final Staff? staff;
-  final String? staffId;
+  final String? trainerId;
   final String? serviceId;
   final String? notes;
   final String? locationId;
@@ -18,19 +18,19 @@ class Booking {
     this.service,
     this.user,
     this.staff,
-    this.staffId,
+    this.trainerId,
     this.serviceId,
     this.notes,
     this.locationId,
     this.locationName,
   });
 
-  /// ID сотрудника (из staff.id или staffId в ответе API).
-  String? get effectiveStaffId => staff?.id ?? staffId;
+  /// ID сотрудника (из staff.id или trainerId в ответе API).
+  String? get effectiveStaffId => staff?.id ?? trainerId;
 
   factory Booking.fromJson(Map<String, dynamic> json) {
-    final staffIdRaw = json['staffId'];
-    final staffId = staffIdRaw?.toString();
+    final staffIdRaw = json['trainerId'];
+    final trainerId = staffIdRaw?.toString();
     final serviceIdRaw = json['serviceId'];
     final serviceId = serviceIdRaw?.toString();
     final serviceMap = _serviceLikeMap(json);
@@ -45,7 +45,7 @@ class Booking {
       staff: json['staff'] != null
           ? Staff.fromJson(json['staff'] as Map<String, dynamic>)
           : null,
-      staffId: staffId,
+      trainerId: trainerId,
       serviceId: serviceId,
       notes: json['notes'] as String?,
       locationId: json['locationId']?.toString(),

@@ -123,13 +123,12 @@ export class NotificationsService {
     }
   }
 
-  async getPushTokensBySalonOwner(
-    salonId: string,
+  async getPushTokensByStudioOwner(
+    studioId: string,
   ): Promise<Array<{ token: string; language: string }>> {
     try {
-      // Find salon owner
       const studio = await this.prisma.studio.findUnique({
-        where: { id: salonId },
+        where: { id: studioId },
         select: {
           ownerId: true,
         },
@@ -141,7 +140,7 @@ export class NotificationsService {
 
       return this.getPushTokensByUserId(studio.ownerId);
     } catch (error) {
-      console.error('❌ Error getting push tokens for salon owner:', error);
+      console.error('❌ Error getting push tokens for studio owner:', error);
       return [];
     }
   }
@@ -260,7 +259,7 @@ export class NotificationsService {
   }
 
   async sendBookingNotification(
-    salonId: string,
+    studioId: string,
     bookingId: string,
     clientName: string,
     serviceName: string,
@@ -268,11 +267,11 @@ export class NotificationsService {
   ): Promise<void> {
     try {
       console.log(
-        `📤 Preparing to send booking notification for salon: ${salonId} (informational)`,
+        `📤 Preparing to send booking notification for studio: ${studioId} (informational)`,
       );
-      const tokens = await this.getPushTokensBySalonOwner(salonId);
+      const tokens = await this.getPushTokensByStudioOwner(studioId);
 
-      console.log(`📱 Found ${tokens.length} push token(s) for salon owner`);
+      console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length > 0) {
         console.log(
           `📱 Tokens:`,
@@ -281,7 +280,7 @@ export class NotificationsService {
       }
 
       if (tokens.length === 0) {
-        console.log('⚠️ No push tokens found for salon owner');
+        console.log('⚠️ No push tokens found for studio owner');
         return;
       }
 
@@ -326,7 +325,7 @@ export class NotificationsService {
           {
             type: 'NEW_BOOKING',
             bookingId,
-            salonId,
+            studioId,
             clientName,
             serviceName,
             dateTime: dateTime.toISOString(),
@@ -345,7 +344,7 @@ export class NotificationsService {
   }
 
   async sendBookingCancellationNotification(
-    salonId: string,
+    studioId: string,
     bookingId: string,
     clientName: string,
     serviceName: string,
@@ -353,11 +352,11 @@ export class NotificationsService {
   ): Promise<void> {
     try {
       console.log(
-        `📤 Preparing to send booking cancellation notification for salon: ${salonId}`,
+        `📤 Preparing to send booking cancellation notification for studio: ${studioId}`,
       );
-      const tokens = await this.getPushTokensBySalonOwner(salonId);
+      const tokens = await this.getPushTokensByStudioOwner(studioId);
 
-      console.log(`📱 Found ${tokens.length} push token(s) for salon owner`);
+      console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length > 0) {
         console.log(
           `📱 Tokens:`,
@@ -366,7 +365,7 @@ export class NotificationsService {
       }
 
       if (tokens.length === 0) {
-        console.log('⚠️ No push tokens found for salon owner');
+        console.log('⚠️ No push tokens found for studio owner');
         return;
       }
 
@@ -407,7 +406,7 @@ export class NotificationsService {
         await this.sendPushNotification(languageTokens, title, body, {
           type: 'BOOKING_CANCELLED',
           bookingId,
-          salonId,
+          studioId,
           clientName,
           serviceName,
           dateTime: dateTime.toISOString(),
@@ -426,7 +425,6 @@ export class NotificationsService {
   }
 
   async sendGroupClassBookingNotification(params: {
-    salonId: string;
     studioId: string;
     sessionId: string;
     clientName: string;
@@ -434,7 +432,7 @@ export class NotificationsService {
     startsAt: Date;
   }): Promise<void> {
     try {
-      const tokens = await this.getPushTokensBySalonOwner(params.salonId);
+      const tokens = await this.getPushTokensByStudioOwner(params.studioId);
       if (tokens.length === 0) {
         return;
       }
@@ -708,7 +706,7 @@ export class NotificationsService {
     rating: number;
   }): Promise<void> {
     try {
-      const tokens = await this.getPushTokensBySalonOwner(params.studioId);
+      const tokens = await this.getPushTokensByStudioOwner(params.studioId);
       if (!tokens || tokens.length === 0) return;
 
       const languageGroups = new Map<string, typeof tokens>();

@@ -244,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'assets/logo.png',
                       height: 60,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Text(
+                      errorBuilder: (_, _, _) => Text(
                         'Henzo',
                         style: TextStyle(
                           fontSize: 44.sp,
@@ -447,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
       width: 20,
       height: 20,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Icon(
+      errorBuilder: (_, _, _) => const Icon(
         Icons.g_mobiledata_rounded,
         size: 20,
         color: Color(0xFF4285F4),

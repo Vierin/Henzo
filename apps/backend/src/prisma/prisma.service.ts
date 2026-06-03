@@ -51,7 +51,6 @@ export class PrismaService
       }
       return url.toString();
     } catch {
-      // Fallback for rare malformed URL cases: keep current behavior with safer defaults.
       if (databaseUrl.includes('connection_limit=')) {
         return databaseUrl;
       }
@@ -60,20 +59,6 @@ export class PrismaService
     }
   }
 
-  // Compatibility aliases after domain rename in Prisma schema.
-  // This lets legacy modules keep working while we migrate codepaths.
-  get salon(): any {
-    return (this as any).studio ?? (this as any).Studio;
-  }
-  get service(): any {
-    return (this as any).training ?? (this as any).Training;
-  }
-  get staff(): any {
-    return (this as any).trainer ?? (this as any).Trainer;
-  }
-  get booking(): any {
-    return (this as any).sessionBooking ?? (this as any).SessionBooking;
-  }
   constructor() {
     const connectionUrl = PrismaService.buildConnectionUrl(
       process.env.DATABASE_URL,
@@ -90,6 +75,25 @@ export class PrismaService
     });
   }
 
+  /** Map PascalCase Prisma delegates when client was generated with model names. */
+  private wireDelegates(): void {
+    const client = this as Record<string, unknown>;
+    const pairs: [string, string][] = [
+      ['studio', 'Studio'],
+      ['trainer', 'Trainer'],
+      ['training', 'Training'],
+      ['trainerInvite', 'TrainerInvite'],
+      ['sessionBooking', 'SessionBooking'],
+      ['subscription', 'Subscription'],
+      ['trainingSession', 'TrainingSession'],
+    ];
+    for (const [camel, pascal] of pairs) {
+      if (client[camel] == null && client[pascal] != null) {
+        client[camel] = client[pascal];
+      }
+    }
+  }
+
   async onModuleInit() {
     const maxAttempts = PrismaService.parsePositiveInt(
       process.env.PRISMA_CONNECT_RETRIES,
@@ -103,6 +107,7 @@ export class PrismaService
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         await this.$connect();
+        this.wireDelegates();
         if (attempt > 1) {
           console.warn(`[Prisma] connected on retry ${attempt}/${maxAttempts}`);
         }

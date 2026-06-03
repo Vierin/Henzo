@@ -1131,10 +1131,7 @@ export class StudiosService {
     userId: string,
   ) {
     try {
-      const studioRepo = this.prisma.studio ?? this.prisma.salon;
-      if (!studioRepo) {
-        throw new Error('Studio repository is not available');
-      }
+      const studioRepo = this.prisma.studio;
       // Check if Studio already exists for this user
       const existingStudio = await studioRepo.findFirst({
         where: { ownerId: userId },
@@ -1870,7 +1867,7 @@ export class StudiosService {
       // Transform to match expected format
       const transformedStudio = {
         ...Studio,
-        staff: (Studio as any).Trainer || [],
+        trainers: (Studio as any).Trainer || [],
         avgRating: Math.round(avgRating * 10) / 10,
         reviewCount: Studio._count.Review,
         reviews: reviews.map((review: any) => ({
@@ -1939,19 +1936,21 @@ export class StudiosService {
     }
   }
 
-  /** Same payload shape as findBySlug but without owner linkage, staff/reviewer PII, or reminder settings. */
+  /** Same payload shape as findBySlug but without owner linkage, trainer/reviewer PII, or reminder settings. */
   async findPublicBySlug(slug: string) {
     const full = await this.findBySlug(slug);
     if (!full) return null;
     const studio = full as Record<string, unknown>;
     delete studio.ownerId;
     delete studio.reminderSettings;
-    const staff = studio.staff as Array<Record<string, unknown>> | undefined;
-    if (Array.isArray(staff)) {
-      studio.staff = staff.map((s) => ({
-        id: s.id,
-        name: s.name,
-        accessLevel: s.accessLevel,
+    const trainers = studio.trainers as
+      | Array<Record<string, unknown>>
+      | undefined;
+    if (Array.isArray(trainers)) {
+      studio.trainers = trainers.map((t) => ({
+        id: t.id,
+        name: t.name,
+        accessLevel: t.accessLevel,
       }));
     }
     const reviews = studio.reviews as Array<{

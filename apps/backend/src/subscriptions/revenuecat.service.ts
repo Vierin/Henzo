@@ -214,7 +214,7 @@ export class RevenueCatService {
 
     return {
       id: updated.id,
-      salonId: updated.studioId,
+      studioId: updated.studioId,
       type: updated.type,
       status: updated.status,
       startDate: updated.startDate.toISOString(),

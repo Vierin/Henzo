@@ -48,6 +48,15 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Prepare env assets for CI
+        run: |
+          if [ ! -f assets/.env ]; then
+            cp assets/.env.local.example assets/.env
+          fi
+          if [ ! -f assets/.env.local ]; then
+            cp assets/.env.local.example assets/.env.local
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 

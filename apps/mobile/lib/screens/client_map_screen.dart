@@ -303,6 +303,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       ),
     );
     if (picked == null || picked.city.trim().isEmpty) return;
+    if (!mounted) return;
     await context.read<ClientLocationStore>().applyFromPicker(picked);
   }
 
@@ -356,6 +357,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         );
       }
       raw ??= await ApiClient.get(path, null);
+      if (!mounted) return;
       ClientNearbyCache.put(path, raw);
       final list = extractStudiosListFromNearby(raw);
       final localeCode = context.read<LocaleProvider>().localeCode;

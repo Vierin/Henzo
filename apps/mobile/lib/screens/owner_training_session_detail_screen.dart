@@ -40,7 +40,7 @@ class OwnerTrainingSessionDetailScreen extends StatefulWidget {
   final String? trainerFallbackName;
   final Color? trainingColor;
 
-  /// Studio name or address (from [SalonCache]); shown next to the pin icon.
+  /// Studio name or address (from [StudioCache]); shown next to the pin icon.
   final String? venueName;
   final VoidCallback? onEditSession;
   @Deprecated('Removed from UI; ignored.')

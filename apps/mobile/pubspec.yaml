@@ -90,6 +90,9 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+    # Gitignored locally: copy `.env.local.example` → `.env` or `.env.local`.
+    - assets/.env
+    - assets/.env.local
     - assets/.env.local.example
     - assets/icon.png
     - assets/logo.png

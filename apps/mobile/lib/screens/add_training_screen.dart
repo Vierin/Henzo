@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../constants/layout.dart';
-import '../models/salon.dart';
+import '../models/studio.dart';
 import '../models/service_item.dart';
 import '../models/training_category_option.dart';
 import '../models/training_location_item.dart';
@@ -16,10 +16,10 @@ import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
-import '../services/cache/salon_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
-import '../utils/load_error_message.dart';
+import '../utils/plan_limit_dialogs.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -28,7 +28,6 @@ import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
-import 'subscription_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
@@ -74,7 +73,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   DateTime _sessionDate = DateTime.now();
   TimeOfDay _sessionTime = const TimeOfDay(hour: 9, minute: 0);
   DateTime _recurringEndDate = DateTime.now();
-  Salon? _studio;
+  Studio? _studio;
   List<TrainingLocationItem> _locations = [];
   String _selectedLocationId = 'default';
   List<ServiceItem> _existing = [];
@@ -119,8 +118,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return _locations.isNotEmpty ? _locations.first : null;
   }
 
-  void _applyLocationsFromStudio(Salon? studio, LocaleProvider locale) {
-    _locations = TrainingLocationItem.listFromSalon(
+  void _applyLocationsFromStudio(Studio? studio, LocaleProvider locale) {
+    _locations = TrainingLocationItem.listFromStudio(
       studio,
       mainStudioName: locale.t('locations.mainStudio'),
     );
@@ -163,7 +162,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
     final updated = _locations.where((l) => l.id != loc.id).toList();
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
         studio,
         updated,
@@ -171,7 +170,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       if (!mounted) return false;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _studio = updatedSalon ?? studio;
+        _studio = updatedStudio ?? studio;
         _applyLocationsFromStudio(_studio, locale);
         if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
           _selectedLocationId = _locations.first.id;
@@ -205,15 +204,15 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final updatedList = [..._locations, newLoc];
 
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
         studio,
         updatedList,
       );
       if (!mounted) return;
       setState(() {
-        _studio = updatedSalon ?? studio;
-        _locations = TrainingLocationItem.listFromSalon(
+        _studio = updatedStudio ?? studio;
+        _locations = TrainingLocationItem.listFromStudio(
           _studio,
           mainStudioName: locale.t('locations.mainStudio'),
         );
@@ -1382,7 +1381,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
   Future<void> _load() async {
     final authService = context.read<AuthService>();
-    final salonCache = context.read<SalonCache>();
+    final studioCache = context.read<StudioCache>();
     final servicesStaffCache = context.read<ServicesStaffCache>();
     final token = authService.accessToken;
     if (token == null || token.isEmpty) {
@@ -1390,9 +1389,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       return;
     }
     try {
-      final studio = await salonCache.getSalon(token);
+      final studio = await studioCache.getStudio(token);
       final list = studio != null
-          ? await servicesStaffCache.getServicesForSalon(token, studio.id)
+          ? await servicesStaffCache.getServicesForStudio(token, studio.id)
           : <ServiceItem>[];
       final categories = await ServicesApiService.getTrainingCategories(token);
       if (!mounted) return;
@@ -1416,35 +1415,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       setState(() => _loading = false);
       showApiError(context, e);
     }
-  }
-
-  Future<void> _showClassLimitDialog() async {
-    final locale = context.read<LocaleProvider>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(locale.t('subscription.soloClassLimitTitle')),
-        content: Text(locale.t('subscription.soloClassLimitBody')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(locale.t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-            ),
-            child: Text(locale.t('subscription.upgradeToStudio')),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _save() async {
@@ -1544,8 +1514,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      if (isSoloSessionLimitError(e)) {
-        await _showClassLimitDialog();
+      if (isSessionPlanLimitError(e)) {
+        await showSessionPlanLimitDialog(
+          context,
+          error: e,
+          offerUpgrade: true,
+        );
       } else {
         showApiError(context, e);
       }

@@ -59,5 +59,5 @@ export class UpdateServiceDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  staffIds?: string[];
+  trainerIds?: string[];
 }

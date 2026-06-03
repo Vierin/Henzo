@@ -83,7 +83,7 @@ export class TrainingsService {
   }
 
   async isStudioOwnedByOwner(studioId: string, ownerId: string) {
-    const studioRepo = this.prisma.studio ?? this.prisma.salon;
+    const studioRepo = this.prisma.studio;
     if (!studioRepo) return false;
     const studio = await studioRepo.findUnique({
       where: { id: studioId },
@@ -248,15 +248,14 @@ export class TrainingsService {
     /** @deprecated use trainingCategoryId */
     serviceCategoryId?: number | null;
     trainerIds?: string[];
-    staffIds?: string[];
   }) {
-    const studioRepo = this.prisma.studio ?? this.prisma.Studio;
-    const trainerRepo = this.prisma.trainer ?? this.prisma.Trainer;
+    const studioRepo = this.prisma.studio;
+    const trainerRepo = this.prisma.trainer;
     if (!studioRepo || !this.training || !trainerRepo) {
       throw new Error('Training repositories are not available');
     }
 
-    const staffIds = data.staffIds ?? data.trainerIds;
+    const trainerIds = data.trainerIds;
     const trainingCategoryId =
       data.trainingCategoryId ?? data.serviceCategoryId ?? null;
 
@@ -273,9 +272,9 @@ export class TrainingsService {
     }
 
     let trainerConnect: { connect: { id: string }[] } | undefined;
-    if (staffIds && staffIds.length > 0) {
+    if (trainerIds && trainerIds.length > 0) {
       trainerConnect = {
-        connect: staffIds.map((id: string) => ({ id })),
+        connect: trainerIds.map((id: string) => ({ id })),
       };
     } else {
       const allTrainers = await trainerRepo.findMany({
@@ -355,15 +354,14 @@ export class TrainingsService {
       /** @deprecated */
       serviceCategoryId?: number | null;
       trainerIds?: string[];
-      staffIds?: string[];
     },
   ) {
-    const trainerRepo = this.prisma.trainer ?? this.prisma.Trainer;
+    const trainerRepo = this.prisma.trainer;
     if (!this.training || !trainerRepo) {
       throw new Error('Training repositories are not available');
     }
 
-    const staffIds = data.staffIds ?? data.trainerIds;
+    const trainerIds = data.trainerIds;
     const resolvedCategory =
       data.trainingCategoryId !== undefined ||
       data.serviceCategoryId !== undefined
@@ -389,8 +387,8 @@ export class TrainingsService {
     }
 
     let trainerUpdate: { set: { id: string }[] } | undefined;
-    if (staffIds !== undefined) {
-      if (staffIds.length === 0) {
+    if (trainerIds !== undefined) {
+      if (trainerIds.length === 0) {
         const row = await this.training.findUnique({
           where: { id },
           select: { studioId: true },
@@ -406,7 +404,7 @@ export class TrainingsService {
         }
       } else {
         trainerUpdate = {
-          set: staffIds.map((staffId: string) => ({ id: staffId })),
+          set: trainerIds.map((trainerId: string) => ({ id: trainerId })),
         };
       }
     }

@@ -563,10 +563,15 @@
 		"legalLinksPrefix": "See ",
 		"legalLinksSuffix": ".",
 		"soloClassLimitTitle": "Class limit reached",
-		"soloClassLimitBody": "The Solo plan allows 12 classes per month. Upgrade to Studio for unlimited classes.",
+		"soloClassLimitBody": "The Solo plan allows 12 classes per month. Upgrade to Studio for up to 100 classes per month.",
 		"soloTrainerLimitTitle": "Trainer limit reached",
 		"soloTrainerLimitBody": "The Solo plan includes 1 trainer (you). Upgrade to Studio to add more trainers.",
+		"studioClassLimitTitle": "Class limit reached",
+		"studioClassLimitBody": "The Studio plan allows 100 classes per month. Upgrade to Enterprise for unlimited classes.",
+		"studioTrainerLimitTitle": "Trainer limit reached",
+		"studioTrainerLimitBody": "The Studio plan includes up to 4 trainers. Upgrade to Enterprise for unlimited trainers.",
 		"upgradeToStudio": "Upgrade to Studio",
+		"upgradeToEnterprise": "Upgrade to Enterprise",
 		"studioTitle": "Studio",
 		"studioTagline": "For growing studios",
 		"enterpriseTitle": "Enterprise",
@@ -577,7 +582,7 @@
 		"subscribeToStudio": "Subscribe to Studio",
 		"subscribeToEnterprise": "Subscribe to Enterprise",
 		"feature_studio_1": "100 classes/month",
-		"feature_studio_2": "Up to 5 trainers",
+		"feature_studio_2": "Up to 4 trainers",
 		"feature_studio_3": "Waitlist",
 		"feature_studio_4": "Automated reminders",
 		"feature_studio_5": "Analytics (90 days)",
@@ -635,7 +640,22 @@
 		"enterFullName": "Enter full name",
 		"staffServicesTitle": "Staff services",
 		"addStaff": "Add staff",
-		"addStaffProRequired": "Adding trainers is available with a Pro subscription."
+		"addStaffProRequired": "Adding trainers is available with a Pro subscription.",
+		"addStaffTitle": "Add staff member",
+		"inviteSectionTitle": "Invite to team",
+		"inviteSectionSubtitle": "Share a link so they can register and join your studio.",
+		"inviteButton": "Invite via Share",
+		"manualSectionTitle": "Add without registration",
+		"manualSectionSubtitle": "Create a profile manually. They won't have app access until invited.",
+		"sectionDividerOr": "or",
+		"enterName": "Enter name",
+		"enterEmailForInvite": "Enter email to send an invite",
+		"staffAdded": "Staff member added",
+		"staffInvitedShared": "Invite link shared",
+		"statusActive": "In team",
+		"statusNoAccount": "No account",
+		"statusInvitePending": "Invite sent",
+		"shareInviteWithLink": "Join {studio} on Henzo as a trainer: {link}"
 	},
 	"servicesScreen": {
 		"title": "Services",
@@ -761,7 +781,7 @@
 			"bookingLink": "Salon preview"
 		},
 		"usage": {
-			"classesThisMonth": "Classes this month",
+			"classesThisMonth": "Classes",
 			"trainers": "Trainers",
 			"upgradeHint": "Upgrade to Studio for more"
 		},
@@ -1014,8 +1034,11 @@
 		"joinAs": "Join {studio} as {name}",
 		"joinAsTrainer": "Join {studio} as a trainer",
 		"acceptInvitation": "Accept invitation",
+		"createAccountToJoin": "Create account",
+		"signInToAccept": "Sign in",
 		"invalidExpiredLink": "This invite link is invalid or has expired.",
-		"couldNotLoadInvite": "Could not load invite. Check your connection."
+		"couldNotLoadInvite": "Could not load invite. Check your connection.",
+		"acceptFailed": "Could not accept invitation. Try again."
 	},
 	"staff": {
 		"inviteTitle": "Invite {name}",

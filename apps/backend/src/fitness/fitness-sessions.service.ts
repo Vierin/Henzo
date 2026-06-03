@@ -1494,7 +1494,7 @@ export class FitnessSessionsService {
       };
       service: { name: string; price: number | null; duration: number | null };
       staff: { id: string; name: string } | null;
-      staffId: string | null;
+      trainerId: string | null;
       serviceId: string;
     }[]
   > {
@@ -1544,7 +1544,7 @@ export class FitnessSessionsService {
         duration: b.Training?.duration ?? null,
       },
       staff: b.Trainer ? { id: b.Trainer.id, name: b.Trainer.name } : null,
-      staffId: b.trainerId,
+      trainerId: b.trainerId,
       serviceId: b.trainingId,
     }));
   }

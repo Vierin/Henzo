@@ -521,6 +521,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     String fromQuery,
     String toQuery,
   ) async {
+    final defaultClassName =
+        context.read<LocaleProvider>().t('common.class');
     try {
       final raw = await ApiClient.get(
         '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=20',
@@ -557,7 +559,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             trainerName: map['trainer'] is Map
                 ? (map['trainer']['name'] ?? '').toString()
                 : '',
-            className: (training['name'] ?? context.read<LocaleProvider>().t('common.class')).toString(),
+            className: (training['name'] ?? defaultClassName).toString(),
             price: (training['price'] as num?)?.toDouble(),
             capacity: (map['capacity'] as num?)?.toInt(),
             bookedCount: (map['bookedCount'] as num?)?.toInt() ?? 0,
@@ -2316,7 +2318,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       key: const PageStorageKey<String>('browse-classes'),
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
       itemCount: _derivedDayClasses.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
         final c = _derivedDayClasses[index];
         final session = _ownerSessionFromExplore(c);
@@ -2357,7 +2359,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       key: const PageStorageKey<String>('browse-studios-v2'),
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 56),
       itemCount: _derivedVisibleStudios.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
         final s = _derivedVisibleStudios[index];
         final todayClasses =

@@ -138,7 +138,7 @@ export class TrainingsController {
       ...createServiceDto,
       trainingCategoryId:
         createBody.trainingCategoryId ?? createBody.serviceCategoryId,
-      trainerIds: createServiceDto.staffIds,
+      trainerIds: createServiceDto.trainerIds,
     });
   }
 
@@ -170,7 +170,7 @@ export class TrainingsController {
       ...updateServiceDto,
       trainingCategoryId:
         updateBody.trainingCategoryId ?? updateBody.serviceCategoryId,
-      trainerIds: updateServiceDto.staffIds,
+      trainerIds: updateServiceDto.trainerIds,
     });
   }
 

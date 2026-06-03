@@ -479,7 +479,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: categoryIds.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
                           itemBuilder: (_, index) {
                             final id = categoryIds[index];
                             final opt = _categoryById(id);

@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
-import '../../models/service_item.dart';
+import '../../models/studio.dart';
 import '../../models/staff_member.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
-import '../../services/staff_api_service.dart';
+import '../../services/trainers_api_service.dart';
 import '../../services/trainer_api_service.dart';
+import '../../utils/plan_limit_dialogs.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/subscription_tier.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
-import 'subscription_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StaffScreen extends StatefulWidget {
@@ -30,7 +30,7 @@ class StaffScreen extends StatefulWidget {
 }
 
 class _StaffScreenState extends State<StaffScreen> {
-  Salon? _salon;
+  Studio? _studio;
   List<StaffMember> _staff = [];
   bool _isLoading = false;
   bool _isActionLoading = false;
@@ -51,17 +51,19 @@ class _StaffScreenState extends State<StaffScreen> {
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      final staff = salon != null
-          ? await context.read<ServicesStaffCache>().getStaffForSalon(
+      final studioCache = context.read<StudioCache>();
+      final trainersCache = context.read<ServicesStaffCache>();
+      final studio = await studioCache.getStudio(token);
+      final staff = studio != null
+          ? await trainersCache.getTrainersForStudio(
               token,
-              salon.id,
+              studio.id,
             )
           : <StaffMember>[];
       final sub = await DashboardApiService.getCurrentSubscription(token);
       if (mounted) {
         setState(() {
-          _salon = salon;
+          _studio = studio;
           _staff = staff;
           _isProPlan = subscriptionTypeIsPaid(sub?.type);
           _isLoading = false;
@@ -102,25 +104,18 @@ class _StaffScreenState extends State<StaffScreen> {
     if (token == null) return;
     setState(() => _isActionLoading = true);
     try {
-      final ok = await StaffApiService.delete(token, member.id);
+      await TrainersApiService.delete(token, member.id);
       if (!mounted) return;
-      if (ok) {
-        context.read<ServicesStaffCache>().invalidateStaff(_salon?.id);
-        await _loadData();
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(locale.t('staffScreen.staffDeleted')),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(locale.t('common.deleteFailed')),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      context.read<ServicesStaffCache>().invalidateTrainers(_studio?.id);
+      final deletedMsg = locale.t('staffScreen.staffDeleted');
+      await _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(deletedMsg),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (mounted) showApiError(context, e);
     } finally {
@@ -133,11 +128,11 @@ class _StaffScreenState extends State<StaffScreen> {
       _showTrainerLimitDialog();
       return;
     }
-    final salonId = _salon?.id;
-    if (salonId == null) return;
+    final studioId = _studio?.id;
+    if (studioId == null) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (ctx) => AddStaffScreen(salonId: salonId)),
+      MaterialPageRoute(builder: (ctx) => AddStaffScreen(studioId: studioId)),
     ).then((_) {
       if (mounted) _loadData();
     });
@@ -159,7 +154,7 @@ class _StaffScreenState extends State<StaffScreen> {
           builder: (sheetCtx, setSheet) {
             final locale = sheetCtx.read<LocaleProvider>();
             if (loading) {
-              TrainerApiService.generateInviteFromStaff(token, member.id).then((result) {
+              TrainerApiService.generateInvite(token, member.id).then((result) {
                 inviteUrl = result['inviteUrl']?.toString();
                 setSheet(() => loading = false);
               }).catchError((e) {
@@ -213,13 +208,35 @@ class _StaffScreenState extends State<StaffScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () {
-                                Clipboard.setData(ClipboardData(text: inviteUrl!));
+                                Clipboard.setData(
+                                  ClipboardData(text: inviteUrl!),
+                                );
                                 ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                  SnackBar(content: Text(locale.t('common.linkCopied'))),
+                                  SnackBar(
+                                    content: Text(
+                                      locale.t('common.linkCopied'),
+                                    ),
+                                  ),
                                 );
                               },
                               icon: const Icon(Icons.copy_outlined, size: 16),
                               label: Text(locale.t('common.copyLink')),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                final intro = locale
+                                    .t('staff.shareInviteMessage')
+                                    .replaceAll('{name}', member.name);
+                                Share.share('$intro\n$inviteUrl');
+                              },
+                              icon: const Icon(Icons.ios_share_outlined, size: 16),
+                              label: Text(locale.t('staffScreen.inviteButton')),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary500,
+                              ),
                             ),
                           ),
                         ],
@@ -241,34 +258,7 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   void _showTrainerLimitDialog() {
-    final locale = context.read<LocaleProvider>();
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(locale.t('subscription.soloTrainerLimitTitle')),
-        content: Text(locale.t('subscription.soloTrainerLimitBody')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(locale.t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const SubscriptionScreen(),
-                ),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-            ),
-            child: Text(locale.t('subscription.upgradeToStudio')),
-          ),
-        ],
-      ),
-    );
+    showTrainerPlanLimitDialog(context, offerUpgrade: true);
   }
 
   List<StaffMember> _staffExcludingOwner(String? ownerEmail) {
@@ -291,7 +281,6 @@ class _StaffScreenState extends State<StaffScreen> {
     final nameController = TextEditingController(text: member.name);
     final emailController = TextEditingController(text: member.email ?? '');
     final phoneController = TextEditingController(text: member.phone ?? '');
-    final selectedServiceIds = <String>[];
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = (screenWidth * 0.92).clamp(320.0, 560.0);
     showHenzoDialog(
@@ -431,90 +420,6 @@ class _StaffScreenState extends State<StaffScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            locale.t('staffScreen.servicesOptional'),
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          InkWell(
-                            onTap: () async {
-                              final token = context
-                                  .read<AuthService>()
-                                  .accessToken;
-                              if (token == null) return;
-                              final list = await context
-                                  .read<ServicesStaffCache>()
-                                  .getServicesForSalon(token, member.salonId);
-                              if (!ctx.mounted) return;
-                              final result =
-                                  await showHenzoModalBottomSheet<List<String>>(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    useSafeArea: true,
-                                    builder: (ctx2) =>
-                                        _StaffServicesPickerSheet(
-                                          services: list,
-                                          selectedIds: List.from(
-                                            selectedServiceIds,
-                                          ),
-                                          onDone: (ids) =>
-                                              Navigator.pop(ctx2, ids),
-                                        ),
-                                  );
-                              if (result != null && ctx.mounted) {
-                                selectedServiceIds
-                                  ..clear()
-                                  ..addAll(result);
-                                setDialogState(() {});
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: InputDecorator(
-                              decoration: InputDecoration(
-                                hintText: locale.t('staffScreen.allServices'),
-                                filled: true,
-                                fillColor: AppColors.backgroundPrimary,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.borderPrimary,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                suffixIcon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                ),
-                              ),
-                              child: Text(
-                                selectedServiceIds.isEmpty
-                                    ? locale.t('staffScreen.allServices')
-                                    : '${selectedServiceIds.length} ${locale.t('staffScreen.servicesSelected')}',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            locale.t('staffScreen.selectServicesHint'),
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
                           const SizedBox(height: 24),
                           Row(
                             children: [
@@ -559,56 +464,39 @@ class _StaffScreenState extends State<StaffScreen> {
                                     if (token == null) return;
                                     setState(() => _isActionLoading = true);
                                     try {
-                                      final updated =
-                                          await StaffApiService.update(
-                                            token,
-                                            member.id,
-                                            name: name,
-                                            email:
-                                                emailController.text
-                                                    .trim()
-                                                    .isEmpty
-                                                ? null
-                                                : emailController.text.trim(),
-                                            phone:
-                                                phoneController.text
-                                                    .trim()
-                                                    .isEmpty
-                                                ? null
-                                                : phoneController.text.trim(),
-                                            serviceIds:
-                                                selectedServiceIds.isEmpty
-                                                ? null
-                                                : List.from(selectedServiceIds),
-                                          );
+                                      await TrainersApiService.update(
+                                        token,
+                                        member.id,
+                                        name: name,
+                                        email:
+                                            emailController.text
+                                                .trim()
+                                                .isEmpty
+                                            ? null
+                                            : emailController.text.trim(),
+                                        phone:
+                                            phoneController.text
+                                                .trim()
+                                                .isEmpty
+                                            ? null
+                                            : phoneController.text.trim(),
+                                      );
                                       if (!mounted) return;
-                                      if (updated != null) {
-                                        context
-                                            .read<ServicesStaffCache>()
-                                            .invalidateStaff(_salon?.id);
-                                        await _loadData();
-                                        ScaffoldMessenger.maybeOf(
-                                          context,
-                                        )?.showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              locale.t('common.changesSaved'),
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.maybeOf(
-                                          context,
-                                        )?.showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              locale.t('common.saveFailed'),
-                                            ),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                      }
+                                      context
+                                          .read<ServicesStaffCache>()
+                                          .invalidateTrainers(_studio?.id);
+                                      final savedMsg =
+                                          locale.t('common.changesSaved');
+                                      await _loadData();
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.maybeOf(
+                                        context,
+                                      )?.showSnackBar(
+                                        SnackBar(
+                                          content: Text(savedMsg),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
                                     } catch (e) {
                                       if (mounted) showApiError(context, e);
                                     } finally {
@@ -645,18 +533,6 @@ class _StaffScreenState extends State<StaffScreen> {
     );
   }
 
-  static Widget _StaffServicesPickerSheet({
-    required List<ServiceItem> services,
-    required List<String> selectedIds,
-    required void Function(List<String>) onDone,
-  }) {
-    return _StaffServicesPickerSheetBody(
-      services: services,
-      initialSelectedIds: selectedIds,
-      onDone: onDone,
-    );
-  }
-
   String _contactSubtitle({String? email, String? phone}) {
     final parts = <String>[
       if (email != null && email.trim().isNotEmpty) email.trim(),
@@ -665,12 +541,32 @@ class _StaffScreenState extends State<StaffScreen> {
     return parts.join(' · ');
   }
 
+  String _memberStatusLabel(LocaleProvider locale, StaffMember member) {
+    if (member.hasLinkedAccount) {
+      return locale.t('staffScreen.statusActive');
+    }
+    if (member.hasPendingInvite) {
+      return locale.t('staffScreen.statusInvitePending');
+    }
+    return locale.t('staffScreen.statusNoAccount');
+  }
+
+  String _memberSubtitle(LocaleProvider locale, StaffMember member) {
+    final contact = _contactSubtitle(
+      email: member.email,
+      phone: member.phone,
+    );
+    final status = _memberStatusLabel(locale, member);
+    if (contact.isEmpty) return status;
+    return '$contact · $status';
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final owner = context.watch<AuthService>().user;
     final extraStaff = _staffExcludingOwner(owner?.email);
-    final showAddFab = _salon != null && !_isLoading;
+    final showAddFab = _studio != null && !_isLoading;
     final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
         ? owner!.name!.trim()
         : owner?.email ?? locale.t('settings.owner.ownerRole');
@@ -707,7 +603,7 @@ class _StaffScreenState extends State<StaffScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
             )
-          : _salon == null
+          : _studio == null
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -739,10 +635,7 @@ class _StaffScreenState extends State<StaffScreen> {
                   ...extraStaff.map((member) {
                     return StaffPersonTile(
                       name: member.name,
-                      secondaryLine: _contactSubtitle(
-                        email: member.email,
-                        phone: member.phone,
-                      ),
+                      secondaryLine: _memberSubtitle(locale, member),
                       trailing: _isActionLoading
                           ? const SizedBox(
                               width: 24,
@@ -755,12 +648,18 @@ class _StaffScreenState extends State<StaffScreen> {
                           : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (_isProPlan)
+                                if (_isProPlan && !member.hasLinkedAccount)
                                   IconButton(
                                     padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                    icon: const Icon(Icons.link_outlined, size: 20),
-                                    tooltip: 'Invite',
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.link_outlined,
+                                      size: 20,
+                                    ),
+                                    tooltip: locale.t('staffScreen.inviteButton'),
                                     onPressed: () => _showInviteSheet(member),
                                     color: AppColors.primary500,
                                   ),
@@ -794,122 +693,6 @@ class _StaffScreenState extends State<StaffScreen> {
                 ],
               ),
             ),
-    );
-  }
-}
-
-class _StaffServicesPickerSheetBody extends StatefulWidget {
-  const _StaffServicesPickerSheetBody({
-    required this.services,
-    required this.initialSelectedIds,
-    required this.onDone,
-  });
-  final List<ServiceItem> services;
-  final List<String> initialSelectedIds;
-  final void Function(List<String>) onDone;
-
-  @override
-  State<_StaffServicesPickerSheetBody> createState() =>
-      _StaffServicesPickerSheetBodyState();
-}
-
-class _StaffServicesPickerSheetBodyState
-    extends State<_StaffServicesPickerSheetBody> {
-  late Set<String> _selected;
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = Set<String>.from(widget.initialSelectedIds);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final maxH = MediaQuery.of(context).size.height * 0.7;
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxH),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                kScreenPaddingHorizontal,
-                16,
-                kScreenPaddingHorizontal,
-                8,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.read<LocaleProvider>().t(
-                        'staffScreen.staffServicesTitle',
-                      ),
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                    color: AppColors.textPrimary,
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: widget.services.length,
-                itemBuilder: (context, i) {
-                  final s = widget.services[i];
-                  final isSelected = _selected.contains(s.id);
-                  return CheckboxListTile(
-                    value: isSelected,
-                    onChanged: (v) {
-                      setState(() {
-                        if (v == true) {
-                          _selected.add(s.id);
-                        } else {
-                          _selected.remove(s.id);
-                        }
-                      });
-                    },
-                    title: Text(
-                      s.displayName,
-                      style: TextStyle(fontSize: 15.sp),
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: kScreenPaddingHorizontal,
-                      vertical: 4,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton(
-                onPressed: () => widget.onDone(_selected.toList()),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
-                  minimumSize: const Size(0, 48),
-                ),
-                child: Text(context.read<LocaleProvider>().t('common.done')),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

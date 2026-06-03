@@ -28,7 +28,7 @@ class CachedSalonNetworkImage extends StatelessWidget {
       width: width,
       height: height,
       fadeInDuration: const Duration(milliseconds: 180),
-      placeholder: (_, __) => Container(
+      placeholder: (_, _) => Container(
         color: AppColors.secondary100,
         alignment: Alignment.center,
         child: const SizedBox(
@@ -37,7 +37,7 @@ class CachedSalonNetworkImage extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
-      errorWidget: (_, __, ___) => Container(
+      errorWidget: (_, _, _) => Container(
         color: AppColors.secondary100,
         alignment: Alignment.center,
         child: const Icon(

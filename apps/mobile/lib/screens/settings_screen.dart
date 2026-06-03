@@ -7,10 +7,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/salon.dart';
+import '../../models/studio.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/salon_cache.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/owner_photo_storage_service.dart';
 import '../../utils/default_training_location_swap.dart';
@@ -56,8 +56,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _salonEmailController = TextEditingController();
   bool _initialFocusApplied = false;
 
-  Salon? _salon;
-  bool _salonLoading = true;
+  Studio? _studio;
+  bool _studioLoading = true;
   bool _salonSaving = false;
   bool _photosProcessing = false;
   bool _logoUploading = false;
@@ -83,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       controller.addListener(_onFormChanged);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadSalon();
+      _loadStudio();
     });
   }
 
@@ -92,24 +92,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
   }
 
-  Future<void> _loadSalon() async {
+  Future<void> _loadStudio() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null) {
-      setState(() => _salonLoading = false);
+      setState(() => _studioLoading = false);
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
+      final studio = await context.read<StudioCache>().getStudio(token);
       if (!mounted) return;
       setState(() {
-        _salon = salon;
-        _salonLoading = false;
+        _studio = studio;
+        _studioLoading = false;
       });
       _fillSalonFromData();
       _scheduleInitialFocus();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _salonLoading = false);
+      setState(() => _studioLoading = false);
       _scheduleInitialFocus();
     }
   }
@@ -123,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted || _initialFocusApplied || widget.initialFocusTarget == null) {
       return;
     }
-    if (_salonLoading) return;
+    if (_studioLoading) return;
     _initialFocusApplied = true;
 
     final GlobalKey targetKey;
@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _fillSalonFromData() {
-    final s = _salon;
+    final s = _studio;
     if (s == null) return;
     _salonNameController.text = s.name ?? '';
     _salonDescriptionController.text = s.description ?? '';
@@ -162,9 +162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonLon = s.longitude;
     _studioPhotos = List<String>.from(s.photos ?? <String>[]);
     _logoUrl = s.logoUrl?.trim().isNotEmpty == true ? s.logoUrl!.trim() : null;
-    _socialLinks = studioSocialLinksFromSalon(s);
+    _socialLinks = studioSocialLinksFromStudio(s);
     final locale = context.read<LocaleProvider>();
-    _locations = TrainingLocationItem.listFromSalon(
+    _locations = TrainingLocationItem.listFromStudio(
       s,
       mainStudioName: locale.t('locations.mainStudio'),
     );
@@ -179,9 +179,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _locations.isNotEmpty ? _locations.first : null;
   }
 
-  void _applyLocationsFromSalon(Salon? salon, LocaleProvider locale) {
-    _locations = TrainingLocationItem.listFromSalon(
-      salon,
+  void _applyLocationsFromStudio(Studio? studio, LocaleProvider locale) {
+    _locations = TrainingLocationItem.listFromStudio(
+      studio,
       mainStudioName: locale.t('locations.mainStudio'),
     );
   }
@@ -227,13 +227,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   bool get _hasUnsavedChanges {
-    if (_salonLoading) return false;
+    if (_studioLoading) return false;
     return _buildSnapshot() != _initialSnapshot;
   }
 
   bool get _canSaveFromAppBar {
     return !_salonSaving &&
-        !_salonLoading &&
+        !_studioLoading &&
         !_photosProcessing &&
         !_logoUploading &&
         _hasUnsavedChanges;
@@ -285,8 +285,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _openDefaultLocationPicker() async {
     final locale = context.read<LocaleProvider>();
-    final salon = _salon;
-    if (salon == null) {
+    final studio = _studio;
+    if (studio == null) {
       final selection = await AddressPickerModal.show(
         context,
         initialLocationName: locale.t('locations.mainStudio'),
@@ -304,7 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     if (_locations.isEmpty) {
-      _applyLocationsFromSalon(salon, locale);
+      _applyLocationsFromStudio(studio, locale);
     }
 
     const defaultId = 'default';
@@ -322,7 +322,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case TrainingLocationPicked(:final location):
         if (location.id == defaultId) return;
         final swap = swapSalonDefaultTrainingLocation(
-          salon: salon,
+          studio: studio,
           locations: _locations,
           newDefaultId: location.id,
           mainStudioName: locale.t('locations.mainStudio'),
@@ -340,9 +340,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ...swap.extraLocations,
         ];
         try {
-          final updatedSalon = await persistTrainingLocationDefaultSwap(
+          final updatedStudio = await persistTrainingLocationDefaultSwap(
             context,
-            salon,
+            studio,
             address: swap.address,
             latitude: swap.latitude,
             longitude: swap.longitude,
@@ -351,12 +351,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
           if (!mounted) return;
           setState(() {
-            _salon = updatedSalon ?? salon;
+            _studio = updatedStudio ?? studio;
             _salonAddressController.text = swap.address;
             _salonLat = swap.latitude;
             _salonLon = swap.longitude;
-            _locations = TrainingLocationItem.listFromSalon(
-              _salon,
+            _locations = TrainingLocationItem.listFromStudio(
+              _studio,
               mainStudioName: locale.t('locations.mainStudio'),
             );
           });
@@ -372,21 +372,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<bool> _deleteTrainingLocationFromSettings(
     TrainingLocationItem loc,
   ) async {
-    final salon = _salon;
-    if (salon == null || loc.id == 'default') return false;
+    final studio = _studio;
+    if (studio == null || loc.id == 'default') return false;
 
     final updated = _locations.where((l) => l.id != loc.id).toList();
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
-        salon,
+        studio,
         updated,
       );
       if (!mounted) return false;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _salon = updatedSalon ?? salon;
-        _applyLocationsFromSalon(_salon, locale);
+        _studio = updatedStudio ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
       });
       return true;
     } catch (e) {
@@ -397,11 +397,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _addNewTrainingLocationFromSettings() async {
     final locale = context.read<LocaleProvider>();
-    final salon = _salon;
-    if (salon == null) return;
+    final studio = _studio;
+    if (studio == null) return;
 
     if (_locations.isEmpty) {
-      _applyLocationsFromSalon(salon, locale);
+      _applyLocationsFromStudio(studio, locale);
     }
 
     final selection = await AddressPickerModal.show(
@@ -420,15 +420,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final updatedList = [..._locations, newLoc];
 
     try {
-      final updatedSalon = await persistExtraTrainingLocations(
+      final updatedStudio = await persistExtraTrainingLocations(
         context,
-        salon,
+        studio,
         updatedList,
       );
       if (!mounted) return;
       setState(() {
-        _salon = updatedSalon ?? salon;
-        _applyLocationsFromSalon(_salon, locale);
+        _studio = updatedStudio ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
       });
     } catch (e) {
       if (mounted) showApiError(context, e);
@@ -447,7 +447,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
-    final hadSalon = _salon != null;
+    final hadSalon = _studio != null;
     setState(() => _salonSaving = true);
     try {
       final socialPayload = studioSocialLinksToPayload(_socialLinks);
@@ -468,7 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         payload['latitude'] = _salonLat;
         payload['longitude'] = _salonLon;
       }
-      final reminderSettings = <String, dynamic>{...?_salon?.reminderSettings};
+      final reminderSettings = <String, dynamic>{...?_studio?.reminderSettings};
       if (_locations.isNotEmpty) {
         reminderSettings['trainingLocations'] =
             TrainingLocationItem.extraLocationsToJson(_locations);
@@ -485,19 +485,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (reminderSettings.isNotEmpty) {
         payload['reminderSettings'] = reminderSettings;
       }
-      Salon result;
+      Studio result;
       if (hadSalon) {
-        if (_salon!.workingHours != null) {
-          payload['workingHours'] = _salon!.workingHours;
+        if (_studio!.workingHours != null) {
+          payload['workingHours'] = _studio!.workingHours;
         }
-        result = await DashboardApiService.updateCurrentSalon(token, payload);
+        result = await DashboardApiService.updateCurrentStudio(token, payload);
       } else {
-        result = await DashboardApiService.createCurrentSalon(token, payload);
+        result = await DashboardApiService.createCurrentStudio(token, payload);
       }
       if (!mounted) return;
-      context.read<SalonCache>().invalidate();
+      context.read<StudioCache>().invalidate();
       setState(() {
-        _salon = result;
+        _studio = result;
         _salonSaving = false;
       });
       _fillSalonFromData();
@@ -522,6 +522,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final picked = await OwnerImagePicker.pickSingleFromGallery();
     if (picked == null) return;
+    if (!mounted) return;
 
     if (Supabase.instance.client.auth.currentUser?.id == null) {
       _showSnack(context.read<LocaleProvider>().t('profileForm.loginToUploadLogo'));
@@ -560,6 +561,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       limit: availableSlots,
     );
     if (picked.isEmpty) return;
+    if (!mounted) return;
 
     var filesToProcess = picked;
     if (picked.length > availableSlots) {
@@ -756,7 +758,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 children: [
                   // Секции салона в одной форме
-                  _salonLoading
+                  _studioLoading
                       ? _ProfileSection(
                           title: locale.t('profileForm.studioLogo'),
                           child: const Padding(
@@ -827,7 +829,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                     _maxStudioPhotos
                                                 ? 1
                                                 : 0),
-                                        separatorBuilder: (_, __) =>
+                                        separatorBuilder: (_, _) =>
                                             const SizedBox(width: 10),
                                         itemBuilder: (context, index) {
                                           final hasAddSlot =
@@ -1196,7 +1198,7 @@ class _StudioLogoTile extends StatelessWidget {
                             fit: BoxFit.cover,
                             width: tileSize,
                             height: tileSize,
-                            errorBuilder: (_, __, ___) => Center(
+                            errorBuilder: (_, _, _) => Center(
                               child: SvgPicture.asset(
                                 'assets/icons/icon-add-photo.svg',
                                 width: 35,
@@ -1315,7 +1317,7 @@ class _StudioPhotoTile extends StatelessWidget {
                 fit: BoxFit.cover,
                 width: tileSize,
                 height: tileSize,
-                errorBuilder: (_, __, ___) => ColoredBox(
+                errorBuilder: (_, _, _) => ColoredBox(
                   color: AppColors.backgroundSecondary,
                   child: Center(
                     child: SvgPicture.asset(

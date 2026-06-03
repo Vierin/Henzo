@@ -1089,10 +1089,10 @@ class _StudioAvatarBadge extends StatelessWidget {
                 height: 40,
                 fit: BoxFit.cover,
                 fadeInDuration: const Duration(milliseconds: 180),
-                placeholder: (_, __) => const ColoredBox(
+                placeholder: (_, _) => const ColoredBox(
                   color: AppColors.secondary100,
                 ),
-                errorWidget: (_, __, ___) => Text(
+                errorWidget: (_, _, _) => Text(
                   initials,
                   style: TextStyle(
                     fontSize: 16.sp,

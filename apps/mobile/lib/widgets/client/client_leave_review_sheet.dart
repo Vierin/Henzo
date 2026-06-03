@@ -8,6 +8,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const _maxCommentLength = 500;
 
+/// Extra space above the keyboard so the submit button stays visible.
+const double _keyboardBottomExtra = 10;
+
 /// Bottom sheet: star rating + optional comment for a studio visit.
 Future<bool?> showClientLeaveReviewSheet(
   BuildContext context, {
@@ -18,16 +21,14 @@ Future<bool?> showClientLeaveReviewSheet(
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: false,
     backgroundColor: AppColors.backgroundPrimary,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (ctx) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-      child: _ClientLeaveReviewSheetBody(
-        studioId: studioId,
-        enrollmentId: enrollmentId,
-      ),
+    builder: (ctx) => _ClientLeaveReviewSheetBody(
+      studioId: studioId,
+      enrollmentId: enrollmentId,
     ),
   );
 }
@@ -128,11 +129,14 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
   @override
   Widget build(BuildContext context) {
     final commentLen = _commentController.text.length;
+    final viewBottom = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomPad = 20.0 + viewBottom +
+        (viewBottom > 0 ? _keyboardBottomExtra : 0);
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20, 10, 20, bottomPad),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -280,3 +284,4 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
     );
   }
 }
+
