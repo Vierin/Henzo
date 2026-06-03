@@ -61,7 +61,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   bool _isActionLoading = false;
   bool _didAutoOpenCreate = false;
   bool _didOpenEditFromRouteArgs = false;
-  ServicesSort _sort = ServicesSort.nameAz;
+  final ServicesSort _sort = ServicesSort.nameAz;
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -664,7 +664,7 @@ class _EditTemplateVndThousandsFormatter extends TextInputFormatter {
 }
 
 class EditTrainingScreen extends StatefulWidget {
-  const EditTrainingScreen({
+  const EditTrainingScreen({super.key, 
     required this.token,
     required this.item,
     required this.salon,
@@ -793,7 +793,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               ),
             ),
           ),
-          if (trailing != null) trailing,
+          ?trailing,
         ],
       ),
     );
@@ -1088,9 +1088,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   Future<void> _loadSessionDefaults() async {
     final locale = context.read<LocaleProvider>();
     var salon = widget.salon;
-    if (salon == null) {
-      salon = await context.read<SalonCache>().getSalon(widget.token);
-    }
+    salon ??= await context.read<SalonCache>().getSalon(widget.token);
     if (!mounted) return;
     _applyLocationsFromStudio(salon, locale);
 

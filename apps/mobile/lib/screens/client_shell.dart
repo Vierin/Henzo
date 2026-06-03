@@ -15,7 +15,6 @@ import 'client/client_search_screen.dart';
 import 'client/client_shell_scope.dart';
 import 'client_map_screen.dart';
 import 'public_home_screen.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientShell extends StatefulWidget {
   const ClientShell({super.key});

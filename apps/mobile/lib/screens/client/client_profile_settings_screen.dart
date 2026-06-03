@@ -10,7 +10,6 @@ import '../../widgets/settings/feedback_sheet.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/settings/settings_list_widgets.dart';
 import 'client_edit_profile_screen.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientProfileSettingsScreen extends StatelessWidget {
   const ClientProfileSettingsScreen({super.key});

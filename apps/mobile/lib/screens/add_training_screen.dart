@@ -224,20 +224,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
   }
 
-  String _weekdayLabel(int weekday) {
-    final t = context.read<LocaleProvider>().t;
-    final labels = {
-      1: t('addTraining.weekdayMon'),
-      2: t('addTraining.weekdayTue'),
-      3: t('addTraining.weekdayWed'),
-      4: t('addTraining.weekdayThu'),
-      5: t('addTraining.weekdayFri'),
-      6: t('addTraining.weekdaySat'),
-      7: t('addTraining.weekdaySun'),
-    };
-    return labels[weekday] ?? '?';
-  }
-
   String _timeToHm(TimeOfDay t) {
     final hh = t.hour.toString().padLeft(2, '0');
     final mm = t.minute.toString().padLeft(2, '0');

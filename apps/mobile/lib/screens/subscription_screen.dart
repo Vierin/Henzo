@@ -50,15 +50,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Subscription? _subscription;
   Package? _studioPackage;
   Package? _enterprisePackage;
-  // Legacy aliases kept for _priceLabelForInterval / _comparePriceLabel compatibility
-  Package? get _monthlyPackage => _studioPackage;
-  Package? get _annualPackage => _enterprisePackage;
-  int? _annualSavePercent;
   bool _loading = true;
-  bool _offeringsError = false;
   String? _checkoutLoading; // 'studio' | 'enterprise'
   bool _restoreLoading = false;
-  String _billingInterval = 'monthly';
   String? _activeTier; // 'studio' | 'enterprise' | null
   SubscriptionRefreshNotifier? _subRefresh;
 
@@ -96,21 +90,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       Package? studioPkg;
       Package? enterprisePkg;
       String? activeTier;
-      var offeringsError = false;
 
       if (RevenueCatService.isConfigured) {
         final offerings = await RevenueCatService.fetchOfferings();
         studioPkg = RevenueCatService.packageForTier(offerings, 'studio');
         enterprisePkg = RevenueCatService.packageForTier(offerings, 'enterprise');
-        offeringsError = studioPkg == null && enterprisePkg == null;
 
         // Detect active tier from CustomerInfo
         try {
           final info = await Purchases.getCustomerInfo();
           activeTier = RevenueCatService.getActiveTier(info);
         } catch (_) {}
-      } else {
-        offeringsError = true;
       }
 
       if (mounted) {
@@ -119,7 +109,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           _studioPackage = studioPkg;
           _enterprisePackage = enterprisePkg;
           _activeTier = activeTier;
-          _offeringsError = offeringsError;
           _loading = false;
         });
       }
@@ -131,19 +120,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool get _hasPaidPlan =>
       _activeTier != null ||
       subscriptionTypeIsPaid(_subscription?.type);
-
-  Package? _packageForInterval(String interval) =>
-      interval == 'annual' ? _annualPackage : _monthlyPackage;
-
-  String? _priceLabelForInterval(String interval) {
-    final pkg = _packageForInterval(interval);
-    return pkg?.storeProduct.priceString;
-  }
-
-  String? _comparePriceLabel() {
-    if (_billingInterval != 'annual') return null;
-    return _monthlyPackage?.storeProduct.priceString;
-  }
 
   Future<void> _openUrl(String? url) async {
     if (url == null || url.isEmpty) return;
@@ -273,8 +249,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       return '${formatVnd(amount)} VND';
     }
     final store =
-        _monthlyPackage?.storeProduct.priceString ??
-        _annualPackage?.storeProduct.priceString;
+        _studioPackage?.storeProduct.priceString ??
+        _enterprisePackage?.storeProduct.priceString;
     if (store != null && store.isNotEmpty) return store;
     return '—';
   }
@@ -712,113 +688,6 @@ class _ProWhatsIncludedCard extends StatelessWidget {
                     .toList(),
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BillingToggle extends StatelessWidget {
-  final String billingInterval;
-  final int annualSavePercent;
-  final ValueChanged<String> onChanged;
-
-  const _BillingToggle({
-    required this.billingInterval,
-    required this.annualSavePercent,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundTertiary,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Material(
-              color: billingInterval == 'monthly'
-                  ? AppColors.backgroundPrimary
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: () => onChanged('monthly'),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Center(
-                    child: Text(
-                      'Месячный',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: billingInterval == 'monthly'
-                            ? AppColors.primary500
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Material(
-              color: billingInterval == 'annual'
-                  ? AppColors.backgroundPrimary
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                onTap: () => onChanged('annual'),
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Годовой',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                            color: billingInterval == 'annual'
-                                ? AppColors.primary500
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        if (annualSavePercent > 0) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary500,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '-$annualSavePercent%',
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ),
         ],
       ),

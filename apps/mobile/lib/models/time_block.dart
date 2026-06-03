@@ -1,4 +1,3 @@
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Блокировка времени: выходной, занятость или закрытие салона.
 enum TimeBlockType {
   timeOff,

@@ -31,7 +31,7 @@ OwnerSessionCardSubtitle resolveOwnerSessionCardSubtitle({
         locationName != null && locationName.isNotEmpty;
     final showingLocation = hasLocationName || defaultName.isNotEmpty;
     final label = hasLocationName
-        ? locationName!
+        ? locationName
         : (defaultName.isNotEmpty ? defaultName : trainer);
     return OwnerSessionCardSubtitle(
       label: label,

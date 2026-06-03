@@ -17,7 +17,6 @@ import '../utils/auth_ui_result.dart';
 import '../utils/owner_navigation_restore.dart';
 import 'analytics_service.dart';
 import 'revenuecat_service.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AuthService extends ChangeNotifier {
   AuthService() {

@@ -487,8 +487,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       Salon result;
       if (hadSalon) {
-        if (_salon!.workingHours != null)
+        if (_salon!.workingHours != null) {
           payload['workingHours'] = _salon!.workingHours;
+        }
         result = await DashboardApiService.updateCurrentSalon(token, payload);
       } else {
         result = await DashboardApiService.createCurrentSalon(token, payload);

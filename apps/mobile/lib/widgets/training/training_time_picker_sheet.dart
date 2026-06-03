@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../common/henzo_modal.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 Future<TimeOfDay?> showTrainingTimePickerSheet(
   BuildContext context,

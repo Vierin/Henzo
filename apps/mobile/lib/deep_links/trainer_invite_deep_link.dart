@@ -75,7 +75,9 @@ class _TrainerInviteDeepLinkScopeState
     final now = DateTime.now();
     if (_lastToken == token &&
         _lastAt != null &&
-        now.difference(_lastAt!).inMilliseconds < 2500) return;
+        now.difference(_lastAt!).inMilliseconds < 2500) {
+      return;
+    }
     _lastToken = token;
     _lastAt = now;
 

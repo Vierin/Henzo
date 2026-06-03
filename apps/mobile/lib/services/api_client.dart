@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Thrown when API returns non-2xx. [message] is from body (msg/message) or status.
 class ApiException implements Exception {

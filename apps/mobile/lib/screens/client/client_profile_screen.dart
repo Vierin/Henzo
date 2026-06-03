@@ -284,7 +284,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final locale = context.watch<LocaleProvider>();
-    final t = (String k) => locale.t('clientProfile.$k');
+    String t(String k) => locale.t('clientProfile.$k');
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final locStore = context.watch<ClientLocationStore>();

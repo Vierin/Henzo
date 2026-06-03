@@ -488,7 +488,7 @@ class _OwnerEditTrainingSessionScreenState
                         style: valueStyle,
                       ),
                     ),
-                    if (trailing != null) trailing,
+                    ?trailing,
                   ],
                 ),
               ],

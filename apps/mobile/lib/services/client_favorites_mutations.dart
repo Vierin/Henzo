@@ -1,6 +1,5 @@
 import 'api_client.dart';
 import 'client_favorites_store.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Centralized optimistic favorite API calls + rollback via [ClientFavoritesStore.sync].
 class ClientFavoritesMutations {

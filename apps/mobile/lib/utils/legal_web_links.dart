@@ -3,7 +3,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_config.dart';
 import '../l10n/locale_provider.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Opens a legal page on henzo.app for the current app locale.
 Future<bool> openLegalWebPage(

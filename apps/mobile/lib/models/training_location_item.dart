@@ -1,5 +1,4 @@
 import 'salon.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Studio venue for add-training (default salon + optional extras in reminderSettings).
 class TrainingLocationItem {

@@ -110,8 +110,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     );
   }
 
-  void _submitManual() => _pickCity(_controller.text);
-
   bool _isLocating = false;
 
   Future<void> _useCurrentLocation() async {

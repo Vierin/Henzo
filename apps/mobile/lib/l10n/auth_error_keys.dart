@@ -1,4 +1,3 @@
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// L10n keys under [assets/l10n/*/app.json] for auth and API errors.
 abstract final class AuthErrorKeys {
   static const network = 'errors.network';

@@ -1,5 +1,4 @@
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared formatting helpers for client UI (VND, time).
 

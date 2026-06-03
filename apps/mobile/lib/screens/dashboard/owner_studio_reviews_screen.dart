@@ -97,7 +97,7 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final t = (String k) => locale.t('clientStudioDetail.$k');
+    String t(String k) => locale.t('clientStudioDetail.$k');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,

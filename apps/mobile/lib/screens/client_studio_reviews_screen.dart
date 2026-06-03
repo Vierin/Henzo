@@ -26,7 +26,7 @@ class ClientStudioReviewsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final t = (String k) => locale.t('clientStudioDetail.$k');
+    String t(String k) => locale.t('clientStudioDetail.$k');
     final title = t('reviewsTitle');
     final empty = locale.t('dashboard.reviewsEmpty');
     final readMore = t('readMore');

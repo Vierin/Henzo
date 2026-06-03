@@ -54,9 +54,6 @@ class OwnerChecklistCard extends StatelessWidget {
 
   static const _taskIconColor = AppColors.primary500;
   static const _chevronColor = Color(0xFF3B5BDB);
-  static const _optionalHeaderBg = Color(0xFFFFF9F5);
-  static const _starBadgeBg = Color(0xFFFFF0D1);
-  static const _starColor = Color(0xFFFF9900);
   static const _mandatoryStepWeight = 25;
   static const _optionalTotalWeight = 25;
   static const _optionalStepCount = 3;

@@ -8,7 +8,6 @@ import '../models/owner_studio_client.dart';
 import '../models/salon.dart';
 import '../models/subscription.dart';
 import '../models/time_block.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 double? _parseOptionalDouble(dynamic v) {
   if (v == null) return null;
@@ -1131,11 +1130,11 @@ class DashboardApiService {
                 if (locationId != null && locationId.isNotEmpty)
                   'locationId': locationId,
                 'capacity': capacity,
-                if (daysOfWeek != null) 'daysOfWeek': daysOfWeek,
-                if (startTime != null) 'startTime': startTime,
+                'daysOfWeek': ?daysOfWeek,
+                'startTime': ?startTime,
                 if (slots != null && slots.isNotEmpty)
                   'slots': slots.map((s) => s.toJson()).toList(),
-                if (weeksCount != null) 'weeksCount': weeksCount,
+                'weeksCount': ?weeksCount,
                 'timezone': timezone,
                 if (startsFromDate != null)
                   'startsFromDate': startsFromDate.toIso8601String(),

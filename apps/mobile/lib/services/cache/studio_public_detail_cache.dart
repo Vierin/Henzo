@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// In-memory cache for public studio detail payload ([GET /studios/:id]).
 class StudioPublicDetailCache {

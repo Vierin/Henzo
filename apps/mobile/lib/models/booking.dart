@@ -30,9 +30,9 @@ class Booking {
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     final staffIdRaw = json['staffId'];
-    final staffId = staffIdRaw != null ? staffIdRaw.toString() : null;
+    final staffId = staffIdRaw?.toString();
     final serviceIdRaw = json['serviceId'];
-    final serviceId = serviceIdRaw != null ? serviceIdRaw.toString() : null;
+    final serviceId = serviceIdRaw?.toString();
     final serviceMap = _serviceLikeMap(json);
     return Booking(
       id: json['id'] as String,
@@ -211,7 +211,7 @@ class Staff {
 
   factory Staff.fromJson(Map<String, dynamic> json) {
     final idRaw = json['id'];
-    final id = idRaw == null ? null : idRaw.toString();
+    final id = idRaw?.toString();
     return Staff(
       id: id,
       name: json['name'] as String? ?? '—',

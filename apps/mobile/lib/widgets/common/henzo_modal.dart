@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Modal / bottom-sheet barrier: #F4DCBA @ 40% + backdrop blur.
 abstract final class HenzoModalBarrier {

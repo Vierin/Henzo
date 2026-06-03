@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../screens/location_picker_screen.dart';
 import 'cache/client_nearby_cache.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared client city / coordinates (Home, Browse, Map, …).
 class ClientLocationStore extends ChangeNotifier {

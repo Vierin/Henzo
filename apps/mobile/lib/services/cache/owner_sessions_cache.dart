@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../dashboard_api_service.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared in-memory range of owner training sessions for Dashboard + Calendar.
 ///

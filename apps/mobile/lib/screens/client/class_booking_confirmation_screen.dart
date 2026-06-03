@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -965,10 +964,9 @@ class _TicketSideNotch extends StatelessWidget {
 }
 
 class _DashedDividerPainter extends CustomPainter {
-  const _DashedDividerPainter({required this.color, this.lineInset = 20});
+  const _DashedDividerPainter({required this.color});
 
   final Color color;
-  final double lineInset;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -977,6 +975,7 @@ class _DashedDividerPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     const dash = 6.0;
     const gap = 5.0;
+    const lineInset = 0.0;
     var x = lineInset;
     final y = size.height / 2;
     final end = size.width - lineInset;
@@ -988,5 +987,5 @@ class _DashedDividerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedDividerPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.lineInset != lineInset;
+      oldDelegate.color != color;
 }

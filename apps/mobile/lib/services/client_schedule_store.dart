@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import '../utils/formatters.dart';
 import 'api_client.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Notifies tabs when [ClientScheduleStore] cache changes (upcoming vs passes).
 final ValueNotifier<int> clientScheduleCacheTick = ValueNotifier<int>(0);

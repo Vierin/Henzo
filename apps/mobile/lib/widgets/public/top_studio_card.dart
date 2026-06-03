@@ -9,7 +9,7 @@ import 'cached_salon_network_image.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TopStudioCard extends StatelessWidget {
-  TopStudioCard({
+  const TopStudioCard({
     super.key,
     required this.studio,
     required this.isFavorite,

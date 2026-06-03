@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_config.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Upload owner images to the studio-photos Supabase bucket (`owners/{userId}/…`).
 class OwnerPhotoStorageService {

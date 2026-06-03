@@ -71,6 +71,7 @@ dependencies:
   location: ^8.0.1
   flutter_screenutil: ^5.9.3
 
+  image_picker_platform_interface: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -89,7 +90,6 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-    - assets/.env
     - assets/icon.png
     - assets/logo.png
     - assets/cloud.webp

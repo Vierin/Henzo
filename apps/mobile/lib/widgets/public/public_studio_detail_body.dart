@@ -214,7 +214,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
-    final t = (String k) => locale.t('clientStudioDetail.$k');
+    String t(String k) => locale.t('clientStudioDetail.$k');
     final reviewsSeeMore = t('reviewsSeeMore');
     final descriptionLabel = locale.t(
       'clientClassDetail.descriptionSectionLabel',

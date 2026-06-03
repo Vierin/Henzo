@@ -1178,7 +1178,6 @@ class _DetailIconRow extends StatelessWidget {
     required this.iconColor,
     this.icon,
     this.svgAsset,
-    this.svgSize = 20,
     required this.title,
     this.subtitle,
     this.emphasizeTitle = false,
@@ -1189,7 +1188,6 @@ class _DetailIconRow extends StatelessWidget {
   final Color iconColor;
   final IconData? icon;
   final String? svgAsset;
-  final double svgSize;
   final String title;
   final String? subtitle;
   final bool emphasizeTitle;
@@ -1208,8 +1206,8 @@ class _DetailIconRow extends StatelessWidget {
           child: svgAsset != null
               ? SvgPicture.asset(
                   svgAsset!,
-                  width: svgSize,
-                  height: svgSize,
+                  width: 20,
+                  height: 20,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
                   colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),

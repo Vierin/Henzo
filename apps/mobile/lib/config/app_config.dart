@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Конфигурация из `assets/.env`. Ключи соответствуют именам в .env: EXPO_PUBLIC_*.
 abstract final class AppConfig {

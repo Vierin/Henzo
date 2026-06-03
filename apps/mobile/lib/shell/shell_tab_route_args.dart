@@ -19,7 +19,7 @@ Object? mergeRestoreShellTabArguments(
   }
   if (arguments is Map) {
     final base = <String, dynamic>{};
-    (arguments as Map).forEach((k, v) {
+    (arguments).forEach((k, v) {
       base['$k'] = v;
     });
     return <String, dynamic>{...base, ...extra};

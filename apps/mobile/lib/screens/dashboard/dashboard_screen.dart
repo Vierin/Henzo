@@ -591,11 +591,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final fillLabel = cap > 0 ? '$enrolled / $cap' : '$enrolled';
     final trainer = _displayTrainer(s);
 
-    const double _ringsBox = 200;
-    const double _editHalf = 15;
+    const double ringsBox = 200;
+    const double editHalf = 15;
     // Stack coords: edit button center ≈ (w - _editHalf, _editHalf) in top row.
-    const double _ringsRight = _editHalf - _ringsBox / 2;
-    const double _ringsTop = _editHalf - _ringsBox / 2;
+    const double ringsRight = editHalf - ringsBox / 2;
+    const double ringsTop = editHalf - ringsBox / 2;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
@@ -612,10 +612,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   Positioned(
-                    right: _ringsRight,
-                    top: _ringsTop,
-                    width: _ringsBox,
-                    height: _ringsBox,
+                    right: ringsRight,
+                    top: ringsTop,
+                    width: ringsBox,
+                    height: ringsBox,
                     child: IgnorePointer(
                       child: Opacity(
                         opacity: 0.18,

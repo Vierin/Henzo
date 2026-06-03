@@ -1,7 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/settings/studio_social_link.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum StudioPublicContactKind {
   phone,

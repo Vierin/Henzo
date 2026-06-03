@@ -6,7 +6,6 @@ import '../models/training_category_option.dart';
 import '../services/auth_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Merges template fields from [training] into a session row (category, color).
 OwnerTrainingSession mergeOwnerSessionWithTraining({

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../constants/colors.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Magnifier for search fields — `assets/icons/icon-search.svg` (11×12).
 class AppSearchPrefixIcon extends StatelessWidget {

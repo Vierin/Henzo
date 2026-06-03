@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Runs [fn] with the current access token. Returns the result or null on no token/error.
 /// If [mounted] and [showErrorSnackBar] are true, shows a SnackBar on exception.

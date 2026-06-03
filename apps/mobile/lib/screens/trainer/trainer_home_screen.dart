@@ -173,7 +173,7 @@ class _TrainerHomeScreenState extends State<TrainerHomeScreen> {
 // ── Enrollments detail screen ─────────────────────────────────
 
 class TrainerSessionEnrollmentsScreen extends StatefulWidget {
-  const TrainerSessionEnrollmentsScreen({required this.session});
+  const TrainerSessionEnrollmentsScreen({super.key, required this.session});
   final Map<String, dynamic> session;
 
   @override

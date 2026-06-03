@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Short-lived in-memory cache for [GET /studios/nearby] responses (decoded JSON).
 /// Reduces duplicate calls when Home, Explore, and Map use the same area.

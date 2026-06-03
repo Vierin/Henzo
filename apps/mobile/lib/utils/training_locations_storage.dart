@@ -6,7 +6,6 @@ import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/dashboard_api_service.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 Future<Salon?> persistExtraTrainingLocations(
   BuildContext context,
@@ -68,8 +67,8 @@ Future<Salon?> persistTrainingLocationDefaultSwap(
     if (salon.instagram != null) 'instagram': salon.instagram,
     if (salon.photos != null) 'photos': salon.photos,
     if (salon.workingHours != null) 'workingHours': salon.workingHours,
-    if (latitude != null) 'latitude': latitude,
-    if (longitude != null) 'longitude': longitude,
+    'latitude': ?latitude,
+    'longitude': ?longitude,
     if (salon.autoConfirmBookings != null)
       'autoConfirmBookings': salon.autoConfirmBookings,
     'reminderSettings': reminderSettings,

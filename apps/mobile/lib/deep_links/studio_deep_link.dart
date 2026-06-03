@@ -72,7 +72,9 @@ class _StudioDeepLinkScopeState extends State<StudioDeepLinkScope> {
     final now = DateTime.now();
     if (_lastId == studioId &&
         _lastAt != null &&
-        now.difference(_lastAt!).inMilliseconds < 2500) return;
+        now.difference(_lastAt!).inMilliseconds < 2500) {
+      return;
+    }
     _lastId = studioId;
     _lastAt = now;
 

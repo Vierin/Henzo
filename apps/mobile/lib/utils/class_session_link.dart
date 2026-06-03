@@ -1,5 +1,4 @@
 import '../config/app_config.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Deep link + share text for a public class session.
 class ClassSessionLink {

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HealthData {
   final int steps;

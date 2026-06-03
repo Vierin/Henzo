@@ -1,15 +1,14 @@
-import { SubscriptionType } from '@prisma/client';
+/** Matches Prisma `SubscriptionType` enum values. */
+export type SubscriptionTier = 'SOLO' | 'STUDIO' | 'ENTERPRISE';
 
 export function isSoloSubscriptionType(
-  type: SubscriptionType | null | undefined,
+  type: SubscriptionTier | null | undefined,
 ): boolean {
-  return type == null || type === SubscriptionType.SOLO;
+  return type == null || type === 'SOLO';
 }
 
 export function isPaidSubscriptionType(
-  type: SubscriptionType | null | undefined,
+  type: SubscriptionTier | null | undefined,
 ): boolean {
-  return (
-    type === SubscriptionType.STUDIO || type === SubscriptionType.ENTERPRISE
-  );
+  return type === 'STUDIO' || type === 'ENTERPRISE';
 }

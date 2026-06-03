@@ -1,6 +1,5 @@
 import '../models/salon.dart';
 import '../models/training_location_item.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Swaps salon primary address with an extra training location.
 class DefaultLocationSwapResult {
