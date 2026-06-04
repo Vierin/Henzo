@@ -9,7 +9,7 @@ import '../api_client.dart';
 /// all await the same Future and get the same result.
 ///
 /// Register as [ChangeNotifierProvider] in main.dart, then use:
-///   context.read<TrainingCategoriesCache>().getCategories()
+/// `context.read<TrainingCategoriesCache>().getCategories()`
 class TrainingCategoriesCache extends ChangeNotifier {
   static const _ttl = Duration(minutes: 10);
 

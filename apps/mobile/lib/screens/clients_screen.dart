@@ -13,6 +13,7 @@ import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/client_identity.dart';
+import '../../utils/show_api_error.dart';
 import '../../utils/owner_studio_setup_errors.dart';
 import '../../utils/synthetic_guest.dart';
 import '../../widgets/app_search_prefix_icon.dart';

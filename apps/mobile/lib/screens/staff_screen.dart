@@ -144,9 +144,6 @@ class _StaffScreenState extends State<StaffScreen> {
   Future<void> _showInviteSheet(StaffMember member) async {
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
-    String? inviteUrl;
-    bool loading = true;
-    String? error;
 
     await showHenzoModalBottomSheet<void>(
       context: context,

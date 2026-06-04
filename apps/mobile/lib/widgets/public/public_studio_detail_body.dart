@@ -79,13 +79,13 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final services = widget.studio['services'];
     if (services is List) {
       final seen = <int>{};
-      _cachedCategoryIds = [
-        for (final raw in services)
-          if (raw is Map)
-            if ((raw['trainingCategoryId'] as num?)?.toInt() case final id?
-                when seen.add(id))
-              id,
-      ];
+      final ids = <int>[];
+      for (final raw in services) {
+        if (raw is! Map) continue;
+        final id = (raw['trainingCategoryId'] as num?)?.toInt();
+        if (id != null && seen.add(id)) ids.add(id);
+      }
+      _cachedCategoryIds = ids;
     } else {
       _cachedCategoryIds = [];
     }
@@ -135,7 +135,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     return null;
   }
 
-  // _studioPhotoUrls, _studioCategoryIds, _parsedReviews, _averageRating
+  // _studioPhotoUrls, _studioCategoryIds
   // removed — replaced by memoized fields computed in _recomputeDerived().
 
   String _categoryLabel(Map<String, dynamic> cat, String localeCode) {
@@ -149,41 +149,6 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     }
     final en = (cat['nameEn'] ?? cat['name_en'] ?? '').toString();
     return en.isNotEmpty ? en : 'Category';
-  }
-
-  List<Map<String, dynamic>> _parsedReviews() {
-    final raw = widget.studio['reviews'];
-    if (raw is! List) return [];
-    final out = <Map<String, dynamic>>[];
-    for (final item in raw) {
-      if (item is Map<String, dynamic>) {
-        out.add(item);
-      } else if (item is Map) {
-        out.add(Map<String, dynamic>.from(item));
-      }
-    }
-    out.sort((a, b) {
-      final da = DateTime.tryParse((a['createdAt'] ?? '').toString());
-      final db = DateTime.tryParse((b['createdAt'] ?? '').toString());
-      if (da == null && db == null) return 0;
-      if (da == null) return 1;
-      if (db == null) return -1;
-      return db.compareTo(da);
-    });
-    return out;
-  }
-
-  double _averageRating(List<Map<String, dynamic>> reviews) {
-    if (reviews.isEmpty) return 0;
-    var sum = 0.0;
-    var n = 0;
-    for (final r in reviews) {
-      final rating = (r['rating'] as num?)?.toDouble();
-      if (rating == null || rating <= 0) continue;
-      sum += rating;
-      n++;
-    }
-    return n == 0 ? 0 : sum / n;
   }
 
   int _extractBookingPeriodDays() {

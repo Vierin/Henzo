@@ -115,7 +115,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         toIso: _toIso,
       );
       if (!mounted) return;
-      _analyticsCache[cacheKey] = data;
+      if (data != null) {
+        _analyticsCache[cacheKey] = data;
+      }
       setState(() => _analytics = data);
     } catch (e) {
       if (!mounted) return;
@@ -271,7 +273,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               if (_analytics?.isPro == true)
                 ValueListenableBuilder<int>(
                   valueListenable: _pageIndex,
-                  builder: (_, page, __) => Row(
+                  builder: (_, page, _) => Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(3, (i) {
                       return GestureDetector(

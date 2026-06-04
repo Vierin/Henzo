@@ -12,6 +12,7 @@ import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../models/public_studio_preview.dart';
 import '../models/training_category_option.dart';
+import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/cache/training_categories_cache.dart';
 import '../services/notifications_store.dart';

@@ -9,6 +9,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
+import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/training_categories_cache.dart';
 import '../../services/cache/client_nearby_cache.dart';
