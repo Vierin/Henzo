@@ -157,3 +157,105 @@ export function renderBusinessRegistrationMagicLinkHtml(
         </html>
       `;
 }
+
+export function renderOtpEmailHtml(
+  code: string,
+  kind: 'client' | 'owner',
+): string {
+  const heading =
+    kind === 'owner'
+      ? 'Confirm your business account'
+      : 'Confirm your account';
+  const subheading =
+    kind === 'owner'
+      ? 'Enter this code in the Henzo app to finish setting up your business account.'
+      : 'Enter this code in the Henzo app to complete your registration.';
+  const digits = code.split('').join('&thinsp;');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Your Henzo verification code</title>
+  <!--[if mso]>
+  <style>body, table, td { font-family: Arial, sans-serif !important; }</style>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f2f2f2;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f2f2f2;">
+    <tr>
+      <td style="padding:32px 16px;">
+
+        <!-- Card -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" style="max-width:560px;width:100%;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#ff5b5b;padding:28px 32px;text-align:center;">
+              <img
+                src="https://henzo.app/logo.png"
+                alt="Henzo"
+                width="110"
+                style="display:block;margin:0 auto;max-width:110px;height:auto;"
+              />
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:36px 40px 32px;">
+              <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#111111;line-height:1.3;">${heading}</h1>
+              <p style="margin:0 0 28px;font-size:15px;color:#555555;line-height:1.6;">${subheading}</p>
+
+              <!-- Code block -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;">
+                <tr>
+                  <td style="text-align:center;">
+                    <div style="display:inline-block;background-color:#fff5f5;border:2px solid #ff5b5b;border-radius:12px;padding:20px 36px;">
+                      <span style="font-size:40px;font-weight:800;letter-spacing:10px;color:#ff5b5b;font-family:'Courier New',Courier,monospace;">${digits}</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Expiry -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;">
+                <tr>
+                  <td style="background-color:#fafafa;border-radius:8px;padding:12px 16px;text-align:center;">
+                    <span style="font-size:14px;color:#888888;">&#x23F1;&nbsp; This code expires in <strong style="color:#111111;">10 minutes</strong>.</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Divider -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:20px;">
+                <tr><td style="border-top:1px solid #eeeeee;"></td></tr>
+              </table>
+
+              <p style="margin:0;font-size:13px;color:#aaaaaa;line-height:1.6;">
+                If you didn't request this code, you can safely ignore this email. Someone may have entered your email address by mistake.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f9f9f9;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
+              <p style="margin:0;font-size:13px;color:#bbbbbb;">
+                &copy; ${new Date().getFullYear()} Henzo &nbsp;&middot;&nbsp;
+                <a href="https://henzo.app" style="color:#ff5b5b;text-decoration:none;">henzo.app</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
