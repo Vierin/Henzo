@@ -152,3 +152,23 @@ String dateTimeLabelDayMonthHm(DateTime? dt) {
   return '${two(local.day)}.${two(local.month)} '
       '${two(local.hour)}:${two(local.minute)}';
 }
+
+/// Local calendar day at 00:00 (schedule `from`).
+DateTime startOfLocalDay(DateTime d) {
+  final local = d.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
+
+/// Local calendar day at 23:59:59.999 (inclusive schedule `to`).
+DateTime endOfLocalDay(DateTime d) {
+  final start = startOfLocalDay(d);
+  return DateTime(
+    start.year,
+    start.month,
+    start.day,
+    23,
+    59,
+    59,
+    999,
+  );
+}

@@ -179,6 +179,42 @@ export class StudioClientsService {
     return { userId: user.id, studioClientId: row.id };
   }
 
+  private async loadBlockSets(studioId: string) {
+    const rows = await this.prisma.studioClientBlock.findMany({
+      where: { studioId },
+      select: { userId: true, email: true, phone: true },
+    });
+    return {
+      userIds: new Set(
+        rows.map((r) => r.userId).filter((id): id is string => !!id),
+      ),
+      emails: new Set(
+        rows
+          .map((r) => r.email?.trim().toLowerCase())
+          .filter((e): e is string => !!e),
+      ),
+      phones: new Set(
+        rows.map((r) => r.phone?.trim()).filter((p): p is string => !!p),
+      ),
+    };
+  }
+
+  private isBlockedUser(
+    user: { id: string; email: string; phone: string | null },
+    blocks: {
+      userIds: Set<string>;
+      emails: Set<string>;
+      phones: Set<string>;
+    },
+  ): boolean {
+    if (blocks.userIds.has(user.id)) return true;
+    const email = user.email?.trim().toLowerCase();
+    if (email && blocks.emails.has(email)) return true;
+    const phone = user.phone?.trim();
+    if (phone && blocks.phones.has(phone)) return true;
+    return false;
+  }
+
   async searchStudioClients(authHeader: string, q: string) {
     const studioId = await this.tryGetOwnerStudioId(authHeader);
     if (!studioId) return [];
@@ -187,83 +223,109 @@ export class StudioClientsService {
       return [];
     }
     const lower = term.toLowerCase();
-    const rows = await this.prisma.studioClient.findMany({
+    const blocks = await this.loadBlockSets(studioId);
+
+    const users = await this.prisma.user.findMany({
       where: {
-        studioId,
-        User: {
-          OR: [
-            { email: { contains: lower, mode: 'insensitive' } },
-            { phone: { contains: term } },
-            { name: { contains: term, mode: 'insensitive' } },
-          ],
-        },
+        AND: [
+          {
+            OR: [
+              { email: { contains: lower, mode: 'insensitive' } },
+              { phone: { contains: term } },
+              { name: { contains: term, mode: 'insensitive' } },
+            ],
+          },
+          {
+            OR: [
+              { Booking: { some: { studioId } } },
+              {
+                SessionEnrollment: {
+                  some: {
+                    status: { not: SessionEnrollmentStatus.CANCELLED },
+                    TrainingSession: { studioId },
+                  },
+                },
+              },
+              { StudioClients: { some: { studioId } } },
+            ],
+          },
+        ],
       },
-      take: 20,
-      orderBy: { updatedAt: 'desc' },
+      take: 30,
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        userId: true,
-        notes: true,
-        source: true,
-        User: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            isGuest: true,
-          },
+        name: true,
+        email: true,
+        phone: true,
+        isGuest: true,
+        StudioClients: {
+          where: { studioId },
+          take: 1,
+          select: { id: true, source: true, notes: true },
         },
       },
     });
-    return rows.map((r) => ({
-      studioClientId: r.id,
-      userId: r.userId,
-      source: r.source,
-      notes: r.notes,
-      name: r.User.name,
-      email: r.User.email,
-      phone: r.User.phone,
-      isGuest: r.User.isGuest,
-    }));
+
+    return users
+      .filter((u) => !this.isBlockedUser(u, blocks))
+      .filter((u) => isDeliverableClientEmail(u.email))
+      .slice(0, 20)
+      .map((u) => {
+        const sc = u.StudioClients[0];
+        return {
+          studioClientId: sc?.id ?? null,
+          userId: u.id,
+          source: sc?.source ?? null,
+          notes: sc?.notes ?? null,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          isGuest: u.isGuest,
+        };
+      });
   }
 
   async listMergedStudioClients(authHeader: string) {
     const studioId = await this.tryGetOwnerStudioId(authHeader);
     if (!studioId) return [];
-    const roster = await this.prisma.studioClient.findMany({
-      where: { studioId },
-      select: {
-        id: true,
-        userId: true,
-        source: true,
-        notes: true,
-        createdAt: true,
-        User: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            isGuest: true,
-          },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-    const userIds = roster.map((r) => r.userId);
-    if (userIds.length === 0) {
-      return [];
-    }
+    const blocks = await this.loadBlockSets(studioId);
 
-    const [bookingRows, enrollmentRows] = await Promise.all([
+    type Agg = {
+      visitsCount: number;
+      lastVisit: Date;
+      studioClientId: string | null;
+      source: StudioClientSource | null;
+      notes: string | null;
+      rosterCreatedAt: Date | null;
+    };
+
+    const agg = new Map<string, Agg>();
+
+    const bump = (userId: string, at: Date) => {
+      const prev = agg.get(userId);
+      if (!prev) {
+        agg.set(userId, {
+          visitsCount: 1,
+          lastVisit: at,
+          studioClientId: null,
+          source: null,
+          notes: null,
+          rosterCreatedAt: null,
+        });
+        return;
+      }
+      prev.visitsCount += 1;
+      if (at > prev.lastVisit) prev.lastVisit = at;
+    };
+
+    const [bookingRows, enrollmentRows, roster] = await Promise.all([
       this.prisma.sessionBooking.findMany({
-        where: { studioId, userId: { in: userIds } },
+        where: { studioId },
         select: { userId: true, startsAt: true },
       }),
       this.prisma.sessionEnrollment.findMany({
         where: {
-          userId: { in: userIds },
           status: { not: SessionEnrollmentStatus.CANCELLED },
           TrainingSession: { studioId },
         },
@@ -272,16 +334,17 @@ export class StudioClientsService {
           TrainingSession: { select: { startsAt: true } },
         },
       }),
+      this.prisma.studioClient.findMany({
+        where: { studioId },
+        select: {
+          id: true,
+          userId: true,
+          source: true,
+          notes: true,
+          createdAt: true,
+        },
+      }),
     ]);
-
-    const lastByUser = new Map<string, Date>();
-    const countByUser = new Map<string, number>();
-
-    const bump = (userId: string, at: Date) => {
-      countByUser.set(userId, (countByUser.get(userId) ?? 0) + 1);
-      const prev = lastByUser.get(userId);
-      if (!prev || at > prev) lastByUser.set(userId, at);
-    };
 
     for (const b of bookingRows) {
       bump(b.userId, b.startsAt);
@@ -289,27 +352,68 @@ export class StudioClientsService {
     for (const e of enrollmentRows) {
       bump(e.userId, e.TrainingSession.startsAt);
     }
+    for (const r of roster) {
+      const prev = agg.get(r.userId);
+      if (!prev) {
+        agg.set(r.userId, {
+          visitsCount: 0,
+          lastVisit: r.createdAt,
+          studioClientId: r.id,
+          source: r.source,
+          notes: r.notes,
+          rosterCreatedAt: r.createdAt,
+        });
+      } else {
+        prev.studioClientId = r.id;
+        prev.source = r.source;
+        prev.notes = r.notes;
+        prev.rosterCreatedAt = r.createdAt;
+        if (r.createdAt > prev.lastVisit) {
+          prev.lastVisit = r.createdAt;
+        }
+      }
+    }
 
-    return roster.map((r) => {
-      const visitLast = lastByUser.get(r.userId);
-      const rosterLast = r.createdAt;
-      const lastVisit = new Date(
-        Math.max(rosterLast.getTime(), visitLast?.getTime() ?? 0),
-      );
-      const visitsCount = countByUser.get(r.userId) ?? 0;
-      return {
-        studioClientId: r.id,
-        userId: r.userId,
-        source: r.source,
-        notes: r.notes,
-        rosterCreatedAt: r.createdAt.toISOString(),
-        name: r.User.name,
-        email: r.User.email,
-        phone: r.User.phone,
-        isGuest: r.User.isGuest,
-        lastVisit: lastVisit.toISOString(),
-        visitsCount,
-      };
+    const userIds = [...agg.keys()];
+    if (userIds.length === 0) return [];
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        isGuest: true,
+      },
     });
+
+    const byId = new Map(users.map((u) => [u.id, u]));
+
+    return userIds
+      .map((userId) => {
+        const user = byId.get(userId);
+        const a = agg.get(userId)!;
+        if (!user || this.isBlockedUser(user, blocks)) return null;
+        if (!isDeliverableClientEmail(user.email)) return null;
+        return {
+          studioClientId: a.studioClientId,
+          userId,
+          source: a.source,
+          notes: a.notes,
+          rosterCreatedAt: a.rosterCreatedAt?.toISOString() ?? null,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          isGuest: user.isGuest,
+          lastVisit: a.lastVisit.toISOString(),
+          visitsCount: a.visitsCount,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime(),
+      );
   }
 }

@@ -340,11 +340,11 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
       body: user == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 kScreenPaddingHorizontal,
                 12,
                 kScreenPaddingHorizontal,
-                17,
+                32 + MediaQuery.paddingOf(context).bottom,
               ),
               children: [
                 AccountSectionLabel(

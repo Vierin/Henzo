@@ -458,12 +458,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   Future<void> _ensureStudioClassesLoaded(ExploreStudioItem studio) async {
     if (!mounted || _classesByStudio.containsKey(studio.id)) return;
-    final from = DateTime.now();
-    final fromQ = Uri.encodeComponent(
-      DateTime(from.year, from.month, from.day).toIso8601String(),
-    );
+    final from = startOfLocalDay(DateTime.now());
+    final fromQ = Uri.encodeComponent(from.toUtc().toIso8601String());
     final toQ = Uri.encodeComponent(
-      from.add(const Duration(days: 1)).toIso8601String(),
+      endOfLocalDay(from).toUtc().toIso8601String(),
     );
     final classes = await _fetchClassesForStudio(studio, fromQ, toQ);
     if (!mounted) return;
@@ -477,7 +475,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   ) async {
     try {
       final raw = await ApiClient.get(
-        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=20',
+        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=500',
         null,
       );
       if (raw is! List) return const [];

@@ -1,8 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import '../common/henzo_modal.dart';
+
+const double _kTimeWheelHeight = 216;
 
 Future<TimeOfDay?> showTrainingTimePickerSheet(
   BuildContext context,
@@ -18,53 +22,53 @@ Future<TimeOfDay?> showTrainingTimePickerSheet(
   );
   return showHenzoModalBottomSheet<TimeOfDay>(
     context: context,
-    backgroundColor: AppColors.backgroundPrimary,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (ctx) {
-      return SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 320,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                child: Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Отмена'),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(selected),
-                      child: const Text(
-                        'Готово',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
+    showDragHandle: false,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetCtx) {
+      final t = sheetCtx.read<LocaleProvider>().t;
+      final bottomInset = MediaQuery.paddingOf(sheetCtx).bottom;
+      return Container(
+        decoration: const BoxDecoration(
+          color: AppColors.backgroundPrimary,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(sheetCtx).pop(),
+                  child: Text(t('common.cancel')),
                 ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.time,
-                  use24hFormat: true,
-                  minuteInterval: 5,
-                  initialDateTime: initialDateTime,
-                  onDateTimeChanged: (value) {
-                    selected = TimeOfDay(
-                      hour: value.hour,
-                      minute: value.minute,
-                    );
-                  },
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.of(sheetCtx).pop(selected),
+                  child: Text(
+                    t('common.done'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
+              ],
+            ),
+            SizedBox(
+              height: _kTimeWheelHeight,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: true,
+                minuteInterval: 5,
+                initialDateTime: initialDateTime,
+                onDateTimeChanged: (value) {
+                  selected = TimeOfDay(
+                    hour: value.hour,
+                    minute: value.minute,
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     },

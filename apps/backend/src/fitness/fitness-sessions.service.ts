@@ -215,14 +215,28 @@ export class FitnessSessionsService {
     const bookingPeriodDays = this.extractBookingPeriodDays(
       studio.reminderSettings,
     );
-    const horizonEnd = this.normalizeDateOnly(new Date());
-    horizonEnd.setDate(horizonEnd.getDate() + bookingPeriodDays);
+    const bookingHorizonEnd = this.normalizeDateOnly(new Date());
+    bookingHorizonEnd.setDate(bookingHorizonEnd.getDate() + bookingPeriodDays);
+
+    let rangeEnd = bookingHorizonEnd;
+    if (dto.endsOnDate) {
+      const endsOn = new Date(dto.endsOnDate);
+      if (!Number.isNaN(endsOn.getTime())) {
+        const endsOnOnly = this.normalizeDateOnly(endsOn);
+        if (endsOnOnly < rangeEnd) {
+          rangeEnd = endsOnOnly;
+        }
+      }
+    }
+
+    const defaultWeeks = Math.ceil(bookingPeriodDays / 7) + 2;
+    const weeksCount = dto.weeksCount ?? defaultWeeks;
 
     const candidateDays = this.buildOccurrenceDates(
       startsFrom,
       slots.map((s) => s.day),
-      Math.ceil(bookingPeriodDays / 7) + 2,
-    ).filter((d) => d <= horizonEnd);
+      weeksCount,
+    ).filter((d) => d <= rangeEnd);
 
     if (candidateDays.length === 0) {
       return {

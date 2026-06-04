@@ -73,6 +73,11 @@ export class CreateRecurringTrainingSessionsDto {
   @IsString()
   startsFromDate?: string;
 
+  /** Last calendar day to materialize sessions (inclusive). */
+  @IsOptional()
+  @IsString()
+  endsOnDate?: string;
+
   @IsOptional()
   @IsString()
   timezone?: string;

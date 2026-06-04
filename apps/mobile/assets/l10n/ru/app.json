@@ -452,7 +452,7 @@
   "ownerClient": {
     "addToDirectory": "Добавить клиента",
     "notesOptional": "Заметки (необязательно)",
-    "sendConfirmationEmail": "Отправить подтверждение на email",
+    "sendConfirmationEmail": "Подтверждение на email",
     "addedToDirectory": "Клиент сохранён",
     "addParticipantHow": "Как добавить человека на занятие?",
     "anonymousSpotTitle": "Гость",

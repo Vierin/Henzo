@@ -167,12 +167,12 @@ class _PublicStudioScheduleScreenState
         maxDay,
       );
 
-      final from = clampedSelectedDay;
-
-      final to = maxDay;
+      // Full bookable window (not only from selected day — avoids gaps on reload).
+      final from = minDay;
+      final to = endOfLocalDay(maxDay);
 
       final raw = await ApiClient.get(
-        '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toUtc().toIso8601String())}&to=${Uri.encodeComponent(to.toUtc().toIso8601String())}&limit=400',
+        '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toUtc().toIso8601String())}&to=${Uri.encodeComponent(to.toUtc().toIso8601String())}&limit=500',
 
         null,
       );

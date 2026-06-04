@@ -526,7 +526,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         context.read<LocaleProvider>().t('common.class');
     try {
       final raw = await ApiClient.get(
-        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=20',
+        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=500',
         null,
       );
       if (raw is! List) return const [];
@@ -769,17 +769,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       studios.removeWhere((s) => !_isWithinDistanceFilter(s, loc));
 
       final classes = <ExploreClassItem>[];
-      final from = DateTime.now();
-      final to = from.add(const Duration(days: 30));
-      final toQuery = Uri.encodeComponent(to.toIso8601String());
-      final fromQuery = Uri.encodeComponent(from.toIso8601String());
-      final slice = studios.take(8).toList();
+      final from = startOfLocalDay(DateTime.now());
+      final to = endOfLocalDay(from.add(const Duration(days: 30)));
+      final toQuery = Uri.encodeComponent(to.toUtc().toIso8601String());
+      final fromQuery = Uri.encodeComponent(from.toUtc().toIso8601String());
       const concurrency = 4;
-      for (var i = 0; i < slice.length; i += concurrency) {
-        final end = i + concurrency > slice.length
-            ? slice.length
+      for (var i = 0; i < studios.length; i += concurrency) {
+        final end = i + concurrency > studios.length
+            ? studios.length
             : i + concurrency;
-        final batch = slice.sublist(i, end);
+        final batch = studios.sublist(i, end);
         final batchResults = await Future.wait(
           batch.map(
             (s) => _fetchExploreClassesForStudio(s, fromQuery, toQuery),

@@ -1116,6 +1116,7 @@ class DashboardApiService {
     List<RecurringSlot>? slots,
     int? weeksCount,
     DateTime? startsFromDate,
+    DateTime? endsOnDate,
     String timezone = 'Asia/Ho_Chi_Minh',
   }) async {
     final raw =
@@ -1138,6 +1139,8 @@ class DashboardApiService {
                 'timezone': timezone,
                 if (startsFromDate != null)
                   'startsFromDate': startsFromDate.toIso8601String(),
+                if (endsOnDate != null)
+                  'endsOnDate': endsOnDate.toIso8601String(),
               },
             )
             as Map<String, dynamic>?;

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -26,7 +25,9 @@ import '../widgets/address_picker_modal.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/common/henzo_header_back_button.dart';
+import '../widgets/training/training_category_picker_sheet.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
+import '../widgets/training/training_time_picker_sheet.dart';
 import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -237,69 +238,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   int _parsePriceDigits() {
     final raw = _priceController.text.trim().replaceAll('.', '');
     return int.tryParse(raw) ?? 0;
-  }
-
-  Future<TimeOfDay?> _pickTimeWithWheel(TimeOfDay initialTime) {
-    var selected = initialTime;
-    final initialDateTime = DateTime(
-      2000,
-      1,
-      1,
-      initialTime.hour,
-      initialTime.minute,
-    );
-    return showHenzoModalBottomSheet<TimeOfDay>(
-      context: context,
-      backgroundColor: AppColors.backgroundPrimary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: SizedBox(
-            height: 320,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                  child: Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Отмена'),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(selected),
-                        child: Text(
-                          'Готово',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    use24hFormat: true,
-                    minuteInterval: 5,
-                    initialDateTime: initialDateTime,
-                    onDateTimeChanged: (value) {
-                      selected = TimeOfDay(
-                        hour: value.hour,
-                        minute: value.minute,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   /// Same geometry and typography as [BusinessRegistrationScreen] fields.
@@ -577,131 +515,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   Future<void> _openCategoryBottomSheet() async {
     if (_categories.isEmpty) return;
     final loc = context.read<LocaleProvider>();
-    final localeCode = loc.localeCode;
-    final result = await showHenzoModalBottomSheet<_CategoryPickResult?>(
+    final result = await showTrainingCategoryPickerSheet(
       context: context,
-      showDragHandle: false,
-      isScrollControlled: true,
-      backgroundColor: AppColors.backgroundPrimary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      sheetAnimationStyle: const AnimationStyle(
-        duration: Duration(milliseconds: 320),
-        reverseDuration: Duration(milliseconds: 220),
-      ),
-      builder: (sheetCtx) {
-        final h = MediaQuery.sizeOf(sheetCtx).height;
-        void popCancel() =>
-            Navigator.of(sheetCtx).pop(const _CategoryPickResult.cancelled());
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              8,
-              8,
-              12 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
-            ),
-            child: SizedBox(
-              height: h * 0.42,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 4, left: 4),
-                          child: Text(
-                            loc.t('addTraining.categorySheetTitle'),
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.4,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: popCancel,
-                        icon: const Icon(Icons.close),
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _categories.map((c) {
-                          final selected = _selectedCategoryId == c.id;
-                          final isOther = c.isOtherCategory;
-                          final Color bg;
-                          final Color fg;
-                          if (isOther) {
-                            bg = AppColors.backgroundPrimary;
-                            fg = AppColors.textPrimary;
-                          } else {
-                            final chipBg = c.backgroundColor(
-                              AppColors.neutral500,
-                            );
-                            bg = chipBg;
-                            fg = c.foregroundColorOn(chipBg);
-                          }
-                          final borderW = selected ? 2.0 : 1.0;
-                          final borderColor = selected
-                              ? AppColors.primary500
-                              : (isOther
-                                    ? AppColors.primary300
-                                    : Colors.transparent);
-                          final chipLabel = isOther
-                              ? loc.t('addTraining.categoryOtherChip')
-                              : c.label(localeCode);
-                          return Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => Navigator.of(
-                                sheetCtx,
-                              ).pop(_CategoryPickResult.apply(c.id)),
-                              borderRadius: BorderRadius.circular(999),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  color: bg,
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: borderColor,
-                                    width: borderW,
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                child: Text(
-                                  chipLabel,
-                                  style: TextStyle(
-                                    color: fg,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13.sp,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      locale: loc,
+      categories: _categories,
+      selectedCategoryId: _selectedCategoryId,
     );
     if (!mounted) return;
     if (result == null || !result.applied) return;
@@ -735,6 +553,29 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     } else if (_recurringEndDate.isAfter(cap)) {
       _recurringEndDate = cap;
     }
+  }
+
+  DateTime get _sessionDayOnly => DateTime(
+        _sessionDate.year,
+        _sessionDate.month,
+        _sessionDate.day,
+      );
+
+  DateTime get _recurringEndDayOnly {
+    var end = DateTime(
+      _recurringEndDate.year,
+      _recurringEndDate.month,
+      _recurringEndDate.day,
+    );
+    final cap = _recurringRangeCap();
+    if (end.isAfter(cap)) end = cap;
+    if (end.isBefore(_sessionDayOnly)) end = _sessionDayOnly;
+    return end;
+  }
+
+  int _weeksCountForRecurringApi() {
+    final days = _recurringEndDayOnly.difference(_sessionDayOnly).inDays + 1;
+    return ((days + 6) ~/ 7).clamp(1, 26);
   }
 
   String _formatYMMMd(DateTime d, LocaleProvider loc) =>
@@ -1085,7 +926,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         _stepFormLabel(loc.t('addTraining.step2.time')),
         InkWell(
           onTap: () async {
-            final picked = await _pickTimeWithWheel(_sessionTime);
+            final picked = await showTrainingTimePickerSheet(
+              context,
+              _sessionTime,
+            );
             if (picked != null && mounted) {
               setState(() => _sessionTime = picked);
             }
@@ -1234,7 +1078,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                     Expanded(
                       child: InkWell(
                         onTap: () async {
-                          final picked = await _pickTimeWithWheel(time);
+                          final picked = await showTrainingTimePickerSheet(
+                            context,
+                            time,
+                          );
                           if (picked != null && mounted) {
                             setState(() => _recurringDayTimes[day] = picked);
                           }
@@ -1464,6 +1311,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       );
       if (!mounted) return;
       if (created != null) {
+        final sessionDay = _sessionDayOnly;
         final recurringResult =
             await DashboardApiService.createRecurringTrainingSessions(
               token,
@@ -1485,22 +1333,23 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         )
                         .toList()
                   : null,
-              startsFromDate: DateTime(
-                _sessionDate.year,
-                _sessionDate.month,
-                _sessionDate.day,
-              ),
+              weeksCount: _isRecurring ? _weeksCountForRecurringApi() : 1,
+              startsFromDate: sessionDay,
+              endsOnDate: _isRecurring ? _recurringEndDayOnly : sessionDay,
             );
         if (!mounted) return;
         final skippedText = recurringResult.skippedCount > 0
             ? ', пропущено из-за конфликтов: ${recurringResult.skippedCount}'
             : '';
+        final createdN = recurringResult.createdCount;
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
               _isRecurring
-                  ? 'Тренировка добавлена. Создано занятий: ${recurringResult.createdCount}$skippedText'
-                  : 'Тренировка добавлена. Создано сессий: ${recurringResult.createdCount}$skippedText',
+                  ? 'Тренировка добавлена. Создано занятий: $createdN$skippedText'
+                  : createdN == 1
+                  ? 'Тренировка и занятие добавлены$skippedText'
+                  : 'Тренировка добавлена. Создано занятий: $createdN$skippedText',
             ),
           ),
         );
@@ -1958,16 +1807,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       ),
     );
   }
-}
-
-/// [applied] false: sheet closed without confirming (barrier / Cancel / X).
-class _CategoryPickResult {
-  const _CategoryPickResult.cancelled() : applied = false, categoryId = null;
-
-  const _CategoryPickResult.apply(this.categoryId) : applied = true;
-
-  final bool applied;
-  final int? categoryId;
 }
 
 class _VndThousandsFormatter extends TextInputFormatter {

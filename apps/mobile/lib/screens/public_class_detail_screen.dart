@@ -796,10 +796,10 @@ class _StudioHeroBanner extends StatelessWidget {
   static const _metaSeparator = ' · ';
 
   TextStyle _metaStyle() => TextStyle(
-    fontSize: 11.sp,
+    fontSize: 12.sp,
     fontWeight: FontWeight.w400,
     color: foregroundColor,
-    height: 1.1,
+    height: 1.15,
   );
 
   @override
@@ -807,7 +807,7 @@ class _StudioHeroBanner extends StatelessWidget {
     final metaParts = <Widget>[];
     if (avgRating > 0) {
       metaParts.addAll([
-        Icon(Icons.star_rounded, size: 14, color: foregroundColor),
+        Icon(Icons.star_rounded, size: 15, color: foregroundColor),
         const SizedBox(width: 2),
         Text(
           avgRating.toStringAsFixed(1).replaceAll('.', ','),
@@ -836,7 +836,7 @@ class _StudioHeroBanner extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(8),
           child: Row(
             children: [
               Expanded(
@@ -844,7 +844,7 @@ class _StudioHeroBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _StudioAvatarBadge(logoUrl: logoUrl, initials: initials),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -854,9 +854,10 @@ class _StudioHeroBanner extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
                               color: foregroundColor,
+                              height: 1.2,
                             ),
                           ),
                           if (metaParts.isNotEmpty) ...[
@@ -1071,11 +1072,11 @@ class _StudioAvatarBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: logoUrl.isNotEmpty
@@ -1083,8 +1084,8 @@ class _StudioAvatarBadge extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: CachedNetworkImage(
                 imageUrl: logoUrl,
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 fit: BoxFit.cover,
                 fadeInDuration: const Duration(milliseconds: 180),
                 placeholder: (_, _) => const ColoredBox(
@@ -1093,7 +1094,7 @@ class _StudioAvatarBadge extends StatelessWidget {
                 errorWidget: (_, _, _) => Text(
                   initials,
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -1103,7 +1104,7 @@ class _StudioAvatarBadge extends StatelessWidget {
           : Text(
               initials,
               style: TextStyle(
-                fontSize: 16.sp,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
