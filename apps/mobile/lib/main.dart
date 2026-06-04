@@ -29,6 +29,7 @@ import 'services/auth_service.dart';
 import 'services/client_favorites_store.dart';
 import 'services/cache/bookings_cache.dart';
 import 'services/cache/client_nearby_cache.dart';
+import 'services/cache/training_categories_cache.dart';
 import 'services/cache/studio_public_detail_cache.dart';
 import 'services/cache/owner_sessions_cache.dart';
 import 'services/cache/studio_cache.dart';
@@ -212,6 +213,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => OwnerSessionsCache()),
         ChangeNotifierProvider(create: (_) => BookingsCache()),
         ChangeNotifierProvider(create: (_) => ServicesStaffCache()),
+        ChangeNotifierProvider(create: (_) => TrainingCategoriesCache()),
         ChangeNotifierProvider(create: (_) => SubscriptionRefreshNotifier()),
         if (widget.notificationsStore != null)
           ChangeNotifierProvider.value(value: widget.notificationsStore!),

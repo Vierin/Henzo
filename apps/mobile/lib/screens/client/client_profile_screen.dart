@@ -8,8 +8,8 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/public_studio_preview.dart';
 import '../../models/training_category_option.dart';
-import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import '../../services/cache/training_categories_cache.dart';
 import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/client_location_store.dart';
@@ -72,15 +72,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   bool get wantKeepAlive => true;
 
   Future<void> _loadTrainingCategories() async {
-    try {
-      final raw = await ApiClient.get('/trainings/categories', null);
-      if (!mounted) return;
-      setState(
-        () => _trainingCategories = TrainingCategoryOption.listFromApiResponse(
-          raw,
-        ),
-      );
-    } catch (_) {}
+    final cats = await context.read<TrainingCategoriesCache>().getCategories();
+    if (!mounted) return;
+    setState(() => _trainingCategories = cats);
   }
 
   Future<void> _loadStats({bool force = false}) async {

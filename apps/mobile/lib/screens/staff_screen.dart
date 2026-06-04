@@ -152,119 +152,7 @@ class _StaffScreenState extends State<StaffScreen> {
       context: context,
       showDragHandle: true,
       backgroundColor: AppColors.backgroundPrimary,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (sheetCtx, setSheet) {
-            final locale = sheetCtx.read<LocaleProvider>();
-            if (loading) {
-              TrainerApiService.generateInvite(token, member.id).then((result) {
-                inviteUrl = result['inviteUrl']?.toString();
-                setSheet(() => loading = false);
-              }).catchError((e) {
-                error = e.toString();
-                setSheet(() => loading = false);
-              });
-            }
-            return SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      locale.t('staff.inviteTitle').replaceAll('{name}', member.name),
-                      style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      locale.t('staff.shareInviteMessage').replaceAll('{name}', member.name),
-                      style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 20),
-                    if (loading)
-                      const Center(child: CircularProgressIndicator())
-                    else if (error != null)
-                      Text(error!, style: const TextStyle(color: AppColors.error500))
-                    else if (inviteUrl != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.neutral100,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          inviteUrl!,
-                          style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: inviteUrl!),
-                                );
-                                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      locale.t('common.linkCopied'),
-                                    ),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.copy_outlined, size: 16),
-                              label: Text(locale.t('common.copyLink')),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () {
-                                final intro = locale
-                                    .t('staff.shareInviteMessage')
-                                    .replaceAll('{name}', member.name);
-                                Share.share('$intro\n$inviteUrl', sharePositionOrigin: shareOrigin(context));
-                              },
-                              icon: const Icon(Icons.ios_share_outlined, size: 16),
-                              label: Text(locale.t('common.share')),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primary500,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        locale.t('staff.inviteExpires'),
-                        style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (ctx) => _InviteSheetContent(member: member, token: token),
     );
   }
 
@@ -633,6 +521,157 @@ class _StaffScreenState extends State<StaffScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+// ── Invite sheet content ──────────────────────────────────────────────────────
+
+/// Самодостаточный виджет для шита приглашения.
+/// Управляет своим async-состоянием через initState — нет race condition.
+class _InviteSheetContent extends StatefulWidget {
+  const _InviteSheetContent({required this.member, required this.token});
+
+  final StaffMember member;
+  final String token;
+
+  @override
+  State<_InviteSheetContent> createState() => _InviteSheetContentState();
+}
+
+class _InviteSheetContentState extends State<_InviteSheetContent> {
+  String? _inviteUrl;
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInvite();
+  }
+
+  Future<void> _loadInvite() async {
+    try {
+      final result = await TrainerApiService.generateInvite(
+        widget.token,
+        widget.member.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _inviteUrl = result['inviteUrl']?.toString();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.read<LocaleProvider>();
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              locale.t('staff.inviteTitle').replaceAll('{name}', widget.member.name),
+              style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              locale.t('staff.shareInviteMessage').replaceAll('{name}', widget.member.name),
+              style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: CircularProgressIndicator(color: AppColors.primary500),
+                ),
+              )
+            else if (_error != null)
+              Text(_error!, style: const TextStyle(color: AppColors.error500))
+            else if (_inviteUrl != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.neutral100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  _inviteUrl!,
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _inviteUrl!));
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                          SnackBar(content: Text(locale.t('common.linkCopied'))),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_outlined, size: 16),
+                      label: Text(locale.t('common.copyLink')),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        final intro = locale
+                            .t('staff.shareInviteMessage')
+                            .replaceAll('{name}', widget.member.name);
+                        Share.share(
+                          '$intro\n$_inviteUrl',
+                          sharePositionOrigin: shareOrigin(context),
+                        );
+                      },
+                      icon: const Icon(Icons.ios_share_outlined, size: 16),
+                      label: Text(locale.t('common.share')),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary500,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                locale.t('staff.inviteExpires'),
+                style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
