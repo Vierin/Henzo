@@ -12,6 +12,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/class_session_link.dart';
+import '../../utils/share_utils.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/auth/auth_form_styles.dart';
@@ -190,7 +191,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   }
 
   Future<void> _shareBooking() async {
-    await Share.share(_shareMessage(), subject: classTitle);
+    await Share.share(_shareMessage(), subject: classTitle, sharePositionOrigin: shareOrigin(context));
   }
 
   Future<void> _openCalendar(BuildContext context) async {

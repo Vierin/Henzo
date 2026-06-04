@@ -9,6 +9,7 @@ import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/client_favorites_store.dart';
+import '../../utils/share_utils.dart';
 import '../../utils/studio_description.dart';
 import '../../utils/studio_public_contacts.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
@@ -169,7 +170,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   }
 
   Future<void> _shareStudio(String name) async {
-    await Share.share('Check out $name on Henzo');
+    await Share.share('Check out $name on Henzo', sharePositionOrigin: shareOrigin(context));
   }
 
   void _copyAddress(BuildContext context, String address, String copiedMsg) {
