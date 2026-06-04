@@ -9,8 +9,8 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
-import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import '../../services/cache/training_categories_cache.dart';
 import '../../services/cache/client_nearby_cache.dart';
 import '../../services/client_location_store.dart';
 import '../../services/client_favorites_mutations.dart';
@@ -1023,20 +1023,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   Future<void> _ensureTrainingCategoriesLoaded() async {
     if (_trainingCategories.isNotEmpty) return;
-    try {
-      final raw = await ApiClient.get('/trainings/categories', null);
-      if (raw is! List || !mounted) return;
-      final list = <TrainingCategoryOption>[];
-      for (final row in raw) {
-        if (row is! Map) continue;
-        list.add(
-          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
-        );
-      }
-      setState(
-        () => _trainingCategories = TrainingCategoryOption.withOtherLast(list),
-      );
-    } catch (_) {}
+    final cats = await context.read<TrainingCategoriesCache>().getCategories();
+    if (!mounted) return;
+    setState(() => _trainingCategories = cats);
   }
 
   Future<void> _openCategorySheet() async {

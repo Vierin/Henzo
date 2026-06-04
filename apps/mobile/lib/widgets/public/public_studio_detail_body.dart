@@ -7,8 +7,8 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
-import '../../services/api_client.dart';
 import '../../services/client_favorites_store.dart';
+import '../../services/cache/training_categories_cache.dart';
 import '../../utils/share_utils.dart';
 import '../../utils/studio_description.dart';
 import '../../utils/studio_public_contacts.dart';
@@ -48,56 +48,84 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
 
   List<TrainingCategoryOption> _allCategories = [];
 
+  // Memoized derived data — recomputed only when widget.studio changes.
+  List<String> _cachedPhotoUrls = [];
+  List<int> _cachedCategoryIds = [];
+  List<Map<String, dynamic>> _cachedReviews = [];
+  double _cachedAvgRating = 0;
+
   @override
   void initState() {
     super.initState();
+    _recomputeDerived();
     _loadCategories();
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final raw = await ApiClient.get('/trainings/categories', null);
-      if (!mounted) return;
-      if (raw is! List) return;
-      final list = <TrainingCategoryOption>[];
-      for (final row in raw) {
-        if (row is Map<String, dynamic>) {
-          list.add(TrainingCategoryOption.fromJson(row));
-        } else if (row is Map) {
-          list.add(
-            TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
-          );
+  @override
+  void didUpdateWidget(PublicStudioDetailBody old) {
+    super.didUpdateWidget(old);
+    if (old.studio != widget.studio) _recomputeDerived();
+  }
+
+  void _recomputeDerived() {
+    final photos = widget.studio['photos'];
+    _cachedPhotoUrls = photos is List
+        ? photos
+            .map((e) => e?.toString().trim() ?? '')
+            .where((u) => u.isNotEmpty)
+            .toList()
+        : [];
+
+    final services = widget.studio['services'];
+    if (services is List) {
+      final seen = <int>{};
+      _cachedCategoryIds = [
+        for (final raw in services)
+          if (raw is Map)
+            if ((raw['trainingCategoryId'] as num?)?.toInt() case final id?
+                when seen.add(id))
+              id,
+      ];
+    } else {
+      _cachedCategoryIds = [];
+    }
+
+    final rawReviews = widget.studio['reviews'];
+    final reviews = <Map<String, dynamic>>[];
+    if (rawReviews is List) {
+      for (final item in rawReviews) {
+        if (item is Map<String, dynamic>) {
+          reviews.add(item);
+        } else if (item is Map) {
+          reviews.add(Map<String, dynamic>.from(item));
         }
       }
-      setState(
-        () => _allCategories = TrainingCategoryOption.withOtherLast(list),
-      );
-    } catch (_) {}
+      reviews.sort((a, b) {
+        final da = DateTime.tryParse((a['createdAt'] ?? '').toString());
+        final db = DateTime.tryParse((b['createdAt'] ?? '').toString());
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return db.compareTo(da);
+      });
+    }
+    _cachedReviews = reviews;
+
+    var sum = 0.0;
+    var n = 0;
+    for (final r in _cachedReviews) {
+      final rating = (r['rating'] as num?)?.toDouble();
+      if (rating != null && rating > 0) { sum += rating; n++; }
+    }
+    _cachedAvgRating = n == 0 ? 0 : sum / n;
   }
 
-  List<String> _studioPhotoUrls() {
-    final photos = widget.studio['photos'];
-    if (photos is! List) return [];
-    final out = <String>[];
-    for (final e in photos) {
-      final u = e?.toString().trim() ?? '';
-      if (u.isNotEmpty) out.add(u);
-    }
-    return out;
-  }
-
-  List<int> _studioCategoryIds() {
-    final services = widget.studio['services'];
-    if (services is! List) return [];
-    final seen = <int>{};
-    final ids = <int>[];
-    for (final raw in services) {
-      if (raw is! Map) continue;
-      final id = (raw['trainingCategoryId'] as num?)?.toInt();
-      if (id == null || !seen.add(id)) continue;
-      ids.add(id);
-    }
-    return ids;
+  Future<void> _loadCategories() async {
+    final cats = await context
+        .read<TrainingCategoriesCache>()
+        .getCategories();
+    if (!mounted) return;
+    setState(() => _allCategories = cats);
   }
 
   TrainingCategoryOption? _categoryById(int id) {
@@ -106,6 +134,9 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     }
     return null;
   }
+
+  // _studioPhotoUrls, _studioCategoryIds, _parsedReviews, _averageRating
+  // removed — replaced by memoized fields computed in _recomputeDerived().
 
   String _categoryLabel(Map<String, dynamic> cat, String localeCode) {
     switch (localeCode) {
@@ -222,18 +253,18 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     );
 
     final studio = widget.studio;
-    final photoUrls = _studioPhotoUrls();
+    final photoUrls = _cachedPhotoUrls;
     final name = (studio['name'] ?? 'Studio').toString();
     final address = (studio['address'] ?? '').toString().trim();
     final locationName = (studio['locationName'] ?? '').toString().trim();
     final description = resolveStudioDescription(studio, localeCode);
-    final reviews = _parsedReviews();
-    final avgRating = _averageRating(reviews);
+    final reviews = _cachedReviews;
+    final avgRating = _cachedAvgRating;
     final reviewCount = reviews.length;
     final compactRating = avgRating > 0
         ? _compactRatingLabel(avgRating, reviewCount)
         : null;
-    final categoryIds = _studioCategoryIds();
+    final categoryIds = _cachedCategoryIds;
     final contacts = studioPublicContactsFromMap(studio);
     final topInset = MediaQuery.paddingOf(context).top;
     final addressCopiedMsg = t('addressCopied');
