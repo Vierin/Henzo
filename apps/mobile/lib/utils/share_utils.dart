@@ -1,6 +1,3 @@
-import 'dart:ui';
-
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 /// Returns the on-screen bounding rect of [context]'s widget.

@@ -190,7 +190,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     return buf.toString().trim();
   }
 
-  Future<void> _shareBooking() async {
+  Future<void> _shareBooking(BuildContext context) async {
     await Share.share(_shareMessage(), subject: classTitle, sharePositionOrigin: shareOrigin(context));
   }
 
@@ -300,7 +300,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                           icon: const Icon(Icons.close_rounded, size: 22),
                         ),
                         FilledButton.icon(
-                          onPressed: _shareBooking,
+                          onPressed: () => _shareBooking(context),
                           icon: SvgPicture.asset(
                             'assets/icons/icon-share.svg',
                             width: 16,
@@ -392,7 +392,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         width: double.infinity,
                         height: 52,
                         child: FilledButton(
-                          onPressed: _shareBooking,
+                          onPressed: () => _shareBooking(context),
                           style: AuthFormStyles.primaryButtonStyle(),
                           child: Text(
                             locale.t('clientBooking.inviteFriends'),
