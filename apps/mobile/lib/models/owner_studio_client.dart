@@ -6,7 +6,7 @@ class OwnerStudioClientRow {
     this.phone,
     required this.isGuest,
     required this.visitsCount,
-    required this.lastVisit,
+    this.lastVisit,
     this.notes,
     this.source,
   });
@@ -17,7 +17,7 @@ class OwnerStudioClientRow {
   final String? phone;
   final bool isGuest;
   final int visitsCount;
-  final DateTime lastVisit;
+  final DateTime? lastVisit;
   final String? notes;
   final String? source;
 
@@ -29,7 +29,9 @@ class OwnerStudioClientRow {
       phone: json['phone'] as String?,
       isGuest: json['isGuest'] as bool? ?? true,
       visitsCount: (json['visitsCount'] as num?)?.toInt() ?? 0,
-      lastVisit: DateTime.parse(json['lastVisit'] as String),
+      lastVisit: json['lastVisit'] != null
+          ? DateTime.tryParse(json['lastVisit'] as String)
+          : null,
       notes: json['notes'] as String?,
       source: json['source'] as String?,
     );

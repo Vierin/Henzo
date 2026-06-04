@@ -12,6 +12,7 @@ import '../l10n/locale_provider.dart';
 import '../models/training_category_option.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/cache/training_categories_cache.dart';
 import '../services/client_favorites_mutations.dart';
 import '../services/client_favorites_store.dart';
 import '../services/cache/client_nearby_cache.dart';
@@ -71,6 +72,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   final Set<String> _favoriteLoadingIds = <String>{};
 
   List<ExploreStudioItem> _studios = const [];
+  List<ExploreStudioItem> _filteredStudios = const [];
   List<TrainingCategoryOption> _trainingCategories = const [];
   Map<String, List<ExploreClassItem>> _classesByStudio = const {};
   bool _isLoadingStudios = true;
@@ -86,13 +88,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   StreamSubscription<MapEvent>? _mapEventSubscription;
   double? _pinchGestureStartZoom;
 
-  List<ExploreStudioItem> get _filteredStudios {
-    if (_selectedCategoryIds.isEmpty) return _studios;
-    return _studios
-        .where(
-          (s) => s.trainingCategoryIds.any(_selectedCategoryIds.contains),
-        )
-        .toList();
+  void _rebuildFilteredStudios() {
+    _filteredStudios = _selectedCategoryIds.isEmpty
+        ? _studios
+        : _studios
+            .where((s) => s.trainingCategoryIds.any(_selectedCategoryIds.contains))
+            .toList();
   }
 
   @override
@@ -122,6 +123,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _isLoadingStudios = false;
         _studios = const [];
+        _filteredStudios = const [];
         _studiosLoadError = null;
       });
     }
@@ -308,22 +310,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   Future<void> _loadTrainingCategories() async {
-    if (_trainingCategories.isNotEmpty) return;
-    try {
-      final raw = await ApiClient.get('/trainings/categories', null);
-      if (raw is! List || !mounted) return;
-      final list = <TrainingCategoryOption>[];
-      for (final row in raw) {
-        if (row is! Map) continue;
-        list.add(
-          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
-        );
-      }
-      if (!mounted) return;
-      setState(
-        () => _trainingCategories = TrainingCategoryOption.withOtherLast(list),
-      );
-    } catch (_) {}
+    final cats = await context.read<TrainingCategoriesCache>().getCategories();
+    if (!mounted) return;
+    setState(() => _trainingCategories = cats);
   }
 
   Future<void> _loadStudios({double? searchLat, double? searchLon}) async {
@@ -373,6 +362,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       if (!mounted) return;
       setState(() {
         _studios = mapped;
+        _rebuildFilteredStudios();
         _isLoadingStudios = false;
         _selectedStudioIndex = -1;
         _showCarouselCard = false;
@@ -749,6 +739,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     if (result != null && mounted) {
       setState(() {
         _selectedCategoryIds = result;
+        _rebuildFilteredStudios();
         _selectedStudioIndex = -1;
         _showCarouselCard = false;
       });

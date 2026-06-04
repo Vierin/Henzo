@@ -12,7 +12,6 @@ import '../../services/auth_service.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
-import '../common/henzo_header_back_button.dart';
 import '../common/sheet_action_button_style.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -332,6 +331,8 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             .where((p) => !p.isSyntheticSpot)
             .toList();
       });
+    } catch (_) {
+      // leave _recent empty, user sees empty-state message
     } finally {
       if (mounted) setState(() => _loadingRecent = false);
     }
@@ -580,7 +581,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
       children: [
         IgnorePointer(
           ignoring: _saving,
-          child: HenzoHeaderBackButton(
+          child: _SheetBackButton(
             onPressed: () {
               setState(() {
                 _step = _EnrollStep.chooseSource;
@@ -589,7 +590,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             },
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             _step == _EnrollStep.pickFromList
@@ -637,9 +638,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               iconAsset: 'assets/icons/icon-profile-large.svg',
               title: tr('ownerClient.anonymousSpotTitle'),
               subtitle: tr('ownerClient.anonymousSpotSubtitle'),
-              onTap: _saving
-                  ? null
-                  : () => setState(() => _step = _EnrollStep.anonymousSpot),
+              onTap: _saving ? null : _enrollAnonymous,
             ),
           ],
         );
@@ -832,6 +831,37 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SheetBackButton extends StatelessWidget {
+  const _SheetBackButton({this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      shape: CircleBorder(
+        side: BorderSide(color: AppColors.primary500, width: 1.5),
+      ),
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: CircleBorder(
+          side: BorderSide(color: AppColors.primary500, width: 1.5),
+        ),
+        child: const SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(
+            Icons.arrow_back_ios_new,
+            size: 15,
+            color: AppColors.primary500,
+          ),
+        ),
+      ),
     );
   }
 }

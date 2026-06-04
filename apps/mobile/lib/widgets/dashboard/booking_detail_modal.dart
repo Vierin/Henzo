@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../common/henzo_modal.dart';
 import 'package:intl/intl.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import '../../models/booking.dart';
 import '../../utils/currency_format.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -48,6 +50,7 @@ class _BookingDetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tr = context.read<LocaleProvider>().t;
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.5,
@@ -63,7 +66,7 @@ class _BookingDetailContent extends StatelessWidget {
           child: Column(
             children: [
               BookingDetailHeader(
-                title: 'Booking Details',
+                title: tr('booking.detailsTitle'),
                 onClose: () => Navigator.of(context).pop(),
               ),
               Expanded(
@@ -76,8 +79,8 @@ class _BookingDetailContent extends StatelessWidget {
                       _BookingDetailStatusBadge(status: booking.status),
                       const SizedBox(height: 20),
                       BookingDetailSection(
-                        title: 'Client',
-                        mainText: booking.user?.name ?? 'Unknown Client',
+                        title: tr('booking.sectionClient'),
+                        mainText: booking.user?.name ?? tr('booking.unknownClient'),
                         subTexts: [
                           if (booking.user?.email != null &&
                               booking.user!.email!.isNotEmpty)
@@ -89,19 +92,18 @@ class _BookingDetailContent extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       BookingDetailSection(
-                        title: 'Service',
-                        mainText: booking.service?.name ?? 'Unknown Service',
+                        title: tr('booking.sectionService'),
+                        mainText: booking.service?.name ?? tr('booking.unknownService'),
                         subTexts: [
                           if (booking.service?.duration != null)
-                            'Duration: ${booking.service!.duration} minutes',
-                          if (booking.service?.price != null &&
-                              booking.service!.price != null)
-                            'Price: ${formatVnd(booking.service!.price!)}',
+                            tr('booking.duration').replaceAll('{n}', '${booking.service!.duration}'),
+                          if (booking.service?.price != null)
+                            tr('booking.price').replaceAll('{amount}', formatVnd(booking.service!.price!)),
                         ],
                       ),
                       const SizedBox(height: 20),
                       BookingDetailSection(
-                        title: 'Date & Time',
+                        title: tr('booking.sectionDateTime'),
                         mainText:
                             DateFormat('dd/MM/yyyy').format(booking.dateTime),
                         subTexts: [
@@ -110,20 +112,20 @@ class _BookingDetailContent extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       BookingDetailSection(
-                        title: 'Тренер',
+                        title: tr('booking.sectionTrainer'),
                         mainText: booking.staff != null &&
                                 booking.staff!.name.trim().isNotEmpty
                             ? booking.staff!.name.trim()
-                            : 'Не назначен',
-                        subTexts: [],
+                            : tr('booking.noTrainer'),
+                        subTexts: const [],
                       ),
                       if (booking.notes != null &&
                           booking.notes!.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         BookingDetailSection(
-                          title: 'Notes',
+                          title: tr('booking.sectionNotes'),
                           mainText: booking.notes!,
-                          subTexts: [],
+                          subTexts: const [],
                         ),
                       ],
                     ],

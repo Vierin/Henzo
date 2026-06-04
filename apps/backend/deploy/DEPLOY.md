@@ -62,6 +62,18 @@ docker compose logs backend
 3. fix migration in code and redeploy from staging flow;
 4. avoid manual schema drift in production database.
 
+If deploy logs show `20260604120000_add_scheduled_push_reminder` as **failed** but the table
+already exists (`relation "ScheduledPushReminder" already exists`), mark it applied once:
+
+```bash
+cd /var/www/henzo/apps/backend
+docker compose run --rm backend npx prisma migrate resolve \
+  --applied "20260604120000_add_scheduled_push_reminder"
+docker compose run --rm backend npx prisma migrate deploy
+```
+
+Newer `deploy-compose-service.sh` attempts this heal automatically before `migrate deploy`.
+
 ## Troubleshooting quick commands
 
 ```bash

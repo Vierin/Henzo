@@ -24,10 +24,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   DateTime _rangeStart = DateTime.now().subtract(const Duration(days: 30));
   DateTime _rangeEnd = DateTime.now();
   final PageController _pageController = PageController();
-  int _currentPage = 0;
+  final ValueNotifier<int> _pageIndex = ValueNotifier<int>(0);
   bool _isLoading = false;
   String? _errorText;
   StudioAnalytics? _analytics;
+  // Cache analytics by period key to avoid re-fetching the same range.
+  final Map<String, StudioAnalytics> _analyticsCache = {};
 
   @override
   void initState() {
@@ -38,6 +40,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _pageIndex.dispose();
     super.dispose();
   }
 
@@ -96,10 +99,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Future<void> _loadAnalytics() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
-    setState(() {
-      _isLoading = true;
-      _errorText = null;
-    });
+
+    final cacheKey = '$_fromIso|$_toIso';
+    final cached = _analyticsCache[cacheKey];
+    if (cached != null) {
+      setState(() { _analytics = cached; _errorText = null; });
+      return;
+    }
+
+    setState(() { _isLoading = true; _errorText = null; });
     try {
       final data = await DashboardApiService.getCurrentStudioAnalytics(
         token,
@@ -107,6 +115,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         toIso: _toIso,
       );
       if (!mounted) return;
+      if (data != null) {
+        _analyticsCache[cacheKey] = data;
+      }
       setState(() => _analytics = data);
     } catch (e) {
       if (!mounted) return;
@@ -237,7 +248,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     height: 225,
                     child: PageView(
                       controller: _pageController,
-                      onPageChanged: (i) => setState(() => _currentPage = i),
+                      onPageChanged: (i) => _pageIndex.value = i,
                       padEnds: false,
                       children: [
                         Padding(
@@ -260,31 +271,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ],
               const SizedBox(height: 20),
               if (_analytics?.isPro == true)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (i) {
-                    return GestureDetector(
-                      onTap: () {
-                        _pageController.animateToPage(
+                ValueListenableBuilder<int>(
+                  valueListenable: _pageIndex,
+                  builder: (_, page, _) => Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(3, (i) {
+                      return GestureDetector(
+                        onTap: () => _pageController.animateToPage(
                           i,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeOut,
-                        );
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: i == _currentPage ? 20 : 8,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(3),
-                          color: i == _currentPage
-                              ? AppColors.analyticsPurple
-                              : AppColors.neutral300,
                         ),
-                      ),
-                    );
-                  }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: i == page ? 20 : 8,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(3),
+                            color: i == page
+                                ? AppColors.analyticsPurple
+                                : AppColors.neutral300,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
               const SizedBox(height: 32),
             ],

@@ -211,8 +211,8 @@ class _LocationOptionCard extends StatelessWidget {
           ),
           padding: EdgeInsets.fromLTRB(
             14,
-            14,
-            showDelete ? 6 : 14,
+            10,
+            showDelete ? 2 : 14,
             14,
           ),
           child: Stack(
@@ -220,20 +220,16 @@ class _LocationOptionCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: SvgPicture.asset(
-                      'assets/icons/icon-pin.svg',
-                      width: 15,
-                      height: 21,
-                    ),
+                  SvgPicture.asset(
+                    'assets/icons/icon-pin.svg',
+                    width: 15,
+                    height: 21,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(
-                        right: showDelete ? 28 : 0,
-                        top: showDelete ? 2 : 0,
+                        right: showDelete ? 32 : 0,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,7 +281,7 @@ class _LocationOptionCard extends StatelessWidget {
                   ),
                   if (showCheckmark)
                     const Padding(
-                      padding: EdgeInsets.only(left: 8, top: 2),
+                      padding: EdgeInsets.only(left: 8),
                       child: Icon(
                         Icons.check,
                         color: AppColors.primary500,

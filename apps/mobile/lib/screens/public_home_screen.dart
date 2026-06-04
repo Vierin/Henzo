@@ -14,6 +14,7 @@ import '../models/public_studio_preview.dart';
 import '../models/training_category_option.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/cache/training_categories_cache.dart';
 import '../services/notifications_store.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
@@ -80,7 +81,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadTrainingCategories();
+    _loadCategoriesFromCache();
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapHomeData());
   }
 
@@ -149,6 +150,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       if (!mounted) return;
       setState(() {
         _allStudios = mapped;
+        _rebuildFilteredStudios();
         _isLoadingStudios = false;
         _studiosLoadError = null;
       });
@@ -322,14 +324,17 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     );
   }
 
-  List<PublicStudioPreview> get _filteredStudios {
+  List<PublicStudioPreview> _filteredStudios = const [];
+
+  void _rebuildFilteredStudios() {
     final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return _allStudios;
-    return _allStudios.where((studio) {
-      return studio.name.toLowerCase().contains(query) ||
-          studio.primaryCategory.toLowerCase().contains(query) ||
-          studio.address.toLowerCase().contains(query);
-    }).toList();
+    _filteredStudios = query.isEmpty
+        ? _allStudios
+        : _allStudios.where((s) {
+            return s.name.toLowerCase().contains(query) ||
+                s.primaryCategory.toLowerCase().contains(query) ||
+                s.address.toLowerCase().contains(query);
+          }).toList();
   }
 
   /// Next client booking for the home "TODAY" hero (today only, not started yet).
@@ -496,20 +501,14 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     });
   }
 
-  Future<void> _loadTrainingCategories() async {
+  Future<void> _loadCategoriesFromCache() async {
     try {
-      final raw = await ApiClient.get('/trainings/categories', null);
-      if (raw is! List) return;
-      final list = <TrainingCategoryOption>[];
-      for (final row in raw) {
-        if (row is! Map) continue;
-        list.add(
-          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
-        );
-      }
+      final cats = await context
+          .read<TrainingCategoriesCache>()
+          .getCategories();
       if (!mounted) return;
       setState(() {
-        _trainingCategories = TrainingCategoryOption.withOtherLast(list);
+        _trainingCategories = cats;
         _loadingCategories = false;
       });
     } catch (_) {
@@ -683,13 +682,15 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final favStore = context.watch<ClientFavoritesStore>();
-    final auth = context.watch<AuthService>();
-    final user = auth.user;
-    final firstName = user?.name?.trim().split(RegExp(r'\s+')).first ?? 'there';
-    final locationStore = context.watch<ClientLocationStore>();
-    final locationLabel = locationStore
-        .displayLabel(locale.t('clientHome.setLocation'))
-        .toUpperCase();
+    // select only the fields that actually affect the UI — avoids rebuilds
+    // when unrelated auth state (token refresh, etc.) changes.
+    final firstName = context.select<AuthService, String>(
+      (a) => a.user?.name?.trim().split(RegExp(r'\s+')).first ?? 'there',
+    );
+    final locationLabel = context.select<ClientLocationStore, String>(
+      (loc) =>
+          loc.displayLabel(locale.t('clientHome.setLocation')).toUpperCase(),
+    );
     final studios = _filteredStudios;
 
     return Scaffold(

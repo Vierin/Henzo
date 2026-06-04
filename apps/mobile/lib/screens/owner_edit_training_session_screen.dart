@@ -16,6 +16,7 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/trainers_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../utils/subscription_tier.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
 import '../widgets/auth/auth_form_styles.dart';
@@ -51,6 +52,7 @@ class _OwnerEditTrainingSessionScreenState
   Studio? _studio;
   bool _loadingTrainers = true;
   bool _saving = false;
+  bool _isPaidPlan = false;
 
   DateTime get _startsAt => DateTime(
     _sessionDate.year,
@@ -98,6 +100,7 @@ class _OwnerEditTrainingSessionScreenState
         return;
       }
       final locale = context.read<LocaleProvider>();
+      final sub = await DashboardApiService.getCurrentSubscription(token);
       final list = await TrainersApiService.getByStudio(token, studio.id);
       final locations = TrainingLocationItem.listFromStudio(
         studio,
@@ -133,6 +136,7 @@ class _OwnerEditTrainingSessionScreenState
         _trainerId = selectedTrainerId;
         _locations = locations;
         _selectedLocationId = selectedLocationId;
+        _isPaidPlan = subscriptionTypeIsPaid(sub?.type) && (sub?.isActive ?? false);
         _loadingTrainers = false;
       });
     } catch (_) {
@@ -499,13 +503,22 @@ class _OwnerEditTrainingSessionScreenState
     );
   }
 
-  InputDecoration _trainerInputDecoration() => const InputDecoration(
-    border: InputBorder.none,
-    enabledBorder: InputBorder.none,
-    focusedBorder: InputBorder.none,
+  InputDecoration _trainerInputDecoration() => InputDecoration(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(_kFieldRadius),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(_kFieldRadius),
+      borderSide: BorderSide.none,
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(_kFieldRadius),
+      borderSide: BorderSide.none,
+    ),
     filled: true,
     fillColor: AppColors.backgroundPrimary,
-    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
   );
 
   Widget _thisClassOnlyTrainerField({
@@ -526,7 +539,7 @@ class _OwnerEditTrainingSessionScreenState
             ),
           ),
         ),
-        if (!completed) ...[
+        if (!completed && !_isPaidPlan) ...[
           const SizedBox(height: 8),
           Text(
             locale.t('addTraining.step2.trainerProNote'),

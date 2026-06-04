@@ -1,12 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../subscriptions/plan-limits.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class TrainersService {
   constructor(
     private prisma: PrismaService,
     private planLimits: PlanLimitsService,
+    private emailService: EmailService,
   ) {}
 
   async isStudioOwnedByOwner(studioId: string, ownerId: string) {
@@ -228,7 +230,11 @@ export class TrainersService {
 
   // ── Trainer Invite ────────────────────────────────────────────
 
-  async generateInvite(trainerId: string, ownerId: string) {
+  async generateInvite(
+    trainerId: string,
+    ownerId: string,
+    sendToEmail?: string,
+  ) {
     const trainer = await this.prisma.trainer.findFirst({
       where: { id: trainerId },
       select: {
@@ -265,12 +271,102 @@ export class TrainersService {
     });
 
     const webUrl = process.env.FRONTEND_URL || 'https://henzo.app';
+    const inviteUrl = `${webUrl}/trainer-invite/${token}`;
+
+    if (sendToEmail) {
+      const studioName = trainer.Studio?.name ?? 'Henzo';
+      await this.emailService.sendEmail({
+        to: sendToEmail,
+        subject: `You're invited to join ${studioName} on Henzo`,
+        html: this._buildTrainerInviteHtml({ inviteUrl, studioName }),
+        fromName: 'Henzo',
+      });
+    }
+
     return {
       success: true,
-      inviteUrl: `${webUrl}/trainer-invite/${token}`,
+      inviteUrl,
       token,
       expiresAt: expiresAt.toISOString(),
     };
+  }
+
+  private _buildTrainerInviteHtml(params: {
+    inviteUrl: string;
+    studioName: string;
+  }): string {
+    const { inviteUrl, studioName } = params;
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trainer invitation</title>
+</head>
+<body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f2f2f2;">
+    <tr><td style="padding:32px 16px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560"
+             style="max-width:560px;width:100%;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr>
+          <td style="background:#ff5b5b;padding:28px 32px;text-align:center;">
+            <img src="https://henzo.app/logo.png" alt="Henzo" width="110"
+                 style="display:block;margin:0 auto;max-width:110px;height:auto;"/>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="background:#ffffff;padding:36px 40px 32px;">
+            <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#111111;line-height:1.3;">
+              You've been invited to join ${studioName}
+            </h1>
+            <p style="margin:0 0 24px;font-size:15px;color:#555555;line-height:1.6;">
+              You have been added as a trainer. Click the button below to create your account and get started.
+            </p>
+            <!-- Button -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;">
+              <tr><td style="text-align:center;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="background:#ff5b5b;border-radius:10px;text-align:center;">
+                      <a href="${inviteUrl}"
+                         style="display:inline-block;padding:14px 32px;color:#ffffff!important;text-decoration:none;font-size:16px;font-weight:700;border-radius:10px;background:#ff5b5b;white-space:nowrap;">
+                        Accept invitation
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td></tr>
+            </table>
+            <!-- Fallback URL -->
+            <p style="margin:0 0 8px;font-size:13px;color:#888888;">If the button doesn't work, copy this link:</p>
+            <p style="margin:0 0 24px;word-break:break-all;font-size:13px;color:#666666;background:#fafafa;padding:10px 14px;border-radius:8px;border:1px solid #eeeeee;">
+              ${inviteUrl}
+            </p>
+            <!-- Divider -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:20px;">
+              <tr><td style="border-top:1px solid #eeeeee;"></td></tr>
+            </table>
+            <p style="margin:0;font-size:13px;color:#aaaaaa;line-height:1.6;">
+              This invitation expires in 7 days. If you didn't expect this email, you can safely ignore it.
+            </p>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f9f9f9;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
+            <p style="margin:0;font-size:13px;color:#bbbbbb;">
+              &copy; ${new Date().getFullYear()} Henzo &nbsp;&middot;&nbsp;
+              <a href="https://henzo.app" style="color:#ff5b5b;text-decoration:none;">henzo.app</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
   }
 
   async getInviteInfo(token: string) {
