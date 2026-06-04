@@ -293,7 +293,7 @@ class _StaffScreenState extends State<StaffScreen> {
     final emailController = TextEditingController(text: member.email ?? '');
     final phoneController = TextEditingController(text: member.phone ?? '');
 
-    InputDecoration _fieldDecoration(String hint, {TextInputType? kb}) =>
+    InputDecoration fieldDecoration(String hint, {TextInputType? kb}) =>
         InputDecoration(
           hintText: hint,
           filled: true,
@@ -362,7 +362,7 @@ class _StaffScreenState extends State<StaffScreen> {
                     TextField(
                       controller: nameController,
                       textInputAction: TextInputAction.next,
-                      decoration: _fieldDecoration(locale.t('staffScreen.fullName')),
+                      decoration: fieldDecoration(locale.t('staffScreen.fullName')),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -378,7 +378,7 @@ class _StaffScreenState extends State<StaffScreen> {
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      decoration: _fieldDecoration(locale.t('common.email')),
+                      decoration: fieldDecoration(locale.t('common.email')),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -394,7 +394,7 @@ class _StaffScreenState extends State<StaffScreen> {
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.done,
-                      decoration: _fieldDecoration(locale.t('common.phone')),
+                      decoration: fieldDecoration(locale.t('common.phone')),
                     ),
                     const SizedBox(height: 20),
                     FilledButton(
@@ -546,52 +546,6 @@ class _StaffScreenState extends State<StaffScreen> {
     }
   }
 
-  Widget _inviteBadge(LocaleProvider locale) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.primary100,
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        locale.t('staffScreen.statusInvitePending'),
-        style: TextStyle(
-          fontSize: 11.sp,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primary500,
-        ),
-      ),
-    );
-  }
-
-  String _contactSubtitle({String? email, String? phone}) {
-    final parts = <String>[
-      if (email != null && email.trim().isNotEmpty) email.trim(),
-      if (phone != null && phone.trim().isNotEmpty) phone.trim(),
-    ];
-    return parts.join(' · ');
-  }
-
-  String _memberStatusLabel(LocaleProvider locale, StaffMember member) {
-    if (member.hasLinkedAccount) {
-      return locale.t('staffScreen.statusActive');
-    }
-    if (member.hasPendingInvite) {
-      return locale.t('staffScreen.statusInvitePending');
-    }
-    return locale.t('staffScreen.statusNoAccount');
-  }
-
-  String _memberSubtitle(LocaleProvider locale, StaffMember member) {
-    final contact = _contactSubtitle(
-      email: member.email,
-      phone: member.phone,
-    );
-    final status = _memberStatusLabel(locale, member);
-    if (contact.isEmpty) return status;
-    return '$contact · $status';
-  }
-
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
@@ -602,11 +556,6 @@ class _StaffScreenState extends State<StaffScreen> {
         ? owner!.name!.trim()
         : owner?.email ?? locale.t('settings.owner.ownerRole');
     final ownerEmail = owner?.email ?? '';
-    final ownerPhone = owner?.phone ?? '';
-    final ownerSubtitle = [
-      locale.t('settings.owner.ownerRole'),
-      _contactSubtitle(email: ownerEmail, phone: ownerPhone),
-    ].where((s) => s.isNotEmpty).join(' · ');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,

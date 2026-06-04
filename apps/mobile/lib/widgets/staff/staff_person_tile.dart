@@ -204,10 +204,10 @@ class StaffPersonTile extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (badge != null) badge!,
+                      ?badge,
                       if (badge != null && trailing != null)
                         const SizedBox(height: 6),
-                      if (trailing != null) trailing!,
+                      ?trailing,
                     ],
                   ),
                 ],

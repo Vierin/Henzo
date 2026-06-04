@@ -25,7 +25,7 @@ class TrainerApiService {
       '/trainers/$trainerId/invite',
       token,
       body: {
-        if (sendToEmail != null) 'sendToEmail': sendToEmail,
+        'sendToEmail': ?sendToEmail,
       },
     );
     return Map<String, dynamic>.from(raw as Map);
