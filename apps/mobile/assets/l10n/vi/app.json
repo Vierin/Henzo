@@ -521,12 +521,21 @@
     "rejected": "Đã từ chối đặt chỗ",
     "cancelled": "Đã hủy đặt chỗ",
     "unknownService": "Dịch vụ không xác định",
-    "unknownClient": "Khách không xác định",
+    "unknownClient": "Khách hàng không xác định",
     "failedToConfirm": "Xác nhận thất bại",
     "failedToCancel": "Hủy thất bại",
     "failedToReject": "Từ chối thất bại",
     "noBookings": "Không có đặt chỗ",
-    "book": "Đặt chỗ"
+    "book": "Đặt chỗ",
+    "detailsTitle": "Chi tiết đặt lịch",
+    "sectionClient": "Khách hàng",
+    "sectionService": "Dịch vụ",
+    "sectionDateTime": "Ngày & Giờ",
+    "sectionTrainer": "Huấn luyện viên",
+    "sectionNotes": "Ghi chú",
+    "noTrainer": "Chưa phân công",
+    "duration": "{n} phút",
+    "price": "{amount}"
   },
   "legal": {
     "agreePrefix": "Bằng việc tiếp tục, bạn đồng ý với ",
