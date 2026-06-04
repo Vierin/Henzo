@@ -275,15 +275,18 @@ class _RoleCard extends StatelessWidget {
                             color: accentColor,
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            description,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: AppColors.textSecondary,
-                              height: 1.2,
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Text(
+                              description,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.textSecondary,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(

@@ -492,14 +492,18 @@
     "visitMinutes": "{n} мин",
     "actionCall": "Звонок",
     "actionEmail": "Email",
-    "clientCountOne": "{n} КЛИЕНТ",
-    "clientCountFew": "{n} КЛИЕНТА",
-    "clientCountMany": "{n} КЛИЕНТОВ",
+    "clientCountOne": "{n} участник",
+    "clientCountFew": "{n} участника",
+    "clientCountMany": "{n} участников",
     "searchHint": "Поиск по имени, email или телефону",
     "filterAll": "Все",
     "filterSleepers": "Спящие",
     "filterWhiteList": "Белый список",
-    "filterBlocked": "Заблокированные"
+    "filterBlocked": "Заблокированные",
+    "clientsTitle": "Клиенты",
+    "emptyClientsTitle": "Нет клиентов",
+    "emptyFilteredTitle": "Ничего не найдено",
+    "addClientTooltip": "Добавить клиента"
   },
   "booking": {
     "details": "Детали записи",
@@ -657,7 +661,9 @@
     "statusInvitePending": "Приглашение отправлено",
     "shareInviteWithLink": "Присоединяйся к {studio} в Henzo как тренер: {link}",
     "sendInviteButton": "Отправить приглашение",
-    "staffInvitedByEmail": "Приглашение отправлено на email"
+    "staffInvitedByEmail": "Приглашение отправлено на email",
+    "roleTrainer": "Тренер",
+    "roleAdmin": "Администратор"
   },
   "servicesScreen": {
     "title": "Услуги",

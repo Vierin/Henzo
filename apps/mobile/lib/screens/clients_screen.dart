@@ -515,7 +515,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Клиенты',
+                          tr('ownerClient.clientsTitle'),
                           style:
                               textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -533,7 +533,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Tooltip(
-                    message: 'Добавить клиента',
+                    message: tr('ownerClient.addClientTooltip'),
                     child: SizedBox(
                       width: 36,
                       height: 36,
@@ -693,8 +693,8 @@ class ClientsScreenState extends State<ClientsScreen> {
                                         Text(
                                           _filter == ClientFilter.all &&
                                                   _searchQuery.isEmpty
-                                              ? 'Нет клиентов'
-                                              : 'Ничего не найдено',
+                                              ? tr('ownerClient.emptyClientsTitle')
+                                              : tr('ownerClient.emptyFilteredTitle'),
                                           style: TextStyle(
                                             fontSize: 16.sp,
                                             color: AppColors.textSecondary,

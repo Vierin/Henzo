@@ -492,14 +492,18 @@
     "visitMinutes": "{n} min",
     "actionCall": "Call",
     "actionEmail": "Email",
-    "clientCountOne": "{n} CLIENT",
-    "clientCountFew": "{n} CLIENTS",
-    "clientCountMany": "{n} CLIENTS",
+    "clientCountOne": "{n} member",
+    "clientCountFew": "{n} members",
+    "clientCountMany": "{n} members",
     "searchHint": "Search by name, email or phone",
     "filterAll": "All",
     "filterSleepers": "Sleepers",
     "filterWhiteList": "White list",
-    "filterBlocked": "Blocked"
+    "filterBlocked": "Blocked",
+    "clientsTitle": "Clients",
+    "emptyClientsTitle": "No clients yet",
+    "emptyFilteredTitle": "Nothing found",
+    "addClientTooltip": "Add client"
   },
   "booking": {
     "details": "Booking Details",
@@ -657,7 +661,9 @@
     "statusInvitePending": "Invite sent",
     "shareInviteWithLink": "Join {studio} on Henzo as a trainer: {link}",
     "sendInviteButton": "Send invitation",
-    "staffInvitedByEmail": "Invitation sent to email"
+    "staffInvitedByEmail": "Invitation sent to email",
+    "roleTrainer": "Trainer",
+    "roleAdmin": "Admin"
   },
   "servicesScreen": {
     "title": "Services",

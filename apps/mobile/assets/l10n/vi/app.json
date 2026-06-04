@@ -492,14 +492,18 @@
     "visitMinutes": "{n} phút",
     "actionCall": "Gọi",
     "actionEmail": "Email",
-    "clientCountOne": "{n} KHÁCH",
-    "clientCountFew": "{n} KHÁCH",
-    "clientCountMany": "{n} KHÁCH",
+    "clientCountOne": "{n} thành viên",
+    "clientCountFew": "{n} thành viên",
+    "clientCountMany": "{n} thành viên",
     "searchHint": "Tìm theo tên, email hoặc điện thoại",
     "filterAll": "Tất cả",
     "filterSleepers": "Không hoạt động",
     "filterWhiteList": "Danh sách trắng",
-    "filterBlocked": "Đã chặn"
+    "filterBlocked": "Đã chặn",
+    "clientsTitle": "Khách hàng",
+    "emptyClientsTitle": "Chưa có khách hàng",
+    "emptyFilteredTitle": "Không tìm thấy",
+    "addClientTooltip": "Thêm khách hàng"
   },
   "booking": {
     "details": "Chi tiết đặt chỗ",
@@ -657,7 +661,9 @@
     "statusInvitePending": "Đã gửi lời mời",
     "shareInviteWithLink": "Tham gia {studio} trên Henzo với tư cách huấn luyện viên: {link}",
     "sendInviteButton": "Gửi lời mời",
-    "staffInvitedByEmail": "Đã gửi lời mời qua email"
+    "staffInvitedByEmail": "Đã gửi lời mời qua email",
+    "roleTrainer": "Huấn luyện viên",
+    "roleAdmin": "Quản trị viên"
   },
   "servicesScreen": {
     "title": "Dịch vụ",
