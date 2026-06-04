@@ -99,12 +99,17 @@ export class TrainersController {
   async generateInvite(
     @Headers('authorization') authHeader: string,
     @Param('id') trainerId: string,
+    @Body() body: { sendToEmail?: string },
   ) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     if (currentUser.user.role !== 'OWNER') {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    return this.trainersService.generateInvite(trainerId, currentUser.user.id);
+    return this.trainersService.generateInvite(
+      trainerId,
+      currentUser.user.id,
+      body?.sendToEmail,
+    );
   }
 
   /** Public — return studio name + trainer name for the invite landing page. */
