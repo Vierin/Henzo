@@ -209,16 +209,12 @@ class _LocationOptionCard extends StatelessWidget {
               width: highlightBorder ? 1.5 : 1,
             ),
           ),
-          padding: EdgeInsets.fromLTRB(
-            14,
-            10,
-            showDelete ? 2 : 14,
-            14,
-          ),
-          child: Stack(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
                     'assets/icons/icon-pin.svg',
@@ -227,90 +223,109 @@ class _LocationOptionCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: showDelete ? 32 : 0,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            location.name,
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          if (location.address.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              location.address,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                height: 1.25,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                          if (showDefaultBadge) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.neutral100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                defaultBadgeLabel,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                    child: Text(
+                      location.name,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  if (showCheckmark)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: Icon(
-                        Icons.check,
-                        color: AppColors.primary500,
-                        size: 24,
-                        weight: 700,
-                      ),
+                  if (showDelete) ...[
+                    const SizedBox(width: 8),
+                    _LocationDeleteButton(
+                      onPressed: onDelete,
+                      tooltip: deleteTooltip,
+                      color: deleteColor,
                     ),
+                  ],
+                  if (showCheckmark) ...[
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.check,
+                      color: AppColors.primary500,
+                      size: 24,
+                      weight: 700,
+                    ),
+                  ],
                 ],
               ),
-              if (showDelete)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: IconButton(
-                    onPressed: onDelete,
-                    tooltip: deleteTooltip,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 36,
-                    ),
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 20,
-                      color: deleteColor,
+              if (location.address.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 27),
+                  child: Text(
+                    location.address,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      height: 1.25,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
+              ],
+              if (showDefaultBadge) ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 27),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.neutral100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      defaultBadgeLabel,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LocationDeleteButton extends StatelessWidget {
+  const _LocationDeleteButton({
+    required this.onPressed,
+    required this.tooltip,
+    required this.color,
+  });
+
+  final VoidCallback? onPressed;
+  final String tooltip;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: SvgPicture.asset(
+              'assets/icons/icon-trash.svg',
+              width: 18,
+              height: 18,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
           ),
         ),
       ),

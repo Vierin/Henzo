@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/color_hex.dart';
+import '../utils/google_maps_link.dart';
 import '../utils/share_utils.dart';
 import '../utils/show_api_error.dart';
 import '../utils/synthetic_guest.dart';
@@ -193,12 +194,12 @@ class _OwnerTrainingSessionDetailScreenState
     final timeFmt = DateFormat('HH:mm', locale.localeCode);
     final buf = StringBuffer()
       ..writeln(s.trainingName)
-      ..writeln(dateFmt.format(startsLocal))
+      ..writeln('📅 ${dateFmt.format(startsLocal)}')
       ..writeln(
-        '${timeFmt.format(startsLocal)} – ${timeFmt.format(endsLocal)}',
+        '🕐 ${timeFmt.format(startsLocal)} – ${timeFmt.format(endsLocal)}',
       );
-    final v = widget.venueName?.trim();
-    if (v != null && v.isNotEmpty) buf.writeln(v);
+    final locationBlock = formatShareLocationBlock(address: widget.venueName);
+    if (locationBlock.isNotEmpty) buf.writeln(locationBlock);
     await Share.share(buf.toString().trim(), sharePositionOrigin: shareOrigin(context));
   }
 

@@ -13,6 +13,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/client_location_store.dart';
 import '../utils/class_session_link.dart';
+import '../utils/google_maps_link.dart';
 import '../utils/share_utils.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
@@ -174,6 +175,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       trainerName: trainerName,
       dateTimeLine: dateTimeLine,
       addressLine: addressLine,
+      addressLatitude: (_studio?['latitude'] as num?)?.toDouble(),
+      addressLongitude: (_studio?['longitude'] as num?)?.toDouble(),
       link: sessionLink.toShareUri(),
     );
     await Share.share(message, subject: classTitle, sharePositionOrigin: shareOrigin(context));
@@ -470,29 +473,23 @@ Future<void> _openDirections({
 }) async {
   final lat = (studio?['latitude'] as num?)?.toDouble();
   final lng = (studio?['longitude'] as num?)?.toDouble();
-  final Uri uri;
-  if (lat != null && lng != null) {
-    uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-  } else {
-    final q =
-        ((studio?['address'] ?? '').toString().trim().isNotEmpty
-                ? (studio!['address'] ?? '').toString().trim()
-                : locationLabel.trim())
-            .trim();
-    if (q.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
-      }
-      return;
+  final q =
+      ((studio?['address'] ?? '').toString().trim().isNotEmpty
+              ? (studio!['address'] ?? '').toString().trim()
+              : locationLabel.trim())
+          .trim();
+  final uri = googleMapsSearchUri(
+    address: q,
+    latitude: lat,
+    longitude: lng,
+  );
+  if (uri == null) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
     }
-    uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1'
-      '&query=${Uri.encodeComponent(q)}',
-    );
+    return;
   }
   if (!await canLaunchUrl(uri)) {
     if (context.mounted) {

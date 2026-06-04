@@ -1,4 +1,5 @@
 import '../config/app_config.dart';
+import 'google_maps_link.dart';
 
 /// Deep link + share text for a public class session.
 class ClassSessionLink {
@@ -70,6 +71,8 @@ String buildClassSessionShareMessage({
   required String? trainerName,
   required String dateTimeLine,
   required String addressLine,
+  double? addressLatitude,
+  double? addressLongitude,
   required Uri link,
 }) {
   final trainer = trainerName?.trim() ?? '';
@@ -84,14 +87,19 @@ String buildClassSessionShareMessage({
 
   final buf = StringBuffer()..writeln(inviteLine);
   if (dateTimeLine.trim().isNotEmpty) {
-    buf.writeln(dateTimeLine.trim());
+    buf.writeln('📅 ${dateTimeLine.trim()}');
   }
-  if (addressLine.trim().isNotEmpty) {
-    buf.writeln(addressLine.trim());
+  final locationBlock = formatShareLocationBlock(
+    address: addressLine,
+    latitude: addressLatitude,
+    longitude: addressLongitude,
+  );
+  if (locationBlock.isNotEmpty) {
+    buf.writeln(locationBlock);
   }
   buf
     ..writeln()
-    ..writeln(tr('clientClassDetail.shareJoinMe'))
+    ..writeln('🔗 ${tr('clientClassDetail.shareJoinMe')}')
     ..writeln(link.toString());
   return buf.toString();
 }

@@ -181,7 +181,7 @@ Future<StudioSocialPlatform?> showStudioSocialPlatformPickerSheet(
             padding: EdgeInsets.fromLTRB(
               16,
               12,
-              8,
+              16,
               16 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
             ),
             child: Column(
@@ -240,7 +240,7 @@ Future<StudioSocialPlatform?> showStudioSocialPlatformPickerSheet(
                           ),
                           child: Row(
                             children: [
-                              _SocialPlatformIcon(platform: platform),
+                              SocialPlatformIcon(platform: platform),
                               const SizedBox(width: 12),
                               Text(
                                 platform.label(locale),
@@ -354,43 +354,35 @@ Future<String?> showStudioSocialLinkEditSheet(
 }
 
 class SocialPlatformIcon extends StatelessWidget {
-  const SocialPlatformIcon({super.key, required this.platform});
+  const SocialPlatformIcon({
+    super.key,
+    required this.platform,
+    this.size = SocialPlatformIcon.defaultSize,
+  });
+
+  static const double defaultSize = 44;
 
   final StudioSocialPlatform platform;
-
-  @override
-  Widget build(BuildContext context) => _SocialPlatformIcon(platform: platform);
-}
-
-class _SocialPlatformIcon extends StatelessWidget {
-  const _SocialPlatformIcon({required this.platform});
-
-  final StudioSocialPlatform platform;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.backgroundPrimary,
-        border: Border.all(color: AppColors.borderPrimary),
-      ),
-      child: Center(
-        child: platform.isRasterIcon
-            ? Image.asset(
-                platform.iconAsset,
-                width: 24,
-                height: 24,
-                fit: BoxFit.contain,
-              )
-            : SvgPicture.asset(
-                platform.iconAsset,
-                width: 20,
-                height: 20,
-              ),
-      ),
+    final asset = platform.isRasterIcon
+        ? Image.asset(
+            platform.iconAsset,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          )
+        : SvgPicture.asset(
+            platform.iconAsset,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          );
+
+    return ClipOval(
+      child: SizedBox(width: size, height: size, child: asset),
     );
   }
 }
