@@ -88,19 +88,27 @@ class StaffPersonAvatar extends StatelessWidget {
   }
 }
 
-/// Карточка сотрудника / владельца — layout как [ClientListTile].
+/// Карточка сотрудника / владельца.
 class StaffPersonTile extends StatelessWidget {
   const StaffPersonTile({
     super.key,
     required this.name,
-    required this.secondaryLine,
+    this.secondaryLine = '',
+    this.role,
+    this.emailLine,
+    this.badge,
     this.photoUrl,
     this.trailing,
     this.onTap,
   });
 
   final String name;
+  /// Используется только если [role] == null (owner tile).
   final String secondaryLine;
+  final String? role;
+  final String? emailLine;
+  /// Виджет-бейдж, размещается над [trailing] справа.
+  final Widget? badge;
   final String? photoUrl;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -109,7 +117,7 @@ class StaffPersonTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final hasRight = badge != null || trailing != null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -121,13 +129,14 @@ class StaffPersonTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(_cardRadius),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 StaffPersonAvatar(
                   displayName: name,
                   photoUrl: photoUrl,
+                  radius: 36,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -139,47 +148,68 @@ class StaffPersonTile extends StatelessWidget {
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16.sp,
-                              letterSpacing: -0.3,
-                              color: AppColors.textPrimary,
-                            ) ??
-                            TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.3,
-                              color: AppColors.textPrimary,
-                            ),
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                      if (secondaryLine.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                      if (role != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          role!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                      if (emailLine != null && emailLine!.isNotEmpty) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          emailLine!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: AppColors.textSecondary,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                      ],
+                      if (role == null && secondaryLine.isNotEmpty) ...[
+                        const SizedBox(height: 3),
                         Text(
                           secondaryLine,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w400,
-                                fontSize: 14.sp,
-                                letterSpacing: -0.2,
-                                color: AppColors.textSecondary,
-                              ) ??
-                              TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: -0.2,
-                                color: AppColors.textSecondary,
-                              ),
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: -0.2,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                if (trailing != null) ...[
+                if (hasRight) ...[
                   const SizedBox(width: 8),
-                  trailing!,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (badge != null) badge!,
+                      if (badge != null && trailing != null)
+                        const SizedBox(height: 6),
+                      if (trailing != null) trailing!,
+                    ],
+                  ),
                 ],
               ],
             ),

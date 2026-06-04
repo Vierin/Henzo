@@ -39,114 +39,110 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
     ),
     builder: (sheetCtx) {
       final h = MediaQuery.sizeOf(sheetCtx).height;
-      void popCancel() => Navigator.of(
-        sheetCtx,
-      ).pop(const TrainingCategoryPickResult.cancelled());
+      void popCancel() => Navigator.of(sheetCtx)
+          .pop(const TrainingCategoryPickResult.cancelled());
       return SafeArea(
         top: false,
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             16,
-            8,
+            4,
             8,
             12 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
           ),
-          child: SizedBox(
-            height: h * 0.42,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, left: 4),
-                        child: Text(
-                          locale.t('addTraining.categorySheetTitle'),
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.4,
-                            color: AppColors.textSecondary,
-                          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        locale.t('addTraining.categorySheetTitle'),
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: popCancel,
-                      icon: const Icon(Icons.close),
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: categories.map((c) {
-                        final selected = selectedCategoryId == c.id;
-                        final isOther = c.isOtherCategory;
-                        final Color bg;
-                        final Color fg;
-                        if (isOther) {
-                          bg = AppColors.backgroundPrimary;
-                          fg = AppColors.textPrimary;
-                        } else {
-                          final chipBg = c.backgroundColor(
-                            AppColors.neutral500,
-                          );
-                          bg = chipBg;
-                          fg = c.foregroundColorOn(chipBg);
-                        }
-                        final borderW = selected ? 2.0 : 1.0;
-                        final borderColor = selected
-                            ? AppColors.primary500
-                            : (isOther
-                                  ? AppColors.primary300
-                                  : Colors.transparent);
-                        final chipLabel = isOther
-                            ? locale.t('addTraining.categoryOtherChip')
-                            : c.label(localeCode);
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.of(sheetCtx).pop(
-                              TrainingCategoryPickResult.apply(c.id),
+                  ),
+                  IconButton(
+                    onPressed: popCancel,
+                    icon: const Icon(Icons.close),
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: h * 0.28),
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: categories.map((c) {
+                      final selected = selectedCategoryId == c.id;
+                      final isOther = c.isOtherCategory;
+                      final Color bg;
+                      final Color fg;
+                      if (isOther) {
+                        bg = AppColors.backgroundPrimary;
+                        fg = AppColors.textPrimary;
+                      } else {
+                        final chipBg = c.backgroundColor(AppColors.neutral500);
+                        bg = chipBg;
+                        fg = c.foregroundColorOn(chipBg);
+                      }
+                      final borderW = selected ? 2.0 : 1.0;
+                      final borderColor = selected
+                          ? AppColors.primary500
+                          : (isOther
+                              ? AppColors.primary300
+                              : Colors.transparent);
+                      final chipLabel = isOther
+                          ? locale.t('addTraining.categoryOtherChip')
+                          : c.label(localeCode);
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(sheetCtx).pop(
+                            TrainingCategoryPickResult.apply(c.id),
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: borderColor,
+                                width: borderW,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(999),
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                color: bg,
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: borderColor,
-                                  width: borderW,
-                                ),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              child: Text(
-                                chipLabel,
-                                style: TextStyle(
-                                  color: fg,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13.sp,
-                                ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            child: Text(
+                              chipLabel,
+                              style: TextStyle(
+                                color: fg,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.sp,
                               ),
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );

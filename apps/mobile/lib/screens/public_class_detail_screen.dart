@@ -13,6 +13,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/client_location_store.dart';
 import '../utils/class_session_link.dart';
+import '../utils/share_utils.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
 import '../utils/load_error_message.dart';
@@ -175,7 +176,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       addressLine: addressLine,
       link: sessionLink.toShareUri(),
     );
-    await Share.share(message, subject: classTitle);
+    await Share.share(message, subject: classTitle, sharePositionOrigin: shareOrigin(context));
   }
 
   Future<void> _book() async {

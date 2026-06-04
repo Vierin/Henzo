@@ -11,6 +11,7 @@ import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtVerifierService } from './jwt-verifier.service';
 import * as crypto from 'crypto';
+import { renderOtpEmailHtml } from '../email/templates/transactional-email-templates';
 
 type RegistrationOtpKind = 'client' | 'owner';
 
@@ -59,18 +60,7 @@ export class AuthService {
       subject: isOwner
         ? 'Your Henzo business verification code'
         : 'Your Henzo verification code',
-      html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111">
-          <h2 style="margin-bottom:8px">${
-            isOwner
-              ? 'Confirm your Henzo business account'
-              : 'Confirm your Henzo account'
-          }</h2>
-          <p style="margin:0 0 12px">Use this code in the app to finish registration:</p>
-          <div style="font-size:32px;font-weight:700;letter-spacing:6px;margin:12px 0">${code}</div>
-          <p style="margin:12px 0 0;color:#666">Code expires in 10 minutes.</p>
-        </div>
-      `,
+      html: renderOtpEmailHtml(code, kind),
       fromName: 'Henzo',
     });
   }

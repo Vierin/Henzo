@@ -18,12 +18,15 @@ class TrainerApiService {
 
   static Future<Map<String, dynamic>> generateInvite(
     String token,
-    String trainerId,
-  ) async {
+    String trainerId, {
+    String? sendToEmail,
+  }) async {
     final raw = await ApiClient.post(
       '/trainers/$trainerId/invite',
       token,
-      body: {},
+      body: {
+        if (sendToEmail != null) 'sendToEmail': sendToEmail,
+      },
     );
     return Map<String, dynamic>.from(raw as Map);
   }

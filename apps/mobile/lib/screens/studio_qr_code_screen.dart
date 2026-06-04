@@ -12,6 +12,7 @@ import '../models/studio.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_cache.dart';
 import '../config/app_config.dart';
+import '../utils/share_utils.dart';
 
 class StudioQrCodeScreen extends StatefulWidget {
   const StudioQrCodeScreen({super.key});
@@ -201,7 +202,7 @@ class _QrContent extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => Share.share(shareUrl, subject: studio.name ?? ''),
+                onPressed: () => Share.share(shareUrl, subject: studio.name ?? '', sharePositionOrigin: shareOrigin(context)),
                 icon: const Icon(Icons.share_outlined, size: 18),
                 label: Text(locale.t('common.share')),
                 style: FilledButton.styleFrom(

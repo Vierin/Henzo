@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../constants/colors.dart';
 import '../constants/layout.dart';
@@ -27,7 +26,6 @@ class AddStaffScreen extends StatefulWidget {
 }
 
 class _AddStaffScreenState extends State<AddStaffScreen> {
-  final _inviteNameController = TextEditingController();
   final _inviteEmailController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -38,7 +36,6 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 
   @override
   void dispose() {
-    _inviteNameController.dispose();
     _inviteEmailController.dispose();
     _nameController.dispose();
     _emailController.dispose();
@@ -46,14 +43,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     super.dispose();
   }
 
-  Future<void> _inviteViaShare() async {
+  Future<void> _inviteViaEmail() async {
     final locale = context.read<LocaleProvider>();
-    final name = _inviteNameController.text.trim();
     final email = _inviteEmailController.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = locale.t('staffScreen.enterName'));
-      return;
-    }
     if (email.isEmpty || !email.contains('@')) {
       setState(() => _error = locale.t('staffScreen.enterEmailForInvite'));
       return;
@@ -66,27 +58,25 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       _inviting = true;
     });
     try {
+      // Use email prefix as a placeholder — trainer sets their own name during registration.
+      final tempName = email.split('@').first;
       final created = await TrainersApiService.create(
         token,
         studioId: widget.studioId,
-        name: name,
+        name: tempName,
         email: email,
       );
-      final invite = await TrainerApiService.generateInvite(
+      await TrainerApiService.generateInvite(
         token,
         created.id,
+        sendToEmail: email,
       );
-      final inviteUrl = invite['inviteUrl']?.toString() ?? '';
-      final intro = locale
-          .t('staff.shareInviteMessage')
-          .replaceAll('{name}', name);
-      await Share.share('$intro\n$inviteUrl');
 
       if (!mounted) return;
       context.read<ServicesStaffCache>().invalidateTrainers(widget.studioId);
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
-          content: Text(locale.t('staffScreen.staffInvitedShared')),
+          content: Text(locale.t('staffScreen.staffInvitedByEmail')),
           backgroundColor: Colors.green,
         ),
       );
@@ -242,24 +232,16 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
             ),
             const SizedBox(height: 14),
             _formField(
-              controller: _inviteNameController,
-              hint: locale.t('staffScreen.fullName'),
-              prefixIcon: Icons.person_outline_rounded,
-              textInputAction: TextInputAction.next,
-              enabled: !busy,
-            ),
-            const SizedBox(height: AuthFormStyles.fieldGap),
-            _formField(
               controller: _inviteEmailController,
               hint: locale.t('auth.email'),
-              prefixIcon: Icons.email_rounded,
+              prefixIcon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
               enabled: !busy,
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
-              onPressed: busy ? null : _inviteViaShare,
+              onPressed: busy ? null : _inviteViaEmail,
               icon: _inviting
                   ? const SizedBox(
                       width: 18,
@@ -269,8 +251,8 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.ios_share_outlined, size: 20),
-              label: Text(locale.t('staffScreen.inviteButton')),
+                  : const Icon(Icons.send_outlined, size: 20),
+              label: Text(locale.t('staffScreen.sendInviteButton')),
               style: AuthFormStyles.primaryButtonStyle(),
             ),
             _dividerOr(locale),

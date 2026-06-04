@@ -15,12 +15,15 @@ import '../../services/dashboard_api_service.dart';
 import '../../services/trainers_api_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/plan_limit_dialogs.dart';
+import '../../utils/share_utils.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/subscription_tier.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+enum _MemberAction { invite, edit, delete }
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -221,6 +224,11 @@ class _StaffScreenState extends State<StaffScreen> {
                               },
                               icon: const Icon(Icons.copy_outlined, size: 16),
                               label: Text(locale.t('common.copyLink')),
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -230,12 +238,15 @@ class _StaffScreenState extends State<StaffScreen> {
                                 final intro = locale
                                     .t('staff.shareInviteMessage')
                                     .replaceAll('{name}', member.name);
-                                Share.share('$intro\n$inviteUrl');
+                                Share.share('$intro\n$inviteUrl', sharePositionOrigin: shareOrigin(context));
                               },
                               icon: const Icon(Icons.ios_share_outlined, size: 16),
-                              label: Text(locale.t('staffScreen.inviteButton')),
+                              label: Text(locale.t('common.share')),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primary500,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ),
@@ -276,36 +287,55 @@ class _StaffScreenState extends State<StaffScreen> {
     return url != null && url.isNotEmpty ? url : null;
   }
 
-  void _openEditDialog(StaffMember member) {
+  void _openEditSheet(StaffMember member) {
     final locale = context.read<LocaleProvider>();
     final nameController = TextEditingController(text: member.name);
     final emailController = TextEditingController(text: member.email ?? '');
     final phoneController = TextEditingController(text: member.phone ?? '');
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dialogWidth = (screenWidth * 0.92).clamp(320.0, 560.0);
-    showHenzoDialog(
+
+    InputDecoration _fieldDecoration(String hint, {TextInputType? kb}) =>
+        InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: AppColors.backgroundPrimary,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderPrimary),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
+        );
+
+    showHenzoModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: dialogWidth,
-          constraints: const BoxConstraints(maxHeight: 600),
-          child: StatefulBuilder(
-            builder: (ctx, setDialogState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
-                    child: Row(
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheet) {
+            final bottom = MediaQuery.of(sheetCtx).viewInsets.bottom;
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
                         Expanded(
                           child: Text(
                             locale.t('staffScreen.editStaffTitle'),
                             style: TextStyle(
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
                             ),
                           ),
@@ -319,215 +349,216 @@ class _StaffScreenState extends State<StaffScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            locale.t('staffScreen.fullNameRequired'),
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: nameController,
-                            decoration: InputDecoration(
-                              hintText: locale.t('staffScreen.fullName'),
-                              filled: true,
-                              fillColor: AppColors.backgroundPrimary,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            locale.t('common.email'),
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: locale.t('common.email'),
-                              filled: true,
-                              fillColor: AppColors.backgroundPrimary,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            locale.t('common.phone'),
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              hintText: locale.t('common.phone'),
-                              filled: true,
-                              fillColor: AppColors.backgroundPrimary,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.textPrimary,
-                                    side: const BorderSide(
-                                      color: AppColors.borderPrimary,
-                                    ),
-                                    minimumSize: const Size(0, 48),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                      horizontal: 16,
-                                    ),
-                                  ),
-                                  child: Text(locale.t('common.cancel')),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: FilledButton(
-                                  onPressed: () async {
-                                    final name = nameController.text.trim();
-                                    if (name.isEmpty) {
-                                      ScaffoldMessenger.maybeOf(
-                                        context,
-                                      )?.showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            locale.t('staffScreen.enterFullName'),
-                                          ),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    final token = context
-                                        .read<AuthService>()
-                                        .accessToken;
-                                    Navigator.pop(ctx);
-                                    if (token == null) return;
-                                    setState(() => _isActionLoading = true);
-                                    try {
-                                      await TrainersApiService.update(
-                                        token,
-                                        member.id,
-                                        name: name,
-                                        email:
-                                            emailController.text
-                                                .trim()
-                                                .isEmpty
-                                            ? null
-                                            : emailController.text.trim(),
-                                        phone:
-                                            phoneController.text
-                                                .trim()
-                                                .isEmpty
-                                            ? null
-                                            : phoneController.text.trim(),
-                                      );
-                                      if (!mounted) return;
-                                      context
-                                          .read<ServicesStaffCache>()
-                                          .invalidateTrainers(_studio?.id);
-                                      final savedMsg =
-                                          locale.t('common.changesSaved');
-                                      await _loadData();
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.maybeOf(
-                                        context,
-                                      )?.showSnackBar(
-                                        SnackBar(
-                                          content: Text(savedMsg),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      if (mounted) showApiError(context, e);
-                                    } finally {
-                                      if (mounted) {
-                                        setState(
-                                          () => _isActionLoading = false,
-                                        );
-                                      }
-                                    }
-                                  },
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.primary500,
-                                    minimumSize: const Size(0, 48),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                      horizontal: 16,
-                                    ),
-                                  ),
-                                  child: Text(locale.t('common.save')),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                    const SizedBox(height: 4),
+                    Text(
+                      locale.t('staffScreen.fullNameRequired'),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: nameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: _fieldDecoration(locale.t('staffScreen.fullName')),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      locale.t('common.email'),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: _fieldDecoration(locale.t('common.email')),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      locale.t('common.phone'),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.done,
+                      decoration: _fieldDecoration(locale.t('common.phone')),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: () async {
+                        final name = nameController.text.trim();
+                        if (name.isEmpty) {
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            SnackBar(
+                              content: Text(locale.t('staffScreen.enterFullName')),
+                            ),
+                          );
+                          return;
+                        }
+                        final token = context.read<AuthService>().accessToken;
+                        Navigator.pop(ctx);
+                        if (token == null) return;
+                        setState(() => _isActionLoading = true);
+                        try {
+                          await TrainersApiService.update(
+                            token,
+                            member.id,
+                            name: name,
+                            email: emailController.text.trim().isEmpty
+                                ? null
+                                : emailController.text.trim(),
+                            phone: phoneController.text.trim().isEmpty
+                                ? null
+                                : phoneController.text.trim(),
+                          );
+                          if (!mounted) return;
+                          context.read<ServicesStaffCache>().invalidateTrainers(_studio?.id);
+                          final savedMsg = locale.t('common.changesSaved');
+                          await _loadData();
+                          if (!mounted) return;
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            SnackBar(
+                              content: Text(savedMsg),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          if (mounted) showApiError(context, e);
+                        } finally {
+                          if (mounted) setState(() => _isActionLoading = false);
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary500,
+                        minimumSize: const Size(0, 48),
+                      ),
+                      child: Text(locale.t('common.save')),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMemberMenu(LocaleProvider locale, StaffMember member) {
+    return PopupMenuButton<_MemberAction>(
+      onSelected: (action) {
+        switch (action) {
+          case _MemberAction.invite:
+            _showInviteSheet(member);
+          case _MemberAction.edit:
+            _openEditSheet(member);
+          case _MemberAction.delete:
+            _deleteStaff(member);
+        }
+      },
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      color: const Color(0xFFFAD0C5),
+      padding: EdgeInsets.zero,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.borderPrimary),
+          color: AppColors.backgroundPrimary,
+        ),
+        child: const Icon(
+          Icons.more_horiz,
+          size: 20,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      itemBuilder: (ctx) => [
+        if (_isProPlan && !member.hasLinkedAccount)
+          PopupMenuItem<_MemberAction>(
+            value: _MemberAction.invite,
+            height: 38,
+            child: Row(
+              children: [
+                const Icon(Icons.link_outlined, size: 17, color: AppColors.primary500),
+                const SizedBox(width: 10),
+                Text(
+                  locale.t('staffScreen.inviteButton'),
+                  style: TextStyle(fontSize: 13.sp),
+                ),
+              ],
+            ),
           ),
+        PopupMenuItem<_MemberAction>(
+          value: _MemberAction.edit,
+          height: 38,
+          child: Row(
+            children: [
+              const Icon(Icons.edit_outlined, size: 17, color: AppColors.textPrimary),
+              const SizedBox(width: 10),
+              Text(
+                locale.t('common.edit'),
+                style: TextStyle(fontSize: 13.sp),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<_MemberAction>(
+          value: _MemberAction.delete,
+          height: 38,
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline, size: 17, color: AppColors.error500),
+              const SizedBox(width: 10),
+              Text(
+                locale.t('common.delete'),
+                style: TextStyle(fontSize: 13.sp, color: AppColors.error500),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _memberRoleLabel(LocaleProvider locale, String? accessLevel) {
+    switch ((accessLevel ?? '').toUpperCase()) {
+      case 'OWNER':
+        return locale.t('settings.owner.ownerRole');
+      case 'ADMIN':
+        return locale.t('staffScreen.roleAdmin');
+      default:
+        return locale.t('staffScreen.roleTrainer');
+    }
+  }
+
+  Widget _inviteBadge(LocaleProvider locale) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary100,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        locale.t('staffScreen.statusInvitePending'),
+        style: TextStyle(
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w600,
+          color: AppColors.primary500,
         ),
       ),
     );
@@ -629,13 +660,15 @@ class _StaffScreenState extends State<StaffScreen> {
                 children: [
                   StaffPersonTile(
                     name: ownerName,
-                    secondaryLine: ownerSubtitle,
+                    role: locale.t('settings.owner.ownerRole'),
+                    emailLine: ownerEmail,
                     photoUrl: _ownerAvatarUrl(owner?.avatarUrl),
                   ),
                   ...extraStaff.map((member) {
                     return StaffPersonTile(
                       name: member.name,
-                      secondaryLine: _memberSubtitle(locale, member),
+                      role: _memberRoleLabel(locale, member.accessLevel),
+                      emailLine: member.email ?? '',
                       trailing: _isActionLoading
                           ? const SizedBox(
                               width: 24,
@@ -645,49 +678,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                 color: AppColors.primary500,
                               ),
                             )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_isProPlan && !member.hasLinkedAccount)
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                      minWidth: 36,
-                                      minHeight: 36,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.link_outlined,
-                                      size: 20,
-                                    ),
-                                    tooltip: locale.t('staffScreen.inviteButton'),
-                                    onPressed: () => _showInviteSheet(member),
-                                    color: AppColors.primary500,
-                                  ),
-                                IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 36,
-                                    minHeight: 36,
-                                  ),
-                                  icon: const Icon(Icons.edit_outlined, size: 20),
-                                  onPressed: () => _openEditDialog(member),
-                                  color: AppColors.primary500,
-                                ),
-                                IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 36,
-                                    minHeight: 36,
-                                  ),
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _deleteStaff(member),
-                                  color: AppColors.error500,
-                                ),
-                              ],
-                            ),
+                          : _buildMemberMenu(locale, member),
                     );
                   }),
                 ],

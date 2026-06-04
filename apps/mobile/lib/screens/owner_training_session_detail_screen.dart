@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/color_hex.dart';
+import '../utils/share_utils.dart';
 import '../utils/show_api_error.dart';
 import '../utils/synthetic_guest.dart';
 import '../widgets/clients/add_owner_client_sheet.dart';
@@ -198,7 +199,7 @@ class _OwnerTrainingSessionDetailScreenState
       );
     final v = widget.venueName?.trim();
     if (v != null && v.isNotEmpty) buf.writeln(v);
-    await Share.share(buf.toString().trim());
+    await Share.share(buf.toString().trim(), sharePositionOrigin: shareOrigin(context));
   }
 
   void _onAttendanceToggle(OwnerSessionEnrollment e, bool attended) {
