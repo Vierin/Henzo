@@ -470,6 +470,10 @@ export class TrainersService {
         accessLevel: true,
         studioId: true,
         Studio: { select: { id: true, name: true, logoUrl: true } },
+        Training: {
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        },
       },
     });
     if (!trainer)
@@ -483,6 +487,10 @@ export class TrainersService {
       studioId: trainer.studioId,
       studioName: trainer.Studio?.name,
       studioLogoUrl: trainer.Studio?.logoUrl,
+      trainings: trainer.Training.map((t) => ({
+        id: t.id,
+        name: t.name,
+      })),
     };
   }
 }

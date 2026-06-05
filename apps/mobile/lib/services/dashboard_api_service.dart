@@ -55,6 +55,7 @@ class OwnerTrainingSession {
 
   final String? locationId;
   final String? locationName;
+  final int waitlistCount;
 
   const OwnerTrainingSession({
     required this.sessionId,
@@ -76,6 +77,7 @@ class OwnerTrainingSession {
     this.trainerId,
     this.locationId,
     this.locationName,
+    this.waitlistCount = 0,
   });
 
   factory OwnerTrainingSession.fromJson(Map<String, dynamic> json) {
@@ -137,6 +139,7 @@ class OwnerTrainingSession {
           : trainerIdRaw.toString(),
       locationId: json['locationId']?.toString(),
       locationName: json['locationName']?.toString(),
+      waitlistCount: (json['waitlistCount'] as num?)?.toInt() ?? 0,
     );
   }
 

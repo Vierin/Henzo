@@ -18,6 +18,8 @@ import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
+import 'trainer/trainer_session_enrollments_screen.dart';
+import '../services/trainer_api_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Базовая дата для вычисления смещений страниц
@@ -36,7 +38,10 @@ DateTime _dayForPage(int page) {
 DateTime _calendarDateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  const CalendarScreen({super.key, this.trainerMode = false});
+
+  /// Trainer panel: same schedule UI without create-training FAB.
+  final bool trainerMode;
 
   @override
   State<CalendarScreen> createState() => CalendarScreenState();
@@ -47,6 +52,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   final Map<int, int> _sessionCountByDay = <int, int>{};
   final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
       <int, List<OwnerTrainingSession>>{};
+  final Map<String, Map<String, dynamic>> _trainerRawSessionsById = {};
   bool _isLoading = false;
   bool _isMonthExpanded = false;
   late final ValueNotifier<DateTime> _stripDayNotifier;
@@ -82,6 +88,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (widget.trainerMode) return;
     final cache = context.read<OwnerSessionsCache>();
     if (_sessionsCache != cache) {
       _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);
@@ -93,6 +100,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   bool _sessionsReloadInFlight = false;
 
   void _onOwnerSessionsCacheChanged() {
+    if (widget.trainerMode) return;
     if (!mounted || !_sessionsLoadStarted) return;
     if (!context.read<OwnerSessionsCache>().needsRefresh) return;
     if (_sessionsReloadInFlight) return;
@@ -151,7 +159,9 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   Future<void> _onPullRefresh() async {
     if (!mounted) return;
-    context.read<OwnerSessionsCache>().invalidate();
+    if (!widget.trainerMode) {
+      context.read<OwnerSessionsCache>().invalidate();
+    }
     await _loadData();
   }
 
@@ -164,39 +174,101 @@ class CalendarScreenState extends State<CalendarScreen> {
       return;
     }
     try {
-      final studioCache = context.read<StudioCache>();
-      final sessionsCache = context.read<OwnerSessionsCache>();
-      final studio = await studioCache.getStudio(token);
       final now = DateTime.now();
       final fromUtc = now.subtract(const Duration(days: 14)).toUtc();
       final toUtc = now.add(const Duration(days: 56)).toUtc();
-      final sessions = await sessionsCache.getSessions(
-        token,
-        fromUtc: fromUtc,
-        toUtc: toUtc,
-      );
       final grouped = <int, List<OwnerTrainingSession>>{};
       final counts = <int, int>{};
-      for (final session in sessions) {
-        final local = session.startsAt.toLocal();
-        final key = _dayKey(local);
-        (grouped[key] ??= <OwnerTrainingSession>[]).add(session);
-        counts[key] = (counts[key] ?? 0) + 1;
-      }
-      for (final list in grouped.values) {
-        list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
-      }
-      if (mounted) {
-        setState(() {
-          _studio = studio;
-          _sessionsByDay
-            ..clear()
-            ..addAll(grouped);
-          _sessionCountByDay
-            ..clear()
-            ..addAll(counts);
-          _isLoading = false;
-        });
+      Studio? studio;
+
+      if (widget.trainerMode) {
+        final auth = context.read<AuthService>();
+        final trainerName =
+            auth.trainerInfo?.name.trim().isNotEmpty == true
+            ? auth.trainerInfo!.name.trim()
+            : (auth.user?.name?.trim().isNotEmpty == true
+                ? auth.user!.name!.trim()
+                : '—');
+        final studioId = auth.trainerInfo?.studioId;
+        final results = await Future.wait([
+          TrainerApiService.getSessions(
+            token,
+            from: fromUtc,
+            to: toUtc,
+          ),
+          if (studioId != null && studioId.isNotEmpty)
+            TrainerApiService.fetchStudioForLocations(studioId)
+          else
+            Future<Studio?>.value(null),
+        ]);
+        final result = results[0] as Map<String, dynamic>;
+        final trainerStudio = results.length > 1 ? results[1] as Studio? : null;
+        final rawSessions = (result['sessions'] as List?)
+                ?.whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            <Map<String, dynamic>>[];
+        final rawById = <String, Map<String, dynamic>>{};
+        for (final raw in rawSessions) {
+          final session = TrainerApiService.ownerSessionFromTrainerMap(
+            raw,
+            trainerName: trainerName,
+          );
+          rawById[session.sessionId] = raw;
+          final local = session.startsAt.toLocal();
+          final key = _dayKey(local);
+          (grouped[key] ??= <OwnerTrainingSession>[]).add(session);
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+        for (final list in grouped.values) {
+          list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+        }
+        if (mounted) {
+          setState(() {
+            _studio = trainerStudio;
+            _trainerRawSessionsById
+              ..clear()
+              ..addAll(rawById);
+            _sessionsByDay
+              ..clear()
+              ..addAll(grouped);
+            _sessionCountByDay
+              ..clear()
+              ..addAll(counts);
+            _isLoading = false;
+          });
+        }
+      } else {
+        final studioCache = context.read<StudioCache>();
+        final sessionsCache = context.read<OwnerSessionsCache>();
+        studio = await studioCache.getStudio(token);
+        final sessions = await sessionsCache.getSessions(
+          token,
+          fromUtc: fromUtc,
+          toUtc: toUtc,
+        );
+        for (final session in sessions) {
+          final local = session.startsAt.toLocal();
+          final key = _dayKey(local);
+          (grouped[key] ??= <OwnerTrainingSession>[]).add(session);
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+        for (final list in grouped.values) {
+          list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+        }
+        if (mounted) {
+          setState(() {
+            _studio = studio;
+            _trainerRawSessionsById.clear();
+            _sessionsByDay
+              ..clear()
+              ..addAll(grouped);
+            _sessionCountByDay
+              ..clear()
+              ..addAll(counts);
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -219,6 +291,12 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   String? _ownerTrainerFallback() {
+    if (widget.trainerMode) {
+      final trainer = context.read<AuthService>().trainerInfo;
+      if (trainer != null && trainer.name.trim().isNotEmpty) {
+        return trainer.name.trim();
+      }
+    }
     final u = context.read<AuthService>().user;
     if (u == null) return null;
     final name = u.name;
@@ -589,20 +667,24 @@ class CalendarScreenState extends State<CalendarScreen> {
     final trainerFb = _ownerTrainerFallback();
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      floatingActionButton: SafeArea(
-        minimum: const EdgeInsets.only(bottom: 8),
-        child: FloatingActionButton(
-          onPressed: _openCreateTraining,
-          elevation: 0,
-          focusElevation: 0,
-          hoverElevation: 0,
-          highlightElevation: 0,
-          backgroundColor: AppColors.primary500,
-          foregroundColor: Colors.white,
-          child: const Icon(Icons.add),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: widget.trainerMode
+          ? null
+          : SafeArea(
+              minimum: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton(
+                onPressed: _openCreateTraining,
+                elevation: 0,
+                focusElevation: 0,
+                hoverElevation: 0,
+                highlightElevation: 0,
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
+            ),
+      floatingActionButtonLocation: widget.trainerMode
+          ? null
+          : FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _onPullRefresh,
@@ -713,7 +795,31 @@ class CalendarScreenState extends State<CalendarScreen> {
                                         'No trainings for selected day',
                                     ownerTrainerFallback: trainerFb,
                                     studioLocations: _studioLocations(context),
+                                    completedLabel: widget.trainerMode
+                                        ? context
+                                              .read<LocaleProvider>()
+                                              .t('trainer.sessionCompleted')
+                                        : null,
                                     onSessionTap: (s) async {
+                                      if (widget.trainerMode) {
+                                        final raw =
+                                            _trainerRawSessionsById[s.sessionId];
+                                        if (raw == null || !context.mounted) {
+                                          return;
+                                        }
+                                        await Navigator.of(context).push<void>(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                TrainerSessionEnrollmentsScreen(
+                                              session: raw,
+                                            ),
+                                          ),
+                                        );
+                                        if (context.mounted) {
+                                          await _loadData(showLoading: false);
+                                        }
+                                        return;
+                                      }
                                       final token = context
                                           .read<AuthService>()
                                           .accessToken;

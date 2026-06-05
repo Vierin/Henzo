@@ -1051,11 +1051,19 @@
     "joinAs": "Join {studio} as {name}",
     "joinAsTrainer": "Join {studio} as a trainer",
     "acceptInvitation": "Accept invitation",
+    "registerTitle": "Trainer registration",
+    "registerSubtitle": "Create your account to join {studio}",
     "createAccountToJoin": "Create account",
     "signInToAccept": "Sign in",
     "invalidExpiredLink": "This invite link is invalid or has expired.",
     "couldNotLoadInvite": "Could not load invite. Check your connection.",
-    "acceptFailed": "Could not accept invitation. Try again."
+    "acceptFailed": "Could not accept invitation. Try again.",
+    "viewRoster": "View roster",
+    "enrolledCount": "{count} enrolled",
+    "accessAdmin": "Admin",
+    "accessEmployee": "Employee",
+    "assignedTrainings": "Classes I teach",
+    "sessionCompleted": "Completed"
   },
   "staff": {
     "inviteTitle": "Invite {name}",

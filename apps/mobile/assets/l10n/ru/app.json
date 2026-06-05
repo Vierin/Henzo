@@ -1051,11 +1051,19 @@
     "joinAs": "Присоединиться к {studio} как {name}",
     "joinAsTrainer": "Присоединиться к {studio} как тренер",
     "acceptInvitation": "Принять приглашение",
+    "registerTitle": "Регистрация тренера",
+    "registerSubtitle": "Создайте аккаунт, чтобы присоединиться к {studio}",
     "createAccountToJoin": "Создать аккаунт",
     "signInToAccept": "Войти",
     "invalidExpiredLink": "Ссылка недействительна или истекла.",
     "couldNotLoadInvite": "Не удалось загрузить приглашение. Проверьте соединение.",
-    "acceptFailed": "Не удалось принять приглашение. Попробуйте снова."
+    "acceptFailed": "Не удалось принять приглашение. Попробуйте снова.",
+    "viewRoster": "Список клиентов",
+    "enrolledCount": "Записано: {count}",
+    "accessAdmin": "Администратор",
+    "accessEmployee": "Сотрудник",
+    "assignedTrainings": "Мои занятия",
+    "sessionCompleted": "Завершено"
   },
   "staff": {
     "inviteTitle": "Пригласить {name}",

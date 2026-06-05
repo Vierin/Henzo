@@ -1234,6 +1234,7 @@ export class FitnessSessionsService {
         endsAt: true,
         capacity: true,
         bookedCount: true,
+        waitlistCount: true,
         status: true,
         locationId: true,
         Training: {

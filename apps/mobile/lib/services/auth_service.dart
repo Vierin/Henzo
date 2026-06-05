@@ -569,6 +569,9 @@ class AuthService extends ChangeNotifier {
       );
     }
 
+    await _tryFinishPendingTrainerInvite(session.accessToken);
+    notifyListeners();
+
     return (success: true, errorL10nKey: null, errorRaw: null);
   }
 

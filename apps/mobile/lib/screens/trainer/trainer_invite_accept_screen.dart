@@ -5,11 +5,11 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
-import '../../screens/client_registration_screen.dart';
-import '../../screens/login_screen.dart';
+import 'trainer_registration_screen.dart';
 import '../../services/auth_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/trainer_invite_pending.dart';
+import '../../widgets/language_selector_modal.dart';
 
 class TrainerInviteAcceptScreen extends StatefulWidget {
   const TrainerInviteAcceptScreen({super.key, required this.token});
@@ -23,6 +23,12 @@ class TrainerInviteAcceptScreen extends StatefulWidget {
 
 class _TrainerInviteAcceptScreenState
     extends State<TrainerInviteAcceptScreen> {
+  static const Map<String, String> _languageLabels = {
+    'en': 'English',
+    'ru': 'Русский',
+    'vi': 'Tiếng Việt',
+  };
+
   Map<String, dynamic>? _info;
   bool _loading = true;
   bool _accepting = false;
@@ -57,7 +63,7 @@ class _TrainerInviteAcceptScreenState
     final auth = context.read<AuthService>();
     final token = auth.accessToken;
     if (token == null) {
-      await _openSignIn();
+      await _openRegister();
       return;
     }
     setState(() => _accepting = true);
@@ -95,12 +101,16 @@ class _TrainerInviteAcceptScreenState
     }
   }
 
-  Future<void> _openSignIn() => _persistTokenAndNavigate(const LoginScreen());
-
   Future<void> _openRegister() {
     final email = (_info?['trainerEmail'] ?? '').toString().trim();
+    final name = (_info?['trainerName'] ?? '').toString().trim();
+    final studio = (_info?['studioName'] ?? '').toString().trim();
     return _persistTokenAndNavigate(
-      ClientRegistrationScreen(initialEmail: email.isEmpty ? null : email),
+      TrainerRegistrationScreen(
+        initialEmail: email.isEmpty ? null : email,
+        initialName: name.isEmpty ? null : name,
+        studioName: studio.isEmpty ? null : studio,
+      ),
     );
   }
 
@@ -121,6 +131,34 @@ class _TrainerInviteAcceptScreenState
           icon: const Icon(Icons.close, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
+        actions: [
+          InkWell(
+            onTap: () => showLanguageSelectorModal(context, locale),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.language,
+                    size: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _languageLabels[locale.localeCode] ??
+                        locale.localeCode.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -222,23 +260,6 @@ class _TrainerInviteAcceptScreenState
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      OutlinedButton(
-                        onPressed: _accepting ? null : _openSignIn,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          locale.t('trainer.signInToAccept'),
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),

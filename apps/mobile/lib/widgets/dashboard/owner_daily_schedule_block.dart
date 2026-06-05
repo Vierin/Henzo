@@ -21,6 +21,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
     this.onSeeAll,
     this.ownerTrainerFallback,
     this.studioLocations = const [],
+    this.completedLabel,
   });
 
   final List<OwnerTrainingSession> sessions;
@@ -30,6 +31,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
   final void Function(OwnerTrainingSession s) onSessionTap;
   final String? ownerTrainerFallback;
   final List<TrainingLocationItem> studioLocations;
+  final String? completedLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +83,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
                     showLocationPin: rows.showLocationPin,
                     showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
                     trainerLine: rows.trainerLine,
+                    completedLabel: completedLabel,
                     onTap: () => onSessionTap(s),
                   );
                 }),

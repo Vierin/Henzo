@@ -106,6 +106,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.cancelActionLabel = 'Cancel',
     this.cancelActionLoading = false,
     this.dimPastSessions = true,
+    this.completedLabel,
     this.trailingPriceLabel,
     this.trailingPriceColor,
     this.showSubtitleLeadingIcon = true,
@@ -142,6 +143,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   /// When false, past sessions keep full opacity (e.g. Passes history).
   final bool dimPastSessions;
 
+  /// Shown when [session.status] is COMPLETED.
+  final String? completedLabel;
+
   /// When non-null, right column shows price only (Explore list).
   final String? trailingPriceLabel;
 
@@ -159,7 +163,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final enrolled = s.enrolledCount;
     final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
     final fillLabel = cap > 0 ? '$enrolled/$cap' : '$enrolled';
-    final isPast = s.endsAt.isBefore(DateTime.now());
+    final isCompleted = s.status == 'COMPLETED';
+    final isPast = s.endsAt.isBefore(DateTime.now()) || isCompleted;
     final accent =
         parseHexColor(s.trainingDisplayColorHex) ?? AppColors.primary500;
     final duration = s.endsAt.difference(s.startsAt).inMinutes;
@@ -252,17 +257,36 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      s.trainingName,
-                      style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                        letterSpacing: -0.3,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            s.trainingName,
+                            style: TextStyle(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                              letterSpacing: -0.3,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isCompleted &&
+                            completedLabel != null &&
+                            completedLabel!.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            completedLabel!,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (subtitleLabel.isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -438,7 +462,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     );
 
     final wrapped = dimPastSessions && isPast
-        ? Opacity(opacity: 0.65, child: card)
+        ? Opacity(opacity: isCompleted ? 0.5 : 0.65, child: card)
         : card;
 
     return GestureDetector(
