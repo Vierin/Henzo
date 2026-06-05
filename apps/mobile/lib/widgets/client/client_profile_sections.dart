@@ -386,6 +386,7 @@ class ClientProfileHealthSection extends StatelessWidget {
     required this.caloriesLabel,
     required this.workoutsLabel,
     required this.health,
+    this.onStartWorkout,
   });
 
   final String title;
@@ -403,6 +404,7 @@ class ClientProfileHealthSection extends StatelessWidget {
   final String caloriesLabel;
   final String workoutsLabel;
   final HealthData? health;
+  final VoidCallback? onStartWorkout;
 
   @override
   Widget build(BuildContext context) {
@@ -525,6 +527,33 @@ class ClientProfileHealthSection extends StatelessWidget {
                 ],
               ),
             ),
+            if (onStartWorkout != null) ...[
+              const SizedBox(height: 14),
+              const Divider(height: 1, color: Colors.white24),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onStartWorkout,
+                  icon: const Icon(Icons.watch_rounded, size: 16),
+                  label: Text(
+                    'Начать тренировку',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white38),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ],
       ),
