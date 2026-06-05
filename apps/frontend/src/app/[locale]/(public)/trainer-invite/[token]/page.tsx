@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-const APP_STORE_URL =
-  'https://apps.apple.com/app/henzo/id6738666750';
+const APP_STORE_URL = 'https://apps.apple.com/app/henzo/id6738666750';
 const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.henzo.app';
 
@@ -26,7 +25,9 @@ export default function TrainerInvitePage({
   params: { token: string };
 }) {
   const { token } = params;
-  const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>(
+    'other',
+  );
   const [attempted, setAttempted] = useState(false);
 
   useEffect(() => {
@@ -45,13 +46,7 @@ export default function TrainerInvitePage({
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12">
       {/* Logo */}
       <div className="mb-10">
-        <Image
-          src="/logo.png"
-          alt="Henzo"
-          width={160}
-          height={56}
-          priority
-        />
+        <Image src="/logo.png" alt="Henzo" width={160} height={56} priority />
       </div>
 
       {/* Card */}
@@ -59,7 +54,10 @@ export default function TrainerInvitePage({
         {/* Icon */}
         <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#ff5b5b" />
+            <path
+              d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+              fill="#ff5b5b"
+            />
             <circle cx="12" cy="9" r="2.5" fill="white" />
           </svg>
         </div>
@@ -69,8 +67,8 @@ export default function TrainerInvitePage({
             You've been invited!
           </h1>
           <p className="text-gray-500 text-sm leading-relaxed">
-            You've been added as a trainer on Henzo. Open the app to
-            complete your registration.
+            You've been added as a trainer on Henzo. Open the app to complete
+            your registration.
           </p>
         </div>
 
@@ -128,7 +126,9 @@ export default function TrainerInvitePage({
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M3.18 23.76c.3.17.65.19.96.07l12.14-7.37-2.76-2.76-10.34 10zm16.35-9.75L5.82 5.92c-.36-.18-.78-.14-1.1.1L16.86 18.16l2.67-4.15zM2.22 6.44c-.14.27-.22.56-.22.88v9.36c0 .32.08.61.22.88l10.4-10.4-10.4-.72zM19.77 10.5l-1.96-1.2-3.08 3.08 3.08 3.08 1.98-1.21c.56-.34.9-.94.9-1.57s-.36-1.24-.92-1.18z" />
             </svg>
-            <span className="text-sm font-medium text-gray-800">Google Play</span>
+            <span className="text-sm font-medium text-gray-800">
+              Google Play
+            </span>
           </a>
         </div>
 
