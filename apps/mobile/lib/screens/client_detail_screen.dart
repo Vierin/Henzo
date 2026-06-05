@@ -166,54 +166,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   List<Booking> get _visibleBookings =>
       _bookings.take(_visibleVisitCount).toList();
 
-  Future<void> _handleCancelBooking(String id) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await DashboardApiService.cancelBooking(token, id);
-    if (mounted) {
-      context.read<BookingsCache>().invalidate();
-      _loadData();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('booking.cancelled')),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleConfirmBooking(String id) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await DashboardApiService.confirmBooking(token, id);
-    if (mounted) {
-      context.read<BookingsCache>().invalidate();
-      _loadData();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('booking.confirmed')),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleRejectBooking(String id) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await DashboardApiService.rejectBooking(token, id);
-    if (mounted) {
-      context.read<BookingsCache>().invalidate();
-      _loadData();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('booking.rejected')),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
-  }
-
   String? _clean(String? value, {bool lowercase = false}) {
     if (value == null) return null;
     final trimmed = value.trim();
