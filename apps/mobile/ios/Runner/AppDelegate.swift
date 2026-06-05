@@ -20,9 +20,7 @@ import WatchConnectivity
     setupWatchConnectivity()
     GeneratedPluginRegistrant.register(with: self)
     let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
-    if let controller = window?.rootViewController as? FlutterViewController {
-      setupWatchChannel(messenger: controller.binaryMessenger)
-    }
+    setupWatchChannel(messenger: registrar(forPlugin: "HenzoWatchPlugin").messenger())
     return result
   }
 
