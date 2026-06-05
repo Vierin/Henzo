@@ -20,7 +20,9 @@ import WatchConnectivity
     setupWatchConnectivity()
     GeneratedPluginRegistrant.register(with: self)
     let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
-    setupWatchChannel(messenger: registrar(forPlugin: "HenzoWatchPlugin").messenger())
+    if let messenger = registrar(forPlugin: "HenzoWatchPlugin")?.messenger() {
+      setupWatchChannel(messenger: messenger)
+    }
     return result
   }
 

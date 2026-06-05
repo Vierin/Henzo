@@ -242,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: Image.asset(
                       'assets/logo.png',
-                      height: 60,
+                      height: 75,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => Text(
                         'Henzo',
