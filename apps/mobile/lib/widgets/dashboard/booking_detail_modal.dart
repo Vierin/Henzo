@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../common/henzo_modal.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/booking.dart';
 import '../../utils/currency_format.dart';
+import '../common/henzo_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BookingDetailModal {
   static void show(
     BuildContext context, {
     required Booking booking,
+    bool showActions = false,
     Function(Booking)? onEdit,
     Function(String)? onCancel,
     Function(String)? onConfirm,
@@ -24,6 +26,7 @@ class BookingDetailModal {
       backgroundColor: Colors.transparent,
       builder: (context) => _BookingDetailContent(
         booking: booking,
+        showActions: showActions,
         onEdit: onEdit,
         onCancel: onCancel,
         onConfirm: onConfirm,
@@ -34,224 +37,272 @@ class BookingDetailModal {
 }
 
 class _BookingDetailContent extends StatelessWidget {
-  final Booking booking;
-  final Function(Booking)? onEdit;
-  final Function(String)? onCancel;
-  final Function(String)? onConfirm;
-  final Function(String)? onReject;
-
   const _BookingDetailContent({
     required this.booking,
+    required this.showActions,
     this.onEdit,
     this.onCancel,
     this.onConfirm,
     this.onReject,
   });
 
+  final Booking booking;
+  final bool showActions;
+  final Function(Booking)? onEdit;
+  final Function(String)? onCancel;
+  final Function(String)? onConfirm;
+  final Function(String)? onReject;
+
   @override
   Widget build(BuildContext context) {
     final tr = context.read<LocaleProvider>().t;
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => SafeArea(
-        top: false,
-        bottom: false,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.backgroundPrimary,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              BookingDetailHeader(
-                title: tr('booking.detailsTitle'),
-                onClose: () => Navigator.of(context).pop(),
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final maxH = MediaQuery.sizeOf(context).height * 0.82;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.backgroundPrimary,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderPrimary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(0, 20, 16, 12),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                12,
+                kScreenPaddingHorizontal,
+                8,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      tr('booking.detailsTitle'),
+                      style: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      customBorder: const CircleBorder(),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.close,
+                          size: 22,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxH),
+              child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    kScreenPaddingHorizontal,
+                    4,
+                    kScreenPaddingHorizontal,
+                    16 + bottom,
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _BookingDetailStatusBadge(status: booking.status),
-                      const SizedBox(height: 20),
-                      BookingDetailSection(
-                        title: tr('booking.sectionClient'),
-                        mainText: booking.user?.name ?? tr('booking.unknownClient'),
-                        subTexts: [
-                          if (booking.user?.email != null &&
-                              booking.user!.email!.isNotEmpty)
-                            booking.user!.email!,
-                          if (booking.user?.phone != null &&
-                              booking.user!.phone!.isNotEmpty)
-                            booking.user!.phone!,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _BookingDetailStatusBadge(
+                          status: booking.status,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _BookingDetailsCard(
+                        children: [
+                          _BookingDetailRow(
+                            label: tr('booking.sectionClient'),
+                            primary: booking.user?.name ??
+                                tr('booking.unknownClient'),
+                            secondary: [
+                              if (booking.user?.email != null &&
+                                  booking.user!.email!.trim().isNotEmpty)
+                                booking.user!.email!.trim(),
+                              if (booking.user?.phone != null &&
+                                  booking.user!.phone!.trim().isNotEmpty)
+                                booking.user!.phone!.trim(),
+                            ],
+                          ),
+                          _BookingDetailRow(
+                            label: tr('booking.sectionService'),
+                            primary: booking.service?.name ??
+                                tr('booking.unknownService'),
+                            secondary: [
+                              if (booking.service?.duration != null)
+                                tr('booking.duration').replaceAll(
+                                  '{n}',
+                                  '${booking.service!.duration}',
+                                ),
+                              if (booking.service?.price != null)
+                                tr('booking.price').replaceAll(
+                                  '{amount}',
+                                  formatVnd(booking.service!.price!),
+                                ),
+                            ],
+                          ),
+                          _BookingDetailRow(
+                            label: tr('booking.sectionDateTime'),
+                            primary: DateFormat('dd.MM.yyyy')
+                                .format(booking.dateTime.toLocal()),
+                            secondary: [
+                              DateFormat('HH:mm')
+                                  .format(booking.dateTime.toLocal()),
+                            ],
+                          ),
+                          _BookingDetailRow(
+                            label: tr('booking.sectionTrainer'),
+                            primary: booking.staff != null &&
+                                    booking.staff!.name.trim().isNotEmpty
+                                ? booking.staff!.name.trim()
+                                : tr('booking.noTrainer'),
+                            showDivider: booking.notes != null &&
+                                booking.notes!.trim().isNotEmpty,
+                          ),
+                          if (booking.notes != null &&
+                              booking.notes!.trim().isNotEmpty)
+                            _BookingDetailRow(
+                              label: tr('booking.sectionNotes'),
+                              primary: booking.notes!.trim(),
+                              showDivider: false,
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      BookingDetailSection(
-                        title: tr('booking.sectionService'),
-                        mainText: booking.service?.name ?? tr('booking.unknownService'),
-                        subTexts: [
-                          if (booking.service?.duration != null)
-                            tr('booking.duration').replaceAll('{n}', '${booking.service!.duration}'),
-                          if (booking.service?.price != null)
-                            tr('booking.price').replaceAll('{amount}', formatVnd(booking.service!.price!)),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      BookingDetailSection(
-                        title: tr('booking.sectionDateTime'),
-                        mainText:
-                            DateFormat('dd/MM/yyyy').format(booking.dateTime),
-                        subTexts: [
-                          DateFormat('HH:mm').format(booking.dateTime),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      BookingDetailSection(
-                        title: tr('booking.sectionTrainer'),
-                        mainText: booking.staff != null &&
-                                booking.staff!.name.trim().isNotEmpty
-                            ? booking.staff!.name.trim()
-                            : tr('booking.noTrainer'),
-                        subTexts: const [],
-                      ),
-                      if (booking.notes != null &&
-                          booking.notes!.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        BookingDetailSection(
-                          title: tr('booking.sectionNotes'),
-                          mainText: booking.notes!,
-                          subTexts: const [],
+                      if (showActions) ...[
+                        const SizedBox(height: 16),
+                        _BookingDetailActions(
+                          booking: booking,
+                          onEdit: onEdit,
+                          onCancel: onCancel,
+                          onConfirm: onConfirm,
+                          onReject: onReject,
+                          onClose: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ],
                   ),
                 ),
               ),
-              _BookingDetailActions(
-                booking: booking,
-                onEdit: onEdit,
-                onCancel: onCancel,
-                onConfirm: onConfirm,
-                onReject: onReject,
-                onClose: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Reusable header for booking detail modal: title + close button.
-class BookingDetailHeader extends StatelessWidget {
-  const BookingDetailHeader({
-    super.key,
-    required this.title,
-    required this.onClose,
-  });
+class _BookingDetailsCard extends StatelessWidget {
+  const _BookingDetailsCard({required this.children});
 
-  final String title;
-  final VoidCallback onClose;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.borderPrimary)),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          GestureDetector(
-            onTap: onClose,
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.neutral200,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Text(
-                  '✕',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }
 }
 
-/// Section with title and main/sub lines.
-class BookingDetailSection extends StatelessWidget {
-  const BookingDetailSection({
-    super.key,
-    required this.title,
-    required this.mainText,
-    this.subTexts = const [],
+class _BookingDetailRow extends StatelessWidget {
+  const _BookingDetailRow({
+    required this.label,
+    required this.primary,
+    this.secondary = const [],
+    this.showDivider = true,
   });
 
-  final String title;
-  final String mainText;
-  final List<String> subTexts;
+  final String label;
+  final String primary;
+  final List<String> secondary;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: AppColors.textTertiary,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          mainText,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        ...subTexts.map(
-          (text) => Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.textSecondary,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.35,
+                  color: AppColors.textTertiary,
+                ),
               ),
-            ),
+              const SizedBox(height: 6),
+              Text(
+                primary,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              for (final line in secondary)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    line,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      height: 1.3,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
+        if (showDivider)
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.borderPrimary,
+            indent: 14,
+            endIndent: 14,
+          ),
       ],
     );
   }
@@ -264,50 +315,47 @@ class _BookingDetailStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor;
-    Color textColor;
-    String label;
-
-    switch (status) {
-      case BookingStatus.pending:
-        bgColor = const Color(0xFFFEF3C7);
-        textColor = const Color(0xFFD97706);
-        label = 'Pending';
-        break;
-      case BookingStatus.confirmed:
-        bgColor = const Color(0xFFD1FAE5);
-        textColor = const Color(0xFF059669);
-        label = 'Confirmed';
-        break;
-      case BookingStatus.completed:
-        bgColor = const Color(0xFFDBEAFE);
-        textColor = const Color(0xFF2563EB);
-        label = 'Completed';
-        break;
-      case BookingStatus.canceled:
-        bgColor = const Color(0xFFFEE2E2);
-        textColor = const Color(0xFFDC2626);
-        label = 'Cancelled';
-        break;
-      case BookingStatus.noShow:
-        bgColor = const Color(0xFFFED7AA);
-        textColor = const Color(0xFFEA580C);
-        label = 'No Show';
-        break;
-    }
+    final tr = context.read<LocaleProvider>().t;
+    final (bg, fg, label) = switch (status) {
+      BookingStatus.pending => (
+        const Color(0xFFFEF3C7),
+        const Color(0xFFD97706),
+        tr('bookings.statusPending'),
+      ),
+      BookingStatus.confirmed => (
+        const Color(0xFFD1FAE5),
+        const Color(0xFF059669),
+        tr('bookings.statusConfirmed'),
+      ),
+      BookingStatus.completed => (
+        const Color(0xFFDBEAFE),
+        const Color(0xFF2563EB),
+        tr('bookings.statusCompleted'),
+      ),
+      BookingStatus.canceled => (
+        const Color(0xFFFEE2E2),
+        const Color(0xFFDC2626),
+        tr('bookings.statusCancelled'),
+      ),
+      BookingStatus.noShow => (
+        const Color(0xFFFED7AA),
+        const Color(0xFFEA580C),
+        tr('bookings.statusNoShow'),
+      ),
+    };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,
-          color: textColor,
+          color: fg,
         ),
       ),
     );
@@ -333,147 +381,111 @@ class _BookingDetailActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.borderPrimary)),
-      ),
-      child: Column(
-        children: [
-          if (booking.status == BookingStatus.pending)
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onConfirm?.call(booking.id);
-                      onClose();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success500,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Confirm',
-                      style: TextStyle(
-                        color: AppColors.textInverse,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+    final tr = context.read<LocaleProvider>().t;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (booking.status == BookingStatus.pending)
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    onConfirm?.call(booking.id);
+                    onClose();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success500,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: Text(tr('booking.confirm')),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onReject?.call(booking.id);
-                      onClose();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error500,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Reject',
-                      style: TextStyle(
-                        color: AppColors.textInverse,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    onReject?.call(booking.id);
+                    onClose();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.error500,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: Text(tr('booking.reject')),
                 ),
-              ],
-            ),
-          if (booking.status == BookingStatus.pending)
-            const SizedBox(height: 12),
-          if (booking.status == BookingStatus.confirmed ||
-              booking.status == BookingStatus.pending)
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onEdit?.call(booking);
-                      onClose();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Изменить',
-                      style: TextStyle(
-                        color: AppColors.textInverse,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+              ),
+            ],
+          ),
+        if (booking.status == BookingStatus.pending) const SizedBox(height: 10),
+        if (booking.status == BookingStatus.confirmed ||
+            booking.status == BookingStatus.pending)
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    onEdit?.call(booking);
+                    onClose();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary500,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: Text(tr('booking.edit')),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final confirmed = await showHenzoDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Отменить запись?'),
-                          content: const Text(
-                            'Запись будет отменена. Клиент может получить уведомление.',
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () async {
+                    final confirmed = await showHenzoDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text(tr('booking.cancelBooking')),
+                        content: Text(tr('booking.cancelConfirm')),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(tr('common.no')),
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Нет'),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.error500,
                             ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.red,
-                              ),
-                              child: const Text('Да, отменить'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true) {
-                        onCancel?.call(booking.id);
-                        if (context.mounted) onClose();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.neutral500,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                            child: Text(tr('common.yes')),
+                          ),
+                        ],
                       ),
-                    ),
-                    child: Text(
-                      'Отменить запись',
-                      style: TextStyle(
-                        color: AppColors.textInverse,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    );
+                    if (confirmed == true) {
+                      onCancel?.call(booking.id);
+                      if (context.mounted) onClose();
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.neutral500,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: Text(tr('booking.cancelBooking')),
                 ),
-              ],
-            ),
-        ],
-      ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }

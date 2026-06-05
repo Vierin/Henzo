@@ -128,6 +128,7 @@ class ClientsScreenState extends State<ClientsScreen> {
     }
     switch (_filter) {
       case ClientFilter.all:
+        list = list.where((c) => !c.isBlocked).toList();
         break;
       case ClientFilter.sleepers:
         list = list.where((c) => c.isSleeper).toList();
@@ -413,7 +414,7 @@ class ClientsScreenState extends State<ClientsScreen> {
   int _countFor(ClientFilter filter) {
     switch (filter) {
       case ClientFilter.all:
-        return _clients.length;
+        return _clients.where((c) => !c.isBlocked).length;
       case ClientFilter.sleepers:
         return _clients.where((c) => c.isSleeper).length;
       case ClientFilter.whiteList:
@@ -686,7 +687,16 @@ class ClientsScreenState extends State<ClientsScreen> {
                                 SizedBox(
                                   height: MediaQuery.of(context).size.height * 0.45,
                                   child: HenzoEmptyState(
-                                    icon: Icons.people_outline,
+                                    icon:
+                                        _filter == ClientFilter.all &&
+                                            _searchQuery.isEmpty
+                                        ? Icons.people_outline
+                                        : null,
+                                    svgAsset:
+                                        _filter == ClientFilter.all &&
+                                            _searchQuery.isEmpty
+                                        ? null
+                                        : 'assets/icons/icon-clients.svg',
                                     message: _filter == ClientFilter.all &&
                                             _searchQuery.isEmpty
                                         ? tr('ownerClient.emptyClientsTitle')

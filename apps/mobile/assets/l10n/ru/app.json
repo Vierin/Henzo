@@ -323,7 +323,7 @@
     "googleSignInCancelled": "Вход отменён.",
     "googleNoIdToken": "Нет ID токена от Google.",
     "googleNoSessionAfterSignIn": "Нет сессии после входа через Google.",
-    "googleDeveloperSHA1": "Ошибка Google (10): добавьте SHA-1 приложения в Google Cloud для Android OAuth. В папке android выполните gradlew signingReport.",
+    "googleDeveloperSHA1": "Ошибка Google (10): неверный SHA-1 для этой сборки. Debug/upload — gradlew signingReport; установка из Play — SHA-1 App signing key в Play Console → Firebase → новый google-services.json и пересборка AAB. Web Client ID должен совпадать с Supabase.",
     "appleSignInCancelled": "Вход отменён.",
     "appleNoIdToken": "Нет ID токена от Apple.",
     "appleNoSessionAfterSignIn": "Нет сессии после входа через Apple.",
@@ -452,7 +452,7 @@
   "ownerClient": {
     "addToDirectory": "Добавить клиента",
     "notesOptional": "Заметки (необязательно)",
-    "sendConfirmationEmail": "Отправить подтверждение на email",
+    "sendConfirmationEmail": "Подтверждение на email",
     "addedToDirectory": "Клиент сохранён",
     "addParticipantHow": "Как добавить человека на занятие?",
     "anonymousSpotTitle": "Гость",

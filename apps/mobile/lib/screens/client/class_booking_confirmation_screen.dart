@@ -12,6 +12,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/class_session_link.dart';
+import '../../utils/google_maps_link.dart';
 import '../../utils/share_utils.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
@@ -168,15 +169,21 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     final sesId = sessionId;
     final buf = StringBuffer()
       ..writeln('Join me for $classTitle!')
-      ..writeln(_headerDateLine);
+      ..writeln('📅 $_headerDateLine');
     if (trainerName.trim().isNotEmpty) {
-      buf.writeln('with ${trainerName.trim()}');
+      buf.writeln('👤 ${trainerName.trim()}');
     }
     if (locationTitle.trim().isNotEmpty) {
       buf.writeln(locationTitle.trim());
     }
-    final address = studioAddress?.trim();
-    if (address != null && address.isNotEmpty) buf.writeln(address);
+    final locationBlock = formatShareLocationBlock(
+      address: studioAddress,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (locationBlock.isNotEmpty) {
+      buf.writeln(locationBlock);
+    }
     if (sid != null && sid.isNotEmpty && sesId != null && sesId.isNotEmpty) {
       final link = ClassSessionLink(
         studioId: sid,
@@ -185,6 +192,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       );
       buf
         ..writeln()
+        ..writeln('🔗 Join me:')
         ..write(link.toShareUri().toString());
     }
     return buf.toString().trim();
@@ -224,30 +232,21 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   }
 
   Future<void> _openDirections(BuildContext context) async {
-    final Uri uri;
-    if (latitude != null && longitude != null) {
-      uri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1'
-        '&query=$latitude,$longitude',
-      );
-    } else {
-      final q =
-          (studioAddress?.trim().isNotEmpty == true
-                  ? studioAddress!.trim()
-                  : locationTitle.trim())
-              .trim();
-      if (q.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
-        }
-        return;
+    final q = studioAddress?.trim().isNotEmpty == true
+        ? studioAddress!.trim()
+        : locationTitle.trim();
+    final uri = googleMapsSearchUri(
+      address: q,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (uri == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
       }
-      uri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1'
-        '&query=${Uri.encodeComponent(q)}',
-      );
+      return;
     }
     if (!await canLaunchUrl(uri)) {
       if (context.mounted) {

@@ -100,6 +100,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.onLeaveReview,
     this.leaveReviewLabel = 'Leave review',
     this.leaveReviewLoading = false,
+    this.leaveReviewSubmitted = false,
     this.showDateAboveTime = false,
     this.onCancelBooking,
     this.cancelActionLabel = 'Cancel',
@@ -127,6 +128,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   final VoidCallback? onLeaveReview;
   final String leaveReviewLabel;
   final bool leaveReviewLoading;
+
+  /// Shows a disabled [leaveReviewLabel] instead of capacity (e.g. Passes).
+  final bool leaveReviewSubmitted;
 
   /// Client bookings: small `dd.MM.yy` above start time.
   final bool showDateAboveTime;
@@ -175,7 +179,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final priceText = trailingPriceLabel?.trim() ?? '';
     final priceColor = trailingPriceColor ?? accent;
     final hasBookAction = isBooked || onBookAgain != null || bookActionLoading;
-    final hasReviewAction = onLeaveReview != null || leaveReviewLoading;
+    final hasReviewAction = onLeaveReview != null ||
+        leaveReviewLoading ||
+        leaveReviewSubmitted;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
     final showPriceAboveBook = priceText.isNotEmpty && hasBookAction;
     final trailingInset =
@@ -331,6 +337,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           reviewLabel: leaveReviewLabel,
                           reviewLoading: leaveReviewLoading,
                           onReview: onLeaveReview,
+                          reviewSubmitted: leaveReviewSubmitted,
                           isBooked: isBooked,
                         ),
                       ],
@@ -357,6 +364,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         reviewLabel: leaveReviewLabel,
                         reviewLoading: leaveReviewLoading,
                         onReview: onLeaveReview,
+                        reviewSubmitted: leaveReviewSubmitted,
                         isBooked: isBooked,
                       ),
                     )
@@ -449,6 +457,7 @@ class _ScheduleTrailingActions extends StatelessWidget {
     required this.reviewLabel,
     required this.reviewLoading,
     required this.onReview,
+    this.reviewSubmitted = false,
     this.isBooked = false,
   });
 
@@ -458,12 +467,13 @@ class _ScheduleTrailingActions extends StatelessWidget {
   final String reviewLabel;
   final bool reviewLoading;
   final VoidCallback? onReview;
+  final bool reviewSubmitted;
   final bool isBooked;
 
   @override
   Widget build(BuildContext context) {
     final showBook = isBooked || onBook != null || bookLoading;
-    final showReview = onReview != null || reviewLoading;
+    final showReview = onReview != null || reviewLoading || reviewSubmitted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -480,7 +490,8 @@ class _ScheduleTrailingActions extends StatelessWidget {
           _ScheduleReviewButton(
             label: reviewLabel,
             loading: reviewLoading,
-            onPressed: onReview,
+            onPressed: reviewSubmitted ? null : onReview,
+            disabled: reviewSubmitted,
           ),
         ],
       ],
@@ -523,19 +534,26 @@ class _ScheduleReviewButton extends StatelessWidget {
     required this.label,
     required this.loading,
     required this.onPressed,
+    this.disabled = false,
   });
 
   final String label;
   final bool loading;
   final VoidCallback? onPressed;
+  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
+    final isEnabled = !loading && !disabled && onPressed != null;
+    final color = disabled
+        ? AppColors.textTertiary
+        : AppColors.primary500;
     return TextButton(
-      onPressed: loading ? null : onPressed,
+      onPressed: isEnabled ? onPressed : null,
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary500,
-        side: const BorderSide(color: AppColors.primary500),
+        foregroundColor: color,
+        disabledForegroundColor: AppColors.textTertiary,
+        side: BorderSide(color: color),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

@@ -17,6 +17,7 @@ import '../utils/formatters.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
+import '../widgets/client/browse_day_pill.dart';
 import '../widgets/schedule/calendar_day_pill.dart';
 import 'public_class_detail_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -49,6 +50,8 @@ class PublicStudioScheduleScreen extends StatefulWidget {
 
 class _PublicStudioScheduleScreenState
     extends State<PublicStudioScheduleScreen> {
+  static const double _kDayPillGap = 7;
+
   static const int _defaultBookingPeriodDays = 30;
 
   static const int _minBookingPeriodDays = 1;
@@ -119,12 +122,13 @@ class _PublicStudioScheduleScreenState
   void _onStripScrolled() {
     final w = _dayStripViewportWidth;
     if (w == null || !_dayStripScrollController.hasClients) return;
-    final stride = w / 7;
+    final stride = _dayStride(w);
+    if (stride <= 0) return;
     final index = (_dayStripScrollController.offset / stride)
         .round()
         .clamp(0, _bookableDayCount - 1);
     final day = _bookableDayAt(index);
-    final normalized = DateTime(day.year, day.month, day.day);
+    final normalized = _normalizeDay(day);
     if (_stripPagerDayNotifier.value == normalized) return;
     _stripPagerDayNotifier.value = normalized;
   }
@@ -163,12 +167,12 @@ class _PublicStudioScheduleScreenState
         maxDay,
       );
 
-      final from = clampedSelectedDay;
-
-      final to = maxDay;
+      // Full bookable window (not only from selected day — avoids gaps on reload).
+      final from = minDay;
+      final to = endOfLocalDay(maxDay);
 
       final raw = await ApiClient.get(
-        '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toUtc().toIso8601String())}&to=${Uri.encodeComponent(to.toUtc().toIso8601String())}&limit=400',
+        '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toUtc().toIso8601String())}&to=${Uri.encodeComponent(to.toUtc().toIso8601String())}&limit=500',
 
         null,
       );
@@ -249,11 +253,9 @@ class _PublicStudioScheduleScreenState
         _loadError = null;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_dayStripScrollController.hasClients) return;
-        final w = _dayStripViewportWidth;
-        if (w == null) return;
+        if (!mounted) return;
         final index = scheduleDay.difference(_minBookableDay).inDays;
-        _dayStripScrollController.jumpTo(index * w / 7);
+        _scrollScheduleStripToIndex(index);
       });
       _loadBookedSessionIds();
     } catch (e) {
@@ -318,6 +320,46 @@ class _PublicStudioScheduleScreenState
     return _sessionsByDay[_dayKey(day)] ?? const [];
   }
 
+  double _dayPillWidth(double viewportWidth) =>
+      viewportWidth / 7 - _kDayPillGap;
+
+  double _dayStride(double viewportWidth) => viewportWidth / 7;
+
+  void _scrollScheduleStripToIndex(
+    int index, {
+    bool animate = false,
+  }) {
+    void tryScroll() {
+      final w = _dayStripViewportWidth;
+      if (w == null || !_dayStripScrollController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) tryScroll();
+        });
+        return;
+      }
+      final offset = index.clamp(0, _bookableDayCount - 1) * _dayStride(w);
+      if (animate) {
+        _dayStripScrollController.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _dayStripScrollController.jumpTo(offset);
+      }
+    }
+
+    tryScroll();
+  }
+
+  void _applyScheduleDay(DateTime day) {
+    final normalized = _normalizeDay(day);
+    if (!_isDayInRange(normalized)) return;
+    _stripDayNotifier.value = normalized;
+    _scheduleDayNotifier.value = normalized;
+    _stripPagerDayNotifier.value = normalized;
+  }
+
   void _goToToday() {
     _jumpScheduleToDay(DateTime.now());
   }
@@ -326,21 +368,13 @@ class _PublicStudioScheduleScreenState
     final normalized = _normalizeDay(day);
     if (!_isDayInRange(normalized)) return;
     final index = normalized.difference(_minBookableDay).inDays;
-    _stripDayNotifier.value = normalized;
-    _scheduleDayNotifier.value = normalized;
-    _stripPagerDayNotifier.value = normalized;
-    final w = _dayStripViewportWidth;
-    if (w != null && _dayStripScrollController.hasClients) {
-      _dayStripScrollController.animateTo(
-        index * w / 7,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    }
+    _applyScheduleDay(normalized);
+    _scrollScheduleStripToIndex(index, animate: true);
   }
 
   void _syncStripPagerToSelectedDay() {
-    _jumpScheduleToDay(_stripDayNotifier.value);
+    final index = _stripDayNotifier.value.difference(_minBookableDay).inDays;
+    _scrollScheduleStripToIndex(index, animate: true);
   }
 
   List<DateTime?> _scheduleMonthCells(DateTime monthDate) {
@@ -486,7 +520,7 @@ class _PublicStudioScheduleScreenState
   }
 
   static const _expandButtonLabelWidth = 72.0;
-  static const _dayStripBlockHeight = 90.0; // 4 gap + 86 strip
+  static const _dayStripBlockHeight = 78.0; // 4 gap + Browse strip (~74)
 
   Widget _scheduleExpandButton() {
     final label = _isMonthExpanded ? 'Collapse' : 'Expand';
@@ -694,60 +728,44 @@ class _PublicStudioScheduleScreenState
     return LayoutBuilder(
       builder: (context, constraints) {
         _dayStripViewportWidth = constraints.maxWidth;
-        final stride = constraints.maxWidth / 7;
+        final viewportWidth = constraints.maxWidth;
+        final pillWidth = _dayPillWidth(viewportWidth);
+        final stripHeight = pillWidth * 3 / 2;
         return SizedBox(
-          height: 86,
+          height: stripHeight,
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification n) {
               if (n.metrics.axis != Axis.horizontal) return false;
               _onStripScrolled();
-              if (n is ScrollEndNotification) {
-                final w = _dayStripViewportWidth;
-                if (w == null || !_dayStripScrollController.hasClients) {
-                  return false;
-                }
-                final s = w / 7;
-                final index = (_dayStripScrollController.offset / s)
-                    .round()
-                    .clamp(0, _bookableDayCount - 1);
-                final target = index * s;
-                if ((_dayStripScrollController.offset - target).abs() > 0.5) {
-                  _dayStripScrollController.animateTo(
-                    target,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                  );
-                }
-              }
               return false;
             },
-            child: ListView.builder(
+            child: ListView.separated(
               controller: _dayStripScrollController,
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
               ),
+              clipBehavior: Clip.none,
               itemCount: _bookableDayCount,
-              itemExtent: stride,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(width: _kDayPillGap),
               itemBuilder: (_, index) {
                 final day = _bookableDayAt(index);
-                return ValueListenableBuilder<DateTime>(
-                  valueListenable: _stripDayNotifier,
-                  builder: (context, stripDay, _) {
-                    final selected = CalendarDayPill.isSameDay(day, stripDay);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: CalendarDayPill(
+                return SizedBox(
+                  width: pillWidth,
+                  child: ValueListenableBuilder<DateTime>(
+                    valueListenable: _stripDayNotifier,
+                    builder: (context, stripDay, _) {
+                      final selected = CalendarDayPill.isSameDay(day, stripDay);
+                      return BrowseDayPill(
                         day: day,
                         selected: selected,
-                        sessionsCount: _sessionsForDay(day).length,
-                        enabled: _isDayInRange(day),
                         onTap: _isDayInRange(day)
-                            ? () => _jumpScheduleToDay(day)
+                            ? () => _applyScheduleDay(day)
                             : null,
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             ),

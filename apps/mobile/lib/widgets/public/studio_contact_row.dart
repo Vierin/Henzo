@@ -48,9 +48,23 @@ class _ContactCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = _backgroundFor(contact.kind);
+    final platform = _platformFor(contact.kind);
+    if (platform != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SocialPlatformIcon(
+            platform: platform,
+            size: StudioContactRow._size,
+          ),
+        ),
+      );
+    }
+
     return Material(
-      color: bg,
+      color: AppColors.primary500,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -59,27 +73,25 @@ class _ContactCircle extends StatelessWidget {
         child: SizedBox(
           width: StudioContactRow._size,
           height: StudioContactRow._size,
-          child: Center(child: _ContactIcon(kind: contact.kind)),
+          child: Center(child: _SystemContactIcon(kind: contact.kind)),
         ),
       ),
     );
   }
 
-  Color _backgroundFor(StudioPublicContactKind kind) {
+  StudioSocialPlatform? _platformFor(StudioPublicContactKind kind) {
     return switch (kind) {
-      StudioPublicContactKind.phone ||
-      StudioPublicContactKind.email =>
-        AppColors.primary500,
-      StudioPublicContactKind.instagram => const Color(0xFFE1306C),
-      StudioPublicContactKind.telegram => const Color(0xFF229ED9),
-      StudioPublicContactKind.youtube => const Color(0xFFFF0000),
-      StudioPublicContactKind.whatsApp => const Color(0xFF25D366),
+      StudioPublicContactKind.instagram => StudioSocialPlatform.instagram,
+      StudioPublicContactKind.telegram => StudioSocialPlatform.telegram,
+      StudioPublicContactKind.youtube => StudioSocialPlatform.youtube,
+      StudioPublicContactKind.whatsApp => StudioSocialPlatform.whatsApp,
+      _ => null,
     };
   }
 }
 
-class _ContactIcon extends StatelessWidget {
-  const _ContactIcon({required this.kind});
+class _SystemContactIcon extends StatelessWidget {
+  const _SystemContactIcon({required this.kind});
 
   final StudioPublicContactKind kind;
 
@@ -98,27 +110,7 @@ class _ContactIcon extends StatelessWidget {
         height: 20,
         colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
       ),
-      StudioPublicContactKind.instagram ||
-      StudioPublicContactKind.telegram ||
-      StudioPublicContactKind.youtube ||
-      StudioPublicContactKind.whatsApp =>
-        Image.asset(
-          _socialAsset(kind),
-          width: 22,
-          height: 22,
-          fit: BoxFit.contain,
-        ),
+      _ => const SizedBox.shrink(),
     };
-  }
-
-  String _socialAsset(StudioPublicContactKind kind) {
-    final platform = switch (kind) {
-      StudioPublicContactKind.instagram => StudioSocialPlatform.instagram,
-      StudioPublicContactKind.telegram => StudioSocialPlatform.telegram,
-      StudioPublicContactKind.youtube => StudioSocialPlatform.youtube,
-      StudioPublicContactKind.whatsApp => StudioSocialPlatform.whatsApp,
-      _ => StudioSocialPlatform.instagram,
-    };
-    return platform.iconAsset;
   }
 }

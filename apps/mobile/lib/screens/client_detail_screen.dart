@@ -17,15 +17,11 @@ import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/synthetic_guest.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-/// Shared soft shadow for profile + visit cards on this screen.
-const List<BoxShadow> _kClientDetailCardShadow = <BoxShadow>[
-  BoxShadow(color: Color(0x14000000), blurRadius: 20, offset: Offset(0, 8)),
-];
 
 class ClientDetailScreen extends StatefulWidget {
   const ClientDetailScreen({
@@ -169,54 +165,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
   List<Booking> get _visibleBookings =>
       _bookings.take(_visibleVisitCount).toList();
-
-  Future<void> _handleCancelBooking(String id) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await DashboardApiService.cancelBooking(token, id);
-    if (mounted) {
-      context.read<BookingsCache>().invalidate();
-      _loadData();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('booking.cancelled')),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleConfirmBooking(String id) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await DashboardApiService.confirmBooking(token, id);
-    if (mounted) {
-      context.read<BookingsCache>().invalidate();
-      _loadData();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('booking.confirmed')),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleRejectBooking(String id) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await DashboardApiService.rejectBooking(token, id);
-    if (mounted) {
-      context.read<BookingsCache>().invalidate();
-      _loadData();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('booking.rejected')),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
-  }
 
   String? _clean(String? value, {bool lowercase = false}) {
     if (value == null) return null;
@@ -364,29 +312,45 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     return u.email.trim();
   }
 
-  Future<void> _openTel(String raw) async {
-    final compact = raw.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-    if (compact.isEmpty) return;
-    final uri = Uri.parse('tel:$compact');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  Future<void> _launchExternalUri(Uri uri) async {
+    final locale = context.read<LocaleProvider>();
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(locale.t('common.errorGeneric'))),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('common.errorGeneric'))),
+      );
     }
   }
 
+  Future<void> _openTel(String raw) async {
+    final compact = raw.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (compact.isEmpty) return;
+    await _launchExternalUri(Uri.parse('tel:$compact'));
+  }
+
   Future<void> _openMail(String raw) async {
-    final uri = Uri(scheme: 'mailto', path: raw);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    final email = raw.trim();
+    if (email.isEmpty || isSyntheticGuestEmail(email)) return;
+    await _launchExternalUri(Uri(scheme: 'mailto', path: email));
   }
 
   void _openBookTraining() {
     final shell = context.findAncestorStateOfType<MainShellState>();
-    if (shell != null) {
+    Navigator.of(context).pop();
+    if (shell == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       shell.navigateToTab0Route('/trainings/new');
-      return;
-    }
-    Navigator.of(context).pushNamed('/trainings/new');
+    });
   }
 
   @override
@@ -399,7 +363,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     final resolvedPhone = identity.phone ?? '';
     final resolvedEmail = identity.email ?? '';
     final hasPhone = resolvedPhone.isNotEmpty;
-    final hasEmail = resolvedEmail.isNotEmpty;
+    final hasEmail =
+        resolvedEmail.isNotEmpty && !isSyntheticGuestEmail(resolvedEmail);
     final ownerName = _ownerTrainerFallback(auth);
 
     return Scaffold(
@@ -565,7 +530,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                               : null,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _ClientActionTile(
                           icon: const Icon(
@@ -616,9 +581,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         onTap: () => BookingDetailModal.show(
                           context,
                           booking: b,
-                          onCancel: _handleCancelBooking,
-                          onConfirm: _handleConfirmBooking,
-                          onReject: _handleRejectBooking,
                         ),
                       ),
                     ),
@@ -704,37 +666,22 @@ class _ClientProfileHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: _kClientDetailCardShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: _avatarSize,
-              height: _avatarSize,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: _avatarSize / 2,
-                backgroundColor: AppColors.primary100,
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary500,
-                    height: 1,
-                  ),
+            CircleAvatar(
+              radius: _avatarSize / 2,
+              backgroundColor: AppColors.primary100,
+              child: Text(
+                initials,
+                style: TextStyle(
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary500,
+                  height: 1,
                 ),
               ),
             ),

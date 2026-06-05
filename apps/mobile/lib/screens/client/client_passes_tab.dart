@@ -201,6 +201,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
             showDateAboveTime: true,
             dimPastSessions: false,
             onLeaveReview: hasReview ? null : () => _leaveReview(item),
+            leaveReviewSubmitted: hasReview,
             leaveReviewLoading: isReviewing,
             onTap: () => _openStudio(item),
           );

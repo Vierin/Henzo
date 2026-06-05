@@ -20,8 +20,8 @@ import '../utils/subscription_tier.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
 import '../widgets/auth/auth_form_styles.dart';
-import '../widgets/common/henzo_modal.dart';
 import '../widgets/schedule_style_date_picker.dart';
+import '../widgets/training/training_time_picker_sheet.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 import '../widgets/training/owner_session_cancel_scope_dialog.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
@@ -193,70 +193,6 @@ class _OwnerEditTrainingSessionScreenState
         _sessionDate = DateTime(picked.year, picked.month, picked.day);
       });
     }
-  }
-
-  Future<TimeOfDay?> _pickTimeWithWheel(TimeOfDay initialTime) {
-    var selected = initialTime;
-    final initialDateTime = DateTime(
-      2000,
-      1,
-      1,
-      initialTime.hour,
-      initialTime.minute,
-    );
-    final loc = context.read<LocaleProvider>();
-    return showHenzoModalBottomSheet<TimeOfDay>(
-      context: context,
-      backgroundColor: AppColors.backgroundPrimary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: SizedBox(
-            height: 320,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                  child: Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: Text(loc.t('common.cancel')),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(selected),
-                        child: Text(
-                          loc.t('common.done'),
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    use24hFormat: true,
-                    minuteInterval: 5,
-                    initialDateTime: initialDateTime,
-                    onDateTimeChanged: (value) {
-                      selected = TimeOfDay(
-                        hour: value.hour,
-                        minute: value.minute,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Future<void> _openLocationPicker(LocaleProvider locale) async {
@@ -804,7 +740,10 @@ class _OwnerEditTrainingSessionScreenState
             ),
             onTap: canEditSchedule
                 ? () async {
-                    final picked = await _pickTimeWithWheel(_sessionTime);
+                    final picked = await showTrainingTimePickerSheet(
+                      context,
+                      _sessionTime,
+                    );
                     if (picked != null && mounted) {
                       setState(() => _sessionTime = picked);
                     }

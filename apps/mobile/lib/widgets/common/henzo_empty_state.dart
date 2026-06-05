@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
 import '../../constants/colors.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -9,6 +11,7 @@ class HenzoEmptyState extends StatelessWidget {
     super.key,
     required this.message,
     this.icon = Icons.search_off_outlined,
+    this.svgAsset,
     this.iconColor,
     this.iconSize = 64,
     this.subtitle,
@@ -16,7 +19,8 @@ class HenzoEmptyState extends StatelessWidget {
   });
 
   final String message;
-  final IconData icon;
+  final IconData? icon;
+  final String? svgAsset;
   final Color? iconColor;
   final double iconSize;
   final String? subtitle;
@@ -28,11 +32,22 @@ class HenzoEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: iconSize,
-            color: iconColor ?? AppColors.neutral300,
-          ),
+          if (svgAsset != null)
+            SvgPicture.asset(
+              svgAsset!,
+              width: iconSize,
+              height: iconSize,
+              colorFilter: ColorFilter.mode(
+                iconColor ?? AppColors.neutral300,
+                BlendMode.srcIn,
+              ),
+            )
+          else if (icon != null)
+            Icon(
+              icon,
+              size: iconSize,
+              color: iconColor ?? AppColors.neutral300,
+            ),
           const SizedBox(height: 16),
           Text(
             message,

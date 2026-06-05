@@ -29,10 +29,7 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
     context: context,
     showDragHandle: false,
     isScrollControlled: true,
-    backgroundColor: AppColors.backgroundPrimary,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+    backgroundColor: Colors.transparent,
     sheetAnimationStyle: const AnimationStyle(
       duration: Duration(milliseconds: 320),
       reverseDuration: Duration(milliseconds: 220),
@@ -43,23 +40,26 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
           .pop(const TrainingCategoryPickResult.cancelled());
       return SafeArea(
         top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            4,
-            8,
-            12 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              12,
+              12 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
                       child: Text(
                         locale.t('addTraining.categorySheetTitle'),
                         style: TextStyle(
@@ -70,22 +70,31 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
                         ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: popCancel,
-                    icon: const Icon(Icons.close),
-                    color: AppColors.textSecondary,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: h * 0.28),
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: categories.map((c) {
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: popCancel,
+                        customBorder: const CircleBorder(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.close,
+                            size: 22,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: h * 0.28),
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: categories.map((c) {
                       final selected = selectedCategoryId == c.id;
                       final isOther = c.isOtherCategory;
                       final Color bg;
@@ -138,11 +147,12 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
                           ),
                         ),
                       );
-                    }).toList(),
+                      }).toList(),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );

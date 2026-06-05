@@ -202,6 +202,7 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
                                 onTap: () => BookingDetailModal.show(
                                   context,
                                   booking: b,
+                                  showActions: true,
                                   onCancel: _handleCancelBooking,
                                   onConfirm: _handleConfirmBooking,
                                   onReject: _handleRejectBooking,

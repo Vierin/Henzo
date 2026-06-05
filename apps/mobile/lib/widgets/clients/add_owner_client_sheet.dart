@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
+import '../../models/booking.dart' as booking_models;
 import '../../models/owner_studio_client.dart';
 import '../../services/auth_service.dart';
+import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
@@ -317,19 +319,71 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
     });
   }
 
-  Future<void> _loadRecentIfNeeded() async {
-    if (_recent.isNotEmpty || _loadingRecent) return;
+  Future<void> _loadRecentIfNeeded({bool force = false}) async {
+    if (_loadingRecent) return;
+    if (!force && _recent.isNotEmpty) return;
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
     setState(() => _loadingRecent = true);
     try {
-      final rows = await DashboardApiService.getOwnerStudioClients(token);
+      final (rows, primaryBookings, enrollmentBookings) = await (
+        DashboardApiService.getOwnerStudioClients(token),
+        context.read<BookingsCache>().getBookings(token),
+        DashboardApiService.getOwnerEnrollmentBookings(token),
+      ).wait;
+
+      final lastByUser = <String, DateTime>{};
+      final picksByUser = <String, _ClientPick>{};
+
+      void addPick(_ClientPick pick, DateTime? last) {
+        if (pick.isSyntheticSpot) return;
+        picksByUser[pick.userId] = pick;
+        if (last == null) return;
+        final prev = lastByUser[pick.userId];
+        if (prev == null || last.isAfter(prev)) {
+          lastByUser[pick.userId] = last;
+        }
+      }
+
+      for (final r in rows) {
+        addPick(_ClientPick.fromRow(r), r.lastVisit);
+      }
+
+      for (final b in <booking_models.Booking>[
+        ...primaryBookings,
+        ...enrollmentBookings,
+      ]) {
+        final u = b.user;
+        final uid = u?.id?.trim();
+        if (uid == null || uid.isEmpty) continue;
+        if (isAnonymousRosterClient(email: u?.email, name: u?.name)) {
+          continue;
+        }
+        final name = (u?.name?.trim().isNotEmpty ?? false)
+            ? u!.name!.trim()
+            : (u?.email ?? u?.phone ?? '—');
+        addPick(
+          _ClientPick(
+            userId: uid,
+            displayName: name,
+            email: u?.email,
+            phone: u?.phone,
+            isGuest: false,
+            isSyntheticSpot: false,
+          ),
+          b.dateTime,
+        );
+      }
+
+      final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+      final sortedIds = picksByUser.keys.toList()
+        ..sort(
+          (a, b) => (lastByUser[b] ?? epoch).compareTo(lastByUser[a] ?? epoch),
+        );
+
       if (!mounted) return;
       setState(() {
-        _recent = rows
-            .map(_ClientPick.fromRow)
-            .where((p) => !p.isSyntheticSpot)
-            .toList();
+        _recent = sortedIds.map((id) => picksByUser[id]!).toList();
       });
     } catch (_) {
       // leave _recent empty, user sees empty-state message
@@ -503,7 +557,11 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                   const Divider(height: 20),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(tr('ownerClient.sendConfirmationEmail')),
+                    title: Text(
+                      tr('ownerClient.sendConfirmationEmail'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     value: _sendConfirmation,
                     onChanged: _saving
                         ? null
@@ -621,7 +679,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                   ? null
                   : () {
                       setState(() => _step = _EnrollStep.pickFromList);
-                      _loadRecentIfNeeded();
+                      _loadRecentIfNeeded(force: true);
                     },
             ),
             const SizedBox(height: 10),

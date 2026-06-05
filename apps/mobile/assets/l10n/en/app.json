@@ -452,7 +452,7 @@
   "ownerClient": {
     "addToDirectory": "Add client",
     "notesOptional": "Notes (optional)",
-    "sendConfirmationEmail": "Send booking confirmation email",
+    "sendConfirmationEmail": "Send confirmation email",
     "addedToDirectory": "Client saved",
     "addParticipantHow": "How should this person be added?",
     "anonymousSpotTitle": "Guest",

@@ -42,11 +42,45 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Custom scheme: henzo://class -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="henzo" android:host="class" />
+            </intent-filter>
+            <!-- Custom scheme: henzo://studio/<id> -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="henzo" android:host="studio" />
+            </intent-filter>
+            <!-- Custom scheme: henzo://trainer-invite/<token> -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="henzo" android:host="trainer-invite" />
+            </intent-filter>
+            <!-- App Links (HTTPS): henzo.app/class*, /studio/*, /trainer-invite/* -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="henzo.app" android:pathPrefix="/trainer-invite/" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="henzo.app" android:pathPrefix="/studio/" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="henzo.app" android:pathPrefix="/class" />
             </intent-filter>
             <!-- Health Connect: permissions rationale (health plugin README) -->
             <intent-filter>
