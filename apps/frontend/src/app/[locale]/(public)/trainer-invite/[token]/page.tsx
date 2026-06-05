@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 
 const APP_STORE_URL = 'https://apps.apple.com/app/henzo/id6738666750';
 const PLAY_STORE_URL =
@@ -19,12 +20,8 @@ function getPlatform(): 'ios' | 'android' | 'other' {
   return 'other';
 }
 
-export default function TrainerInvitePage({
-  params,
-}: {
-  params: { token: string };
-}) {
-  const { token } = params;
+export default function TrainerInvitePage() {
+  const { token } = useParams<{ token: string }>();
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>(
     'other',
   );
