@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -10,9 +9,19 @@ import '../../utils/load_error_message.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
 import '../../utils/client_schedule_owner_session.dart';
+import '../../utils/formatters.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+class _UpcomingListEntry {
+  const _UpcomingListEntry.year(this.year) : item = null;
+  const _UpcomingListEntry.card(this.item) : year = null;
+
+  final int? year;
+  final Map<String, dynamic>? item;
+}
 
 class ClientScheduleTab extends StatefulWidget {
   const ClientScheduleTab({super.key});
@@ -27,7 +36,6 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
   List<Map<String, dynamic>> _allItems = const [];
   String? _error;
   final Set<String> _cancelingBookingIds = <String>{};
-  DateTime _selectedDay = DateTime.now();
 
   @override
   void initState() {
@@ -48,31 +56,6 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
 
   @override
   bool get wantKeepAlive => true;
-
-  String _dayKey(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  List<Map<String, dynamic>> get _itemsForDay {
-    final key = _dayKey(_selectedDay);
-    return _allItems.where((item) {
-      final raw = item['startsAt'];
-      if (raw == null) return false;
-      final date = DateTime.tryParse(raw.toString())?.toLocal();
-      if (date == null) return false;
-      return _dayKey(date) == key;
-    }).toList();
-  }
-
-  bool _hasItemsForDay(DateTime d) {
-    final key = _dayKey(d);
-    return _allItems.any((item) {
-      final raw = item['startsAt'];
-      if (raw == null) return false;
-      final date = DateTime.tryParse(raw.toString())?.toLocal();
-      if (date == null) return false;
-      return _dayKey(date) == key;
-    });
-  }
 
   Future<void> _load({bool force = false}) async {
     final token = context.read<AuthService>().accessToken;
@@ -179,6 +162,21 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     );
   }
 
+  List<_UpcomingListEntry> _groupedEntries() {
+    final out = <_UpcomingListEntry>[];
+    int? lastYear;
+    for (final item in _allItems) {
+      final startsAt = parseApiDateTime(item['startsAt']);
+      final year = startsAt?.year;
+      if (year != null && year != lastYear) {
+        out.add(_UpcomingListEntry.year(year));
+        lastYear = year;
+      }
+      out.add(_UpcomingListEntry.card(item));
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -209,219 +207,76 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
         ],
       );
     } else {
-      final items = _itemsForDay;
-      if (items.isEmpty) {
-        content = ListView(
+      final entries = _groupedEntries();
+      final localeTag = locale.languageTag;
+
+      content = RefreshIndicator(
+        onRefresh: () => _load(force: true),
+        child: ListView.builder(
           padding: const EdgeInsets.fromLTRB(
             kScreenPaddingHorizontal,
             12,
             kScreenPaddingHorizontal,
             24,
           ),
-          children: [
-            Text(
-              locale.t('dashboard.noClassesToday'),
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14.sp,
-              ),
-            ),
-          ],
-        );
-      } else {
-        content = RefreshIndicator(
-          onRefresh: () => _load(force: true),
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(
-              kScreenPaddingHorizontal,
-              12,
-              kScreenPaddingHorizontal,
-              24,
-            ),
-            itemCount: items.length,
-            itemBuilder: (_, index) {
-              final item = items[index];
-              final session = mapClientScheduleItemToOwnerSession(item);
-              if (session == null) return const SizedBox.shrink();
-              final presentation = presentationForClientScheduleItem(
-                session,
-                item,
-              );
-              final canCancel = _canCancelBooking(item);
-              final bookingId = _bookingId(item);
-              final isCanceling =
-                  bookingId != null && _cancelingBookingIds.contains(bookingId);
-
-              return OwnerDailyScheduleSessionCard(
-                session: session,
-                subtitleLabel: presentation.subtitleLabel,
-                showLocationPin: presentation.showLocationPin,
-                showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
-                trainerLine: presentation.trainerLine,
-                showDateAboveTime: true,
-                dimPastSessions: false,
-                cancelActionLabel: locale.t('clientActivity.cancel'),
-                cancelActionLoading: isCanceling,
-                onCancelBooking: canCancel && !isCanceling
-                    ? () => _confirmCancel(item)
-                    : null,
-                onTap: () => _openStudio(item),
-              );
-            },
-          ),
-        );
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        _DayStrip(
-          selected: _selectedDay,
-          hasSessions: _hasItemsForDay,
-          onSelect: (d) => setState(() => _selectedDay = d),
-        ),
-        const SizedBox(height: 12),
-        Expanded(child: content),
-      ],
-    );
-  }
-}
-
-class _DayStrip extends StatefulWidget {
-  const _DayStrip({
-    required this.selected,
-    required this.hasSessions,
-    required this.onSelect,
-  });
-
-  final DateTime selected;
-  final bool Function(DateTime) hasSessions;
-  final ValueChanged<DateTime> onSelect;
-
-  @override
-  State<_DayStrip> createState() => _DayStripState();
-}
-
-class _DayStripState extends State<_DayStrip> {
-  final _scrollController = ScrollController();
-  bool _isUserScrolling = false;
-
-  static const double _itemWidth = 48;
-  static const double _itemMargin = 3;
-  static const double _itemExtent = _itemWidth + _itemMargin * 2;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _snapToNearest() {
-    final offset = _scrollController.offset;
-    final nearest = (offset / _itemExtent).round() * _itemExtent;
-    final clamped = nearest.clamp(
-      _scrollController.position.minScrollExtent,
-      _scrollController.position.maxScrollExtent,
-    );
-    if ((clamped - offset).abs() < 0.5) return;
-    _scrollController.animateTo(
-      clamped,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-  }
-
-  String _dayKey(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  String _weekdayShort(DateTime d) {
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return labels[d.weekday - 1];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final days = List.generate(
-      31,
-      (i) => DateTime(today.year, today.month, today.day + i - 7),
-    );
-
-    return SizedBox(
-      height: 64,
-      child: NotificationListener(
-        onNotification: (notification) {
-          if (notification is ScrollStartNotification &&
-              notification.dragDetails != null) {
-            _isUserScrolling = true;
-          }
-          if (notification is ScrollEndNotification && _isUserScrolling) {
-            _isUserScrolling = false;
-            _snapToNearest();
-          }
-          return false;
-        },
-        child: ListView.builder(
-          controller: _scrollController,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: days.length,
-          itemBuilder: (_, i) {
-            final d = days[i];
-            final isSelected = _dayKey(d) == _dayKey(widget.selected);
-            final hasDot = widget.hasSessions(d);
-            return GestureDetector(
-              onTap: () => widget.onSelect(d),
-              child: Container(
-                width: _itemWidth,
-                margin: const EdgeInsets.symmetric(horizontal: _itemMargin),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary500 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+          itemCount: entries.length,
+          itemBuilder: (_, index) {
+            final entry = entries[index];
+            if (entry.year != null) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  top: index == 0 ? 0 : 16,
+                  bottom: 10,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _weekdayShort(d),
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: isSelected
-                            ? Colors.white70
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      '${d.day}',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isSelected ? Colors.white : AppColors.textPrimary,
-                      ),
-                    ),
-                    if (hasDot)
-                      Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.primary500,
-                          shape: BoxShape.circle,
-                        ),
-                      )
-                    else
-                      const SizedBox(height: 5),
-                  ],
+                child: Text(
+                  '${entry.year}',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    height: 1.1,
+                  ),
                 ),
+              );
+            }
+
+            final item = entry.item!;
+            final session = mapClientScheduleItemToOwnerSession(item);
+            if (session == null) return const SizedBox.shrink();
+            final presentation = presentationForClientScheduleItem(
+              session,
+              item,
+            );
+            final canCancel = _canCancelBooking(item);
+            final bookingId = _bookingId(item);
+            final isCanceling =
+                bookingId != null && _cancelingBookingIds.contains(bookingId);
+
+            return OwnerDailyScheduleSessionCard(
+              session: session,
+              subtitleLabel: presentation.subtitleLabel,
+              showLocationPin: presentation.showLocationPin,
+              showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
+              trainerLine: presentation.trainerLine,
+              useLargeTrainerIcon: true,
+              showDateAboveTime: false,
+              secondaryTimeLabel: formatPassCardDayMonth(
+                session.startsAt,
+                localeTag,
               ),
+              dimPastSessions: false,
+              cancelActionLabel: locale.t('clientActivity.cancel'),
+              cancelActionLoading: isCanceling,
+              onCancelBooking: canCancel && !isCanceling
+                  ? () => _confirmCancel(item)
+                  : null,
+              onTap: () => _openStudio(item),
             );
           },
         ),
-      ),
-    );
+      );
+    }
+
+    return content;
   }
 }

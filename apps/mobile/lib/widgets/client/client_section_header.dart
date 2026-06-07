@@ -53,7 +53,7 @@ class ClientSectionHeader extends StatelessWidget {
                         actionLabel!.toUpperCase(),
                         style: TextStyle(
                           fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.primary500,
                         ),
                       ),

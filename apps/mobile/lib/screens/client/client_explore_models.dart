@@ -1,3 +1,5 @@
+import '../../models/studio_photo_asset.dart';
+
 class ExploreStudioItem {
   const ExploreStudioItem({
     required this.id,
@@ -11,6 +13,9 @@ class ExploreStudioItem {
     required this.lat,
     required this.lng,
     this.photoUrl,
+    this.photoOriginalUrl,
+    this.studioPageCrop,
+    this.browseCardCrop,
     this.trainingCategoryIds = const [],
     this.categoryNames = const [],
   });
@@ -23,6 +28,9 @@ class ExploreStudioItem {
   final int reviewCount;
   final String? logoUrl;
   final String? photoUrl;
+  final String? photoOriginalUrl;
+  final StudioPhotoCropRect? studioPageCrop;
+  final StudioPhotoCropRect? browseCardCrop;
   final double? lat;
   final double? lng;
   final List<int> trainingCategoryIds;
@@ -46,6 +54,7 @@ class ExploreClassItem {
     required this.rating,
     required this.reviewCount,
     this.trainingCategoryId,
+    this.language,
     this.trainingId = '',
     this.endsAt,
     this.locationName,
@@ -67,6 +76,7 @@ class ExploreClassItem {
   final double rating;
   final int reviewCount;
   final int? trainingCategoryId;
+  final String? language;
 
   /// Training template id (public schedule `training.id`).
   final String trainingId;

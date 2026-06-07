@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
+import '../../utils/formatters.dart';
 import '../../services/auth_service.dart';
 import '../../utils/load_error_message.dart';
 import '../../services/client_schedule_store.dart';
@@ -11,6 +13,15 @@ import '../../widgets/client/client_leave_review_sheet.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../public_studio_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+class _PassesListEntry {
+  const _PassesListEntry.year(this.year) : item = null;
+  const _PassesListEntry.card(this.item) : year = null;
+
+  final int? year;
+  final Map<String, dynamic>? item;
+}
 
 class ClientPassesTab extends StatelessWidget {
   const ClientPassesTab({super.key});
@@ -125,6 +136,21 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
   }
 
+  List<_PassesListEntry> _groupedEntries() {
+    final out = <_PassesListEntry>[];
+    int? lastYear;
+    for (final item in _items) {
+      final startsAt = parseApiDateTime(item['startsAt']);
+      final year = startsAt?.year;
+      if (year != null && year != lastYear) {
+        out.add(_PassesListEntry.year(year));
+        lastYear = year;
+      }
+      out.add(_PassesListEntry.card(item));
+    }
+    return out;
+  }
+
   void _openStudio(Map<String, dynamic> item) {
     final studio = item['studio'] is Map
         ? Map<String, dynamic>.from(item['studio'] as Map)
@@ -168,6 +194,9 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
         ],
       );
     }
+    final entries = _groupedEntries();
+    final localeTag = locale.languageTag;
+
     return RefreshIndicator(
       onRefresh: () => _load(force: true),
       child: ListView.builder(
@@ -177,9 +206,28 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
           kScreenPaddingHorizontal,
           24,
         ),
-        itemCount: _items.length,
+        itemCount: entries.length,
         itemBuilder: (_, index) {
-          final item = _items[index];
+          final entry = entries[index];
+          if (entry.year != null) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: index == 0 ? 0 : 16,
+                bottom: 10,
+              ),
+              child: Text(
+                '${entry.year}',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  height: 1.1,
+                ),
+              ),
+            );
+          }
+
+          final item = entry.item!;
           final session = mapClientScheduleItemToOwnerSession(item);
           if (session == null) return const SizedBox.shrink();
           final presentation = presentationForClientScheduleItem(
@@ -198,7 +246,12 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
             showLocationPin: presentation.showLocationPin,
             showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
             trainerLine: presentation.trainerLine,
-            showDateAboveTime: true,
+            useLargeTrainerIcon: true,
+            showDateAboveTime: false,
+            secondaryTimeLabel: formatPassCardDayMonth(
+              session.startsAt,
+              localeTag,
+            ),
             dimPastSessions: false,
             onLeaveReview: hasReview ? null : () => _leaveReview(item),
             leaveReviewSubmitted: hasReview,

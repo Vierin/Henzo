@@ -101,9 +101,10 @@ class BrowseStudioListCard extends StatelessWidget {
                       fit: StackFit.expand,
                       children: [
                         if (_imageUrl != null)
-                          CachedSalonNetworkImage(
+                          SalonFramedCoverImage(
                             imageUrl: _imageUrl!,
-                            fit: BoxFit.cover,
+                            originalUrl: studio.photoOriginalUrl,
+                            crop: studio.browseCardCrop,
                           )
                         else
                           const ColoredBox(

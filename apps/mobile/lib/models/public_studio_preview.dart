@@ -1,3 +1,5 @@
+import 'studio_photo_asset.dart';
+
 class PublicStudioPreview {
   const PublicStudioPreview({
     required this.id,
@@ -9,6 +11,8 @@ class PublicStudioPreview {
     this.lat,
     this.lng,
     this.photoUrl,
+    this.photoOriginalUrl,
+    this.studioPageCrop,
     this.reviewCount = 0,
   });
 
@@ -23,6 +27,8 @@ class PublicStudioPreview {
   final double? lat;
   final double? lng;
   final String? photoUrl;
+  final String? photoOriginalUrl;
+  final StudioPhotoCropRect? studioPageCrop;
   final int reviewCount;
 
   /// Back-compat for search / favorites keyed by display name.

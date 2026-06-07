@@ -29,7 +29,7 @@ const Map<String, String> _languageLabels = {
   'vi': 'Tiếng Việt',
 };
 
-const Map<String, String> _languageFlags = {
+const Map<String, String> kTrainingLanguageFlags = {
   'en': '🇺🇸',
   'ru': '🇷🇺',
   'vi': '🇻🇳',
@@ -99,7 +99,7 @@ class _LanguageBottomSheet extends StatelessWidget {
                       code: supportedLocaleCodes[i],
                       label: _languageLabels[supportedLocaleCodes[i]] ??
                           supportedLocaleCodes[i],
-                      flag: _languageFlags[supportedLocaleCodes[i]] ?? '',
+                      flag: kTrainingLanguageFlags[supportedLocaleCodes[i]] ?? '',
                       groupValue: loc.localeCode,
                       onSelect: () => _select(context, loc, supportedLocaleCodes[i]),
                     ),

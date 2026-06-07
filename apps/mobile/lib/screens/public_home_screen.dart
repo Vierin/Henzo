@@ -884,7 +884,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 188,
+                  height: 190,
                   child: _isLoadingStudios
                       ? const Center(child: CircularProgressIndicator())
                       : _studiosLoadError != null

@@ -406,10 +406,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   )
                 else
                   SizedBox(
-                    height: 188,
+                    height: 190,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      padding: screenPaddingH(),
                       itemCount: favorites.length,
                       itemBuilder: (_, index) {
                         final studio = _studioPreview(

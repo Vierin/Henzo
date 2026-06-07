@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class StudioPhotoCropRect {
   const StudioPhotoCropRect({
     required this.x,
@@ -30,6 +32,13 @@ class StudioPhotoCropRect {
   static double _toDouble(Object? value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  /// Normalized crop center → [Alignment] for [BoxFit.cover].
+  Alignment get coverAlignment {
+    final cx = (x + w / 2).clamp(0.0, 1.0);
+    final cy = (y + h / 2).clamp(0.0, 1.0);
+    return Alignment(cx * 2 - 1, cy * 2 - 1);
   }
 }
 

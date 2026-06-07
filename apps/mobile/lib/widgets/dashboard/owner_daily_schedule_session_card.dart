@@ -27,13 +27,15 @@ Widget _scheduleLocationPin() {
   );
 }
 
-Widget _scheduleTrainerIcon() {
+Widget _scheduleTrainerIcon({bool large = false}) {
   return Padding(
     padding: const EdgeInsets.only(top: 1),
     child: SvgPicture.asset(
-      'assets/icons/icon-profile.svg',
-      width: 11,
-      height: 13,
+      large
+          ? 'assets/icons/icon-profile-large.svg'
+          : 'assets/icons/icon-profile.svg',
+      width: large ? 14 : 11,
+      height: large ? 14 : 13,
       colorFilter: const ColorFilter.mode(Color(0xFF4D39A8), BlendMode.srcIn),
     ),
   );
@@ -110,6 +112,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.trailingPriceLabel,
     this.trailingPriceColor,
     this.showSubtitleLeadingIcon = true,
+    this.useLargeTrainerIcon = false,
+    this.secondaryTimeLabel,
     required this.onTap,
   });
 
@@ -154,6 +158,10 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
 
   /// Pin / person icon before [subtitleLabel]; set false for studio-name line.
   final bool showSubtitleLeadingIcon;
+  final bool useLargeTrainerIcon;
+
+  /// When set, replaces the duration line under start time (e.g. Passes).
+  final String? secondaryTimeLabel;
   final VoidCallback onTap;
 
   @override
@@ -238,7 +246,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '$duration min',
+                      secondaryTimeLabel ?? '$duration min',
                       style: TextStyle(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
@@ -316,7 +324,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       if (subtitleLabel.isNotEmpty) const SizedBox(height: 4),
                       Row(
                         children: [
-                          _scheduleTrainerIcon(),
+                          _scheduleTrainerIcon(large: useLargeTrainerIcon),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(

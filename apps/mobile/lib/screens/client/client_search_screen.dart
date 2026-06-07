@@ -33,6 +33,7 @@ import '../../widgets/app_search_prefix_icon.dart';
 import '../../widgets/client/browse_day_pill.dart';
 import '../../widgets/client/browse_studio_list_card.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
+import '../../widgets/language_selector_modal.dart';
 import '../../widgets/training/training_category_color_chip.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -78,6 +79,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   String _distanceFilter = 'auto';
   String _sortBy = 'recommended';
   final Set<String> _timePeriods = <String>{};
+  final Set<String> _selectedLanguages = <String>{};
+
+  static const List<String> _kTrainingLanguageCodes = ['en', 'ru', 'vi'];
 
   /// Minutes from midnight; timeline starts at 05:00, max 24:00.
   /// Default active start-time window: 09:00 - 20:00.
@@ -186,7 +190,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   }) {
     final w = _browseStripViewportWidth;
     if (w == null || !_dayStripScrollController.hasClients) return;
-    final offset = index * _browseDayStride(w);
+    final raw = index * _browseDayStride(w);
+    final maxExtent = _dayStripScrollController.position.maxScrollExtent;
+    final offset = raw.clamp(0.0, maxExtent);
     if (animate) {
       _dayStripScrollController.animateTo(
         offset,
@@ -219,6 +225,38 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         .inDays;
     _scrollBrowseStripToIndex(index, animate: true);
     _applyExploreDay(normalized);
+  }
+
+  /// Keeps the strip layout as before; only nudges scroll so the pill is tappable.
+  void _selectBrowseStripDay(int index, DateTime day) {
+    final normalized = _calendarDateOnly(day);
+    if (!_isDayInExploreHorizon(normalized)) return;
+    _applyExploreDay(normalized);
+
+    final w = _browseStripViewportWidth;
+    if (w == null || !_dayStripScrollController.hasClients) return;
+
+    final stride = _browseDayStride(w);
+    final pillWidth = _browsePillWidth(w);
+    final itemStart = index * stride;
+    final itemEnd = itemStart + pillWidth;
+    final offset = _dayStripScrollController.offset;
+    final viewportEnd = offset + w;
+    final maxExtent = _dayStripScrollController.position.maxScrollExtent;
+
+    double? target;
+    if (itemEnd > viewportEnd + 0.5) {
+      target = itemEnd - w;
+    } else if (itemStart < offset - 0.5) {
+      target = itemStart;
+    }
+    if (target == null) return;
+
+    _dayStripScrollController.animateTo(
+      target.clamp(0.0, maxExtent),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _syncBrowseStripPagerToSelectedDay() {
@@ -442,6 +480,47 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     }
   }
 
+  String _trainingLanguageLabel(String code) {
+    final tr = context.read<LocaleProvider>().t;
+    switch (code) {
+      case 'en':
+        return tr('settings.languageEn');
+      case 'ru':
+        return tr('settings.languageRu');
+      case 'vi':
+        return tr('settings.languageVi');
+      default:
+        return code;
+    }
+  }
+
+  String get _languageChipLabel {
+    final tr = context.read<LocaleProvider>().t;
+    if (_selectedLanguages.isEmpty) {
+      return tr('clientHome.filterLanguage');
+    }
+    final sorted = _kTrainingLanguageCodes
+        .where(_selectedLanguages.contains)
+        .toList(growable: false);
+    if (sorted.isEmpty) return tr('clientHome.filterLanguage');
+    if (sorted.length == 1) return _trainingLanguageLabel(sorted.first);
+    return '${_trainingLanguageLabel(sorted.first)} +${sorted.length - 1}';
+  }
+
+  bool _classMatchesLanguage(ExploreClassItem c) {
+    if (_selectedLanguages.isEmpty) return true;
+    final lang = c.language?.trim().toLowerCase();
+    if (lang == null || lang.isEmpty) return false;
+    return _selectedLanguages.contains(lang);
+  }
+
+  bool _studioMatchesLanguage(ExploreStudioItem s) {
+    if (_selectedLanguages.isEmpty) return true;
+    return _classes.any(
+      (c) => c.studioId == s.id && _classMatchesLanguage(c),
+    );
+  }
+
   Future<void> _openLocationPicker() async {
     final loc = context.read<ClientLocationStore>();
     final picked = await Navigator.of(context).push<LocationPickerResult>(
@@ -570,6 +649,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             rating: studio.rating,
             reviewCount: studio.reviewCount,
             trainingCategoryId: trainingCategoryId,
+            language: (training['language'] ?? '').toString().trim().isEmpty
+                ? null
+                : (training['language'] ?? '').toString().trim().toLowerCase(),
             trainingId: (training['id'] ?? '').toString(),
             endsAt: endsAt,
             locationName: locationName,
@@ -734,12 +816,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         }
         final photos = map['photos'];
         final gallery = StudioPhotoAsset.listFromJson(map['photoGallery']);
+        final galleryOrNull = gallery.isEmpty ? null : gallery;
+        final legacyPhotos = photos is List
+            ? photos.map((e) => e?.toString() ?? '').toList()
+            : null;
         final photoUrl = studioBrowsePhotoUrl(
-          gallery: gallery.isEmpty ? null : gallery,
-          photos: photos is List
-              ? photos.map((e) => e?.toString() ?? '').toList()
-              : null,
+          gallery: galleryOrNull,
+          photos: legacyPhotos,
         );
+        final firstAsset = galleryOrNull?.first;
+        final photoOriginalUrl = firstAsset?.originalUrl.trim();
 
         studios.add(
           ExploreStudioItem(
@@ -753,6 +839,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             rating: avgRating,
             reviewCount: reviewCount,
             photoUrl: photoUrl,
+            photoOriginalUrl:
+                photoOriginalUrl != null && photoOriginalUrl.isNotEmpty
+                    ? photoOriginalUrl
+                    : null,
+            studioPageCrop: firstAsset?.crops.studioPage,
+            browseCardCrop: firstAsset?.crops.browseCard,
             logoUrl:
                 (map['logoUrl'] ??
                         map['logo'] ??
@@ -860,6 +952,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   bool get _hasActiveFilters =>
       _selectedCategoryId != null ||
+      _selectedLanguages.isNotEmpty ||
       _hasActiveTimeFilter ||
       _distanceFilter != 'auto' ||
       _sortBy != 'recommended';
@@ -893,6 +986,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       _sortBy,
       _distanceFilter,
       _selectedCategoryId,
+      Object.hashAll(_selectedLanguages),
       _searchQuery,
       Object.hashAll(_timePeriods),
       _timeRange.start.round(),
@@ -930,6 +1024,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       if (!_isClassInSelectedPeriods(c.startsAt)) return false;
       if (!_isClassInTimeRange(c.startsAt)) return false;
       if (!_classMatchesCategory(c)) return false;
+      if (!_classMatchesLanguage(c)) return false;
       return true;
     }).toList();
     _derivedDayClassesCount = dayClasses.length;
@@ -939,6 +1034,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
     final visibleStudios = inRangeStudios
         .where(_studioMatchesCategory)
+        .where(_studioMatchesLanguage)
         .toList(growable: false);
     _derivedVisibleStudiosCount = visibleStudios.length;
     _derivedVisibleStudios = visibleStudios
@@ -954,6 +1050,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         if (!_isClassInSelectedPeriods(c.startsAt)) continue;
         if (!_isClassInTimeRange(c.startsAt)) continue;
         if (!_classMatchesCategory(c)) continue;
+        if (!_classMatchesLanguage(c)) continue;
         list.add(c);
       }
       list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
@@ -1134,6 +1231,157 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     if (!mounted || result == null) return;
     setState(() {
       _selectedCategoryId = result < 0 ? null : result;
+    });
+  }
+
+  Widget _languageFilterTile({
+    required String code,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final flag = kTrainingLanguageFlags[code] ?? '';
+    return Expanded(
+      child: InkWell(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary500
+                  : AppColors.borderPrimary,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (flag.isNotEmpty)
+                Text(flag, style: TextStyle(fontSize: 22.sp)),
+              if (flag.isNotEmpty) const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: selected
+                      ? AppColors.primary500
+                      : AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openLanguageFilterSheet() async {
+    final tempLanguages = Set<String>.from(_selectedLanguages);
+    final result = await showHenzoModalBottomSheet<List<String>>(
+      context: context,
+      showDragHandle: false,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                bottomSheetTheme: const BottomSheetThemeData(
+                  surfaceTintColor: Colors.transparent,
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _filterSheetTitleRow(
+                        ctx,
+                        context.read<LocaleProvider>().t(
+                          'clientHome.filterByLanguage',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          for (final code in _kTrainingLanguageCodes)
+                            _languageFilterTile(
+                              code: code,
+                              label: _trainingLanguageLabel(code),
+                              selected: tempLanguages.contains(code),
+                              onTap: () {
+                                setModalState(() {
+                                  if (tempLanguages.contains(code)) {
+                                    tempLanguages.remove(code);
+                                  } else {
+                                    tempLanguages.add(code);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () =>
+                              setModalState(() => tempLanguages.clear()),
+                          child: Text(
+                            context.read<LocaleProvider>().t('common.reset'),
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () =>
+                              Navigator.of(ctx).pop(tempLanguages.toList()),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary500,
+                          ),
+                          child: Text(
+                            context.watch<LocaleProvider>().t('common.apply'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || result == null) return;
+    setState(() {
+      _selectedLanguages
+        ..clear()
+        ..addAll(result.map((e) => e.trim().toLowerCase()));
+      _derivedInputsHash = 0;
     });
   }
 
@@ -1707,6 +1955,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     String tempSort = _sortBy;
     String tempDistance = _distanceFilter;
     final tempPeriods = Set<String>.from(_timePeriods);
+    final tempLanguages = Set<String>.from(_selectedLanguages);
     RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
 
     final result = await showHenzoModalBottomSheet<Map<String, dynamic>>(
@@ -1916,6 +2165,31 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               setModalState(() => tempDistance = '30+'),
                         ),
                         const SizedBox(height: 6),
+                        sectionTitle(
+                          context.read<LocaleProvider>().t(
+                            'clientHome.trainingLanguageSection',
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            for (final code in _kTrainingLanguageCodes)
+                              _languageFilterTile(
+                                code: code,
+                                label: _trainingLanguageLabel(code),
+                                selected: tempLanguages.contains(code),
+                                onTap: () {
+                                  setModalState(() {
+                                    if (tempLanguages.contains(code)) {
+                                      tempLanguages.remove(code);
+                                    } else {
+                                      tempLanguages.add(code);
+                                    }
+                                  });
+                                },
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
                         sectionTitle(context.read<LocaleProvider>().t('clientHome.activitiesByTimePeriod')),
                         Row(
                           children: [
@@ -2009,6 +2283,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 tempSort = 'recommended';
                                 tempDistance = 'auto';
                                 tempPeriods.clear();
+                                tempLanguages.clear();
                                 tempRange = _kExploreDefaultTimeRange;
                               });
                             },
@@ -2029,6 +2304,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               'sort': tempSort,
                               'distance': tempDistance,
                               'periods': tempPeriods.toList(),
+                              'languages': tempLanguages.toList(),
                               'start': tempRange.start,
                               'end': tempRange.end,
                             }),
@@ -2053,11 +2329,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final sort = (result['sort'] ?? '').toString();
     final distance = (result['distance'] ?? '').toString();
     final periods = result['periods'];
+    final languages = result['languages'];
     final start = (result['start'] as num?)?.toDouble();
     final end = (result['end'] as num?)?.toDouble();
     if (sort.isEmpty ||
         distance.isEmpty ||
         periods is! List ||
+        languages is! List ||
         start == null ||
         end == null) {
       return;
@@ -2070,6 +2348,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       _timePeriods
         ..clear()
         ..addAll(periods.map((e) => e.toString()));
+      _selectedLanguages
+        ..clear()
+        ..addAll(
+          languages.map((e) => e.toString().trim().toLowerCase()),
+        );
       _timeRange = RangeValues(start, end);
       if (!distanceChanged) {
         final sorted = List<ExploreStudioItem>.from(_studios);
@@ -2104,7 +2387,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                 final index = (_dayStripScrollController.offset / stride)
                     .round()
                     .clamp(0, _kExploreHorizonDays - 1);
-                final target = index * stride;
+                final target = (index * stride).clamp(
+                  0.0,
+                  _dayStripScrollController.position.maxScrollExtent,
+                );
                 if ((_dayStripScrollController.offset - target).abs() > 0.5) {
                   _dayStripScrollController.animateTo(
                     target,
@@ -2137,7 +2423,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       return BrowseDayPill(
                         day: day,
                         selected: selected,
-                        onTap: () => _applyExploreDay(day),
+                        onTap: () => _selectBrowseStripDay(index, day),
                       );
                     },
                   ),
@@ -2335,6 +2621,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           subtitleLabel: subtitle,
           showLocationPin: loc.isNotEmpty,
           trainerLine: trainerLine,
+          useLargeTrainerIcon: true,
           showSubtitleLeadingIcon: subtitle.isNotEmpty,
           dimPastSessions: false,
           trailingPriceLabel:
@@ -2674,6 +2961,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           label: _typesChipLabel(localeCode),
                           isActive: _selectedCategoryId != null,
                           onTap: _openCategorySheet,
+                        ),
+                        ClientExploreFilterChip(
+                          label: _languageChipLabel,
+                          isActive: _selectedLanguages.isNotEmpty,
+                          onTap: _openLanguageFilterSheet,
                         ),
                         ClientExploreFilterChip(
                           label: _timeFilterChipLabel,
