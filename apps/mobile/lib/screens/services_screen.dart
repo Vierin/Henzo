@@ -1320,9 +1320,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
             );
             return;
           }
+          if (!mounted) return;
           final scheduleData = scheduleRes ?? const <String, dynamic>{};
-          final updatedCount =
-              (scheduleData['updatedCount'] as num?)?.toInt() ?? 0;
           final createdCount =
               (scheduleData['createdCount'] as num?)?.toInt() ?? 0;
           final removedCount =
@@ -1335,7 +1334,6 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           final summary = loc.t('servicesScreen.scheduleUpdateResult')
               .replaceAll('{created}', '$createdCount')
               .replaceAll('{skipped}', '${skippedBooked + conflicts + removedCount}');
-          if (!mounted) return;
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(content: Text(summary)),
           );

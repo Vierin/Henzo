@@ -132,7 +132,7 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _languageName(lang!),
+                              _languageName(lang),
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w400,

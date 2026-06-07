@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Field and primary-button geometry shared with [AddTrainingScreen] step 1.
 abstract final class AuthFormStyles {

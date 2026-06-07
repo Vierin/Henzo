@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +9,7 @@ import '../../services/auth_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/formatters.dart';
 import 'trainer_session_card.dart';
-import 'trainer_home_screen.dart' show TrainerSessionEnrollmentsScreen;
+import 'trainer_session_enrollments_screen.dart';
 
 class TrainerScheduleScreen extends StatefulWidget {
   const TrainerScheduleScreen({super.key});

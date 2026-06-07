@@ -229,6 +229,7 @@ export class TrainingsService {
   async createTraining(data: {
     name: string;
     description?: string;
+    language?: string;
     descriptionEn?: string;
     descriptionVi?: string;
     descriptionRu?: string;
