@@ -439,9 +439,6 @@ class _FilterPill extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? AppColors.primary500 : AppColors.backgroundPrimary,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
-            ),
           ),
           child: Container(
             alignment: Alignment.center,

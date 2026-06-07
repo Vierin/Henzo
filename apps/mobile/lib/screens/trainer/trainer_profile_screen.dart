@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
+import '../../utils/legal_web_links.dart';
 import '../../widgets/client/client_profile_sections.dart';
-import 'trainer_profile_settings_screen.dart';
+import '../../widgets/language_selector_modal.dart';
+import '../../widgets/settings/feedback_sheet.dart';
+import '../../widgets/settings/settings_list_widgets.dart';
+import '../account_settings_screen.dart';
 
 class TrainerProfileScreen extends StatefulWidget {
   const TrainerProfileScreen({super.key});
@@ -20,6 +25,13 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
+
+  Future<void> _logout(BuildContext context) async {
+    await context.read<AuthService>().logout();
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true)
+        .popUntil((route) => route.isFirst);
+  }
 
   String? _accessLevelLabel(LocaleProvider locale, String? accessLevel) {
     if (accessLevel == null || accessLevel.isEmpty) return null;
@@ -36,21 +48,21 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen>
     final trainer = auth.trainerInfo;
     final user = auth.user;
 
-    final trainerName = trainer?.name.trim() ?? '';
     final userName = user?.name?.trim() ?? '';
-    final name = trainerName.isNotEmpty
-        ? trainerName
-        : (userName.isNotEmpty ? userName : locale.t('trainer.role'));
+    final trainerName = trainer?.name.trim() ?? '';
+    final name = userName.isNotEmpty
+        ? userName
+        : (trainerName.isNotEmpty ? trainerName : locale.t('trainer.role'));
     final email = (user?.email ?? trainer?.email ?? '').trim();
     final studio = trainer?.studioName.trim();
-    final studioLogo = trainer?.studioLogoUrl?.trim();
-    final accessLabel = _accessLevelLabel(locale, trainer?.accessLevel);
-    final trainings = trainer?.trainings ?? const [];
+    final accessLabel = _accessLevelLabel(locale, trainer?.accessLevel) ??
+        (trainer != null ? locale.t('trainer.accessEmployee') : null);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
             kScreenPaddingHorizontal,
             12,
@@ -60,15 +72,12 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClientProfileHeader(
-                title: locale.t('clientProfile.title'),
-                onSettings: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const TrainerProfileSettingsScreen(),
-                    ),
-                  );
-                },
+              Text(
+                locale.t('clientProfile.title'),
+                style: BrandTypography.greeting(context).copyWith(
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 20),
               ClientProfileUserRow(
@@ -76,132 +85,69 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen>
                 email: email,
                 location: studio?.isNotEmpty == true ? studio : null,
                 avatarUrl: user?.avatarUrl,
+                roleLabel: accessLabel,
               ),
-              if (accessLabel != null) ...[
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary100,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      accessLabel,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary700,
-                      ),
+              const SizedBox(height: 20),
+              SettingsGroupCard(
+                children: [
+                  SettingsListTile(
+                    svgAsset: 'assets/icons/icon-profile.svg',
+                    title: locale.t('profileForm.accountSettings'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const AccountSettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SettingsSectionLabel(
+                title: locale.t('settings.owner.sectionApp'),
+              ),
+              const SizedBox(height: 8),
+              SettingsGroupCard(
+                children: [
+                  SettingsListTile(
+                    icon: Icons.language_outlined,
+                    title: locale.t('settings.changeLanguage'),
+                    onTap: () => showLanguageSelectorModal(context, locale),
+                  ),
+                  SettingsListTile(
+                    icon: Icons.description_outlined,
+                    title: locale.t('settings.termsOfUse'),
+                    onTap: () => openLegalWebPage(
+                      context,
+                      locale,
+                      '/terms-of-service',
                     ),
                   ),
-                ),
-              ],
-              if (studio?.isNotEmpty == true) ...[
-                const SizedBox(height: 16),
-                _StudioRow(
-                  studioName: studio!,
-                  logoUrl: studioLogo,
-                ),
-              ],
-              if (trainings.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Text(
-                  locale.t('trainer.assignedTrainings'),
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...trainings.map(
-                  (training) => Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundPrimary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      training.name,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
+                  SettingsListTile(
+                    svgAsset: 'assets/icons/icon-settings.svg',
+                    title: locale.t('settings.privacyPolicy'),
+                    onTap: () => openLegalWebPage(
+                      context,
+                      locale,
+                      '/privacy-policy',
                     ),
                   ),
-                ),
-              ],
+                  SettingsListTile(
+                    icon: Icons.chat_bubble_outline,
+                    title: locale.t('settings.feedback.sendFeedback'),
+                    onTap: () => showFeedbackSheet(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SettingsLogoutButton(
+                label: locale.t('settings.logOut'),
+                onTap: () => _logout(context),
+              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _StudioRow extends StatelessWidget {
-  const _StudioRow({
-    required this.studioName,
-    this.logoUrl,
-  });
-
-  final String studioName;
-  final String? logoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial =
-        studioName.isNotEmpty ? studioName.characters.first.toUpperCase() : '?';
-    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary100,
-            backgroundImage: hasLogo ? NetworkImage(logoUrl!) : null,
-            child: hasLogo
-                ? null
-                : Text(
-                    initial,
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary700,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              studioName,
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }
