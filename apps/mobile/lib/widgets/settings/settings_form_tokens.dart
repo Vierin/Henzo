@@ -37,6 +37,8 @@ InputDecoration settingsInputDecoration({
   return InputDecoration(
     hintText: hintText,
     labelText: labelText,
+    hintStyle: const TextStyle(color: AppColors.textTertiary),
+    floatingLabelBehavior: FloatingLabelBehavior.never,
     filled: true,
     fillColor: readOnly
         ? AppColors.backgroundTertiary
@@ -70,6 +72,8 @@ InputDecoration settingsBorderlessInputDecoration({
   return InputDecoration(
     hintText: hintText,
     labelText: labelText,
+    hintStyle: const TextStyle(color: AppColors.textTertiary),
+    floatingLabelBehavior: FloatingLabelBehavior.never,
     filled: true,
     fillColor: readOnly
         ? AppColors.backgroundTertiary

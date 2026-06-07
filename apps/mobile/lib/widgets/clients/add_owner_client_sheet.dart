@@ -15,6 +15,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
 import '../common/sheet_action_button_style.dart';
+import '../settings/settings_form_tokens.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum AddOwnerClientMode { directoryOnly, enrollInSession }
@@ -29,6 +30,9 @@ bool _isValidEmail(String raw) {
   final s = raw.trim();
   return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
 }
+
+String _requiredFieldHint(String Function(String) tr, String key) =>
+    '${tr(key)} *';
 
 /// Picked client from roster / search (same shape for list + enroll).
 class _ClientPick {
@@ -167,22 +171,13 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(tr('ownerClient.addToDirectory'), style: _sheetTitleStyle),
-                const SizedBox(height: 8),
-                Text(
-                  tr('ownerClient.directoryFormHint'),
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    color: AppColors.textSecondary,
-                    height: 1.35,
-                  ),
-                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _name,
                   enabled: !_saving,
                   textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: tr('ownerSession.name'),
+                  decoration: settingsInputDecoration(
+                    hintText: _requiredFieldHint(tr, 'ownerSession.name'),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -190,8 +185,8 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
                   controller: _email,
                   enabled: !_saving,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: tr('ownerSession.email'),
+                  decoration: settingsInputDecoration(
+                    hintText: _requiredFieldHint(tr, 'ownerSession.email'),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -199,8 +194,8 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
                   controller: _phone,
                   enabled: !_saving,
                   keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: tr('ownerSession.phone'),
+                  decoration: settingsInputDecoration(
+                    hintText: tr('ownerSession.phone'),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -208,8 +203,9 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
                   controller: _notes,
                   enabled: !_saving,
                   maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: tr('ownerClient.notesOptional'),
+                  decoration: settingsInputDecoration(
+                    hintText: tr('ownerClient.notesOptional'),
+                    maxLines: 2,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -721,10 +717,12 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             TextField(
               controller: _search,
               enabled: !_saving,
-              decoration: InputDecoration(
-                labelText: tr('ownerClient.searchClientsPlaceholder'),
+              decoration: settingsInputDecoration(
+                hintText: tr('ownerClient.searchClientsPlaceholder'),
+              ).copyWith(
                 prefixIcon: const AppSearchPrefixIcon(),
-                prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(),
+                prefixIconConstraints:
+                    AppSearchPrefixIcon.prefixConstraints(),
                 isDense: true,
               ),
             ),
@@ -747,21 +745,14 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              tr('ownerClient.walkInFormHint'),
-              style: TextStyle(
-                fontSize: 13.sp,
-                color: AppColors.textSecondary,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 12),
             TextField(
               controller: _name,
               enabled: !_saving,
               textCapitalization: TextCapitalization.words,
               onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(labelText: tr('ownerSession.name')),
+              decoration: settingsInputDecoration(
+                hintText: _requiredFieldHint(tr, 'ownerSession.name'),
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -769,14 +760,18 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               enabled: !_saving,
               keyboardType: TextInputType.emailAddress,
               onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(labelText: tr('ownerSession.email')),
+              decoration: settingsInputDecoration(
+                hintText: _requiredFieldHint(tr, 'ownerSession.email'),
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _phone,
               enabled: !_saving,
               keyboardType: TextInputType.phone,
-              decoration: InputDecoration(labelText: tr('ownerSession.phone')),
+              decoration: settingsInputDecoration(
+                hintText: tr('ownerSession.phone'),
+              ),
             ),
           ],
         );

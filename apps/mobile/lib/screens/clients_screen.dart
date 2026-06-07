@@ -22,7 +22,6 @@ import '../../widgets/clients/client_list_tile.dart';
 import '../../widgets/clients/clients_filter_chip.dart';
 import '../../widgets/common/henzo_empty_state.dart';
 import 'client_detail_screen.dart';
-import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum ClientFilter { all, sleepers, whiteList, blocked }
@@ -741,30 +740,18 @@ class ClientsScreenState extends State<ClientsScreen> {
                                 return ClientListTile(
                                   name: _clientCardTitle(c, tr),
                                   secondaryLine: _clientCardSecondary(c, tr),
-                                  onTap: () async {
-                                    final shell = context
-                                        .findAncestorStateOfType<
-                                            MainShellState>();
-                                    final result =
-                                        await Navigator.of(context).push<String>(
-                                      MaterialPageRoute(
-                                        builder: (_) => ClientDetailScreen(
-                                          clientKey: c.key,
-                                          name: c.name,
-                                          userId: c.userId,
-                                          email: c.email,
-                                          phone: c.phone,
-                                          initialBlocked: c.isBlocked,
-                                        ),
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ClientDetailScreen(
+                                        clientKey: c.key,
+                                        name: c.name,
+                                        userId: c.userId,
+                                        email: c.email,
+                                        phone: c.phone,
+                                        initialBlocked: c.isBlocked,
                                       ),
-                                    );
-                                    if (!mounted) return;
-                                    if (result !=
-                                        ClientDetailScreen.bookTrainingResult) {
-                                      return;
-                                    }
-                                    shell?.navigateToTab0Route('/trainings/new');
-                                  },
+                                    ),
+                                  ),
                                 );
                               },
                             ),
