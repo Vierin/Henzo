@@ -19,6 +19,7 @@ import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/plan_limit_dialogs.dart';
+import '../utils/subscription_tier.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -81,6 +82,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   List<TrainingCategoryOption> _categories = [];
   int? _selectedCategoryId;
   String _selectedLanguage = 'en';
+  bool _isProPlan = false;
 
   bool _step1NameError = false;
   bool _step1DurationError = false;
@@ -1283,6 +1285,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           ? await servicesStaffCache.getServicesForStudio(token, studio.id)
           : <ServiceItem>[];
       final categories = await ServicesApiService.getTrainingCategories(token);
+      final sub = await DashboardApiService.getCurrentSubscription(token);
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
       setState(() {
@@ -1290,6 +1293,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         _applyLocationsFromStudio(studio, locale);
         _existing = list;
         _categories = TrainingCategoryOption.withOtherLast(categories);
+        _isProPlan = subscriptionTypeIsPaid(sub?.type);
         _loading = false;
         final start = DateTime(
           _sessionDate.year,
@@ -1835,8 +1839,14 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         _stepFormLabel(loc.t('addTraining.step2.trainer')),
                         InputDecorator(
                           decoration: InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
                             filled: true,
                             fillColor: AppColors.backgroundPrimary,
                             contentPadding: const EdgeInsets.symmetric(
@@ -1852,15 +1862,17 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          loc.t('addTraining.step2.trainerProNote'),
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            height: 1.35,
-                            color: AppColors.textSecondary,
+                        if (!_isProPlan) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            loc.t('addTraining.step2.trainerProNote'),
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              height: 1.35,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 30),
                         SizedBox(
                           height: 60,
