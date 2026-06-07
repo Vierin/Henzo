@@ -212,11 +212,22 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     } else {
       final items = _itemsForDay;
       if (items.isEmpty) {
-        content = Center(
-          child: Text(
-            locale.t('dashboard.noClassesToday'),
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
+        content = ListView(
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingHorizontal,
+            12,
+            kScreenPaddingHorizontal,
+            24,
           ),
+          children: [
+            Text(
+              locale.t('dashboard.noClassesToday'),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14.sp,
+              ),
+            ),
+          ],
         );
       } else {
         content = RefreshIndicator(

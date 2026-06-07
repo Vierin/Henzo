@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -361,13 +362,19 @@ class CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
-  /// Перепрыгнуть на конкретный день — используется из месячного вида и кнопки "Сегодня"
-  /// [afterBuild]: вызвать после кадра, если [PageView] ещё не в дереве (сворачивание месяца).
-  void _jumpToDay(DateTime day, {bool afterBuild = false}) {
+  /// Выбрать день без прокрутки ленты (тап по pill в strip).
+  void _selectDay(DateTime day) {
     final normalized = DateTime(day.year, day.month, day.day);
     _stripDayNotifier.value = normalized;
     _scheduleDayNotifier.value = normalized;
     _stripPagerDayNotifier.value = normalized;
+  }
+
+  /// Перепрыгнуть на конкретный день — месячный вид, «Сегодня», смена месяца.
+  /// [afterBuild]: вызвать после кадра, если [PageView] ещё не в дереве (сворачивание месяца).
+  void _jumpToDay(DateTime day, {bool afterBuild = false}) {
+    final normalized = DateTime(day.year, day.month, day.day);
+    _selectDay(normalized);
 
     void jumpPager({int attempt = 0}) {
       if (!_dayPagerController.hasClients) {
@@ -539,7 +546,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                     selected: selected,
                     sessionsCount: sessionsCount,
                     isToday: isToday,
-                    onTap: () => _jumpToDay(day),
+                    onTap: () => _selectDay(day),
                   ),
                 );
               },
@@ -551,58 +558,83 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _todayButton() {
-    return TextButton(
-      onPressed: () {
-        final now = DateTime.now();
-        _jumpToDay(DateTime(now.year, now.month, now.day));
-      },
-      style: TextButton.styleFrom(
-        backgroundColor: AppColors.primary500,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(
-        'Today',
-        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.sp),
+    return Material(
+      color: AppColors.primary500,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: () {
+          final now = DateTime.now();
+          _jumpToDay(DateTime(now.year, now.month, now.day));
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: SizedBox(
+          height: 30,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              child: Text(
+                'Today',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _expandCollapseButton() {
-    return OutlinedButton(
-      onPressed: () {
-        final wasExpanded = _isMonthExpanded;
-        setState(() => _isMonthExpanded = !_isMonthExpanded);
-        if (wasExpanded) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _syncStripPagerDayFromController();
-          });
-        }
-      },
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
-        side: const BorderSide(color: AppColors.borderPrimary),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.calendar_month_outlined,
-            size: 18,
-            color: AppColors.textPrimary,
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: () {
+          final wasExpanded = _isMonthExpanded;
+          setState(() => _isMonthExpanded = !_isMonthExpanded);
+          if (wasExpanded) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _syncStripPagerDayFromController();
+            });
+          }
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: SizedBox(
+          height: 30,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/icon-calendar.svg',
+                  width: 13,
+                  height: 12,
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.textPrimary,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _isMonthExpanded ? 'Collapse' : 'Expand',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.sp,
+                    color: AppColors.textPrimary,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 6),
-          Text(
-            _isMonthExpanded ? 'Collapse' : 'Expand',
-            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.sp),
-          ),
-        ],
+        ),
       ),
     );
   }

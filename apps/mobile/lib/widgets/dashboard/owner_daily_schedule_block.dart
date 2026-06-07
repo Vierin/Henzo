@@ -52,7 +52,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
           if (sessions.isEmpty)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 15),
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
                 borderRadius: BorderRadius.circular(14),
@@ -96,10 +96,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
 }
 
 class _ScheduleEmptyState extends StatelessWidget {
-  const _ScheduleEmptyState({
-    required this.title,
-    this.subtitle,
-  });
+  const _ScheduleEmptyState({required this.title, this.subtitle});
 
   final String title;
   final String? subtitle;
@@ -110,26 +107,26 @@ class _ScheduleEmptyState extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 52,
-          height: 52,
+          width: 44,
+          height: 44,
           decoration: const BoxDecoration(
-            color: AppColors.primary100,
+            color: AppColors.brandAccent,
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
           child: SvgPicture.asset(
-            'assets/icons/icon-calendar-check.svg',
-            width: 24,
-            height: 24,
+            'assets/icons/icon-calendar-empty.svg',
+            width: 20,
+            height: 20,
             fit: BoxFit.contain,
             excludeFromSemantics: true,
             colorFilter: const ColorFilter.mode(
-              AppColors.primary500,
+              AppColors.textInverse,
               BlendMode.srcIn,
             ),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 11),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,11 +134,11 @@ class _ScheduleEmptyState extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 15.sp,
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.3,
                   color: AppColors.textPrimary,
-                  height: 1.25,
+                  height: 1.2,
                 ),
               ),
               if (subtitle != null && subtitle!.isNotEmpty) ...[
@@ -152,7 +149,7 @@ class _ScheduleEmptyState extends StatelessWidget {
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
-                    height: 1.3,
+                    height: 1.2,
                   ),
                 ),
               ],

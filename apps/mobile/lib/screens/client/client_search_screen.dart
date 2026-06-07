@@ -2151,15 +2151,20 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       child: InkWell(
         onTap: _goToToday,
         borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Text(
-            context.read<LocaleProvider>().t('common.today'),
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              height: 1.1,
+        child: SizedBox(
+          height: 30,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              child: Text(
+                context.read<LocaleProvider>().t('common.today'),
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
             ),
           ),
         ),
@@ -2183,33 +2188,38 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           }
         },
         borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/icons/icon-calendar.svg',
-                width: 13,
-                height: 12,
-                fit: BoxFit.contain,
-                excludeFromSemantics: true,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.textPrimary,
-                  BlendMode.srcIn,
+        child: SizedBox(
+          height: 30,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/icon-calendar.svg',
+                  width: 13,
+                  height: 12,
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.textPrimary,
+                    BlendMode.srcIn,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _isMonthExpanded ? context.read<LocaleProvider>().t('common.collapse') : context.read<LocaleProvider>().t('common.expand'),
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                  height: 1.1,
+                const SizedBox(width: 6),
+                Text(
+                  _isMonthExpanded
+                      ? context.read<LocaleProvider>().t('common.collapse')
+                      : context.read<LocaleProvider>().t('common.expand'),
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    height: 1.1,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

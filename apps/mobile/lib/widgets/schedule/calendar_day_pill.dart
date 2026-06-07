@@ -82,7 +82,7 @@ class CalendarDayPill extends StatelessWidget {
     final Color unselectedColor;
     if (today && !selected) {
       unselectedColor = highlightTodayWhenUnselected
-          ? AppColors.primary50
+          ? AppColors.primary100
           : Colors.transparent;
     } else {
       unselectedColor = AppColors.backgroundPrimary;
