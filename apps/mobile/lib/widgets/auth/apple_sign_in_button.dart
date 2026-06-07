@@ -30,7 +30,7 @@ class AppleSignInButton extends StatelessWidget {
               )
             : const Icon(
                 Icons.apple,
-                size: 22,
+                size: 34,
                 color: AppColors.textPrimary,
               ),
         label: Text(

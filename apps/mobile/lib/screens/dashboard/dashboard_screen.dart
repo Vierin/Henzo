@@ -609,7 +609,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       aspectRatio: 1,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(12, 16, 12, 10),
+        padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(18),

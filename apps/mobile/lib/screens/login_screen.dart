@@ -14,6 +14,7 @@ import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/language_selector_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -57,7 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final locale = context.read<LocaleProvider>();
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
     } else {
       final msg = resolveAuthUiMessage(locale, result);
       showApiError(
@@ -79,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final locale = context.read<LocaleProvider>();
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
     } else {
       final msg = resolveAuthUiMessage(locale, result);
       if (msg.isNotEmpty) {
@@ -102,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final locale = context.read<LocaleProvider>();
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
     } else {
       final msg = resolveAuthUiMessage(locale, result);
       if (msg.isNotEmpty) {
@@ -218,10 +216,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.language,
-                              size: 16,
-                              color: AppColors.textPrimary,
+                            SvgPicture.asset(
+                              'assets/icons/icon-globe.svg',
+                              width: 16,
+                              height: 16,
+                              colorFilter: const ColorFilter.mode(
+                                AppColors.textPrimary,
+                                BlendMode.srcIn,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -254,14 +256,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 56),
+                  const SizedBox(height: 14),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     decoration: AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.email'),
-                      prefixIcon: Icons.email_rounded,
+                      prefixWidget: SvgPicture.asset(
+                        'assets/icons/icon-mail.svg',
+                        width: 13.5,
+                        height: 13.5,
+                        colorFilter: const ColorFilter.mode(
+                          AuthFormStyles.accentIcon,
+                          BlendMode.srcIn,
+                        ),
+                      ),
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
@@ -278,7 +288,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     onFieldSubmitted: (_) => _submit(),
                     decoration: AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.password'),
-                      prefixIcon: Icons.lock_rounded,
+                      prefixWidget: SvgPicture.asset(
+                        'assets/icons/icon-password.svg',
+                        width: 16,
+                        height: 16,
+                        colorFilter: const ColorFilter.mode(
+                          AuthFormStyles.accentIcon,
+                          BlendMode.srcIn,
+                        ),
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -288,6 +306,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 22,
                         ),
                         padding: const EdgeInsets.only(right: 12),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
                         },
@@ -371,7 +391,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Divider(
                           color: Color(0xFF9B9B9B),
                           thickness: 1.0,
-                          indent: 24,
+                          indent: 0,
                           endIndent: 12,
                         ),
                       ),
@@ -387,12 +407,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Color(0xFF9B9B9B),
                           thickness: 1.0,
                           indent: 12,
-                          endIndent: 24,
+                          endIndent: 0,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 20),
                   SizedBox(
                     height: AuthFormStyles.buttonHeight,
                     child: OutlinedButton.icon(
@@ -444,8 +464,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildGoogleIcon() {
     return Image.asset(
       'assets/public/icon-google.png',
-      width: 20,
-      height: 20,
+      width: 25,
+      height: 25,
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => const Icon(
         Icons.g_mobiledata_rounded,

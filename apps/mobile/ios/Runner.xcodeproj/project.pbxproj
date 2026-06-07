@@ -7,24 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0DEBF90837085C713B28F5A6 /* HenzoWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92032C49A9CD59EA16E326B /* HenzoWatchApp.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
-		158A47CCE2DB6289015D60D0 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E56517E6248ADB46287899B /* WatchConnectivity.framework */; };
 		1891C5EA9709C6453E901A46 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7B581F44D26E70B284320736 /* Pods_RunnerTests.framework */; };
 		19483F9B2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 19483F9A2FB9F9BD00E25E06 /* GoogleService-Info.plist */; };
 		19483F9C2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 19483F9A2FB9F9BD00E25E06 /* GoogleService-Info.plist */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
-		37EA4D60AADE0B5C9C97EB42 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC73C1753C3748D6FF4C6FE6 /* ContentView.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		5A51A19BC557DE3338534EDF /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B6C69CE5FE336490B3DC1EE5 /* Pods_Runner.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
-		7CB3D0E5D57F960A80D9A24E /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 512A13A2B97958BC42EFA3AC /* HealthKit.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		CBADB7512119322A5219058A /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA936FE054B4E45319E35A1 /* PhoneConnectivityManager.swift */; };
-		E3D25E7E4F9BC87F43E8F3C3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7827D3677C1B89BDF45BF061 /* Foundation.framework */; };
-		E72B2CA65478E87A659CA749 /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDDAA082291DD0479E40F0CB /* WorkoutManager.swift */; };
 		E96067EEE4D469FE42E37E0C /* HenzoWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B60FFE192B652415DC07F5F7 /* HenzoWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -35,13 +28,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
-		};
-		42220FFB3FB29DB85A5851AA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 45D37486D11E65F00E4025A1;
-			remoteInfo = HenzoWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -107,16 +93,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		5A096D891CF1D8FA125434E6 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				E3D25E7E4F9BC87F43E8F3C3 /* Foundation.framework in Frameworks */,
-				7CB3D0E5D57F960A80D9A24E /* HealthKit.framework in Frameworks */,
-				158A47CCE2DB6289015D60D0 /* WatchConnectivity.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9633847DAF7F05A731E7ED15 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -262,23 +238,6 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		45D37486D11E65F00E4025A1 /* HenzoWatch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B2B595ABCA92F2A6716B128B /* Build configuration list for PBXNativeTarget "HenzoWatch" */;
-			buildPhases = (
-				464A5EC42EE027033FC60D5D /* Sources */,
-				5A096D891CF1D8FA125434E6 /* Frameworks */,
-				C269E72E675FA56936450040 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = HenzoWatch;
-			productName = HenzoWatch;
-			productReference = B60FFE192B652415DC07F5F7 /* HenzoWatch.app */;
-			productType = "com.apple.product-type.application";
-		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -295,12 +254,11 @@
 				A04FD51DD9433C2979CFFA3A /* [CP] Copy Pods Resources */,
 				36F6CBB534831BE1C047B433 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
 				C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */,
-				EFD5003DBBC6DC5379CFB267 /* Strip Simulator Platform Flags v5 */,
+				A98A9D89047257CAF1894016 /* Strip Simulator Platform Flags v5 */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				660624B3CA57ABE7FAF3C6BD /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -342,7 +300,6 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
-				45D37486D11E65F00E4025A1 /* HenzoWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -365,13 +322,6 @@
 				19483F9B2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C269E72E675FA56936450040 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -492,6 +442,24 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		A98A9D89047257CAF1894016 /* Strip Simulator Platform Flags v5 */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Simulator Platform Flags v5";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "      if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\n\n      FRAMEWORKS=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\n      [ -d \"${FRAMEWORKS}\" ] || exit 0\n\n      # Python patches LC_BUILD_VERSION platform bytes directly in the Mach-O.\n      # PLATFORM_IOSSIMULATOR = 7  →  PLATFORM_IOS = 2\n      # Handles both single-arch and FAT binaries.\n      # After patching the stale code signature is removed so Xcode re-signs\n      # the binary during the archive export step (deep signing).\n      fix_binary() {\n        local binary=\"$1\"\n        [ -f \"${binary}\" ] || return 0\n\n        python3 - \"${binary}\" << 'PYEOF'\nimport sys, struct, os\n\nPLATFORM_IOSSIMULATOR = 7\nPLATFORM_IOS          = 2\nLC_BUILD_VERSION      = 0x32\n\ndef patch_arch(data, base):\n    magic = struct.unpack_from('<I', data, base)[0]\n    if magic != 0xFEEDFACF:   # only 64-bit LE (arm64)\n        return False\n    ncmds   = struct.unpack_from('<I', data, base + 16)[0]\n    off     = base + 32        # 64-bit Mach-O header size\n    changed = False\n    for _ in range(ncmds):\n        cmd, size = struct.unpack_from('<II', data, off)\n        if cmd == LC_BUILD_VERSION:\n            plat = struct.unpack_from('<I', data, off + 8)[0]\n            if plat == PLATFORM_IOSSIMULATOR:\n                struct.pack_into('<I', data, off + 8, PLATFORM_IOS)\n                changed = True\n        off += size\n    return changed\n\npath = sys.argv[1]\nwith open(path, 'rb') as f:\n    raw = bytearray(f.read())\n\nmodified = False\nfat_magic = struct.unpack_from('>I', raw, 0)[0]\nif fat_magic == 0xCAFEBABE:           # FAT binary\n    nfat = struct.unpack_from('>I', raw, 4)[0]\n    for i in range(nfat):\n        arch_offset = struct.unpack_from('>I', raw, 8 + i * 20 + 8)[0]\n        if patch_arch(raw, arch_offset):\n            modified = True\nelse:\n    modified = patch_arch(raw, 0)\n\nif modified:\n    with open(path, 'wb') as f:\n        f.write(raw)\n    print(f\"[strip] Patched platform flags: {os.path.basename(path)}\")\n    # Remove stale code signature — Xcode will re-sign during archive export\n    os.system(f'codesign --remove-signature \"{path}\" 2>/dev/null || true')\nPYEOF\n      }\n\n      # Fix .framework binaries\n      find \"${FRAMEWORKS}\" -name \"*.framework\" -type d | while IFS= read -r fw; do\n        fix_binary \"${fw}/$(basename \"${fw}\" .framework)\"\n      done\n\n      # Fix loose .dylib files\n      find \"${FRAMEWORKS}\" -name \"*.dylib\" -type f | while IFS= read -r dylib; do\n        fix_binary \"${dylib}\"\n      done\n\n      # Sync MinimumOSVersion in Info.plist to avoid error 90208\n      find \"${FRAMEWORKS}\" -name \"Info.plist\" | while IFS= read -r plist; do\n        current=$(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" \"${plist}\" 2>/dev/null)\n        [ -z \"${current}\" ] && continue\n        if [ \"${current}\" != \"${IPHONEOS_DEPLOYMENT_TARGET}\" ]; then\n          /usr/libexec/PlistBuddy -c \\\n            \"Set :MinimumOSVersion ${IPHONEOS_DEPLOYMENT_TARGET}\" \"${plist}\" 2>/dev/null || true\n        fi\n      done\n\n      echo \"[strip] Done.\"\n";
+		};
 		C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -527,24 +495,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		EFD5003DBBC6DC5379CFB267 /* Strip Simulator Platform Flags v5 */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Strip Simulator Platform Flags v5";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "      if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\n\n      FRAMEWORKS=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\n      [ -d \"${FRAMEWORKS}\" ] || exit 0\n\n      # Python patches LC_BUILD_VERSION platform bytes directly in the Mach-O.\n      # PLATFORM_IOSSIMULATOR = 7  →  PLATFORM_IOS = 2\n      # Handles both single-arch and FAT binaries.\n      # After patching the stale code signature is removed so Xcode re-signs\n      # the binary during the archive export step (deep signing).\n      fix_binary() {\n        local binary=\"$1\"\n        [ -f \"${binary}\" ] || return 0\n\n        python3 - \"${binary}\" << 'PYEOF'\nimport sys, struct, os\n\nPLATFORM_IOSSIMULATOR = 7\nPLATFORM_IOS          = 2\nLC_BUILD_VERSION      = 0x32\n\ndef patch_arch(data, base):\n    magic = struct.unpack_from('<I', data, base)[0]\n    if magic != 0xFEEDFACF:   # only 64-bit LE (arm64)\n        return False\n    ncmds   = struct.unpack_from('<I', data, base + 16)[0]\n    off     = base + 32        # 64-bit Mach-O header size\n    changed = False\n    for _ in range(ncmds):\n        cmd, size = struct.unpack_from('<II', data, off)\n        if cmd == LC_BUILD_VERSION:\n            plat = struct.unpack_from('<I', data, off + 8)[0]\n            if plat == PLATFORM_IOSSIMULATOR:\n                struct.pack_into('<I', data, off + 8, PLATFORM_IOS)\n                changed = True\n        off += size\n    return changed\n\npath = sys.argv[1]\nwith open(path, 'rb') as f:\n    raw = bytearray(f.read())\n\nmodified = False\nfat_magic = struct.unpack_from('>I', raw, 0)[0]\nif fat_magic == 0xCAFEBABE:           # FAT binary\n    nfat = struct.unpack_from('>I', raw, 4)[0]\n    for i in range(nfat):\n        arch_offset = struct.unpack_from('>I', raw, 8 + i * 20 + 8)[0]\n        if patch_arch(raw, arch_offset):\n            modified = True\nelse:\n    modified = patch_arch(raw, 0)\n\nif modified:\n    with open(path, 'wb') as f:\n        f.write(raw)\n    print(f\"[strip] Patched platform flags: {os.path.basename(path)}\")\n    # Remove stale code signature — Xcode will re-sign during archive export\n    os.system(f'codesign --remove-signature \"{path}\" 2>/dev/null || true')\nPYEOF\n      }\n\n      # Fix .framework binaries\n      find \"${FRAMEWORKS}\" -name \"*.framework\" -type d | while IFS= read -r fw; do\n        fix_binary \"${fw}/$(basename \"${fw}\" .framework)\"\n      done\n\n      # Fix loose .dylib files\n      find \"${FRAMEWORKS}\" -name \"*.dylib\" -type f | while IFS= read -r dylib; do\n        fix_binary \"${dylib}\"\n      done\n\n      # Sync MinimumOSVersion in Info.plist to avoid error 90208\n      find \"${FRAMEWORKS}\" -name \"Info.plist\" | while IFS= read -r plist; do\n        current=$(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" \"${plist}\" 2>/dev/null)\n        [ -z \"${current}\" ] && continue\n        if [ \"${current}\" != \"${IPHONEOS_DEPLOYMENT_TARGET}\" ]; then\n          /usr/libexec/PlistBuddy -c \\\n            \"Set :MinimumOSVersion ${IPHONEOS_DEPLOYMENT_TARGET}\" \"${plist}\" 2>/dev/null || true\n        fi\n      done\n\n      echo \"[strip] Done.\"\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -553,17 +503,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		464A5EC42EE027033FC60D5D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				0DEBF90837085C713B28F5A6 /* HenzoWatchApp.swift in Sources */,
-				37EA4D60AADE0B5C9C97EB42 /* ContentView.swift in Sources */,
-				E72B2CA65478E87A659CA749 /* WorkoutManager.swift in Sources */,
-				CBADB7512119322A5219058A /* PhoneConnectivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -583,12 +522,6 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
-		};
-		660624B3CA57ABE7FAF3C6BD /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = HenzoWatch;
-			target = 45D37486D11E65F00E4025A1 /* HenzoWatch */;
-			targetProxy = 42220FFB3FB29DB85A5851AA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -745,31 +678,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
-			};
-			name = Profile;
-		};
-		3E3ADDF4EA14A9AFE536D23D /* Profile */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = PR2HAF6344;
-				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = HenzoWatch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
-				PRODUCT_NAME = HenzoWatch;
-				SDKROOT = watchos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
-				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
 			name = Profile;
 		};
@@ -952,56 +860,6 @@
 			};
 			name = Release;
 		};
-		9C3272B72603A2794BB0D1B1 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = PR2HAF6344;
-				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = HenzoWatch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
-				PRODUCT_NAME = HenzoWatch;
-				SDKROOT = watchos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
-				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
-			};
-			name = Debug;
-		};
-		E932677FFCC9D79065BB7529 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = PR2HAF6344;
-				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = HenzoWatch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
-				PRODUCT_NAME = HenzoWatch;
-				SDKROOT = watchos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
-				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1031,16 +889,6 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B2B595ABCA92F2A6716B128B /* Build configuration list for PBXNativeTarget "HenzoWatch" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E932677FFCC9D79065BB7529 /* Release */,
-				9C3272B72603A2794BB0D1B1 /* Debug */,
-				3E3ADDF4EA14A9AFE536D23D /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
