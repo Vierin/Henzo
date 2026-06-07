@@ -223,7 +223,7 @@ class _DayStripState extends State<_DayStrip> {
                 width: _itemWidth,
                 margin: const EdgeInsets.symmetric(horizontal: _itemMargin),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary500 : Colors.white,
+                  color: isSelected ? AppColors.primary500 : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(

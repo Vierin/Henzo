@@ -1058,7 +1058,7 @@ class _RingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
     final center = Offset(size.width / 2, size.height / 2);
-    const radii = <double>[10, 30, 50, 70, 90];
+    const radii = <double>[10, 36, 62, 88, 114];
     for (final r in radii) {
       canvas.drawCircle(center, r, paint);
     }

@@ -220,11 +220,10 @@ class MainShellState extends State<MainShell> {
           minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
           child: Container(
             height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
+              borderRadius: BorderRadius.circular(16), 
             ),
             child: Consumer<LocaleProvider>(
               builder: (context, locale, _) {

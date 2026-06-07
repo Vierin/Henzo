@@ -74,7 +74,7 @@ class TrainerShellState extends State<TrainerShell> {
           minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
           child: Container(
             height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(16),
