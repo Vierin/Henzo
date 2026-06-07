@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -729,6 +727,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       final sourceBytes = await file.readAsBytes();
+      if (!mounted) return;
       final cropResult = await showStudioPhotoCropSheet(
         context: context,
         imageBytes: sourceBytes,
@@ -1642,6 +1641,7 @@ class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
+                  // ignore: deprecated_member_use
                   onReorder: widget.onReorder,
                   itemCount: assets.length,
                   proxyDecorator: (child, index, animation) {

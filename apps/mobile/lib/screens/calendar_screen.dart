@@ -815,10 +815,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                                   _sessionsByDay[_dayKey(scheduleDay)] ??
                                   const <OwnerTrainingSession>[];
                               final locale = context.read<LocaleProvider>();
-                              final isToday = _isSameDay(
-                                scheduleDay,
-                                DateTime.now(),
-                              );
                               return SliverPadding(
                                 padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
                                 sliver: SliverToBoxAdapter(
