@@ -16,13 +16,7 @@ type Props = {
   studio: PublicStudioPayload;
 };
 
-function serviceName(
-  s: PublicStudioPayload['services'][0],
-  loc: Locale,
-): string {
-  if (loc === 'ru' && s.nameRu) return s.nameRu;
-  if (loc === 'vi' && s.nameVi) return s.nameVi;
-  if (s.nameEn) return s.nameEn;
+function serviceName(s: PublicStudioPayload['services'][0]): string {
   return s.name;
 }
 
@@ -295,7 +289,7 @@ export default function StudioPublicClient({ locale, studio }: Props) {
               key={s.id}
               className="rounded-xl border border-[#f1e9e5] bg-white px-4 py-3 text-sm text-gray-800 shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             >
-              <div className="font-medium">{serviceName(s, locale)}</div>
+              <div className="font-medium">{serviceName(s)}</div>
               <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-500">
                 {s.duration != null && (
                   <span>
@@ -319,7 +313,7 @@ export default function StudioPublicClient({ locale, studio }: Props) {
               key={`p-${s.id}`}
               className="flex items-center justify-between rounded-xl border border-[#f1e9e5] bg-white px-4 py-3 text-sm shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             >
-              <span className="text-gray-800">{serviceName(s, locale)}</span>
+              <span className="text-gray-800">{serviceName(s)}</span>
               <span className="font-semibold text-gray-900">
                 {s.price != null
                   ? new Intl.NumberFormat(

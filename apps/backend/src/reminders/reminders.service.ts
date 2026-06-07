@@ -22,9 +22,6 @@ type BookingWithRelations = {
   Training: {
     id: string;
     name: string;
-    nameEn?: string | null;
-    nameVi?: string | null;
-    nameRu?: string | null;
     duration: number;
     price: number;
   };
@@ -44,13 +41,9 @@ type BookingWithRelations = {
 
 function getLocalizedTrainingName(
   training: BookingWithRelations['Training'],
-  locale: 'en' | 'ru' | 'vi',
+  _locale: 'en' | 'ru' | 'vi',
 ): string {
-  if (locale === 'ru')
-    return training.nameRu || training.nameEn || training.name;
-  if (locale === 'vi')
-    return training.nameVi || training.nameEn || training.name;
-  return training.nameEn || training.name;
+  return training.name;
 }
 
 @Injectable()
@@ -131,9 +124,6 @@ export class RemindersService {
                 select: {
                   id: true,
                   name: true,
-                  nameEn: true,
-                  nameVi: true,
-                  nameRu: true,
                   duration: true,
                   price: true,
                 },

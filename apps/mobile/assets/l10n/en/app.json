@@ -73,6 +73,9 @@
     "tabSettings": "Settings",
     "loadingWorkspace": "Loading your workspace…"
   },
+  "schedule": {
+    "noTrainingsSelectedDay": "No classes for selected day"
+  },
   "auth": {
     "signInTitle": "Sign in",
     "ownerPanel": "Business panel",

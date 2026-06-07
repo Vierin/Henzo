@@ -1,9 +1,6 @@
 export type PublicStudioService = {
   id: string;
   name: string;
-  nameEn?: string | null;
-  nameVi?: string | null;
-  nameRu?: string | null;
   duration?: number | null;
   price?: number | null;
   trainingCategory?: {

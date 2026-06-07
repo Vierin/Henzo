@@ -823,8 +823,9 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 sliver: SliverToBoxAdapter(
                                   child: OwnerDailyScheduleBlock(
                                     sessions: daySessions,
-                                    emptyMessage:
-                                        'No trainings for selected day',
+                                    emptyMessage: context
+                                        .read<LocaleProvider>()
+                                        .t('schedule.noTrainingsSelectedDay'),
                                     ownerTrainerFallback: trainerFb,
                                     studioLocations: _studioLocations(context),
                                     completedLabel: widget.trainerMode

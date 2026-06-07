@@ -1533,7 +1533,7 @@ export class FitnessSessionsService {
       include: {
         User: { select: { id: true, name: true, email: true, phone: true } },
         Training: {
-          select: { name: true, nameEn: true, price: true, duration: true },
+          select: { name: true, price: true, duration: true },
         },
         Trainer: { select: { id: true, name: true } },
       },
@@ -1554,7 +1554,7 @@ export class FitnessSessionsService {
         phone: b.User.phone,
       },
       service: {
-        name: (b.Training?.name ?? b.Training?.nameEn ?? '—').trim() || '—',
+        name: (b.Training?.name ?? '—').trim() || '—',
         price: b.Training != null ? Number(b.Training.price) : null,
         duration: b.Training?.duration ?? null,
       },

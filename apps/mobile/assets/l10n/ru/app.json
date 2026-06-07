@@ -73,6 +73,9 @@
     "tabSettings": "Настройки",
     "loadingWorkspace": "Загружаем данные…"
   },
+  "schedule": {
+    "noTrainingsSelectedDay": "На выбранный день занятий нет"
+  },
   "auth": {
     "signInTitle": "Вход",
     "ownerPanel": "Бизнес-панель",

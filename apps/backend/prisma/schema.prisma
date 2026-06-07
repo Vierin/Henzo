@@ -131,9 +131,6 @@ model Training {
   studioId           String
   categoryId         String?
   trainingCategoryId Int?
-  nameEn             String?
-  nameVi             String?
-  nameRu             String?
   descriptionEn      String?
   descriptionVi      String?
   descriptionRu      String?

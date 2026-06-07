@@ -114,9 +114,6 @@ export class TrainingsService {
       select: {
         id: true,
         name: true,
-        nameEn: true,
-        nameVi: true,
-        nameRu: true,
         description: true,
         descriptionEn: true,
         descriptionVi: true,
@@ -162,9 +159,6 @@ export class TrainingsService {
       select: {
         id: true,
         name: true,
-        nameEn: true,
-        nameVi: true,
-        nameRu: true,
         description: true,
         descriptionEn: true,
         descriptionVi: true,
@@ -235,9 +229,6 @@ export class TrainingsService {
   async createTraining(data: {
     name: string;
     description?: string;
-    nameEn?: string;
-    nameVi?: string;
-    nameRu?: string;
     descriptionEn?: string;
     descriptionVi?: string;
     descriptionRu?: string;
@@ -307,9 +298,6 @@ export class TrainingsService {
         name: data.name,
         description: data.description,
         language: data.language,
-        nameEn: data.nameEn,
-        nameVi: data.nameVi,
-        nameRu: data.nameRu,
         descriptionEn: data.descriptionEn,
         descriptionVi: data.descriptionVi,
         descriptionRu: data.descriptionRu,
@@ -344,9 +332,6 @@ export class TrainingsService {
       name?: string;
       description?: string;
       language?: string;
-      nameEn?: string;
-      nameVi?: string;
-      nameRu?: string;
       descriptionEn?: string;
       descriptionVi?: string;
       descriptionRu?: string;
@@ -377,9 +362,6 @@ export class TrainingsService {
     assign('name');
     assign('description');
     assign('language');
-    assign('nameEn');
-    assign('nameVi');
-    assign('nameRu');
     assign('descriptionEn');
     assign('descriptionVi');
     assign('descriptionRu');

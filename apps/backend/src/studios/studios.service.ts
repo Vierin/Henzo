@@ -383,9 +383,6 @@ export class StudiosService {
               studioId: true,
               categoryId: true,
               trainingCategoryId: true,
-              nameEn: true,
-              nameVi: true,
-              nameRu: true,
               descriptionEn: true,
               descriptionVi: true,
               descriptionRu: true,
@@ -416,9 +413,6 @@ export class StudiosService {
                 select: {
                   id: true,
                   name: true,
-                  nameEn: true,
-                  nameVi: true,
-                  nameRu: true,
                   duration: true,
                   price: true,
                   trainingCategoryId: true,
@@ -641,9 +635,6 @@ export class StudiosService {
       // Build service search conditions
       const serviceSearchConditions: any[] = [
         { name: { contains: searchTerm, mode: 'insensitive' } },
-        { nameEn: { contains: searchTerm, mode: 'insensitive' } },
-        { nameVi: { contains: searchTerm, mode: 'insensitive' } },
-        { nameRu: { contains: searchTerm, mode: 'insensitive' } },
         { description: { contains: searchTerm, mode: 'insensitive' } },
       ];
 
@@ -801,9 +792,6 @@ export class StudiosService {
           select: {
             id: true,
             name: true,
-            nameEn: true,
-            nameVi: true,
-            nameRu: true,
             duration: true,
             price: true,
           },
@@ -868,9 +856,6 @@ export class StudiosService {
         services: (studio.Training || []).map((service: any) => ({
           id: service.id,
           name: service.name,
-          nameEn: service.nameEn,
-          nameVi: service.nameVi,
-          nameRu: service.nameRu,
           duration: service.duration,
           price: service.price,
         })),
@@ -1553,9 +1538,6 @@ export class StudiosService {
             select: {
               id: true,
               name: true,
-              nameEn: true,
-              nameVi: true,
-              nameRu: true,
               description: true,
               descriptionEn: true,
               descriptionVi: true,
@@ -1635,9 +1617,6 @@ export class StudiosService {
             id: service.id,
             name: service.name,
             description: service.description,
-            nameEn: service.nameEn,
-            nameVi: service.nameVi,
-            nameRu: service.nameRu,
             descriptionEn: service.descriptionEn,
             descriptionVi: service.descriptionVi,
             descriptionRu: service.descriptionRu,
@@ -1702,9 +1681,6 @@ export class StudiosService {
               ? {
                   id: session.Training.id,
                   name: session.Training.name,
-                  nameEn: session.Training.nameEn,
-                  nameVi: session.Training.nameVi,
-                  nameRu: session.Training.nameRu,
                   duration: session.Training.duration,
                   price: session.Training.price,
                   displayColor: computeTrainingDisplayColor({
@@ -1800,9 +1776,6 @@ export class StudiosService {
             select: {
               id: true,
               name: true,
-              nameEn: true,
-              nameVi: true,
-              nameRu: true,
               description: true,
               descriptionEn: true,
               descriptionVi: true,
@@ -1890,9 +1863,6 @@ export class StudiosService {
             id: service.id,
             name: service.name,
             description: service.description,
-            nameEn: service.nameEn,
-            nameVi: service.nameVi,
-            nameRu: service.nameRu,
             descriptionEn: service.descriptionEn,
             descriptionVi: service.descriptionVi,
             descriptionRu: service.descriptionRu,
@@ -2040,9 +2010,6 @@ export class StudiosService {
           select: {
             id: true,
             name: true,
-            nameEn: true,
-            nameVi: true,
-            nameRu: true,
             description: true,
             descriptionEn: true,
             descriptionVi: true,
@@ -2096,9 +2063,6 @@ export class StudiosService {
           ? {
               id: s.Training.id,
               name: s.Training.name,
-              nameEn: s.Training.nameEn,
-              nameVi: s.Training.nameVi,
-              nameRu: s.Training.nameRu,
               description: s.Training.description,
               descriptionEn: s.Training.descriptionEn,
               descriptionVi: s.Training.descriptionVi,

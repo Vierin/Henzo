@@ -6,6 +6,7 @@ import '../constants/colors.dart';
 
 import '../constants/layout.dart';
 
+import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
 
 import '../services/auth_service.dart';
@@ -19,6 +20,7 @@ import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
 import '../widgets/client/browse_day_pill.dart';
 import '../widgets/schedule/calendar_day_pill.dart';
+import '../widgets/schedule/schedule_day_empty_card.dart';
 import 'public_class_detail_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -843,15 +845,21 @@ class _PublicStudioScheduleScreenState
                           );
                         }
                         if (sessions.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No classes for selected day',
-                              style: TextStyle(
-                                color: AppColors.textSecondary.withValues(
-                                  alpha: 0.9,
+                          final locale = context.watch<LocaleProvider>();
+                          return ListView(
+                            padding: const EdgeInsets.fromLTRB(
+                              kScreenPaddingHorizontal,
+                              12,
+                              kScreenPaddingHorizontal,
+                              24,
+                            ),
+                            children: [
+                              ScheduleDayEmptyCard(
+                                title: locale.t(
+                                  'schedule.noTrainingsSelectedDay',
                                 ),
                               ),
-                            ),
+                            ],
                           );
                         }
                         return ListView.separated(

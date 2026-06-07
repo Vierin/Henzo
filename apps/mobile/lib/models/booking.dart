@@ -134,11 +134,7 @@ class Service {
   });
 
   factory Service.fromJson(Map<String, dynamic> json) {
-    final name = (json['name'] as String?) ??
-        (json['nameEn'] as String?) ??
-        (json['nameVi'] as String?) ??
-        (json['nameRu'] as String?) ??
-        '';
+    final name = (json['name'] as String?) ?? '';
     return Service(
       name: name,
       price: _parseOptionalDouble(json['price']) ??

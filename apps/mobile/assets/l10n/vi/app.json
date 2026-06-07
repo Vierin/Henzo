@@ -73,6 +73,9 @@
     "tabSettings": "Cài đặt",
     "loadingWorkspace": "Đang tải dữ liệu…"
   },
+  "schedule": {
+    "noTrainingsSelectedDay": "Không có lớp nào trong ngày đã chọn"
+  },
   "auth": {
     "signInTitle": "Đăng nhập",
     "ownerPanel": "Bảng điều khiển business",
