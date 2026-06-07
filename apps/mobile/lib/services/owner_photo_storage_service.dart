@@ -10,6 +10,11 @@ class OwnerPhotoStorageService {
 
   static const int maxPhotoBytes = 3 * 1024 * 1024;
 
+  /// Raw file size limit before resize/compress (see [convertXFileToWebp]).
+  static const int maxSourcePhotoBytes = maxPhotoBytes * 8;
+
+  static int get maxSourcePhotoMb => maxSourcePhotoBytes ~/ (1024 * 1024);
+
   /// Profile avatar in lists / hero cards.
   static const int avatarMaxEdge = 512;
 
@@ -59,7 +64,7 @@ class OwnerPhotoStorageService {
 
     if (webp == null) {
       final original = await file.readAsBytes();
-      if (original.length > maxBytes * 8) return null;
+      if (original.length > maxSourcePhotoBytes) return null;
 
       final fromBytes = await FlutterImageCompress.compressWithList(
         original,

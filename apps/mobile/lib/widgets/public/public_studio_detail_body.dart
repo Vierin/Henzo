@@ -656,26 +656,50 @@ class _StudioPhotoHeroState extends State<_StudioPhotoHero> {
   PageController? _pageController;
   int _pageIndex = 0;
 
+  bool get _hasMultiple => widget.photoUrls.length > 1;
+
   @override
   void initState() {
     super.initState();
-    if (widget.photoUrls.length > 1) {
-      _pageController = PageController();
-      _pageController!.addListener(_onPage);
+    _syncPageController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StudioPhotoHero oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final hadMultiple = oldWidget.photoUrls.length > 1;
+    if (hadMultiple != _hasMultiple) {
+      _disposePageController();
+      _pageIndex = 0;
+      _syncPageController();
+      return;
+    }
+    if (_pageIndex >= widget.photoUrls.length) {
+      _pageIndex = 0;
+      if (_pageController?.hasClients ?? false) {
+        _pageController!.jumpToPage(0);
+      }
     }
   }
 
-  void _onPage() {
-    final i = _pageController?.page?.round() ?? 0;
-    if (i != _pageIndex && mounted) {
-      setState(() => _pageIndex = i);
-    }
+  void _syncPageController() {
+    if (!_hasMultiple) return;
+    _pageController ??= PageController();
+  }
+
+  void _disposePageController() {
+    _pageController?.dispose();
+    _pageController = null;
+  }
+
+  void _onPageChanged(int index) {
+    if (!mounted || index == _pageIndex) return;
+    setState(() => _pageIndex = index);
   }
 
   @override
   void dispose() {
-    _pageController?.removeListener(_onPage);
-    _pageController?.dispose();
+    _disposePageController();
     super.dispose();
   }
 
@@ -706,6 +730,7 @@ class _StudioPhotoHeroState extends State<_StudioPhotoHero> {
           else
             PageView.builder(
               controller: _pageController,
+              onPageChanged: _onPageChanged,
               itemCount: urls.length,
               itemBuilder: (_, index) => CachedSalonNetworkImage(
                 imageUrl: urls[index],

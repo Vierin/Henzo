@@ -24,7 +24,6 @@ import '../widgets/settings/settings_header_back_button.dart';
 import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
 import 'dashboard/owner_studio_reviews_screen.dart';
-import 'public_studio_detail_screen.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
@@ -329,20 +328,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                             builder: (_) => const StaffScreen(),
                           ),
                         ),
-                      ),
-                      SettingsListTile(
-                        icon: Icons.visibility_outlined,
-                        title: locale.t('settings.owner.bookingLink'),
-                        onTap: () {
-                          final studio = _studio;
-                          if (studio == null) return;
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  PublicStudioDetailScreen(studioId: studio.id),
-                            ),
-                          );
-                        },
                       ),
                       SettingsListTile(
                         icon: Icons.star_outline,
