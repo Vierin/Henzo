@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../models/public_studio_preview.dart';
 import '../../services/client_location_store.dart';
 import '../../utils/formatters.dart';
@@ -72,9 +73,9 @@ class _HomeStudioCard extends StatelessWidget {
     required this.distanceLabel,
   });
 
-  static const _cardWidth = 180.0;
+  static const _cardWidth = kStudioCoverPhotoWidth;
   static const _cardRadius = 18.0;
-  static const _imageHeight = 116.0;
+  static const _imageHeight = kStudioCoverPhotoHeight;
   static const _contentHeight = 54.0;
   static const _distanceColor = Color(0x663F3F3F);
 

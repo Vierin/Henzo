@@ -184,19 +184,14 @@ class CalendarScreenState extends State<CalendarScreen> {
 
       if (widget.trainerMode) {
         final auth = context.read<AuthService>();
-        final trainerName =
-            auth.trainerInfo?.name.trim().isNotEmpty == true
+        final trainerName = auth.trainerInfo?.name.trim().isNotEmpty == true
             ? auth.trainerInfo!.name.trim()
             : (auth.user?.name?.trim().isNotEmpty == true
-                ? auth.user!.name!.trim()
-                : '—');
+                  ? auth.user!.name!.trim()
+                  : '—');
         final studioId = auth.trainerInfo?.studioId;
         final results = await Future.wait([
-          TrainerApiService.getSessions(
-            token,
-            from: fromUtc,
-            to: toUtc,
-          ),
+          TrainerApiService.getSessions(token, from: fromUtc, to: toUtc),
           if (studioId != null && studioId.isNotEmpty)
             TrainerApiService.fetchStudioForLocations(studioId)
           else
@@ -204,7 +199,8 @@ class CalendarScreenState extends State<CalendarScreen> {
         ]);
         final result = results[0] as Map<String, dynamic>;
         final trainerStudio = results.length > 1 ? results[1] as Studio? : null;
-        final rawSessions = (result['sessions'] as List?)
+        final rawSessions =
+            (result['sessions'] as List?)
                 ?.whereType<Map>()
                 .map((e) => Map<String, dynamic>.from(e))
                 .toList() ??
@@ -818,25 +814,34 @@ class CalendarScreenState extends State<CalendarScreen> {
                               final daySessions =
                                   _sessionsByDay[_dayKey(scheduleDay)] ??
                                   const <OwnerTrainingSession>[];
+                              final locale = context.read<LocaleProvider>();
+                              final isToday = _isSameDay(
+                                scheduleDay,
+                                DateTime.now(),
+                              );
                               return SliverPadding(
                                 padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
                                 sliver: SliverToBoxAdapter(
                                   child: OwnerDailyScheduleBlock(
                                     sessions: daySessions,
-                                    emptyMessage: context
-                                        .read<LocaleProvider>()
-                                        .t('schedule.noTrainingsSelectedDay'),
+                                    emptyMessage: locale.t(
+                                      'schedule.noTrainingsSelectedDay',
+                                    ),
+                                    emptySubtitle: locale.t(
+                                      'dashboard.enjoyYourDay',
+                                    ),
                                     ownerTrainerFallback: trainerFb,
                                     studioLocations: _studioLocations(context),
                                     completedLabel: widget.trainerMode
-                                        ? context
-                                              .read<LocaleProvider>()
-                                              .t('trainer.sessionCompleted')
+                                        ? context.read<LocaleProvider>().t(
+                                            'trainer.sessionCompleted',
+                                          )
                                         : null,
                                     onSessionTap: (s) async {
                                       if (widget.trainerMode) {
                                         final raw =
-                                            _trainerRawSessionsById[s.sessionId];
+                                            _trainerRawSessionsById[s
+                                                .sessionId];
                                         if (raw == null || !context.mounted) {
                                           return;
                                         }
@@ -844,8 +849,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                                           MaterialPageRoute<void>(
                                             builder: (_) =>
                                                 TrainerSessionEnrollmentsScreen(
-                                              session: raw,
-                                            ),
+                                                  session: raw,
+                                                ),
                                           ),
                                         );
                                         if (context.mounted) {
@@ -857,8 +862,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                           .read<AuthService>()
                                           .accessToken;
                                       final studio =
-                                          (token != null &&
-                                              token.isNotEmpty)
+                                          (token != null && token.isNotEmpty)
                                           ? await context
                                                 .read<StudioCache>()
                                                 .getStudio(token)
@@ -876,31 +880,27 @@ class CalendarScreenState extends State<CalendarScreen> {
                                           }
                                         }
                                       }
-                                      await Navigator.of(context)
-                                          .push<void>(
-                                            MaterialPageRoute<void>(
-                                              builder: (detailCtx) =>
-                                                  OwnerTrainingSessionDetailScreen(
-                                                    session: s,
-                                                    trainingColor:
-                                                        parseHexColor(
-                                                          s
-                                                              .trainingDisplayColorHex,
-                                                        ),
-                                                    venueName: venue,
-                                                    trainerFallbackName:
-                                                        trainerFb,
-                                                    onParticipantsChanged: () {
-                                                      context
-                                                          .read<
-                                                            OwnerSessionsCache
-                                                          >()
-                                                          .invalidate();
-                                                      _loadData();
-                                                    },
-                                                  ),
-                                            ),
-                                          );
+                                      await Navigator.of(context).push<void>(
+                                        MaterialPageRoute<void>(
+                                          builder: (detailCtx) =>
+                                              OwnerTrainingSessionDetailScreen(
+                                                session: s,
+                                                trainingColor: parseHexColor(
+                                                  s.trainingDisplayColorHex,
+                                                ),
+                                                venueName: venue,
+                                                trainerFallbackName: trainerFb,
+                                                onParticipantsChanged: () {
+                                                  context
+                                                      .read<
+                                                        OwnerSessionsCache
+                                                      >()
+                                                      .invalidate();
+                                                  _loadData();
+                                                },
+                                              ),
+                                        ),
+                                      );
                                     },
                                   ),
                                 ),
@@ -955,4 +955,3 @@ class _PinnedDayStripDelegate extends SliverPersistentHeaderDelegate {
       backgroundColor != old.backgroundColor ||
       stripDayKey != old.stripDayKey;
 }
-

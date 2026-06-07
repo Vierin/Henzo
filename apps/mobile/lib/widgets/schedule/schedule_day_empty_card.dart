@@ -32,29 +32,23 @@ class ScheduleDayEmptyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.brandAccent,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
             child: SvgPicture.asset(
               'assets/icons/icon-calendar-empty.svg',
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               fit: BoxFit.contain,
               excludeFromSemantics: true,
               colorFilter: const ColorFilter.mode(
-                AppColors.textInverse,
+                AppColors.primary500,
                 BlendMode.srcIn,
               ),
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 19),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +60,7 @@ class ScheduleDayEmptyCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
-                    height: 1.2,
+                    height: 1.1,
                   ),
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
@@ -77,7 +71,7 @@ class ScheduleDayEmptyCard extends StatelessWidget {
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w400,
                       color: AppColors.textSecondary,
-                      height: 1.2,
+                      height: 1.1,
                     ),
                   ),
                 ],

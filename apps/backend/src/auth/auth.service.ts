@@ -1453,6 +1453,7 @@ export class AuthService {
               email: true,
               description: true,
               photos: true,
+              photoGallery: true,
               status: true,
               autoConfirmBookings: true,
             },
@@ -1755,6 +1756,7 @@ export class AuthService {
           website: true,
           instagram: true,
           photos: true,
+          photoGallery: true,
           // Убираем workingHours, reminderSettings, ownerId, createdAt, categoryIds, latitude, longitude - не нужны для списка
           Training: {
             select: {

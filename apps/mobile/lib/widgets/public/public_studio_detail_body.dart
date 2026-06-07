@@ -10,6 +10,7 @@ import '../../models/training_category_option.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/cache/training_categories_cache.dart';
 import '../../utils/share_utils.dart';
+import '../../utils/studio_photo_urls.dart';
 import '../../utils/studio_description.dart';
 import '../../utils/studio_public_contacts.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
@@ -69,12 +70,17 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
 
   void _recomputeDerived() {
     final photos = widget.studio['photos'];
-    _cachedPhotoUrls = photos is List
-        ? photos
-            .map((e) => e?.toString().trim() ?? '')
-            .where((u) => u.isNotEmpty)
-            .toList()
-        : [];
+    final photosList = photos is List
+        ? photos.map((e) => e?.toString() ?? '').toList()
+        : null;
+    final gallery = studioPhotoGalleryFromPayload(
+      photoGallery: widget.studio['photoGallery'],
+      photos: photosList,
+    );
+    _cachedPhotoUrls = studioHeroPhotoUrls(
+      gallery: gallery.isEmpty ? null : gallery,
+      photos: photosList,
+    );
 
     final services = widget.studio['services'];
     if (services is List) {
@@ -640,8 +646,6 @@ class _HeroOverlayButton extends StatelessWidget {
 class _StudioPhotoHero extends StatefulWidget {
   const _StudioPhotoHero({required this.photoUrls});
 
-  static const height = 290.0;
-
   final List<String> photoUrls;
 
   @override
@@ -708,9 +712,8 @@ class _StudioPhotoHeroState extends State<_StudioPhotoHero> {
     final urls = widget.photoUrls;
     final hasMultiple = urls.length > 1;
 
-    return SizedBox(
-      height: _StudioPhotoHero.height,
-      width: double.infinity,
+    return AspectRatio(
+      aspectRatio: kStudioCoverPhotoAspectRatio,
       child: Stack(
         fit: StackFit.expand,
         children: [

@@ -88,6 +88,98 @@ export class StudiosService {
     return photos;
   }
 
+  private normalizePhotoCropRect(input: unknown): {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null {
+    if (!input || typeof input !== 'object') return null;
+    const raw = input as Record<string, unknown>;
+    const x = Number(raw.x);
+    const y = Number(raw.y);
+    const w = Number(raw.w);
+    const h = Number(raw.h);
+    if (
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(w) ||
+      !Number.isFinite(h) ||
+      w <= 0 ||
+      h <= 0 ||
+      x < 0 ||
+      y < 0 ||
+      x + w > 1.0001 ||
+      y + h > 1.0001
+    ) {
+      return null;
+    }
+    return { x, y, w, h };
+  }
+
+  private normalizePhotoGallery(input: unknown): Array<{
+    id: string;
+    originalUrl: string;
+    heroUrl: string;
+    cardUrl: string;
+    crops: {
+      studioPage: { x: number; y: number; w: number; h: number };
+      browseCard: { x: number; y: number; w: number; h: number };
+    };
+  }> {
+    if (!Array.isArray(input)) return [];
+    const gallery = input
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const raw = item as Record<string, unknown>;
+        const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+        const originalUrl =
+          typeof raw.originalUrl === 'string' ? raw.originalUrl.trim() : '';
+        const heroUrl =
+          typeof raw.heroUrl === 'string' ? raw.heroUrl.trim() : '';
+        const cardUrl =
+          typeof raw.cardUrl === 'string' ? raw.cardUrl.trim() : '';
+        if (!id || !originalUrl || !heroUrl || !cardUrl) return null;
+        if (
+          !this.isAllowedPhotoValue(originalUrl) ||
+          !this.isAllowedPhotoValue(heroUrl) ||
+          !this.isAllowedPhotoValue(cardUrl)
+        ) {
+          return null;
+        }
+        const cropsRaw =
+          raw.crops && typeof raw.crops === 'object'
+            ? (raw.crops as Record<string, unknown>)
+            : null;
+        const studioPage = this.normalizePhotoCropRect(cropsRaw?.studioPage);
+        const browseCard = this.normalizePhotoCropRect(cropsRaw?.browseCard);
+        if (!studioPage || !browseCard) return null;
+        return {
+          id,
+          originalUrl,
+          heroUrl,
+          cardUrl,
+          crops: { studioPage, browseCard },
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item != null);
+
+    if (gallery.length > StudiosService.MAX_STUDIO_PHOTOS) {
+      throw new Error(
+        `Maximum ${StudiosService.MAX_STUDIO_PHOTOS} studio photos are allowed.`,
+      );
+    }
+    return gallery;
+  }
+
+  private heroUrlsFromPhotoGallery(
+    gallery: Array<{ heroUrl: string }>,
+  ): string[] {
+    return gallery
+      .map((item) => item.heroUrl.trim())
+      .filter((url) => url.length > 0);
+  }
+
   private hasAtLeastOnePhoto(input: unknown): boolean {
     return (
       Array.isArray(input) &&
@@ -235,6 +327,7 @@ export class StudiosService {
         status: true,
         logoUrl: true,
         photos: true,
+        photoGallery: true,
         description: true,
         phone: true,
         email: true,
@@ -354,6 +447,7 @@ export class StudiosService {
           instagram: true,
           logoUrl: true,
           photos: true,
+          photoGallery: true,
           workingHours: true,
           reminderSettings: true,
           ownerId: true,
@@ -776,6 +870,7 @@ export class StudiosService {
         phone: true,
         logoUrl: true,
         photos: true,
+        photoGallery: true,
         workingHours: true,
         createdAt: true,
         latitude: true,
@@ -1042,6 +1137,7 @@ export class StudiosService {
             instagram: true,
             logoUrl: true,
             photos: true,
+            photoGallery: true,
             workingHours: true,
             reminderSettings: true,
             ownerId: true,
@@ -1132,9 +1228,14 @@ export class StudiosService {
         return existingStudio;
       }
 
-      const normalizedPhotos = this.normalizeStudioPhotos(
-        createStudioDto.photos,
-      );
+      const normalizedPhotoGallery =
+        createStudioDto.photoGallery !== undefined
+          ? this.normalizePhotoGallery(createStudioDto.photoGallery)
+          : [];
+      const normalizedPhotos =
+        normalizedPhotoGallery.length > 0
+          ? this.heroUrlsFromPhotoGallery(normalizedPhotoGallery)
+          : this.normalizeStudioPhotos(createStudioDto.photos);
       const normalizedLogoUrl = this.normalizeStudioLogoUrl(
         createStudioDto.logoUrl,
       );
@@ -1177,6 +1278,10 @@ export class StudiosService {
             ...createStudioDto,
             logoUrl: normalizedLogoUrl,
             photos: normalizedPhotos,
+            photoGallery:
+              normalizedPhotoGallery.length > 0
+                ? normalizedPhotoGallery
+                : undefined,
             reminderSettings,
             latitude,
             longitude,
@@ -1194,6 +1299,7 @@ export class StudiosService {
             instagram: true,
             logoUrl: true,
             photos: true,
+            photoGallery: true,
             workingHours: true,
             reminderSettings: true,
             ownerId: true,
@@ -1258,6 +1364,7 @@ export class StudiosService {
             instagram: true,
             logoUrl: true,
             photos: true,
+            photoGallery: true,
             workingHours: true,
             reminderSettings: true,
             ownerId: true,
@@ -1350,10 +1457,16 @@ export class StudiosService {
       throw new Error('Studio not found');
     }
 
-    const normalizedPhotos =
-      updateStudioDto.photos !== undefined
-        ? this.normalizeStudioPhotos(updateStudioDto.photos)
+    const normalizedPhotoGallery =
+      updateStudioDto.photoGallery !== undefined
+        ? this.normalizePhotoGallery(updateStudioDto.photoGallery)
         : undefined;
+    const normalizedPhotos =
+      normalizedPhotoGallery !== undefined
+        ? this.heroUrlsFromPhotoGallery(normalizedPhotoGallery)
+        : updateStudioDto.photos !== undefined
+          ? this.normalizeStudioPhotos(updateStudioDto.photos)
+          : undefined;
     const normalizedLogoUrl =
       updateStudioDto.logoUrl !== undefined
         ? this.normalizeStudioLogoUrl(updateStudioDto.logoUrl)
@@ -1379,6 +1492,9 @@ export class StudiosService {
         ? { logoUrl: normalizedLogoUrl }
         : {}),
       ...(normalizedPhotos !== undefined ? { photos: normalizedPhotos } : {}),
+      ...(normalizedPhotoGallery !== undefined
+        ? { photoGallery: normalizedPhotoGallery }
+        : {}),
       ...(updateStudioDto.reminderSettings !== undefined
         ? {
             reminderSettings: this.normalizeReminderSettings(
@@ -1519,6 +1635,7 @@ export class StudiosService {
           instagram: true,
           logoUrl: true,
           photos: true,
+          photoGallery: true,
           workingHours: true,
           latitude: true,
           longitude: true,
@@ -1752,6 +1869,7 @@ export class StudiosService {
           instagram: true,
           logoUrl: true,
           photos: true,
+          photoGallery: true,
           workingHours: true,
           reminderSettings: true,
           ownerId: true,
@@ -2136,7 +2254,8 @@ export class StudiosService {
           address: true,
           phone: true,
           logoUrl: true,
-          photos: true, // Get all photos, but we'll only use the first one
+          photos: true,
+          photoGallery: true, // Get all photos, but we'll only use the first one
           _count: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -2259,6 +2378,7 @@ export class StudiosService {
         longitude: true,
         logoUrl: true,
         photos: true,
+        photoGallery: true,
         reminderSettings: true,
         _count: {
           select: {
@@ -2387,6 +2507,7 @@ export class StudiosService {
         longitude: true,
         logoUrl: true,
         photos: true,
+        photoGallery: true,
         reminderSettings: true,
         _count: {
           select: {

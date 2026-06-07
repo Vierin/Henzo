@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../widgets/common/henzo_modal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +12,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/studio.dart';
+import '../../models/studio_photo_asset.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/studio_cache.dart';
@@ -23,6 +27,7 @@ import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
+import '../../widgets/settings/studio_photo_crop_sheet.dart';
 import '../../widgets/settings/studio_social_link.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'public_studio_detail_screen.dart';
@@ -67,7 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _logoUrl;
   double? _salonLat;
   double? _salonLon;
-  List<String> _studioPhotos = <String>[];
+  List<StudioPhotoAsset> _studioPhotoAssets = <StudioPhotoAsset>[];
   List<StudioSocialLink> _socialLinks = <StudioSocialLink>[];
   List<TrainingLocationItem> _locations = [];
   String _initialSnapshot = '';
@@ -162,7 +167,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonEmailController.text = s.email ?? '';
     _salonLat = s.latitude;
     _salonLon = s.longitude;
-    _studioPhotos = List<String>.from(s.photos ?? <String>[]);
+    _studioPhotoAssets = List<StudioPhotoAsset>.from(
+      s.photoGallery ??
+          (s.photos ?? <String>[])
+              .map(StudioPhotoAsset.legacy)
+              .toList(),
+    );
     _logoUrl = s.logoUrl?.trim().isNotEmpty == true ? s.logoUrl!.trim() : null;
     _socialLinks = studioSocialLinksFromStudio(s);
     final locale = context.read<LocaleProvider>();
@@ -211,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _buildSnapshot() {
-    final photos = _studioPhotos.join('|');
+    final photos = _studioPhotoAssets.map((asset) => asset.id).join('|');
     return [
       _salonNameController.text.trim(),
       _salonDescriptionController.text.trim(),
@@ -569,7 +579,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (email.isNotEmpty) 'email': email,
         'website': socialPayload.website ?? '',
         'instagram': socialPayload.instagram ?? '',
-        'photos': _studioPhotos,
+        'photos': _studioPhotoAssets.map((asset) => asset.heroUrl).toList(),
+        'photoGallery':
+            _studioPhotoAssets.map((asset) => asset.toJson()).toList(),
         'logoUrl': _logoUrl ?? '',
       };
       if (_salonLat != null && _salonLon != null) {
@@ -657,9 +669,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _logoUrl = null);
   }
 
+  Future<StudioPhotoAsset?> _uploadGalleryAsset({
+    required Uint8List originalBytes,
+    required StudioPhotoCropResult cropResult,
+    String? photoId,
+  }) async {
+    final id = photoId ?? OwnerPhotoStorageService.newGalleryPhotoId();
+    final upload = await OwnerPhotoStorageService.uploadStudioGalleryAsset(
+      photoId: id,
+      originalBytes: originalBytes,
+      heroBytes: cropResult.heroBytes,
+      cardBytes: cropResult.cardBytes,
+    );
+    if (upload.asset == null) return null;
+    return StudioPhotoAsset(
+      id: id,
+      originalUrl: upload.asset!.originalUrl,
+      heroUrl: upload.asset!.heroUrl,
+      cardUrl: upload.asset!.cardUrl,
+      crops: cropResult.crops,
+    );
+  }
+
   Future<void> _pickStudioPhotos() async {
     if (_photosProcessing) return;
-    final availableSlots = _maxStudioPhotos - _studioPhotos.length;
+    final availableSlots = _maxStudioPhotos - _studioPhotoAssets.length;
     if (availableSlots <= 0) {
       _showSnack(context.read<LocaleProvider>().t('profileForm.photoLimitExceeded').replaceAll('{max}', '$_maxStudioPhotos'));
       return;
@@ -683,36 +717,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     final locale = context.read<LocaleProvider>();
-    setState(() => _photosProcessing = true);
-    setState(() => _photoProgressText = locale.t('profileForm.optimizing'));
-    final uploadedUrls = <String>[];
+    final uploadedAssets = <StudioPhotoAsset>[];
     var oversizedCount = 0;
     var failedUploadsCount = 0;
-    final uploadErrors = <String>{};
     for (final file in filesToProcess) {
-      if (mounted) {
-        setState(() => _photoProgressText = locale.t('profileForm.uploading'));
-      }
-      final upload = await OwnerPhotoStorageService.uploadStudioGalleryPhoto(
-        file: file,
-      );
-      if (upload.url == null) {
-        if (upload.error == locale.t('profileForm.photoTooLarge') || upload.error == 'Фото больше 3 MB') {
-          oversizedCount++;
-        } else {
-          failedUploadsCount++;
-          if (upload.error != null && upload.error!.isNotEmpty) {
-            uploadErrors.add(upload.error!);
-          }
-        }
+      final rawLen = await file.length();
+      if (!mounted) return;
+      if (rawLen > OwnerPhotoStorageService.maxSourcePhotoBytes) {
+        oversizedCount++;
         continue;
       }
-      uploadedUrls.add(upload.url!);
+
+      final sourceBytes = await file.readAsBytes();
+      final cropResult = await showStudioPhotoCropSheet(
+        context: context,
+        imageBytes: sourceBytes,
+      );
+      if (!mounted) return;
+      if (cropResult == null) continue;
+
+      setState(() {
+        _photosProcessing = true;
+        _photoProgressText = locale.t('profileForm.optimizing');
+      });
+      setState(() => _photoProgressText = locale.t('profileForm.uploading'));
+      final asset = await _uploadGalleryAsset(
+        originalBytes: sourceBytes,
+        cropResult: cropResult,
+      );
+      if (asset == null) {
+        failedUploadsCount++;
+        continue;
+      }
+      uploadedAssets.add(asset);
     }
 
     if (!mounted) return;
     setState(() {
-      _studioPhotos = <String>[..._studioPhotos, ...uploadedUrls];
+      _studioPhotoAssets = <StudioPhotoAsset>[
+        ..._studioPhotoAssets,
+        ...uploadedAssets,
+      ];
       _photosProcessing = false;
       _photoProgressText = null;
     });
@@ -720,22 +765,104 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showSnack(locale.t('profileForm.oversizedPhotosSkipped').replaceAll('{count}', '$oversizedCount'));
     }
     if (failedUploadsCount > 0) {
-      _showSnack(locale.t('profileForm.uploadsFailed').replaceAll('{count}', '$failedUploadsCount'));
-      if (uploadErrors.isNotEmpty) {
-        _showSnack(uploadErrors.first);
-      }
+      _showSnack(
+        locale.t('profileForm.uploadsFailed').replaceAll(
+          '{count}',
+          '$failedUploadsCount',
+        ),
+      );
     }
   }
 
+  Future<void> _adjustStudioPhotoAt(int index) async {
+    if (_photosProcessing) return;
+    if (index < 0 || index >= _studioPhotoAssets.length) return;
+
+    final locale = context.read<LocaleProvider>();
+    final asset = _studioPhotoAssets[index];
+    final sourceUrl = asset.originalUrl.trim().isNotEmpty
+        ? asset.originalUrl.trim()
+        : asset.heroUrl.trim();
+    if (sourceUrl.isEmpty) return;
+
+    if (Supabase.instance.client.auth.currentUser?.id == null) {
+      _showSnack(locale.t('profileForm.loginToUploadPhotos'));
+      return;
+    }
+
+    setState(() {
+      _photosProcessing = true;
+      _photoProgressText = locale.t('common.loading');
+    });
+
+    Uint8List? sourceBytes;
+    try {
+      final response = await http.get(Uri.parse(sourceUrl));
+      if (response.statusCode == 200) {
+        sourceBytes = response.bodyBytes;
+      }
+    } catch (_) {
+      sourceBytes = null;
+    }
+
+    if (!mounted) return;
+    if (sourceBytes == null || sourceBytes.isEmpty) {
+      setState(() {
+        _photosProcessing = false;
+        _photoProgressText = null;
+      });
+      _showSnack(locale.t('common.loadFailed'));
+      return;
+    }
+
+    setState(() {
+      _photosProcessing = false;
+      _photoProgressText = null;
+    });
+
+    final cropResult = await showStudioPhotoCropSheet(
+      context: context,
+      imageBytes: sourceBytes,
+      initialCrops: asset.crops,
+    );
+    if (!mounted) return;
+    if (cropResult == null) return;
+
+    setState(() {
+      _photosProcessing = true;
+      _photoProgressText = locale.t('profileForm.optimizing');
+    });
+    setState(() => _photoProgressText = locale.t('profileForm.uploading'));
+
+    final updatedAsset = await _uploadGalleryAsset(
+      originalBytes: sourceBytes,
+      cropResult: cropResult,
+      photoId: asset.id,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _photosProcessing = false;
+      _photoProgressText = null;
+    });
+
+    if (updatedAsset == null) {
+      _showSnack(locale.t('profileForm.uploadsFailed').replaceAll('{count}', '1'));
+      return;
+    }
+
+    setState(() => _studioPhotoAssets[index] = updatedAsset);
+  }
+
   void _removePhotoAt(int index) {
-    setState(() => _studioPhotos.removeAt(index));
+    setState(() => _studioPhotoAssets.removeAt(index));
   }
 
   void _reorderStudioPhotos(int oldIndex, int newIndex) {
     setState(() {
       if (newIndex > oldIndex) newIndex -= 1;
-      final photo = _studioPhotos.removeAt(oldIndex);
-      _studioPhotos.insert(newIndex, photo);
+      final photo = _studioPhotoAssets.removeAt(oldIndex);
+      _studioPhotoAssets.insert(newIndex, photo);
     });
   }
 
@@ -968,7 +1095,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           ),
                                         ),
                                         _StudioPhotosGallery(
-                                          photos: _studioPhotos,
+                                          assets: _studioPhotoAssets,
                                           maxPhotos: _maxStudioPhotos,
                                           processing: _photosProcessing,
                                           mainLabel: locale.t(
@@ -977,6 +1104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           horizontalPadding:
                                               _ProfileSection.cardPadding,
                                           onAdd: _pickStudioPhotos,
+                                          onAdjust: _adjustStudioPhotoAt,
                                           onRemove: _removePhotoAt,
                                           onReorder: _reorderStudioPhotos,
                                         ),
@@ -1442,22 +1570,24 @@ class _StudioPhotoGallery {
 
 class _StudioPhotosGallery extends StatefulWidget {
   const _StudioPhotosGallery({
-    required this.photos,
+    required this.assets,
     required this.maxPhotos,
     required this.processing,
     required this.mainLabel,
     required this.horizontalPadding,
     required this.onAdd,
+    required this.onAdjust,
     required this.onRemove,
     required this.onReorder,
   });
 
-  final List<String> photos;
+  final List<StudioPhotoAsset> assets;
   final int maxPhotos;
   final bool processing;
   final String mainLabel;
   final double horizontalPadding;
   final VoidCallback onAdd;
+  final void Function(int index) onAdjust;
   final void Function(int index) onRemove;
   final void Function(int oldIndex, int newIndex) onReorder;
 
@@ -1482,9 +1612,9 @@ class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
 
   @override
   Widget build(BuildContext context) {
-    final photos = widget.photos;
-    final hasAddSlot = photos.length < widget.maxPhotos;
-    final canReorder = photos.length > 1;
+    final assets = widget.assets;
+    final hasAddSlot = assets.length < widget.maxPhotos;
+    final canReorder = assets.length > 1;
     const tileSize = _StudioPhotoGallery.tileSize;
 
     return SizedBox(
@@ -1502,9 +1632,9 @@ class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
                 loading: widget.processing,
                 onTap: widget.onAdd,
               ),
-              if (photos.isNotEmpty) const SizedBox(width: 10),
+              if (assets.isNotEmpty) const SizedBox(width: 10),
             ],
-            if (photos.isNotEmpty)
+            if (assets.isNotEmpty)
               SizedBox(
                 height: tileSize,
                 child: ReorderableListView.builder(
@@ -1513,7 +1643,7 @@ class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
                   physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
                   onReorder: widget.onReorder,
-                  itemCount: photos.length,
+                  itemCount: assets.length,
                   proxyDecorator: (child, index, animation) {
                     if (animation.value > 0 && !_dragHapticSent) {
                       _dragHapticSent = true;
@@ -1534,15 +1664,18 @@ class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
                     );
                   },
                   itemBuilder: (context, index) {
-                    final photo = photos[index];
+                    final asset = assets[index];
                     final tile = _StudioPhotoTile(
-                      photo: photo,
+                      photoUrl: asset.heroUrl,
                       isMain: index == 0,
                       mainLabel: widget.mainLabel,
+                      onAdjust: widget.processing
+                          ? null
+                          : () => widget.onAdjust(index),
                       onRemove: () => widget.onRemove(index),
                     );
                     return ReorderableDelayedDragStartListener(
-                      key: ValueKey(photo),
+                      key: ValueKey(asset.id),
                       index: index,
                       enabled: canReorder,
                       child: Padding(
@@ -1562,13 +1695,15 @@ class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
 
 class _StudioPhotoTile extends StatelessWidget {
   const _StudioPhotoTile({
-    required this.photo,
+    required this.photoUrl,
     required this.onRemove,
+    this.onAdjust,
     this.isMain = false,
     this.mainLabel = 'Main',
   });
 
-  final String photo;
+  final String photoUrl;
+  final VoidCallback? onAdjust;
   final VoidCallback onRemove;
   final bool isMain;
   final String mainLabel;
@@ -1584,21 +1719,27 @@ class _StudioPhotoTile extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(kSettingsInputBorderRadius),
-            child: SizedBox(
-              width: tileSize,
-              height: tileSize,
-              child: Image.network(
-                photo,
-                fit: BoxFit.cover,
-                width: tileSize,
-                height: tileSize,
-                errorBuilder: (_, _, _) => ColoredBox(
-                  color: AppColors.backgroundSecondary,
-                  child: Center(
-                    child: SvgPicture.asset(
-                      'assets/icons/icon-add-photo.svg',
-                      width: 28,
-                      height: 28,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onAdjust,
+                child: SizedBox(
+                  width: tileSize,
+                  height: tileSize,
+                  child: Image.network(
+                    photoUrl,
+                    fit: BoxFit.cover,
+                    width: tileSize,
+                    height: tileSize,
+                    errorBuilder: (_, _, _) => ColoredBox(
+                      color: AppColors.backgroundSecondary,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icons/icon-add-photo.svg',
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
                     ),
                   ),
                 ),

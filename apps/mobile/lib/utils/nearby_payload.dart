@@ -1,5 +1,7 @@
 import '../models/public_studio_preview.dart';
+import '../models/studio_photo_asset.dart';
 import '../models/training_category_option.dart';
+import 'studio_photo_urls.dart';
 
 /// Normalizes various `/studios/nearby` JSON shapes to a raw studio list.
 List<dynamic> extractStudiosListFromNearby(dynamic raw) {
@@ -128,9 +130,13 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
   final address = (data['address'] ?? '').toString();
   final distanceKm = (data['distance'] as num?)?.toDouble();
   final photos = data['photos'];
-  final photoUrl = photos is List && photos.isNotEmpty
-      ? photos.first?.toString()
-      : null;
+  final gallery = StudioPhotoAsset.listFromJson(data['photoGallery']);
+  final photoUrl = studioBrowsePhotoUrl(
+    gallery: gallery.isEmpty ? null : gallery,
+    photos: photos is List
+        ? photos.map((e) => e?.toString() ?? '').toList()
+        : null,
+  );
   final studioName = (data['studioName'] ?? data['name'] ?? 'Studio')
       .toString()
       .trim();
