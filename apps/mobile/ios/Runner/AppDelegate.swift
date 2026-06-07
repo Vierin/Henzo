@@ -67,6 +67,11 @@ import WatchConnectivity
       return
     }
 
+    guard session.isWatchAppInstalled else {
+      result("not_installed")
+      return
+    }
+
     let payload: [String: Any] = [
       "action": "startWorkout",
       "workoutType": workoutType,
@@ -74,20 +79,15 @@ import WatchConnectivity
     ]
 
     if session.isReachable {
-      // Watch app is running in foreground — send immediately
       session.sendMessage(
         payload,
         replyHandler: { _ in result("sent") },
         errorHandler: { _ in
-          // sendMessage failed — fall back to transferUserInfo
           session.transferUserInfo(payload)
           result("queued")
         }
       )
     } else {
-      // Watch not reachable (screen off / app not running) — queue for delivery
-      // transferUserInfo works even if the watch app is not yet installed;
-      // the message will be delivered once the app is installed and launched.
       session.transferUserInfo(payload)
       result("sent")
     }
