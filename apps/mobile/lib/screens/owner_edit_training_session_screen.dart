@@ -16,7 +16,7 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/trainers_api_service.dart';
 import '../utils/show_api_error.dart';
-import '../utils/subscription_tier.dart';
+import '../utils/owner_paid_plan.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
 import '../widgets/auth/auth_form_styles.dart';
@@ -25,6 +25,7 @@ import '../widgets/training/training_time_picker_sheet.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 import '../widgets/training/owner_session_cancel_scope_dialog.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
+import '../widgets/training/training_trainer_picker_sheet.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches [AddTrainingScreen] step-2 pickers.
@@ -100,7 +101,7 @@ class _OwnerEditTrainingSessionScreenState
         return;
       }
       final locale = context.read<LocaleProvider>();
-      final sub = await DashboardApiService.getCurrentSubscription(token);
+      final isPaidPlan = await resolveOwnerHasPaidPlan(token);
       final list = await TrainersApiService.getByStudio(token, studio.id);
       final locations = TrainingLocationItem.listFromStudio(
         studio,
@@ -136,7 +137,7 @@ class _OwnerEditTrainingSessionScreenState
         _trainerId = selectedTrainerId;
         _locations = locations;
         _selectedLocationId = selectedLocationId;
-        _isPaidPlan = subscriptionTypeIsPaid(sub?.type) && (sub?.isActive ?? false);
+        _isPaidPlan = isPaidPlan;
         _loadingTrainers = false;
       });
     } catch (_) {
@@ -439,39 +440,57 @@ class _OwnerEditTrainingSessionScreenState
     );
   }
 
-  InputDecoration _trainerInputDecoration() => InputDecoration(
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_kFieldRadius),
-      borderSide: BorderSide.none,
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_kFieldRadius),
-      borderSide: BorderSide.none,
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_kFieldRadius),
-      borderSide: BorderSide.none,
-    ),
-    filled: true,
-    fillColor: AppColors.backgroundPrimary,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-  );
+  Future<void> _openTrainerPicker(LocaleProvider locale) async {
+    if (!_isPaidPlan || _loadingTrainers || _trainers.isEmpty) return;
+    final picked = await showTrainingTrainerPickerSheet(
+      context,
+      trainers: _trainers,
+      selectedId: _trainerId,
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _trainerId = picked);
+  }
 
   Widget _thisClassOnlyTrainerField({
     required LocaleProvider locale,
     required bool completed,
+    required bool canEdit,
   }) {
+    final canPick =
+        canEdit && _isPaidPlan && !_loadingTrainers && _trainers.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _formLabel(locale.t('addTraining.step2.trainer')),
-        InputDecorator(
-          decoration: _trainerInputDecoration(),
-          child: Text(
-            _trainerDisplayName(locale),
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: AppColors.textPrimary,
+        Material(
+          color: AppColors.backgroundPrimary,
+          borderRadius: BorderRadius.circular(_kFieldRadius),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: canPick ? () => _openTrainerPicker(locale) : null,
+            borderRadius: BorderRadius.circular(_kFieldRadius),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _trainerDisplayName(locale),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (canPick)
+                    const Icon(
+                      CupertinoIcons.chevron_down,
+                      color: _kFormAccentPurple,
+                      size: 18,
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -523,6 +542,10 @@ class _OwnerEditTrainingSessionScreenState
     final locName = loc?.name.trim();
     final resolvedLocName =
         locName != null && locName.isNotEmpty ? locName : base.locationName;
+    final trainer = _trainers.where((t) => t.id == _trainerId).firstOrNull;
+    final trainerName = trainer?.name.trim().isNotEmpty == true
+        ? trainer!.name.trim()
+        : base.trainerName;
     return OwnerTrainingSession(
       sessionId: base.sessionId,
       trainingId: base.trainingId,
@@ -539,8 +562,8 @@ class _OwnerEditTrainingSessionScreenState
       trainingCategoryNameEn: base.trainingCategoryNameEn,
       trainingCategoryNameRu: base.trainingCategoryNameRu,
       trainingCategoryNameVn: base.trainingCategoryNameVn,
-      trainerName: base.trainerName,
-      trainerId: base.trainerId,
+      trainerName: trainerName,
+      trainerId: _trainerId ?? base.trainerId,
       locationId:
           _selectedLocationId == 'default' ? null : _selectedLocationId,
       locationName: resolvedLocName,
@@ -570,6 +593,14 @@ class _OwnerEditTrainingSessionScreenState
     final locationBefore = _effectiveLocationId(session.locationId);
     if (_selectedLocationId != locationBefore) {
       body['locationId'] = _selectedLocationId;
+    }
+
+    if (_isPaidPlan) {
+      final beforeTrainer = session.trainerId?.trim();
+      final afterTrainer = _trainerId?.trim();
+      if (beforeTrainer != afterTrainer) {
+        body['trainerId'] = afterTrainer;
+      }
     }
 
     if (body.isEmpty) {
@@ -756,7 +787,11 @@ class _OwnerEditTrainingSessionScreenState
       _formLabel(locale.t('addTraining.addressSectionLabel')),
       _locationField(locale: locale, canEdit: canPickLocation),
       const SizedBox(height: 18),
-      _thisClassOnlyTrainerField(locale: locale, completed: completed),
+      _thisClassOnlyTrainerField(
+        locale: locale,
+        completed: completed,
+        canEdit: canEditSchedule,
+      ),
       ..._saveCancelActions(locale, completed, statusUpper),
     ];
   }

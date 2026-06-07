@@ -21,6 +21,8 @@ import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
+import 'utils/session_cache_clear.dart';
+import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
@@ -29,14 +31,11 @@ import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/client_favorites_store.dart';
 import 'services/cache/bookings_cache.dart';
-import 'services/cache/client_nearby_cache.dart';
 import 'services/cache/training_categories_cache.dart';
-import 'services/cache/studio_public_detail_cache.dart';
 import 'services/cache/owner_sessions_cache.dart';
 import 'services/cache/studio_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/client_location_store.dart';
-import 'services/client_schedule_store.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
 import 'services/revenuecat_service.dart';
@@ -294,20 +293,47 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _lastOwnerAllowed = false;
-  bool _wasClient = false;
+  AuthService? _authService;
+  bool _wasAuthenticated = false;
   String? _lastUserId;
 
-  void _clearAllCaches(BuildContext ctx) {
-    if (!ctx.mounted) return;
-    ctx.read<StudioCache>().invalidate();
-    ctx.read<BookingsCache>().invalidate();
-    ctx.read<ServicesStaffCache>().invalidateAll();
-    ctx.read<OwnerSessionsCache>().invalidate();
-    ctx.read<ClientFavoritesStore>().clear();
-    ClientNearbyCache.clear();
-    StudioPublicDetailCache.clear();
-    ClientScheduleStore.invalidate();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.read<AuthService>();
+    if (!identical(_authService, auth)) {
+      _authService?.removeListener(_onAuthChanged);
+      _authService = auth;
+      auth.addListener(_onAuthChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _authService?.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!mounted) return;
+    final auth = _authService!;
+    final isAuthenticated = auth.isAuthenticated;
+    final userId = auth.user?.id;
+
+    if (_wasAuthenticated && !isAuthenticated) {
+      _lastUserId = null;
+      clearAllSessionCaches(context);
+    } else if (isAuthenticated &&
+        userId != null &&
+        _lastUserId != null &&
+        userId != _lastUserId) {
+      clearAllSessionCaches(context);
+    }
+
+    if (isAuthenticated) {
+      _lastUserId = userId;
+    }
+    _wasAuthenticated = isAuthenticated;
   }
 
   @override
@@ -315,50 +341,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return Consumer<AuthService>(
       builder: (context, auth, _) {
         if (!auth.isInitialSessionReady) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          final hasStoredSession =
+              Supabase.instance.client.auth.currentSession != null;
+          return Scaffold(
+            body: hasStoredSession
+                ? const WorkspaceLoadingView()
+                : const Center(child: CircularProgressIndicator()),
           );
         }
 
         final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
-        final isClient = auth.isAuthenticated && auth.isClient;
         final currentUserId = auth.user?.id;
-
-        if (auth.isInitialSessionReady) {
-          // User switched accounts — clear everything
-          final userChanged = currentUserId != null &&
-              _lastUserId != null &&
-              currentUserId != _lastUserId;
-
-          if (userChanged || (_lastOwnerAllowed && !ownerAllowed)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _clearAllCaches(context);
-            });
-          } else if (_wasClient && !isClient) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              context.read<ClientFavoritesStore>().clear();
-              ClientNearbyCache.clear();
-              StudioPublicDetailCache.clear();
-              ClientScheduleStore.invalidate();
-            });
-          }
-
-          _lastOwnerAllowed = ownerAllowed;
-          _wasClient = isClient;
-          _lastUserId = currentUserId ?? _lastUserId;
-        }
+        final sessionKey = ValueKey<String?>(currentUserId);
 
         if (ownerAllowed) {
-          return const MainShell();
+          return MainShell(key: sessionKey);
         }
 
         if (auth.isAuthenticated && auth.isTrainer) {
-          return const TrainerShell();
+          return TrainerShell(key: sessionKey);
         }
 
         if (auth.isAuthenticated && auth.isClient) {
-          return const ClientShell();
+          return ClientShell(key: sessionKey);
         }
 
         if (auth.isAuthenticated) {

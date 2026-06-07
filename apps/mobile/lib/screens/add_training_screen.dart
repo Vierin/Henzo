@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../constants/layout.dart';
+import '../models/staff_member.dart';
 import '../models/studio.dart';
 import '../models/service_item.dart';
 import '../models/training_category_option.dart';
@@ -18,8 +19,9 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
+import '../services/trainers_api_service.dart';
+import '../utils/owner_paid_plan.dart';
 import '../utils/plan_limit_dialogs.dart';
-import '../utils/subscription_tier.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -29,6 +31,7 @@ import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/training/training_category_picker_sheet.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import '../widgets/training/training_time_picker_sheet.dart';
+import '../widgets/training/training_trainer_picker_sheet.dart';
 import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -83,6 +86,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   int? _selectedCategoryId;
   String _selectedLanguage = 'en';
   bool _isProPlan = false;
+  List<StaffMember> _trainers = [];
+  String? _selectedTrainerId;
+  bool _loadingTrainers = false;
 
   bool _step1NameError = false;
   bool _step1DurationError = false;
@@ -1285,15 +1291,32 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           ? await servicesStaffCache.getServicesForStudio(token, studio.id)
           : <ServiceItem>[];
       final categories = await ServicesApiService.getTrainingCategories(token);
-      final sub = await DashboardApiService.getCurrentSubscription(token);
+      final isPaidPlan = await resolveOwnerHasPaidPlan(token);
+      List<StaffMember> trainers = [];
+      if (studio != null) {
+        trainers = await TrainersApiService.getByStudio(token, studio.id);
+      }
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
+      final authUser = authService.user;
+      String? defaultTrainerId;
+      final ownerEmail = authUser?.email.trim().toLowerCase();
+      if (ownerEmail != null && ownerEmail.isNotEmpty) {
+        final ownerMatch = trainers.where(
+          (t) => (t.email ?? '').trim().toLowerCase() == ownerEmail,
+        );
+        if (ownerMatch.isNotEmpty) defaultTrainerId = ownerMatch.first.id;
+      }
+      defaultTrainerId ??= trainers.isNotEmpty ? trainers.first.id : null;
       setState(() {
         _studio = studio;
         _applyLocationsFromStudio(studio, locale);
         _existing = list;
         _categories = TrainingCategoryOption.withOtherLast(categories);
-        _isProPlan = subscriptionTypeIsPaid(sub?.type);
+        _isProPlan = isPaidPlan;
+        _trainers = trainers;
+        _selectedTrainerId = defaultTrainerId;
+        _loadingTrainers = false;
         _loading = false;
         final start = DateTime(
           _sessionDate.year,
@@ -1308,6 +1331,108 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       setState(() => _loading = false);
       showApiError(context, e);
     }
+  }
+
+  StaffMember? get _selectedTrainer {
+    final id = _selectedTrainerId;
+    if (id == null) return null;
+    for (final t in _trainers) {
+      if (t.id == id) return t;
+    }
+    return null;
+  }
+
+  String _trainerDisplayLabel(String ownerFallback) {
+    if (_loadingTrainers) return ownerFallback;
+    final selected = _selectedTrainer;
+    if (selected != null && selected.name.trim().isNotEmpty) {
+      return selected.name.trim();
+    }
+    return ownerFallback;
+  }
+
+  Future<void> _openTrainerPicker() async {
+    if (!_isProPlan || _trainers.isEmpty) return;
+    final picked = await showTrainingTrainerPickerSheet(
+      context,
+      trainers: _trainers,
+      selectedId: _selectedTrainerId,
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _selectedTrainerId = picked);
+  }
+
+  Widget _trainerFieldDecoration({required Widget child}) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: AppColors.backgroundPrimary,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildTrainerField(LocaleProvider loc, String ownerName) {
+    final canPick = _isProPlan && !_loadingTrainers && _trainers.isNotEmpty;
+    final label = _trainerDisplayLabel(ownerName);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _stepFormLabel(loc.t('addTraining.step2.trainer')),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: canPick ? _openTrainerPicker : null,
+            borderRadius: BorderRadius.circular(14),
+            child: _trainerFieldDecoration(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (canPick)
+                    const Icon(
+                      CupertinoIcons.chevron_down,
+                      color: _kFormAccentPurple,
+                      size: 18,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!_isProPlan) ...[
+          const SizedBox(height: 8),
+          Text(
+            loc.t('addTraining.step2.trainerProNote'),
+            style: TextStyle(
+              fontSize: 12.sp,
+              height: 1.35,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Future<void> _save() async {
@@ -1364,6 +1489,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               token,
               studioId: studioId,
               trainingId: created.id,
+              trainerId: _isProPlan ? _selectedTrainerId : null,
               locationId: _selectedLocationId,
               capacity: capacity,
               daysOfWeek: _isRecurring ? null : recurringDays,
@@ -1836,43 +1962,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                         ),
                         const SizedBox(height: 22),
-                        _stepFormLabel(loc.t('addTraining.step2.trainer')),
-                        InputDecorator(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.backgroundPrimary,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 14,
-                            ),
-                          ),
-                          child: Text(
-                            ownerName,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (!_isProPlan) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            loc.t('addTraining.step2.trainerProNote'),
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              height: 1.35,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
+                        _buildTrainerField(loc, ownerName),
                         const SizedBox(height: 30),
                         SizedBox(
                           height: 60,

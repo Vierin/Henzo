@@ -11,13 +11,12 @@ import '../../models/staff_member.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/studio_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
-import '../../services/dashboard_api_service.dart';
 import '../../services/trainers_api_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/plan_limit_dialogs.dart';
 import '../../utils/share_utils.dart';
 import '../../utils/show_api_error.dart';
-import '../../utils/subscription_tier.dart';
+import '../../utils/owner_paid_plan.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
@@ -63,12 +62,12 @@ class _StaffScreenState extends State<StaffScreen> {
               studio.id,
             )
           : <StaffMember>[];
-      final sub = await DashboardApiService.getCurrentSubscription(token);
+      final isPaidPlan = await resolveOwnerHasPaidPlan(token);
       if (mounted) {
         setState(() {
           _studio = studio;
           _staff = staff;
-          _isProPlan = subscriptionTypeIsPaid(sub?.type);
+          _isProPlan = isPaidPlan;
           _isLoading = false;
         });
       }

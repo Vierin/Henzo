@@ -20,6 +20,7 @@ import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
 import 'owner_edit_training_session_screen.dart';
+import '../widgets/common/workspace_loading_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MainShell extends StatefulWidget {
@@ -367,39 +368,7 @@ class _StudioLoadingCurtain extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Material(
-        color: AppColors.backgroundPrimary,
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/logo.png',
-                  height: 80,
-                  width: 160,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) =>
-                      Icon(Icons.store, size: 80, color: AppColors.primary500),
-                ),
-                const SizedBox(height: 24),
-                Consumer<LocaleProvider>(
-                  builder: (context, loc, _) => Text(
-                    loc.t('shell.loadingWorkspace'),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return const Positioned.fill(child: WorkspaceLoadingView());
   }
 }
 

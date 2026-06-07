@@ -10,6 +10,7 @@ class OwnerSessionsCache extends ChangeNotifier {
   List<OwnerTrainingSession> _sessions = const [];
   DateTime? _fromUtc;
   DateTime? _toUtc;
+  String? _tokenHint;
 
   /// Set by [invalidate]; cleared when [getSessions] finishes a fetch.
   bool _needsRefresh = false;
@@ -20,6 +21,7 @@ class OwnerSessionsCache extends ChangeNotifier {
     _sessions = const [];
     _fromUtc = null;
     _toUtc = null;
+    _tokenHint = null;
     _needsRefresh = true;
     notifyListeners();
   }
@@ -55,6 +57,9 @@ class OwnerSessionsCache extends ChangeNotifier {
     required DateTime fromUtc,
     required DateTime toUtc,
   }) async {
+    if (_tokenHint != null && _tokenHint != token) {
+      invalidate();
+    }
     if (_sessions.isNotEmpty && _covers(fromUtc, toUtc)) {
       return _inRange(_sessions, fromUtc, toUtc);
     }
@@ -77,6 +82,7 @@ class OwnerSessionsCache extends ChangeNotifier {
     _sessions = list;
     _fromUtc = fetchFrom;
     _toUtc = fetchTo;
+    _tokenHint = token;
     _needsRefresh = false;
     return _inRange(list, fromUtc, toUtc);
   }

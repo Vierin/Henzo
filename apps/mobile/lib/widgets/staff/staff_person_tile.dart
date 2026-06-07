@@ -98,6 +98,9 @@ class StaffPersonTile extends StatelessWidget {
     this.emailLine,
     this.badge,
     this.photoUrl,
+    this.avatarRadius = 36,
+    this.backgroundColor = AppColors.backgroundPrimary,
+    this.borderSide,
     this.trailing,
     this.onTap,
   });
@@ -110,6 +113,9 @@ class StaffPersonTile extends StatelessWidget {
   /// Виджет-бейдж, размещается над [trailing] справа.
   final Widget? badge;
   final String? photoUrl;
+  final double avatarRadius;
+  final Color backgroundColor;
+  final BorderSide? borderSide;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -122,8 +128,11 @@ class StaffPersonTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(_cardRadius),
+        color: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_cardRadius),
+          side: borderSide ?? BorderSide.none,
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -136,7 +145,7 @@ class StaffPersonTile extends StatelessWidget {
                 StaffPersonAvatar(
                   displayName: name,
                   photoUrl: photoUrl,
-                  radius: 36,
+                  radius: avatarRadius,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
