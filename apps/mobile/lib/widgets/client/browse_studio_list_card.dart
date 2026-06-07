@@ -322,11 +322,10 @@ class _BrowseStudioClassesBlock extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    seeAllLabel,
+                    seeAllLabel.toUpperCase(),
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
-                      letterSpacing: -0.3,
                       color: AppColors.primary500,
                       height: 1.1,
                     ),

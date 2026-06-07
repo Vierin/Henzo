@@ -50,9 +50,9 @@ class ClientSectionHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        actionLabel!,
+                        actionLabel!.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary500,
                         ),

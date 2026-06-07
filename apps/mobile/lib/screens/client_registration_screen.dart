@@ -14,6 +14,7 @@ import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ClientRegistrationScreen extends StatefulWidget {
   const ClientRegistrationScreen({super.key, this.initialEmail});
@@ -131,7 +132,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     if (!mounted) return;
     setState(() => _isVerifyingCode = false);
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -176,7 +176,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     if (!mounted) return;
     setState(() => _isGoogleLoading = false);
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -191,7 +190,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     if (!mounted) return;
     setState(() => _isAppleLoading = false);
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -201,8 +199,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   Widget _buildGoogleIcon() {
     return Image.asset(
       'assets/public/icon-google.png',
-      width: 20,
-      height: 20,
+      width: 25,
+      height: 25,
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => const Icon(
         Icons.g_mobiledata_rounded,
@@ -253,8 +251,16 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.fullName'),
-              prefixIcon: Icons.person_outline_rounded,
+              hintText: '${locale.t('auth.fullName')} *',
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-profile-large.svg',
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -270,8 +276,16 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.email'),
-              prefixIcon: Icons.email_rounded,
+              hintText: '${locale.t('auth.email')} *',
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-mail.svg',
+                width: 13.5,
+                height: 13.5,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -289,7 +303,15 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             keyboardType: TextInputType.phone,
             decoration: AuthFormStyles.fieldDecoration(
               hintText: context.read<LocaleProvider>().t('auth.phone'),
-              prefixIcon: Icons.phone_rounded,
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-phone.svg',
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
             style: AuthFormStyles.fieldTextStyle,
           ),
@@ -300,10 +322,20 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.password'),
-              prefixIcon: Icons.lock_rounded,
+              hintText: '${locale.t('auth.password')} *',
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-password.svg',
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
               suffixIcon: IconButton(
                 padding: const EdgeInsets.only(right: 12),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
                 onPressed: () {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
@@ -312,6 +344,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
                   color: AuthFormStyles.hintMuted,
+                  size: 22,
                 ),
               ),
             ),
@@ -355,7 +388,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                 child: Divider(
                   color: Color(0xFF9B9B9B),
                   thickness: 1,
-                  indent: 14,
+                  indent: 0,
                   endIndent: 10,
                 ),
               ),
@@ -371,7 +404,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   color: Color(0xFF9B9B9B),
                   thickness: 1,
                   indent: 10,
-                  endIndent: 14,
+                  endIndent: 0,
                 ),
               ),
             ],
@@ -384,8 +417,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   (_isSubmitting || _isOAuthBusy) ? null : _submitGoogle,
               icon: _isGoogleLoading
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 25,
+                      height: 25,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : _buildGoogleIcon(),
@@ -412,7 +445,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   : locale.t('auth.continueWithApple'),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           const LegalAgreementFooter(),
           const SizedBox(height: 8),
         ],

@@ -14,6 +14,7 @@ import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class BusinessRegistrationScreen extends StatefulWidget {
   const BusinessRegistrationScreen({super.key});
@@ -122,7 +123,6 @@ class _BusinessRegistrationScreenState
     if (!mounted) return;
     setState(() => _isVerifyingCode = false);
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -168,7 +168,6 @@ class _BusinessRegistrationScreenState
     setState(() => _isGoogleSubmitting = false);
 
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -193,7 +192,6 @@ class _BusinessRegistrationScreenState
     setState(() => _isAppleSubmitting = false);
 
     if (result.success) {
-      showSuccess(context, locale.t('auth.signInSuccess'));
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -249,8 +247,16 @@ class _BusinessRegistrationScreenState
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.fullName'),
-              prefixIcon: Icons.person_outline_rounded,
+              hintText: '${locale.t('auth.fullName')} *',
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-profile-large.svg',
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -266,8 +272,16 @@ class _BusinessRegistrationScreenState
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.email'),
-              prefixIcon: Icons.email_rounded,
+              hintText: '${locale.t('auth.email')} *',
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-mail.svg',
+                width: 13.5,
+                height: 13.5,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -285,10 +299,20 @@ class _BusinessRegistrationScreenState
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.password'),
-              prefixIcon: Icons.lock_rounded,
+              hintText: '${locale.t('auth.password')} *',
+              prefixWidget: SvgPicture.asset(
+                'assets/icons/icon-password.svg',
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  AuthFormStyles.accentIcon,
+                  BlendMode.srcIn,
+                ),
+              ),
               suffixIcon: IconButton(
                 padding: const EdgeInsets.only(right: 12),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
                 onPressed: () {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
@@ -297,6 +321,7 @@ class _BusinessRegistrationScreenState
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
                   color: AuthFormStyles.hintMuted,
+                  size: 22,
                 ),
               ),
             ),
@@ -325,7 +350,7 @@ class _BusinessRegistrationScreenState
                   : Text(
                       context.read<LocaleProvider>().t('auth.createAccount'),
                       style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         fontSize: 16.sp,
                         color: AppColors.textInverse,
                       ),
@@ -369,8 +394,8 @@ class _BusinessRegistrationScreenState
                   : _registerWithGoogle,
               icon: _isGoogleSubmitting
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 25,
+                      height: 25,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : _buildGoogleIcon(),
@@ -394,7 +419,7 @@ class _BusinessRegistrationScreenState
               label: locale.t('auth.continueWithApple'),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           const LegalAgreementFooter(),
           const SizedBox(height: 8),
         ],
@@ -563,8 +588,8 @@ class _BusinessRegistrationScreenState
   Widget _buildGoogleIcon() {
     return Image.asset(
       'assets/public/icon-google.png',
-      width: 20,
-      height: 20,
+      width: 25,
+      height: 25,
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => const Icon(
         Icons.g_mobiledata_rounded,

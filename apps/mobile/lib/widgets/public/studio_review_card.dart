@@ -254,7 +254,7 @@ class StudioReviewsSectionHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  seeMoreLabel,
+                  seeMoreLabel.toUpperCase(),
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,

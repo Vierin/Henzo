@@ -9,7 +9,7 @@ import '../../services/auth_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/formatters.dart';
 import 'trainer_session_card.dart';
-import 'trainer_home_screen.dart' show TrainerSessionEnrollmentsScreen;
+import 'trainer_session_enrollments_screen.dart';
 
 class TrainerScheduleScreen extends StatefulWidget {
   const TrainerScheduleScreen({super.key});
@@ -133,7 +133,7 @@ class _TrainerScheduleScreenState extends State<TrainerScheduleScreen> {
   }
 }
 
-class _DayStrip extends StatelessWidget {
+class _DayStrip extends StatefulWidget {
   const _DayStrip({
     required this.selected,
     required this.hasSessions,
@@ -145,64 +145,35 @@ class _DayStrip extends StatelessWidget {
   final ValueChanged<DateTime> onSelect;
 
   @override
-  Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final days = List.generate(31, (i) => DateTime(today.year, today.month, today.day + i - 7));
+  State<_DayStrip> createState() => _DayStripState();
+}
 
-    return SizedBox(
-      height: 64,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: days.length,
-        itemBuilder: (_, i) {
-          final d = days[i];
-          final isSelected = _dayKey(d) == _dayKey(selected);
-          final hasDot = hasSessions(d);
-          return GestureDetector(
-            onTap: () => onSelect(d),
-            child: Container(
-              width: 48,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary500 : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _weekdayShort(d),
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: isSelected ? Colors.white70 : AppColors.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    '${d.day}',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  if (hasDot)
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.white : AppColors.primary500,
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                  else
-                    const SizedBox(height: 5),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+class _DayStripState extends State<_DayStrip> {
+  final _scrollController = ScrollController();
+  bool _isUserScrolling = false;
+
+  static const double _itemWidth = 48;
+  static const double _itemMargin = 3;
+  static const double _itemExtent = _itemWidth + _itemMargin * 2;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _snapToNearest() {
+    final offset = _scrollController.offset;
+    final nearest = (offset / _itemExtent).round() * _itemExtent;
+    final clamped = nearest.clamp(
+      _scrollController.position.minScrollExtent,
+      _scrollController.position.maxScrollExtent,
+    );
+    if ((clamped - offset).abs() < 0.5) return;
+    _scrollController.animateTo(
+      clamped,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
     );
   }
 
@@ -212,5 +183,90 @@ class _DayStrip extends StatelessWidget {
   String _weekdayShort(DateTime d) {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return labels[d.weekday - 1];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final days = List.generate(
+      31,
+      (i) => DateTime(today.year, today.month, today.day + i - 7),
+    );
+
+    return SizedBox(
+      height: 64,
+      child: NotificationListener(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification &&
+              notification.dragDetails != null) {
+            _isUserScrolling = true;
+          }
+          if (notification is ScrollEndNotification && _isUserScrolling) {
+            _isUserScrolling = false;
+            _snapToNearest();
+          }
+          return false;
+        },
+        child: ListView.builder(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemCount: days.length,
+          itemBuilder: (_, i) {
+            final d = days[i];
+            final isSelected = _dayKey(d) == _dayKey(widget.selected);
+            final hasDot = widget.hasSessions(d);
+            return GestureDetector(
+              onTap: () => widget.onSelect(d),
+              child: Container(
+                width: _itemWidth,
+                margin: const EdgeInsets.symmetric(horizontal: _itemMargin),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary500 : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _weekdayShort(d),
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: isSelected
+                            ? Colors.white70
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '${d.day}',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    if (hasDot)
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.primary500,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    else
+                      const SizedBox(height: 5),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

@@ -306,25 +306,24 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final addressWidth = constraints.maxWidth * 0.8;
-                                return Column(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (locationName.isNotEmpty) ...[
+                                  Text(
+                                    locationName,
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                ],
+                                Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (locationName.isNotEmpty) ...[
-                                      Text(
-                                        locationName,
-                                        style: TextStyle(
-                                          fontSize: 15.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                    ],
-                                    SizedBox(
-                                      width: addressWidth,
+                                    Expanded(
                                       child: Text(
                                         address,
                                         style: TextStyle(
@@ -334,35 +333,34 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                         ),
                                       ),
                                     ),
+                                    InkWell(
+                                      onTap: () => _copyAddress(
+                                        context,
+                                        address,
+                                        addressCopiedMsg,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 8,
+                                          right: 4,
+                                        ),
+                                        child: SvgPicture.asset(
+                                          'assets/icons/icon-copy.svg',
+                                          width: 18,
+                                          height: 18,
+                                          fit: BoxFit.contain,
+                                          excludeFromSemantics: true,
+                                          colorFilter: const ColorFilter.mode(
+                                            AppColors.textPrimary,
+                                            BlendMode.srcIn,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
-                                );
-                              },
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => _copyAddress(
-                              context,
-                              address,
-                              addressCopiedMsg,
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 8,
-                                top: 2,
-                                right: 4,
-                              ),
-                              child: SvgPicture.asset(
-                                'assets/icons/icon-copy.svg',
-                                width: 18,
-                                height: 18,
-                                fit: BoxFit.contain,
-                                excludeFromSemantics: true,
-                                colorFilter: const ColorFilter.mode(
-                                  AppColors.textPrimary,
-                                  BlendMode.srcIn,
                                 ),
-                              ),
+                              ],
                             ),
                           ),
                         ],

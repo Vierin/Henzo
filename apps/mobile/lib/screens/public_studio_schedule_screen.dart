@@ -6,6 +6,7 @@ import '../constants/colors.dart';
 
 import '../constants/layout.dart';
 
+import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
 
 import '../services/auth_service.dart';
@@ -19,6 +20,7 @@ import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
 import '../widgets/client/browse_day_pill.dart';
 import '../widgets/schedule/calendar_day_pill.dart';
+import '../widgets/schedule/schedule_day_empty_card.dart';
 import 'public_class_detail_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -503,15 +505,20 @@ class _PublicStudioScheduleScreenState
       child: InkWell(
         onTap: _goToToday,
         borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Text(
-            'Today',
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              height: 1.1,
+        child: SizedBox(
+          height: 30,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              child: Text(
+                'Today',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
             ),
           ),
         ),
@@ -539,37 +546,40 @@ class _PublicStudioScheduleScreenState
           }
         },
         borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/icons/icon-calendar.svg',
-                width: 13,
-                height: 12,
-                fit: BoxFit.contain,
-                excludeFromSemantics: true,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.textPrimary,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 6),
-              SizedBox(
-                width: _expandButtonLabelWidth,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                    height: 1.1,
+        child: SizedBox(
+          height: 30,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/icon-calendar.svg',
+                  width: 13,
+                  height: 12,
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.textPrimary,
+                    BlendMode.srcIn,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: _expandButtonLabelWidth,
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      height: 1.1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -835,15 +845,21 @@ class _PublicStudioScheduleScreenState
                           );
                         }
                         if (sessions.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No classes for selected day',
-                              style: TextStyle(
-                                color: AppColors.textSecondary.withValues(
-                                  alpha: 0.9,
+                          final locale = context.watch<LocaleProvider>();
+                          return ListView(
+                            padding: const EdgeInsets.fromLTRB(
+                              kScreenPaddingHorizontal,
+                              12,
+                              kScreenPaddingHorizontal,
+                              24,
+                            ),
+                            children: [
+                              ScheduleDayEmptyCard(
+                                title: locale.t(
+                                  'schedule.noTrainingsSelectedDay',
                                 ),
                               ),
-                            ),
+                            ],
                           );
                         }
                         return ListView.separated(

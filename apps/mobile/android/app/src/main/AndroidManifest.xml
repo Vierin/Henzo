@@ -1,9 +1,7 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-    <!-- Merged from Play Services / Firebase; Henzo has no ads -->
-    <uses-permission
-        android:name="com.google.android.gms.permission.AD_ID"
-        tools:node="remove" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Firebase Analytics ships play-services-ads-identifier; Play Console
+         requires AD_ID when that SDK is present. Collection is disabled below. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -106,6 +104,13 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="henzo_default" />
+        <!-- Firebase Analytics: no ads, no Advertising ID -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

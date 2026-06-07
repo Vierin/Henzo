@@ -87,8 +87,8 @@ class NotificationsStore extends ChangeNotifier {
 
   Future<void> clearAll() async {
     _items = [];
-    await _save();
     notifyListeners();
+    await _save();
   }
 
   Future<void> deleteById(String id) async {

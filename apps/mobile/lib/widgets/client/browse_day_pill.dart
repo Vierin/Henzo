@@ -23,7 +23,7 @@ class BrowseDayPill extends StatelessWidget {
       aspectRatio: 2 / 3,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary500 : AppColors.backgroundPrimary,
+          color: selected ? AppColors.primary500 : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

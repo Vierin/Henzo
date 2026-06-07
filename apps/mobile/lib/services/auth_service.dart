@@ -111,8 +111,11 @@ class AuthService extends ChangeNotifier {
       if (event == AuthChangeEvent.initialSession) return;
 
       if (event == AuthChangeEvent.signedOut || session == null) {
-        if (_user != null || _isAuthenticated) {
+        if (_user != null ||
+            _trainerInfo != null ||
+            _isAuthenticated) {
           _user = null;
+          _trainerInfo = null;
           _isAuthenticated = false;
           notifyListeners();
         }
@@ -569,6 +572,9 @@ class AuthService extends ChangeNotifier {
       );
     }
 
+    await _tryFinishPendingTrainerInvite(session.accessToken);
+    notifyListeners();
+
     return (success: true, errorL10nKey: null, errorRaw: null);
   }
 
@@ -872,6 +878,18 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> _signOutGoogleAccount() async {
+    final webClientId = AppConfig.googleWebClientId;
+    if (webClientId.isEmpty) return;
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: webClientId,
+        clientId: Platform.isIOS ? AppConfig.googleIosClientId : null,
+      );
+      await googleSignIn.signOut();
+    } catch (_) {}
+  }
+
   Future<void> logout() async {
     _user = null;
     _trainerInfo = null;
@@ -881,7 +899,8 @@ class AuthService extends ChangeNotifier {
     unawaited(
       RevenueCatService.onAuthUserChanged(userId: null, isOwner: false),
     );
-    await OwnerNavigationRestore.clearOwnerNavigationRestore();
+    unawaited(OwnerNavigationRestore.clearOwnerNavigationRestore());
+    unawaited(_signOutGoogleAccount());
     try {
       await _supabase.auth.signOut();
     } catch (_) {}

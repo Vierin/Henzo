@@ -1,4 +1,8 @@
+import '../models/studio.dart';
 import '../models/trainer_info.dart';
+import 'cache/studio_public_detail_cache.dart';
+import 'dashboard_api_service.dart';
+import '../utils/formatters.dart';
 import 'api_client.dart';
 
 class TrainerApiService {
@@ -65,6 +69,21 @@ class TrainerApiService {
     return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
+  /// Public studio payload for trainer location labels.
+  static Future<Studio?> fetchStudioForLocations(String studioId) async {
+    if (studioId.isEmpty) return null;
+    try {
+      final cached = StudioPublicDetailCache.get(studioId);
+      if (cached != null) return Studio.fromJson(cached);
+      final raw = await ApiClient.get('/studios/$studioId', null);
+      if (raw is! Map<String, dynamic>) return null;
+      StudioPublicDetailCache.put(studioId, raw);
+      return Studio.fromJson(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> markAttendance(
     String token,
     String enrollmentId, {
@@ -74,6 +93,31 @@ class TrainerApiService {
       '/fitness/trainer/enrollments/$enrollmentId/attendance',
       token,
       body: {'status': present ? 'ACTIVE' : 'NO_SHOW'},
+    );
+  }
+
+  static OwnerTrainingSession ownerSessionFromTrainerMap(
+    Map<String, dynamic> json, {
+    required String trainerName,
+  }) {
+    final training = json['Training'] is Map
+        ? Map<String, dynamic>.from(json['Training'] as Map)
+        : <String, dynamic>{};
+    return OwnerTrainingSession(
+      sessionId: (json['id'] ?? '').toString(),
+      trainingId: (training['id'] ?? '').toString(),
+      startsAt: parseApiDateTime(json['startsAt']) ?? DateTime.now(),
+      endsAt: parseApiDateTime(json['endsAt']) ?? DateTime.now(),
+      status: (json['status'] ?? 'ACTIVE').toString(),
+      capacity: (json['capacity'] as num?)?.toInt() ?? 0,
+      enrolledCount: (json['bookedCount'] as num?)?.toInt() ?? 0,
+      attendedCount: 0,
+      trainingName: (training['name'] ?? 'Training').toString(),
+      trainingDurationMinutes: (training['duration'] as num?)?.toInt(),
+      trainingDisplayColorHex: training['displayColor']?.toString(),
+      trainerName: trainerName,
+      locationId: json['locationId']?.toString(),
+      waitlistCount: (json['waitlistCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

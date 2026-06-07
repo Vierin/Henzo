@@ -7,32 +7,44 @@ import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/push_notification_service.dart';
-import 'trainer_home_screen.dart';
-import 'trainer_schedule_screen.dart';
+import '../calendar_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 import 'trainer_profile_screen.dart';
 
 class TrainerShell extends StatefulWidget {
   const TrainerShell({super.key});
 
   @override
-  State<TrainerShell> createState() => _TrainerShellState();
+  State<TrainerShell> createState() => TrainerShellState();
 }
 
-class _TrainerShellState extends State<TrainerShell> {
+class TrainerShellState extends State<TrainerShell> {
+  static const int scheduleTabIndex = 1;
+
   int _currentIndex = 0;
+  final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
+      GlobalKey<CalendarScreenState>();
 
   late final List<Widget> _tabs;
 
   @override
   void initState() {
     super.initState();
-    _tabs = const [
-      TrainerHomeScreen(),
-      TrainerScheduleScreen(),
-      TrainerProfileScreen(),
+    _tabs = [
+      const DashboardScreen(trainerMode: true),
+      CalendarScreen(key: _scheduleCalendarKey, trainerMode: true),
+      const TrainerProfileScreen(),
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _registerPush();
+    });
+  }
+
+  void openScheduleTabForToday() {
+    setState(() => _currentIndex = scheduleTabIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleCalendarKey.currentState?.ensureSessionsLoaded();
+      _scheduleCalendarKey.currentState?.jumpToToday();
     });
   }
 
@@ -62,7 +74,7 @@ class _TrainerShellState extends State<TrainerShell> {
           minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
           child: Container(
             height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(16),
@@ -103,13 +115,19 @@ class _TrainerShellState extends State<TrainerShell> {
                             svgAsset: 'assets/icons/icon-schedule.svg',
                             label: t('shell.tabSchedule'),
                             isSelected: _currentIndex == 1,
-                            onTap: () => setState(() => _currentIndex = 1),
+                            onTap: () {
+                              setState(() => _currentIndex = 1);
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _scheduleCalendarKey.currentState
+                                    ?.ensureSessionsLoaded();
+                              });
+                            },
                           ),
                         ),
                         Expanded(
                           child: _NavItem(
-                            svgAsset: 'assets/icons/icon-settings.svg',
-                            label: t('shell.tabSettings'),
+                            svgAsset: 'assets/icons/icon-profile-large.svg',
+                            label: t('clientShell.profile'),
                             isSelected: _currentIndex == 2,
                             onTap: () => setState(() => _currentIndex = 2),
                           ),

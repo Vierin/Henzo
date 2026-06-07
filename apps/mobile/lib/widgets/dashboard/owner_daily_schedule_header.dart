@@ -35,9 +35,9 @@ class OwnerDailyScheduleHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'See all',
+                  'SEE ALL',
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w500,
                     color: AppColors.primary500,
                   ),

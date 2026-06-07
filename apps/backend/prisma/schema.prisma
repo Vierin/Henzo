@@ -131,12 +131,10 @@ model Training {
   studioId           String
   categoryId         String?
   trainingCategoryId Int?
-  nameEn             String?
-  nameVi             String?
-  nameRu             String?
   descriptionEn      String?
   descriptionVi      String?
   descriptionRu      String?
+  language           String?
   Booking            SessionBooking[]
   Studio             Studio              @relation(fields: [studioId], references: [id])
   trainingCategory   TrainingCategory? @relation(fields: [trainingCategoryId], references: [id]) 

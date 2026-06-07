@@ -20,6 +20,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
 import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
+import '../../utils/owner_session_card_subtitle.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../models/training_location_item.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
@@ -28,12 +29,18 @@ import '../owner_training_session_detail_screen.dart';
 import '../main_shell.dart';
 import '../settings_screen.dart';
 import '../notifications_screen.dart';
+import '../trainer/trainer_session_enrollments_screen.dart';
+import '../trainer/trainer_shell.dart';
+import '../../services/trainer_api_service.dart';
 import '../public_studio_detail_screen.dart';
 import '../studio_details_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({super.key, this.trainerMode = false});
+
+  /// Trainer panel: same home UI without owner onboarding checklist / edit.
+  final bool trainerMode;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -49,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
   List<OwnerTrainingSession> _upcomingSessions = [];
+  final Map<String, Map<String, dynamic>> _trainerRawSessionsById = {};
   String? _sessionsLoadError;
   bool _isPublishing = false;
   bool _dataLoaded = false;
@@ -59,8 +67,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _subRefresh = context.read<SubscriptionRefreshNotifier>();
-      _subRefresh!.addListener(_onSubscriptionRefresh);
+      if (!widget.trainerMode) {
+        _subRefresh = context.read<SubscriptionRefreshNotifier>();
+        _subRefresh!.addListener(_onSubscriptionRefresh);
+      }
       _loadData();
     });
   }
@@ -86,18 +96,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
     try {
-      final cache = context.read<OwnerSessionsCache>();
-      final studio = await context.read<StudioCache>().getStudio(token);
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 8));
       final fromUtc = from.toUtc();
       final toUtc = to.toUtc();
 
-      // Fetch sessions and checklist in parallel — saves ~300ms on each load.
       List<OwnerTrainingSession> sessions = [];
       String? sessionsLoadError;
       StudioOnboardingChecklist? checklist;
+      Studio? studio;
+
+      if (widget.trainerMode) {
+        final auth = context.read<AuthService>();
+        final trainerName =
+            auth.trainerInfo?.name.trim().isNotEmpty == true
+            ? auth.trainerInfo!.name.trim()
+            : (auth.user?.name?.trim().isNotEmpty == true
+                ? auth.user!.name!.trim()
+                : '—');
+        final studioId = auth.trainerInfo?.studioId;
+        try {
+          final results = await Future.wait([
+            TrainerApiService.getSessions(
+              token,
+              from: fromUtc,
+              to: toUtc,
+            ),
+            if (studioId != null && studioId.isNotEmpty)
+              TrainerApiService.fetchStudioForLocations(studioId)
+            else
+              Future<Studio?>.value(null),
+          ]);
+          final result = results[0] as Map<String, dynamic>;
+          final trainerStudio = results.length > 1 ? results[1] as Studio? : null;
+          final rawSessions = (result['sessions'] as List?)
+                  ?.whereType<Map>()
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              <Map<String, dynamic>>[];
+          final rawById = <String, Map<String, dynamic>>{};
+          for (final raw in rawSessions) {
+            final session = TrainerApiService.ownerSessionFromTrainerMap(
+              raw,
+              trainerName: trainerName,
+            );
+            rawById[session.sessionId] = raw;
+            sessions.add(session);
+          }
+          sessions.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+          if (mounted) {
+            setState(() {
+              _studio = trainerStudio;
+              _checklist = null;
+              _trainerRawSessionsById
+                ..clear()
+                ..addAll(rawById);
+              _todaySessions = sessions.where((s) {
+                final local = s.startsAt.toLocal();
+                return local.year == from.year &&
+                    local.month == from.month &&
+                    local.day == from.day;
+              }).toList();
+              _upcomingSessions = sessions;
+              _sessionsLoadError = null;
+              _dataLoaded = true;
+            });
+          }
+        } catch (e) {
+          if (mounted) {
+            setState(() {
+              _todaySessions = [];
+              _upcomingSessions = [];
+              _sessionsLoadError = loadErrorMessage(
+                context.read<LocaleProvider>(),
+                e,
+              );
+              _dataLoaded = true;
+            });
+          }
+        }
+        return;
+      }
+
+      final cache = context.read<OwnerSessionsCache>();
+      studio = await context.read<StudioCache>().getStudio(token);
 
       final sessionsFuture = cache
           .getSessions(token, fromUtc: fromUtc, toUtc: toUtc)
@@ -132,6 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _studio = studio;
           _checklist = checklist;
+          _trainerRawSessionsById.clear();
           _todaySessions = todayOnly;
           _upcomingSessions = sessions;
           _sessionsLoadError = sessionsLoadError;
@@ -159,8 +243,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleRefresh() async {
     if (!mounted) return;
-    context.read<OwnerSessionsCache>().invalidate();
-    context.read<StudioCache>().invalidate();
+    if (!widget.trainerMode) {
+      context.read<OwnerSessionsCache>().invalidate();
+      context.read<StudioCache>().invalidate();
+    }
     await _loadData();
   }
 
@@ -258,6 +344,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String? _venueLabel() {
+    if (widget.trainerMode) {
+      final studioName =
+          context.read<AuthService>().trainerInfo?.studioName.trim();
+      if (studioName != null && studioName.isNotEmpty) return studioName;
+      return null;
+    }
     final s = _studio;
     if (s == null) return null;
     final n = s.name?.trim();
@@ -340,7 +432,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _todayWaitlist {
     int total = 0;
     for (final s in _todaySessions) {
-      if (s.capacity > 0 && s.enrolledCount > s.capacity) {
+      if (widget.trainerMode) {
+        total += s.waitlistCount;
+      } else if (s.capacity > 0 && s.enrolledCount > s.capacity) {
         total += (s.enrolledCount - s.capacity);
       }
     }
@@ -348,6 +442,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openSessionDetail(OwnerTrainingSession s) {
+    if (widget.trainerMode) {
+      final raw = _trainerRawSessionsById[s.sessionId];
+      if (raw == null) return;
+      Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => TrainerSessionEnrollmentsScreen(session: raw),
+        ),
+      ).then((_) {
+        if (mounted) _loadData();
+      });
+      return;
+    }
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (detailCtx) => OwnerTrainingSessionDetailScreen(
@@ -503,7 +609,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       aspectRatio: 1,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(12, 16, 12, 10),
+        padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(18),
@@ -583,13 +689,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  String _featuredSessionMeta(LocaleProvider loc, OwnerTrainingSession s) {
+    final timeRange = _formatTimeRange(s);
+    if (widget.trainerMode) {
+      final sub = resolveOwnerSessionCardSubtitle(
+        session: s,
+        studioLocations: _studioLocations(context),
+        ownerTrainerFallback: _ownerTrainerFallback(),
+      );
+      if (sub.label.isNotEmpty) {
+        return '$timeRange · ${sub.label}';
+      }
+      return timeRange;
+    }
+    return '$timeRange · With ${_displayTrainer(s)}';
+  }
+
   Widget _featuredCard(LocaleProvider loc, OwnerTrainingSession s, {required bool isToday}) {
     final cap = s.capacity;
     final enrolled = s.enrolledCount;
     final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
     final percent = (progress * 100).round();
     final fillLabel = cap > 0 ? '$enrolled / $cap' : '$enrolled';
-    final trainer = _displayTrainer(s);
 
     const double ringsBox = 200;
     const double editHalf = 15;
@@ -648,7 +769,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                           const Spacer(),
-                          if (s.sessionId.isNotEmpty)
+                          if (!widget.trainerMode && s.sessionId.isNotEmpty)
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () => _openEditCurrentSession(s),
@@ -683,7 +804,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${_formatTimeRange(s)} · With $trainer',
+                        _featuredSessionMeta(loc, s),
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
@@ -774,7 +895,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    loc.t('dashboard.showMore'),
+                                    widget.trainerMode
+                                        ? loc.t('trainer.viewRoster')
+                                        : loc.t('dashboard.showMore'),
                                     style: TextStyle(
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
@@ -878,7 +1001,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _statsRow(loc),
                 if (featured != null)
                   _featuredCard(loc, featured, isToday: _isSessionToday(featured)),
-                _checklistBlock(),
+                if (!widget.trainerMode) _checklistBlock(),
                 if (_sessionsLoadError != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -898,14 +1021,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     sessions: _todaySessions,
                     emptyMessage: loc.t('dashboard.noTrainingsToday'),
                     emptySubtitle: loc.t('dashboard.enjoyYourDay'),
-                    onSeeAll: _studio == null
-                        ? null
-                        : () => context
-                              .findAncestorStateOfType<MainShellState>()
-                              ?.openScheduleTabForToday(),
+                    onSeeAll: widget.trainerMode
+                        ? () => context
+                              .findAncestorStateOfType<TrainerShellState>()
+                              ?.openScheduleTabForToday()
+                        : (_studio == null
+                              ? null
+                              : () => context
+                                    .findAncestorStateOfType<MainShellState>()
+                                    ?.openScheduleTabForToday()),
                     onSessionTap: _openSessionDetail,
                     ownerTrainerFallback: _ownerTrainerFallback(),
                     studioLocations: _studioLocations(context),
+                    completedLabel: widget.trainerMode
+                        ? loc.t('trainer.sessionCompleted')
+                        : null,
                   ),
                 const SizedBox(height: 16),
               ],
@@ -928,7 +1058,7 @@ class _RingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
     final center = Offset(size.width / 2, size.height / 2);
-    const radii = <double>[10, 30, 50, 70, 90];
+    const radii = <double>[10, 36, 62, 88, 114];
     for (final r in radii) {
       canvas.drawCircle(center, r, paint);
     }

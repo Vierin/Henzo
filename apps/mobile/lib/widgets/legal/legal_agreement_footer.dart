@@ -39,6 +39,7 @@ class LegalAgreementFooter extends StatelessWidget {
                     '/privacy-policy',
                   ),
           ),
+          const TextSpan(text: '\n'),
           TextSpan(text: locale.t('legal.agreeAnd')),
           TextSpan(
             text: locale.t('settings.termsOfUse'),

@@ -1,180 +1,207 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/language_selector_modal.dart';
+import '../../widgets/client/client_profile_sections.dart';
+import 'trainer_profile_settings_screen.dart';
 
-class TrainerProfileScreen extends StatelessWidget {
+class TrainerProfileScreen extends StatefulWidget {
   const TrainerProfileScreen({super.key});
 
   @override
+  State<TrainerProfileScreen> createState() => _TrainerProfileScreenState();
+}
+
+class _TrainerProfileScreenState extends State<TrainerProfileScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  String? _accessLevelLabel(LocaleProvider locale, String? accessLevel) {
+    if (accessLevel == null || accessLevel.isEmpty) return null;
+    if (accessLevel == 'ADMIN') return locale.t('trainer.accessAdmin');
+    if (accessLevel == 'EMPLOYEE') return locale.t('trainer.accessEmployee');
+    return null;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
+    super.build(context);
     final locale = context.watch<LocaleProvider>();
+    final auth = context.watch<AuthService>();
     final trainer = auth.trainerInfo;
     final user = auth.user;
 
-    final name = trainer?.name ?? user?.name ?? locale.t('settings.owner.ownerRole');
-    final initials = name
-        .split(' ')
-        .where((x) => x.isNotEmpty)
-        .take(2)
-        .map((x) => x[0].toUpperCase())
-        .join();
+    final trainerName = trainer?.name.trim() ?? '';
+    final userName = user?.name?.trim() ?? '';
+    final name = trainerName.isNotEmpty
+        ? trainerName
+        : (userName.isNotEmpty ? userName : locale.t('trainer.role'));
+    final email = (user?.email ?? trainer?.email ?? '').trim();
+    final studio = trainer?.studioName.trim();
+    final studioLogo = trainer?.studioLogoUrl?.trim();
+    final accessLabel = _accessLevelLabel(locale, trainer?.accessLevel);
+    final trainings = trainer?.trainings ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(kScreenPaddingHorizontal, 16, kScreenPaddingHorizontal, 24),
-          children: [
-            Text(
-              locale.t('settings.title'),
-              style: TextStyle(
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.4,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingHorizontal,
+            12,
+            kScreenPaddingHorizontal,
+            28,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClientProfileHeader(
+                title: locale.t('clientProfile.title'),
+                onSettings: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const TrainerProfileSettingsScreen(),
+                    ),
+                  );
+                },
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Profile card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 20),
+              ClientProfileUserRow(
+                name: name,
+                email: email,
+                location: studio?.isNotEmpty == true ? studio : null,
+                avatarUrl: user?.avatarUrl,
               ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: AppColors.primary100,
+              if (accessLabel != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary100,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                     child: Text(
-                      initials.isEmpty ? '?' : initials,
+                      accessLabel,
                       style: TextStyle(
-                        color: AppColors.primary600,
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary700,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        if (trainer?.studioName != null)
-                          Text(
-                            trainer!.studioName,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary100,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            locale.t('trainer.role'),
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary700,
-                            ),
-                          ),
-                        ),
-                      ],
+                ),
+              ],
+              if (studio?.isNotEmpty == true) ...[
+                const SizedBox(height: 16),
+                _StudioRow(
+                  studioName: studio!,
+                  logoUrl: studioLogo,
+                ),
+              ],
+              if (trainings.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text(
+                  locale.t('trainer.assignedTrainings'),
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...trainings.map(
+                  (training) => Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      training.name,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Language
-            _SettingsTile(
-              icon: Icons.language_outlined,
-              title: locale.t('settings.language'),
-              onTap: () => showLanguageSelectorModal(context, locale),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Logout
-            _SettingsTile(
-              icon: Icons.logout_outlined,
-              title: locale.t('settings.logOut'),
-              color: AppColors.error500,
-              onTap: () => auth.logout(),
-            ),
-          ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.color,
+class _StudioRow extends StatelessWidget {
+  const _StudioRow({
+    required this.studioName,
+    this.logoUrl,
   });
 
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Color? color;
+  final String studioName;
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.textPrimary;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
+    final initial =
+        studioName.isNotEmpty ? studioName.characters.first.toUpperCase() : '?';
+    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Icon(icon, color: c, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w500,
-                    color: c,
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: AppColors.primary100,
+            backgroundImage: hasLogo ? NetworkImage(logoUrl!) : null,
+            child: hasLogo
+                ? null
+                : Text(
+                    initial,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary700,
+                    ),
                   ),
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
-            ],
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              studioName,
+              style: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

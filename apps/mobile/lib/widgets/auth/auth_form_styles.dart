@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Field and primary-button geometry shared with [AddTrainingScreen] step 1.
 abstract final class AuthFormStyles {
   static const double fieldBorderRadius = 12;
   static const double buttonHeight = 60;
-  static const double buttonBorderRadius = 12;
+  static const double buttonBorderRadius = 14;
+  static const double socialButtonBorderRadius = 14;
   static const double fieldGap = 12;
 
   static const Color hintMuted = Color(0x993F3F3F);
   static const Color accentIcon = hintMuted;
 
   static TextStyle get fieldTextStyle => TextStyle(
-        fontSize: 16.sp,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       );
@@ -26,6 +26,7 @@ abstract final class AuthFormStyles {
   static InputDecoration fieldDecoration({
     required String hintText,
     IconData? prefixIcon,
+    Widget? prefixWidget,
     Widget? suffixIcon,
     bool invalid = false,
   }) {
@@ -39,24 +40,25 @@ abstract final class AuthFormStyles {
       hintText: hintText,
       hintStyle: TextStyle(
         color: hintMuted,
-        fontSize: 16.sp,
+        fontSize: 16,
         fontWeight: FontWeight.w500,
       ),
-      prefixIcon: prefixIcon == null
+      prefixIcon: (prefixIcon == null && prefixWidget == null)
           ? null
           : Padding(
               padding: const EdgeInsets.only(left: 13, right: 8),
-              child: Icon(prefixIcon, color: accentIcon, size: 22),
+              child: prefixWidget ?? Icon(prefixIcon, color: accentIcon, size: 22),
             ),
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: AppColors.backgroundPrimary,
+      constraints: const BoxConstraints.tightFor(height: 68),
       contentPadding: EdgeInsets.only(
-        top: 8,
-        bottom: 12,
+        top: 20,
+        bottom: 20,
         right: 18,
-        left: prefixIcon == null ? 13 : 0,
+        left: (prefixIcon == null && prefixWidget == null) ? 13 : 0,
       ),
       border: OutlineInputBorder(borderRadius: _radius, borderSide: noneSide),
       enabledBorder: OutlineInputBorder(
@@ -90,7 +92,7 @@ abstract final class AuthFormStyles {
     backgroundColor: AppColors.backgroundPrimary,
     side: BorderSide.none,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(buttonBorderRadius),
+      borderRadius: BorderRadius.circular(socialButtonBorderRadius),
     ),
   );
 }

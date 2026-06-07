@@ -84,8 +84,8 @@ class RegistrationRoleScreen extends StatelessWidget {
                   description: locale.t('auth.roleClientDesc'),
                   imageAssetPath: 'assets/public/client.webp',
                   accentColor: AppColors.primary500,
-                  underlineWidth: 62,
                   imageOnLeft: true,
+                  underlineWidthFactor: 0.45,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => const ClientRegistrationScreen(),
@@ -102,7 +102,6 @@ class RegistrationRoleScreen extends StatelessWidget {
                   description: locale.t('auth.roleOwnerDesc'),
                   imageAssetPath: 'assets/public/manager.webp',
                   accentColor: const Color(0xFFC2F600),
-                  underlineWidth: 96,
                   imageOnLeft: false,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -145,40 +144,47 @@ class _ScreenHeading extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.start,
-          children: [
-            Text(
-              '${locale.t('auth.roleSubtitleBefore')} ',
-              style: TextStyle(
-                fontSize: 15.sp,
-                color: AppColors.textPrimary,
-                height: 1.2,
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        Builder(
+          builder: (context) {
+            final highlightText = locale.t('auth.roleSubtitleHighlight');
+            final highlightStyle = TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1.2,
+            );
+            final tp = TextPainter(
+              text: TextSpan(text: highlightText, style: highlightStyle),
+              textDirection: TextDirection.ltr,
+            )..layout();
+            return Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.start,
               children: [
                 Text(
-                  locale.t('auth.roleSubtitleHighlight'),
+                  '${locale.t('auth.roleSubtitleBefore')} ',
                   style: TextStyle(
                     fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 2),
-                const ChaoticUnderline(
-                  width: 88,
-                  height: 5,
-                  color: AppColors.primary500,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(highlightText, style: highlightStyle),
+                    const SizedBox(height: 2),
+                    ChaoticUnderline(
+                      width: tp.width * 1,
+                      height: 5,
+                      color: AppColors.primary500,
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
       ],
     );
@@ -192,9 +198,9 @@ class _RoleCard extends StatelessWidget {
     required this.description,
     required this.imageAssetPath,
     required this.accentColor,
-    required this.underlineWidth,
     required this.imageOnLeft,
     required this.onTap,
+    this.underlineWidthFactor = 0.8,
   });
 
   final LocaleProvider locale;
@@ -202,9 +208,9 @@ class _RoleCard extends StatelessWidget {
   final String description;
   final String imageAssetPath;
   final Color accentColor;
-  final double underlineWidth;
   final bool imageOnLeft;
   final VoidCallback onTap;
+  final double underlineWidthFactor;
 
   static const double _cardHeight = 160.0;
   static const double _imageWidth = 161.0;
@@ -258,21 +264,25 @@ class _RoleCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            roleWord,
-                            style: TextStyle(
-                              fontSize: 30.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                              height: 1.0,
-                              letterSpacing: -0.3,
+                          IntrinsicWidth(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  roleWord,
+                                  style: TextStyle(
+                                    fontSize: 30.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                    height: 1.0,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                ChaoticUnderline(height: 5, color: accentColor, widthFactor: underlineWidthFactor),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          ChaoticUnderline(
-                            width: underlineWidth,
-                            height: 5,
-                            color: accentColor,
                           ),
                           const SizedBox(height: 6),
                           Padding(

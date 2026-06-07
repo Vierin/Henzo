@@ -4,19 +4,22 @@ import 'package:flutter_svg/flutter_svg.dart';
 class ChaoticUnderline extends StatelessWidget {
   const ChaoticUnderline({
     super.key,
-    this.width = 74,
+    this.width,
+    this.widthFactor,
     this.height = 8,
     this.color = const Color(0xFFF15942),
   });
 
-  final double width;
+  final double? width;
+  /// Fraction of the available width (0.0–1.0). Takes priority over [width].
+  final double? widthFactor;
   final double height;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
+    final svg = SizedBox(
+      width: widthFactor == null ? width : null,
       height: height,
       child: SvgPicture.string(
         _chaoticUnderlineSvg,
@@ -24,6 +27,20 @@ class ChaoticUnderline extends StatelessWidget {
         fit: BoxFit.fill,
       ),
     );
+    if (widthFactor != null) {
+      // LimitedBox(maxWidth: 0) reports 0 during IntrinsicWidth measurement
+      // (unbounded incoming), but passes through bounded constraints at layout
+      // time — so FractionallySizedBox correctly gets widthFactor * textWidth.
+      return LimitedBox(
+        maxWidth: 0,
+        child: FractionallySizedBox(
+          widthFactor: widthFactor,
+          alignment: Alignment.centerLeft,
+          child: svg,
+        ),
+      );
+    }
+    return svg;
   }
 }
 
