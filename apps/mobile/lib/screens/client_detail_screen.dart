@@ -20,10 +20,11 @@ import '../../utils/show_api_error.dart';
 import '../../utils/synthetic_guest.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
-import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientDetailScreen extends StatefulWidget {
+  static const bookTrainingResult = 'book_training';
+
   const ClientDetailScreen({
     super.key,
     required this.clientKey,
@@ -345,12 +346,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   void _openBookTraining() {
-    final shell = context.findAncestorStateOfType<MainShellState>();
-    Navigator.of(context).pop();
-    if (shell == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      shell.navigateToTab0Route('/trainings/new');
-    });
+    Navigator.of(context).pop(ClientDetailScreen.bookTrainingResult);
   }
 
   @override

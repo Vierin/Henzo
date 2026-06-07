@@ -49,9 +49,6 @@ class ClientsFilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: inverse ? AppColors.primary500 : AppColors.backgroundPrimary,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: inverse ? AppColors.primary500 : AppColors.borderPrimary,
-            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
