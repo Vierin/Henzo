@@ -80,6 +80,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   List<ServiceItem> _existing = [];
   List<TrainingCategoryOption> _categories = [];
   int? _selectedCategoryId;
+  String _selectedLanguage = 'en';
 
   bool _step1NameError = false;
   bool _step1DurationError = false;
@@ -500,6 +501,47 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       parts.add('${_formatThousandsDots(p.round())} ₫');
     }
     return parts.isEmpty ? '—' : parts.join(' · ');
+  }
+
+  static const _kLanguageOptions = [
+    ('en', 'English'),
+    ('ru', 'Русский'),
+    ('vi', 'Tiếng Việt'),
+  ];
+
+  String _languageLabel() {
+    return _kLanguageOptions
+        .firstWhere(
+          (l) => l.$1 == _selectedLanguage,
+          orElse: () => (_selectedLanguage, _selectedLanguage),
+        )
+        .$2;
+  }
+
+  Future<void> _openLanguagePicker() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            for (final (code, name) in _kLanguageOptions)
+              ListTile(
+                title: Text(name),
+                trailing: _selectedLanguage == code
+                    ? const Icon(Icons.check_rounded, color: AppColors.primary500)
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(code),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _selectedLanguage = selected);
   }
 
   String _categoryLabel(LocaleProvider loc) {
@@ -1308,6 +1350,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         price: price,
         trainingCategoryId: _selectedCategoryId,
         description: _descriptionController.text.trim(),
+        language: _selectedLanguage,
       );
       if (!mounted) return;
       if (created != null) {
@@ -1425,7 +1468,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                 ),
                 children: _step == 1
                     ? [
-                        _stepFormLabel('Название'),
+                        _stepFormLabel(loc.t('addTraining.trainingName')),
                         if (_existing.isEmpty)
                           TextField(
                             controller: _nameController,
@@ -1536,7 +1579,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _stepFormLabel('Категория'),
+                                _stepFormLabel(locale.t('addTraining.category')),
                                 InkWell(
                                   borderRadius: BorderRadius.circular(999),
                                   onTap: _categories.isEmpty
@@ -1683,7 +1726,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _stepFormLabel('Длительность'),
+                                  _stepFormLabel(loc.t('addTraining.duration')),
                                   Consumer<LocaleProvider>(
                                     builder: (context, loc, _) =>
                                         _durationMinutesField(loc),
@@ -1696,7 +1739,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _stepFormLabel('Вместительность'),
+                                  _stepFormLabel(loc.t('addTraining.capacity')),
                                   TextField(
                                     controller: _capacityController,
                                     style: _stepFieldInputStyle,
@@ -1717,22 +1760,65 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ],
                         ),
                         const SizedBox(height: 22),
-                        _stepFormLabel('Цена'),
-                        TextField(
-                          controller: _priceController,
-                          style: _stepFieldInputStyle,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                          inputFormatters: [_VndThousandsFormatter()],
-                          onChanged: (_) =>
-                              setState(() => _step1PriceError = false),
-                          decoration: _regInputDecoration(
-                            invalid: _step1PriceError,
-                            hintText: context.read<LocaleProvider>().t('addTraining.enterPrice'),
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _stepFormLabel(loc.t('addTraining.price')),
+                                  TextField(
+                                    controller: _priceController,
+                                    style: _stepFieldInputStyle,
+                                    keyboardType: TextInputType.number,
+                                    textInputAction: TextInputAction.next,
+                                    inputFormatters: [_VndThousandsFormatter()],
+                                    onChanged: (_) =>
+                                        setState(() => _step1PriceError = false),
+                                    decoration: _regInputDecoration(
+                                      invalid: _step1PriceError,
+                                      hintText: context.read<LocaleProvider>().t('addTraining.enterPrice'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _stepFormLabel(loc.t('addTraining.language')),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: _openLanguagePicker,
+                                    child: InputDecorator(
+                                      decoration: _regInputDecoration(
+                                        invalid: false,
+                                        suffix: const Icon(
+                                          CupertinoIcons.chevron_down,
+                                          color: _kFormAccentPurple,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _languageLabel(),
+                                        style: TextStyle(
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 22),
-                        _stepFormLabel('Описание'),
+                        _stepFormLabel(loc.t('addTraining.description')),
                         TextField(
                           controller: _descriptionController,
                           style: _stepFieldInputStyle,
@@ -1749,15 +1835,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         _stepFormLabel(loc.t('addTraining.step2.trainer')),
                         InputDecorator(
                           decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AppColors.borderPrimary,
-                              ),
-                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
                             filled: true,
                             fillColor: AppColors.backgroundPrimary,
                             contentPadding: const EdgeInsets.symmetric(

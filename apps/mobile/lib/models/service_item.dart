@@ -18,6 +18,7 @@ class ServiceItem {
   final String? displayColor;
   /// Имена привязанных тренеров (из API Staff).
   final List<String> trainerNames;
+  final String? language;
 
   ServiceItem({
     required this.id,
@@ -34,6 +35,7 @@ class ServiceItem {
     this.categoryName,
     this.displayColor,
     this.trainerNames = const [],
+    this.language,
   });
 
   String get displayName => name;
@@ -118,6 +120,7 @@ class ServiceItem {
       categoryName: categoryName,
       displayColor: json['displayColor']?.toString(),
       trainerNames: trainers,
+      language: json['language'] as String?,
     );
   }
 
@@ -137,6 +140,7 @@ class ServiceItem {
       'categoryName': categoryName,
       'displayColor': displayColor,
       'trainerNames': trainerNames,
+      'language': language,
     };
   }
 }

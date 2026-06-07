@@ -22,7 +22,7 @@ class CalendarDayPill extends StatelessWidget {
     required this.sessionsCount,
     this.isToday,
     this.enabled = true,
-    this.showBorder = true,
+    this.showBorder = false,
     this.highlightTodayWhenUnselected = true,
     this.onTap,
   });

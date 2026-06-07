@@ -40,12 +40,23 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
   final String trainerLabel;
   final VoidCallback onTap;
 
+  static String _languageName(String code) {
+    switch (code) {
+      case 'en': return 'English';
+      case 'ru': return 'Русский';
+      case 'vi': return 'Tiếng Việt';
+      default: return code;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final accent =
         parseHexColor(item.displayColor) ?? AppColors.primary500;
     final address = addressLabel.trim();
     final trainer = trainerLabel.trim();
+    final lang = item.language?.trim();
+    final hasLanguage = lang != null && lang.isNotEmpty;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -106,6 +117,31 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (hasLanguage) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/icon-globe.svg',
+                              width: 12,
+                              height: 12,
+                              colorFilter: ColorFilter.mode(
+                                AppColors.textSecondary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _languageName(lang!),
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       if (address.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Row(

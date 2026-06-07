@@ -1039,7 +1039,8 @@
     "weekdayThu": "TH",
     "weekdayFri": "FR",
     "weekdaySat": "SA",
-    "weekdaySun": "SU"
+    "weekdaySun": "SU",
+    "language": "Language"
   },
   "trainer": {
     "role": "Trainer",

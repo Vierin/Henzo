@@ -17,6 +17,10 @@ export class UpdateServiceDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  language?: string;
+
   // Optional localized fields
   @IsOptional()
   @IsString()

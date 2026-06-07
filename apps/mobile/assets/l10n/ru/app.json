@@ -1039,7 +1039,8 @@
     "weekdayThu": "ЧТ",
     "weekdayFri": "ПТ",
     "weekdaySat": "СБ",
-    "weekdaySun": "ВС"
+    "weekdaySun": "ВС",
+    "language": "Язык"
   },
   "trainer": {
     "role": "Тренер",

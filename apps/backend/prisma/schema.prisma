@@ -137,6 +137,7 @@ model Training {
   descriptionEn      String?
   descriptionVi      String?
   descriptionRu      String?
+  language           String?
   Booking            SessionBooking[]
   Studio             Studio              @relation(fields: [studioId], references: [id])
   trainingCategory   TrainingCategory? @relation(fields: [trainingCategoryId], references: [id]) 

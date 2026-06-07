@@ -1039,7 +1039,8 @@
     "weekdayThu": "T5",
     "weekdayFri": "T6",
     "weekdaySat": "T7",
-    "weekdaySun": "CN"
+    "weekdaySun": "CN",
+    "language": "Ngôn ngữ"
   },
   "trainer": {
     "role": "Huấn luyện viên",

@@ -306,6 +306,7 @@ export class TrainingsService {
       data: {
         name: data.name,
         description: data.description,
+        language: data.language,
         nameEn: data.nameEn,
         nameVi: data.nameVi,
         nameRu: data.nameRu,
@@ -342,6 +343,7 @@ export class TrainingsService {
     data: {
       name?: string;
       description?: string;
+      language?: string;
       nameEn?: string;
       nameVi?: string;
       nameRu?: string;
@@ -374,6 +376,7 @@ export class TrainingsService {
     };
     assign('name');
     assign('description');
+    assign('language');
     assign('nameEn');
     assign('nameVi');
     assign('nameRu');

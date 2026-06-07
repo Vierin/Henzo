@@ -196,7 +196,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Удалить'),
+            child: Text(context.read<LocaleProvider>().t('common.delete')),
           ),
         ],
       ),
@@ -316,7 +316,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
+                  context.read<LocaleProvider>().t('servicesScreen.categoryRequestMessage'),
                   style: TextStyle(
                     fontSize: 14.sp,
                     height: 1.4,
@@ -711,8 +711,10 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   late final TextEditingController _durationController;
   late final TextEditingController _priceController;
   late final TextEditingController _capacityController;
+  late final TextEditingController _descriptionController;
   final FocusNode _durationFocusNode = FocusNode();
   int? _selectedCategoryId;
+  String _selectedLanguage = 'en';
   bool _saving = false;
   bool _applyScheduleChanges = false;
   bool _applyFromToday = true;
@@ -906,6 +908,47 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     if (!stillValid) {
       _selectedLocationId = _locations.first.id;
     }
+  }
+
+  static const _kLanguageOptions = [
+    ('en', 'English'),
+    ('ru', 'Русский'),
+    ('vi', 'Tiếng Việt'),
+  ];
+
+  String _languageLabel() {
+    return _kLanguageOptions
+        .firstWhere(
+          (l) => l.$1 == _selectedLanguage,
+          orElse: () => (_selectedLanguage, _selectedLanguage),
+        )
+        .$2;
+  }
+
+  Future<void> _openLanguagePicker() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            for (final (code, name) in _kLanguageOptions)
+              ListTile(
+                title: Text(name),
+                trailing: _selectedLanguage == code
+                    ? const Icon(Icons.check_rounded, color: AppColors.primary500)
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(code),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _selectedLanguage = selected);
   }
 
   String _categoryLabel(LocaleProvider locale) {
@@ -1153,6 +1196,10 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       text: _formatThousandsDots((widget.item.price ?? 0).round()),
     );
     _capacityController = TextEditingController(text: '10');
+    _descriptionController = TextEditingController(
+      text: widget.item.description ?? '',
+    );
+    _selectedLanguage = widget.item.language ?? 'en';
     final now = DateTime.now();
     final anchor = widget.scheduleEffectiveFrom;
     if (anchor != null) {
@@ -1183,6 +1230,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     _durationController.dispose();
     _priceController.dispose();
     _capacityController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -1191,7 +1239,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Введите название тренировки')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('addTraining.enterName'))),
       );
       return;
     }
@@ -1206,7 +1254,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(
-            'Цена, длительность и вместительность должны быть > 0',
+            context.read<LocaleProvider>().t('addTraining.invalidValues'),
           ),
         ),
       );
@@ -1216,7 +1264,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     final recurringDays = _recurringDays.toList()..sort();
     if (_applyScheduleChanges && recurringDays.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Выберите хотя бы один день')),
+        SnackBar(content: Text(context.read<LocaleProvider>().t('addTraining.selectDays'))),
       );
       return;
     }
@@ -1243,6 +1291,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         price: price,
         duration: duration,
         trainingCategoryId: _selectedCategoryId,
+        description: _descriptionController.text.trim(),
+        language: _selectedLanguage,
       );
       if (!mounted) return;
       if (updated != null) {
@@ -1281,8 +1331,10 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               (scheduleData['skippedBookedCount'] as num?)?.toInt() ?? 0;
           final conflicts =
               (scheduleData['skippedConflicts'] as num?)?.toInt() ?? 0;
-          final summary = 'Расписание: обновлено $updatedCount, добавлено $createdCount, '
-              'удалено $removedCount, пропущено занятых $skippedBooked, конфликтов $conflicts';
+          final loc = context.read<LocaleProvider>();
+          final summary = loc.t('servicesScreen.scheduleUpdateResult')
+              .replaceAll('{created}', '$createdCount')
+              .replaceAll('{skipped}', '${skippedBooked + conflicts + removedCount}');
           if (!mounted) return;
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(content: Text(summary)),
@@ -1356,18 +1408,18 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _editFormLabel('Название тренировки'),
+            _editFormLabel(locale.t('addTraining.trainingName')),
             TextField(
               controller: _nameController,
               style: _kFieldInputStyle,
               textInputAction: TextInputAction.next,
               decoration: _editRegInputDecoration(
-                hintText: 'Например: Vinyasa Flow',
+                hintText: locale.t('addTraining.nameExample'),
               ),
             ),
             const SizedBox(height: 22),
             _editFormLabel(
-              'Категория',
+              locale.t('addTraining.category'),
               trailing: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: widget.onShowCategoryInfo,
@@ -1494,7 +1546,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _editFormLabel('Длительность'),
+                      _editFormLabel(locale.t('addTraining.duration')),
                       _editDurationMinutesField(locale),
                     ],
                   ),
@@ -1504,7 +1556,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _editFormLabel('Вместительность'),
+                      _editFormLabel(locale.t('addTraining.capacity')),
                       TextField(
                         controller: _capacityController,
                         style: _kFieldInputStyle,
@@ -1521,24 +1573,77 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               ],
             ),
             const SizedBox(height: 22),
-            _editFormLabel('Цена'),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _editFormLabel(locale.t('addTraining.price')),
+                      TextField(
+                        controller: _priceController,
+                        style: _kFieldInputStyle,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        inputFormatters: [_EditTemplateVndThousandsFormatter()],
+                        decoration: _editRegInputDecoration(
+                          hintText: locale.t('addTraining.enterPrice'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _editFormLabel(locale.t('addTraining.language')),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: _openLanguagePicker,
+                        child: InputDecorator(
+                          decoration: _editRegInputDecoration(
+                            suffix: const Icon(
+                              CupertinoIcons.chevron_down,
+                              color: _kFormAccent,
+                              size: 18,
+                            ),
+                          ),
+                          child: Text(
+                            _languageLabel(),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _editFormLabel(locale.t('addTraining.description')),
             TextField(
-              controller: _priceController,
+              controller: _descriptionController,
               style: _kFieldInputStyle,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              inputFormatters: [_EditTemplateVndThousandsFormatter()],
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              minLines: 3,
+              maxLines: 5,
               decoration: _editRegInputDecoration(
-                hintText: 'Введите цену',
+                hintText: locale.t('addTraining.descriptionOptional'),
               ),
             ),
             const SizedBox(height: 22),
             SwitchListTile(
               value: _applyScheduleChanges,
               onChanged: (v) => setState(() => _applyScheduleChanges = v),
-              title: const Text(
-                'Изменить дни и время для всех будущих тренировок',
-              ),
+              title: Text(locale.t('servicesScreen.editAllFuture')),
               contentPadding: EdgeInsets.zero,
             ),
             if (_applyScheduleChanges) ...[
@@ -1645,12 +1750,12 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               SwitchListTile(
                 value: _applyFromToday,
                 onChanged: (v) => setState(() => _applyFromToday = v),
-                title: const Text('Применить с сегодняшнего дня'),
+                title: Text(locale.t('servicesScreen.applyFromToday')),
                 contentPadding: EdgeInsets.zero,
               ),
               if (!_applyFromToday) ...[
                 const SizedBox(height: 8),
-                _editFormLabel('Дата начала изменений'),
+                _editFormLabel(locale.t('servicesScreen.changeStartDate')),
                 const SizedBox(height: 6),
                 InkWell(
                   onTap: () async {

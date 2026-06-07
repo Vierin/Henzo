@@ -117,6 +117,7 @@ class ServicesApiService {
     required int duration,
     int? trainingCategoryId,
     String? description,
+    String? language,
   }) async {
     try {
       final payload = <String, dynamic>{
@@ -131,6 +132,9 @@ class ServicesApiService {
       final desc = description?.trim();
       if (desc != null && desc.isNotEmpty) {
         payload['description'] = desc;
+      }
+      if (language != null && language.isNotEmpty) {
+        payload['language'] = language;
       }
       final map =
           await ApiClient.post('/trainings', accessToken, body: payload)
@@ -178,6 +182,7 @@ class ServicesApiService {
     String id, {
     String? name,
     String? description,
+    String? language,
     double? price,
     int? duration,
     int? trainingCategoryId,
@@ -186,6 +191,7 @@ class ServicesApiService {
       final data = <String, dynamic>{};
       if (name != null) data['name'] = name;
       if (description != null) data['description'] = description;
+      if (language != null && language.isNotEmpty) data['language'] = language;
       if (price != null) data['price'] = price;
       if (duration != null) data['duration'] = duration;
       if (trainingCategoryId != null) {
