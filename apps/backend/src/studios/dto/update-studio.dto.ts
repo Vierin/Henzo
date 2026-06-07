@@ -65,6 +65,9 @@ export class UpdateStudioDto {
   photos?: string[];
 
   @IsOptional()
+  photoGallery?: InputJsonValue;
+
+  @IsOptional()
   workingHours?: InputJsonValue;
 
   @IsOptional()

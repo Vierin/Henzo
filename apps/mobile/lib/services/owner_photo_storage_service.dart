@@ -10,11 +10,19 @@ class OwnerPhotoStorageService {
 
   static const int maxPhotoBytes = 3 * 1024 * 1024;
 
+  /// Raw file size limit before resize/compress (see [convertXFileToWebp]).
+  static const int maxSourcePhotoBytes = maxPhotoBytes * 8;
+
+  static int get maxSourcePhotoMb => maxSourcePhotoBytes ~/ (1024 * 1024);
+
   /// Profile avatar in lists / hero cards.
   static const int avatarMaxEdge = 512;
 
   /// Studio gallery cards.
   static const int galleryMaxEdge = 1200;
+
+  /// Uncropped gallery source kept for re-adjust.
+  static const int galleryOriginalMaxEdge = 2400;
 
   static String get bucket {
     final configured = AppConfig.studioPhotosBucket.trim();
@@ -31,6 +39,48 @@ class OwnerPhotoStorageService {
       throw StateError('No Supabase auth user for storage upload');
     }
     return 'owners/$uid/$fileName';
+  }
+
+  /// Resize longest edge to [maxEdge], encode WebP, cap at [maxBytes].
+  static Future<Uint8List?> convertBytesToWebp(
+    Uint8List bytes, {
+    int maxBytes = maxPhotoBytes,
+    int maxEdge = galleryMaxEdge,
+    int quality = 82,
+  }) async {
+    if (bytes.length > maxSourcePhotoBytes) return null;
+
+    final fromBytes = await FlutterImageCompress.compressWithList(
+      bytes,
+      minWidth: maxEdge,
+      minHeight: maxEdge,
+      quality: quality,
+      format: CompressFormat.webp,
+      keepExif: false,
+    );
+    if (fromBytes.isEmpty) return null;
+    var webp = Uint8List.fromList(fromBytes);
+
+    if (webp.length > maxBytes && quality > 60) {
+      return convertBytesToWebp(
+        bytes,
+        maxBytes: maxBytes,
+        maxEdge: maxEdge,
+        quality: quality - 15,
+      );
+    }
+
+    if (webp.length > maxBytes) return null;
+
+    if (kDebugMode) {
+      debugPrint(
+        '[OwnerPhotoStorage] ${(bytes.length / 1024).toStringAsFixed(0)} KB → '
+        '${(webp.length / 1024).toStringAsFixed(0)} KB webp '
+        '(edge≤$maxEdge, q$quality)',
+      );
+    }
+
+    return webp;
   }
 
   /// Resize longest edge to [maxEdge], encode WebP, cap at [maxBytes].
@@ -59,7 +109,7 @@ class OwnerPhotoStorageService {
 
     if (webp == null) {
       final original = await file.readAsBytes();
-      if (original.length > maxBytes * 8) return null;
+      if (original.length > maxSourcePhotoBytes) return null;
 
       final fromBytes = await FlutterImageCompress.compressWithList(
         original,
@@ -159,10 +209,100 @@ class OwnerPhotoStorageService {
     if (bytes == null) {
       return (url: null, error: 'Фото больше 3 MB после сжатия');
     }
+    return uploadStudioGalleryWebpBytes(bytes: bytes);
+  }
+
+  static Future<({String? url, String? error})> uploadStudioGalleryCroppedBytes({
+    required Uint8List croppedBytes,
+  }) async {
+    if (authenticatedOwnerId == null) {
+      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+    }
+    final bytes = await convertBytesToWebp(
+      croppedBytes,
+      maxEdge: galleryMaxEdge,
+    );
+    if (bytes == null) {
+      return (url: null, error: 'Фото больше 3 MB после сжатия');
+    }
+    return uploadStudioGalleryWebpBytes(bytes: bytes);
+  }
+
+  static Future<({String? url, String? error})> uploadStudioGalleryWebpBytes({
+    required Uint8List bytes,
+  }) async {
     final path = ownerStoragePath(
       '${DateTime.now().millisecondsSinceEpoch}_${_randomSuffix()}.webp',
     );
     return uploadWebpBytes(bytes: bytes, storagePath: path);
+  }
+
+  static String galleryAssetPath(String photoId, String suffix) =>
+      ownerStoragePath('gallery/${photoId}_$suffix.webp');
+
+  static Future<({StudioGalleryUpload? asset, String? error})>
+      uploadStudioGalleryAsset({
+    required String photoId,
+    required Uint8List originalBytes,
+    required Uint8List heroBytes,
+    required Uint8List cardBytes,
+  }) async {
+    if (authenticatedOwnerId == null) {
+      return (asset: null, error: 'Нет сессии Supabase — войдите снова');
+    }
+
+    final original = await convertBytesToWebp(
+      originalBytes,
+      maxEdge: galleryOriginalMaxEdge,
+      quality: 86,
+    );
+    final hero = await convertBytesToWebp(
+      heroBytes,
+      maxEdge: galleryMaxEdge,
+    );
+    final card = await convertBytesToWebp(
+      cardBytes,
+      maxEdge: galleryMaxEdge,
+    );
+    if (original == null || hero == null || card == null) {
+      return (asset: null, error: 'Фото больше 3 MB после сжатия');
+    }
+
+    final originalUpload = await uploadWebpBytes(
+      bytes: original,
+      storagePath: galleryAssetPath(photoId, 'original'),
+      upsert: true,
+    );
+    if (originalUpload.url == null) {
+      return (asset: null, error: originalUpload.error);
+    }
+
+    final heroUpload = await uploadWebpBytes(
+      bytes: hero,
+      storagePath: galleryAssetPath(photoId, 'hero'),
+      upsert: true,
+    );
+    if (heroUpload.url == null) {
+      return (asset: null, error: heroUpload.error);
+    }
+
+    final cardUpload = await uploadWebpBytes(
+      bytes: card,
+      storagePath: galleryAssetPath(photoId, 'card'),
+      upsert: true,
+    );
+    if (cardUpload.url == null) {
+      return (asset: null, error: cardUpload.error);
+    }
+
+    return (
+      asset: StudioGalleryUpload(
+        originalUrl: originalUpload.url!,
+        heroUrl: heroUpload.url!,
+        cardUrl: cardUpload.url!,
+      ),
+      error: null,
+    );
   }
 
   /// Single profile avatar (`owners/{auth.uid()}/avatar.webp`).
@@ -211,4 +351,19 @@ class OwnerPhotoStorageService {
     final ms = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
     return ms.substring(ms.length > 6 ? ms.length - 6 : 0);
   }
+
+  static String newGalleryPhotoId() =>
+      '${DateTime.now().millisecondsSinceEpoch}_${_randomSuffix()}';
+}
+
+class StudioGalleryUpload {
+  const StudioGalleryUpload({
+    required this.originalUrl,
+    required this.heroUrl,
+    required this.cardUrl,
+  });
+
+  final String originalUrl;
+  final String heroUrl;
+  final String cardUrl;
 }

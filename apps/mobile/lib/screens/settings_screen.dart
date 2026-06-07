@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../widgets/common/henzo_modal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/studio.dart';
+import '../../models/studio_photo_asset.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/studio_cache.dart';
@@ -22,8 +25,10 @@ import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
+import '../../widgets/settings/studio_photo_crop_sheet.dart';
 import '../../widgets/settings/studio_social_link.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'public_studio_detail_screen.dart';
 
 /// Scroll + optional focus when opening studio profile from onboarding.
 enum StudioProfileFocusTarget {
@@ -65,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _logoUrl;
   double? _salonLat;
   double? _salonLon;
-  List<String> _studioPhotos = <String>[];
+  List<StudioPhotoAsset> _studioPhotoAssets = <StudioPhotoAsset>[];
   List<StudioSocialLink> _socialLinks = <StudioSocialLink>[];
   List<TrainingLocationItem> _locations = [];
   String _initialSnapshot = '';
@@ -160,7 +165,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonEmailController.text = s.email ?? '';
     _salonLat = s.latitude;
     _salonLon = s.longitude;
-    _studioPhotos = List<String>.from(s.photos ?? <String>[]);
+    _studioPhotoAssets = List<StudioPhotoAsset>.from(
+      s.photoGallery ??
+          (s.photos ?? <String>[])
+              .map(StudioPhotoAsset.legacy)
+              .toList(),
+    );
     _logoUrl = s.logoUrl?.trim().isNotEmpty == true ? s.logoUrl!.trim() : null;
     _socialLinks = studioSocialLinksFromStudio(s);
     final locale = context.read<LocaleProvider>();
@@ -209,7 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _buildSnapshot() {
-    final photos = List<String>.from(_studioPhotos)..sort();
+    final photos = _studioPhotoAssets.map((asset) => asset.id).join('|');
     return [
       _salonNameController.text.trim(),
       _salonDescriptionController.text.trim(),
@@ -219,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _salonLat?.toStringAsFixed(6) ?? '',
       _salonLon?.toStringAsFixed(6) ?? '',
       _logoUrl ?? '',
-      photos.join('|'),
+      photos,
       studioSocialLinksSnapshot(_socialLinks),
       _primaryLocation?.name.trim() ?? '',
       TrainingLocationItem.extraLocationsToJson(_locations).toString(),
@@ -283,6 +293,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _previewPublicPage() async {
+    final studio = _studio;
+    if (studio == null) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicStudioDetailScreen(studioId: studio.id),
+      ),
+    );
+  }
+
   Future<void> _openDefaultLocationPicker() async {
     final locale = context.read<LocaleProvider>();
     final studio = _studio;
@@ -299,6 +319,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _salonAddressController.text = selection.address;
         _salonLat = selection.lat;
         _salonLon = selection.lon;
+        _locations = [
+          TrainingLocationItem(
+            id: 'default',
+            name: selection.locationName,
+            address: selection.address.trim(),
+            isDefault: true,
+            latitude: selection.lat,
+            longitude: selection.lon,
+          ),
+        ];
       });
       return;
     }
@@ -315,6 +345,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       mode: TrainingLocationPickerMode.setDefault,
       titleL10nKey: 'profileForm.chooseDefaultLocationSheetTitle',
       onDeleteLocation: _deleteTrainingLocationFromSettings,
+      onEditLocation: _editTrainingLocationFromSettings,
     );
     if (!mounted || result == null) return;
 
@@ -366,6 +397,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       case TrainingLocationAddRequested():
         await _addNewTrainingLocationFromSettings();
+    }
+  }
+
+  Future<TrainingLocationItem?> _editTrainingLocationFromSettings(
+    TrainingLocationItem loc,
+  ) async {
+    final studio = _studio;
+
+    final selection = await AddressPickerModal.show(
+      context,
+      initialLocationName: loc.name,
+      initialAddress: loc.address,
+      initialLat: loc.latitude,
+      initialLon: loc.longitude,
+    );
+    if (selection == null || !mounted) return null;
+
+    final updated = TrainingLocationItem(
+      id: loc.id,
+      name: selection.locationName,
+      address: selection.address.trim(),
+      isDefault: loc.isDefault || loc.id == 'default',
+      latitude: selection.lat,
+      longitude: selection.lon,
+    );
+
+    if (studio == null) {
+      setState(() {
+        _locations = _locations
+            .map((l) => l.id == loc.id ? updated : l)
+            .toList();
+        if (loc.id == 'default' || loc.isDefault) {
+          _salonAddressController.text = updated.address;
+          _salonLat = updated.latitude;
+          _salonLon = updated.longitude;
+        }
+      });
+      return updated;
+    }
+
+    try {
+      final Studio? updatedStudio;
+      if (loc.id == 'default' || loc.isDefault) {
+        final updatedLocations = _locations
+            .map((l) => l.id == loc.id ? updated : l)
+            .toList();
+        updatedStudio = await persistTrainingLocationDefaultSwap(
+          context,
+          studio,
+          address: updated.address,
+          latitude: updated.latitude,
+          longitude: updated.longitude,
+          defaultLocationName: updated.name,
+          locations: updatedLocations,
+        );
+        if (!mounted) return null;
+        setState(() {
+          _studio = updatedStudio ?? studio;
+          _salonAddressController.text = updated.address;
+          _salonLat = updated.latitude;
+          _salonLon = updated.longitude;
+          _locations = _locations
+              .map((l) => l.id == loc.id ? updated : l)
+              .toList();
+        });
+      } else {
+        final updatedList = _locations
+            .map((l) => l.id == loc.id ? updated : l)
+            .toList();
+        updatedStudio = await persistExtraTrainingLocations(
+          context,
+          studio,
+          updatedList,
+        );
+        if (!mounted) return null;
+        setState(() {
+          _studio = updatedStudio ?? studio;
+          _locations = updatedList;
+        });
+      }
+      _markLocationSnapshotSaved();
+      return updated;
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return null;
     }
   }
 
@@ -461,7 +577,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (email.isNotEmpty) 'email': email,
         'website': socialPayload.website ?? '',
         'instagram': socialPayload.instagram ?? '',
-        'photos': _studioPhotos,
+        'photos': _studioPhotoAssets.map((asset) => asset.heroUrl).toList(),
+        'photoGallery':
+            _studioPhotoAssets.map((asset) => asset.toJson()).toList(),
         'logoUrl': _logoUrl ?? '',
       };
       if (_salonLat != null && _salonLon != null) {
@@ -549,9 +667,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _logoUrl = null);
   }
 
+  Future<StudioPhotoAsset?> _uploadGalleryAsset({
+    required Uint8List originalBytes,
+    required StudioPhotoCropResult cropResult,
+    String? photoId,
+  }) async {
+    final id = photoId ?? OwnerPhotoStorageService.newGalleryPhotoId();
+    final upload = await OwnerPhotoStorageService.uploadStudioGalleryAsset(
+      photoId: id,
+      originalBytes: originalBytes,
+      heroBytes: cropResult.heroBytes,
+      cardBytes: cropResult.cardBytes,
+    );
+    if (upload.asset == null) return null;
+    return StudioPhotoAsset(
+      id: id,
+      originalUrl: upload.asset!.originalUrl,
+      heroUrl: upload.asset!.heroUrl,
+      cardUrl: upload.asset!.cardUrl,
+      crops: cropResult.crops,
+    );
+  }
+
   Future<void> _pickStudioPhotos() async {
     if (_photosProcessing) return;
-    final availableSlots = _maxStudioPhotos - _studioPhotos.length;
+    final availableSlots = _maxStudioPhotos - _studioPhotoAssets.length;
     if (availableSlots <= 0) {
       _showSnack(context.read<LocaleProvider>().t('profileForm.photoLimitExceeded').replaceAll('{max}', '$_maxStudioPhotos'));
       return;
@@ -575,36 +715,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     final locale = context.read<LocaleProvider>();
-    setState(() => _photosProcessing = true);
-    setState(() => _photoProgressText = locale.t('profileForm.optimizing'));
-    final uploadedUrls = <String>[];
+    final uploadedAssets = <StudioPhotoAsset>[];
     var oversizedCount = 0;
     var failedUploadsCount = 0;
-    final uploadErrors = <String>{};
     for (final file in filesToProcess) {
-      if (mounted) {
-        setState(() => _photoProgressText = locale.t('profileForm.uploading'));
-      }
-      final upload = await OwnerPhotoStorageService.uploadStudioGalleryPhoto(
-        file: file,
-      );
-      if (upload.url == null) {
-        if (upload.error == locale.t('profileForm.photoTooLarge') || upload.error == 'Фото больше 3 MB') {
-          oversizedCount++;
-        } else {
-          failedUploadsCount++;
-          if (upload.error != null && upload.error!.isNotEmpty) {
-            uploadErrors.add(upload.error!);
-          }
-        }
+      final rawLen = await file.length();
+      if (!mounted) return;
+      if (rawLen > OwnerPhotoStorageService.maxSourcePhotoBytes) {
+        oversizedCount++;
         continue;
       }
-      uploadedUrls.add(upload.url!);
+
+      final sourceBytes = await file.readAsBytes();
+      if (!mounted) return;
+      final cropResult = await showStudioPhotoCropSheet(
+        context: context,
+        imageBytes: sourceBytes,
+      );
+      if (!mounted) return;
+      if (cropResult == null) continue;
+
+      setState(() {
+        _photosProcessing = true;
+        _photoProgressText = locale.t('profileForm.optimizing');
+      });
+      setState(() => _photoProgressText = locale.t('profileForm.uploading'));
+      final asset = await _uploadGalleryAsset(
+        originalBytes: sourceBytes,
+        cropResult: cropResult,
+      );
+      if (asset == null) {
+        failedUploadsCount++;
+        continue;
+      }
+      uploadedAssets.add(asset);
     }
 
     if (!mounted) return;
     setState(() {
-      _studioPhotos = <String>[..._studioPhotos, ...uploadedUrls];
+      _studioPhotoAssets = <StudioPhotoAsset>[
+        ..._studioPhotoAssets,
+        ...uploadedAssets,
+      ];
       _photosProcessing = false;
       _photoProgressText = null;
     });
@@ -612,15 +764,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showSnack(locale.t('profileForm.oversizedPhotosSkipped').replaceAll('{count}', '$oversizedCount'));
     }
     if (failedUploadsCount > 0) {
-      _showSnack(locale.t('profileForm.uploadsFailed').replaceAll('{count}', '$failedUploadsCount'));
-      if (uploadErrors.isNotEmpty) {
-        _showSnack(uploadErrors.first);
-      }
+      _showSnack(
+        locale.t('profileForm.uploadsFailed').replaceAll(
+          '{count}',
+          '$failedUploadsCount',
+        ),
+      );
     }
   }
 
+  Future<void> _adjustStudioPhotoAt(int index) async {
+    if (_photosProcessing) return;
+    if (index < 0 || index >= _studioPhotoAssets.length) return;
+
+    final locale = context.read<LocaleProvider>();
+    final asset = _studioPhotoAssets[index];
+    final sourceUrl = asset.originalUrl.trim().isNotEmpty
+        ? asset.originalUrl.trim()
+        : asset.heroUrl.trim();
+    if (sourceUrl.isEmpty) return;
+
+    if (Supabase.instance.client.auth.currentUser?.id == null) {
+      _showSnack(locale.t('profileForm.loginToUploadPhotos'));
+      return;
+    }
+
+    setState(() {
+      _photosProcessing = true;
+      _photoProgressText = locale.t('common.loading');
+    });
+
+    Uint8List? sourceBytes;
+    try {
+      final response = await http.get(Uri.parse(sourceUrl));
+      if (response.statusCode == 200) {
+        sourceBytes = response.bodyBytes;
+      }
+    } catch (_) {
+      sourceBytes = null;
+    }
+
+    if (!mounted) return;
+    if (sourceBytes == null || sourceBytes.isEmpty) {
+      setState(() {
+        _photosProcessing = false;
+        _photoProgressText = null;
+      });
+      _showSnack(locale.t('common.loadFailed'));
+      return;
+    }
+
+    setState(() {
+      _photosProcessing = false;
+      _photoProgressText = null;
+    });
+
+    final cropResult = await showStudioPhotoCropSheet(
+      context: context,
+      imageBytes: sourceBytes,
+      initialCrops: asset.crops,
+    );
+    if (!mounted) return;
+    if (cropResult == null) return;
+
+    setState(() {
+      _photosProcessing = true;
+      _photoProgressText = locale.t('profileForm.optimizing');
+    });
+    setState(() => _photoProgressText = locale.t('profileForm.uploading'));
+
+    final updatedAsset = await _uploadGalleryAsset(
+      originalBytes: sourceBytes,
+      cropResult: cropResult,
+      photoId: asset.id,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _photosProcessing = false;
+      _photoProgressText = null;
+    });
+
+    if (updatedAsset == null) {
+      _showSnack(locale.t('profileForm.uploadsFailed').replaceAll('{count}', '1'));
+      return;
+    }
+
+    setState(() => _studioPhotoAssets[index] = updatedAsset);
+  }
+
   void _removePhotoAt(int index) {
-    setState(() => _studioPhotos.removeAt(index));
+    setState(() => _studioPhotoAssets.removeAt(index));
+  }
+
+  void _reorderStudioPhotos(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final photo = _studioPhotoAssets.removeAt(oldIndex);
+      _studioPhotoAssets.insert(newIndex, photo);
+    });
   }
 
   Future<void> _addSocialLink() async {
@@ -745,6 +987,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
+            bottomNavigationBar: ColoredBox(
+              color: AppColors.backgroundSecondary,
+              child: _StudioPreviewFooter(
+                label: locale.t('settings.owner.bookingLink'),
+                enabled: !_studioLoading && _studio != null,
+                onTap: _previewPublicPage,
+              ),
+            ),
             body: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -754,7 +1004,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   kScreenPaddingHorizontal,
                   8,
                   kScreenPaddingHorizontal,
-                  24,
+                  16,
                 ),
                 children: [
                   // Секции салона в одной форме
@@ -778,7 +1028,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
-                                      locale.t('profileForm.studioLogoHint'),
+                                      locale
+                                          .t('profileForm.studioLogoHint')
+                                          .replaceAll(
+                                            '{maxMb}',
+                                            '${OwnerPhotoStorageService.maxSourcePhotoMb}',
+                                          ),
                                       style: TextStyle(
                                         color: AppColors.textSecondary,
                                         fontSize: 13.sp,
@@ -805,81 +1060,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              _ProfileSection(
-                                title: locale.t('profileForm.studioPhotos'),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      locale.t('profileForm.studioPhotosHint'),
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 13.sp,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      height: _StudioPhotoGallery.tileSize,
-                                      child: ListView.separated(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount:
-                                            _studioPhotos.length +
-                                            (_studioPhotos.length <
-                                                    _maxStudioPhotos
-                                                ? 1
-                                                : 0),
-                                        separatorBuilder: (_, _) =>
-                                            const SizedBox(width: 10),
-                                        itemBuilder: (context, index) {
-                                          final hasAddSlot =
-                                              _studioPhotos.length <
-                                              _maxStudioPhotos;
-                                          if (hasAddSlot && index == 0) {
-                                            return _AddStudioPhotoTile(
-                                              loading: _photosProcessing,
-                                              onTap: _pickStudioPhotos,
-                                            );
-                                          }
-                                          final photoIndex =
-                                              index - (hasAddSlot ? 1 : 0);
-                                          return _StudioPhotoTile(
-                                            photo: _studioPhotos[photoIndex],
-                                            isMain: photoIndex == 0,
-                                            mainLabel: locale.t(
-                                              'profileForm.mainPhoto',
-                                            ),
-                                            onRemove: () =>
-                                                _removePhotoAt(photoIndex),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    if (_photosProcessing &&
-                                        _photoProgressText != null) ...[
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _ProfileSectionTitle(
+                                    title: locale.t('profileForm.studioPhotos'),
+                                  ),
+                                  Container(
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: settingsSectionDecoration(),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            _ProfileSection.cardPadding,
+                                            _ProfileSection.cardPadding,
+                                            _ProfileSection.cardPadding,
+                                            12,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _photoProgressText!,
+                                          child: Text(
+                                            locale
+                                                .t('profileForm.studioPhotosHint')
+                                                .replaceAll(
+                                                  '{maxMb}',
+                                                  '${OwnerPhotoStorageService.maxSourcePhotoMb}',
+                                                ),
                                             style: TextStyle(
                                               color: AppColors.textSecondary,
                                               fontSize: 13.sp,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
-                                ),
+                                        ),
+                                        _StudioPhotosGallery(
+                                          assets: _studioPhotoAssets,
+                                          maxPhotos: _maxStudioPhotos,
+                                          processing: _photosProcessing,
+                                          mainLabel: locale.t(
+                                            'profileForm.mainPhoto',
+                                          ),
+                                          horizontalPadding:
+                                              _ProfileSection.cardPadding,
+                                          onAdd: _pickStudioPhotos,
+                                          onAdjust: _adjustStudioPhotoAt,
+                                          onRemove: _removePhotoAt,
+                                          onReorder: _reorderStudioPhotos,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            _ProfileSection.cardPadding,
+                                            8,
+                                            _ProfileSection.cardPadding,
+                                            _ProfileSection.cardPadding,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Text(
+                                                locale.t(
+                                                  'profileForm.studioPhotosReorderHint',
+                                                ),
+                                                style: TextStyle(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 12.sp,
+                                                  height: 1.35,
+                                                ),
+                                              ),
+                                              if (_photosProcessing &&
+                                                  _photoProgressText !=
+                                                      null) ...[
+                                                const SizedBox(height: 10),
+                                                Row(
+                                                  children: [
+                                                    const SizedBox(
+                                                      width: 16,
+                                                      height: 16,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      _photoProgressText!,
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .textSecondary,
+                                                        fontSize: 13.sp,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 24),
                               _ProfileSection(
@@ -1285,15 +1567,143 @@ class _StudioPhotoGallery {
   static const double tileSize = 120;
 }
 
+class _StudioPhotosGallery extends StatefulWidget {
+  const _StudioPhotosGallery({
+    required this.assets,
+    required this.maxPhotos,
+    required this.processing,
+    required this.mainLabel,
+    required this.horizontalPadding,
+    required this.onAdd,
+    required this.onAdjust,
+    required this.onRemove,
+    required this.onReorder,
+  });
+
+  final List<StudioPhotoAsset> assets;
+  final int maxPhotos;
+  final bool processing;
+  final String mainLabel;
+  final double horizontalPadding;
+  final VoidCallback onAdd;
+  final void Function(int index) onAdjust;
+  final void Function(int index) onRemove;
+  final void Function(int oldIndex, int newIndex) onReorder;
+
+  @override
+  State<_StudioPhotosGallery> createState() => _StudioPhotosGalleryState();
+}
+
+class _StudioPhotosGalleryState extends State<_StudioPhotosGallery> {
+  static const _dragScale = 1.05;
+  bool _dragHapticSent = false;
+
+  double _dragProxyScale(Animation<double> animation) {
+    final v = animation.value;
+    const bump = _dragScale - 1;
+    if (animation.status == AnimationStatus.reverse) {
+      // Drop: remove scale in the first ~35% of the release animation.
+      final t = ((1 - v) / 0.35).clamp(0.0, 1.0);
+      return 1 + bump * (1 - Curves.easeOut.transform(t));
+    }
+    return 1 + bump * Curves.easeOut.transform(v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final assets = widget.assets;
+    final hasAddSlot = assets.length < widget.maxPhotos;
+    final canReorder = assets.length > 1;
+    const tileSize = _StudioPhotoGallery.tileSize;
+
+    return SizedBox(
+      height: tileSize,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(
+          horizontal: widget.horizontalPadding,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasAddSlot) ...[
+              _AddStudioPhotoTile(
+                loading: widget.processing,
+                onTap: widget.onAdd,
+              ),
+              if (assets.isNotEmpty) const SizedBox(width: 10),
+            ],
+            if (assets.isNotEmpty)
+              SizedBox(
+                height: tileSize,
+                child: ReorderableListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  buildDefaultDragHandles: false,
+                  // ignore: deprecated_member_use
+                  onReorder: widget.onReorder,
+                  itemCount: assets.length,
+                  proxyDecorator: (child, index, animation) {
+                    if (animation.value > 0 && !_dragHapticSent) {
+                      _dragHapticSent = true;
+                      HapticFeedback.mediumImpact();
+                    }
+                    if (animation.value == 0) {
+                      _dragHapticSent = false;
+                    }
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _dragProxyScale(animation),
+                          child: child,
+                        );
+                      },
+                      child: child,
+                    );
+                  },
+                  itemBuilder: (context, index) {
+                    final asset = assets[index];
+                    final tile = _StudioPhotoTile(
+                      photoUrl: asset.heroUrl,
+                      isMain: index == 0,
+                      mainLabel: widget.mainLabel,
+                      onAdjust: widget.processing
+                          ? null
+                          : () => widget.onAdjust(index),
+                      onRemove: () => widget.onRemove(index),
+                    );
+                    return ReorderableDelayedDragStartListener(
+                      key: ValueKey(asset.id),
+                      index: index,
+                      enabled: canReorder,
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 10),
+                        child: tile,
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StudioPhotoTile extends StatelessWidget {
   const _StudioPhotoTile({
-    required this.photo,
+    required this.photoUrl,
     required this.onRemove,
+    this.onAdjust,
     this.isMain = false,
     this.mainLabel = 'Main',
   });
 
-  final String photo;
+  final String photoUrl;
+  final VoidCallback? onAdjust;
   final VoidCallback onRemove;
   final bool isMain;
   final String mainLabel;
@@ -1309,21 +1719,27 @@ class _StudioPhotoTile extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(kSettingsInputBorderRadius),
-            child: SizedBox(
-              width: tileSize,
-              height: tileSize,
-              child: Image.network(
-                photo,
-                fit: BoxFit.cover,
-                width: tileSize,
-                height: tileSize,
-                errorBuilder: (_, _, _) => ColoredBox(
-                  color: AppColors.backgroundSecondary,
-                  child: Center(
-                    child: SvgPicture.asset(
-                      'assets/icons/icon-add-photo.svg',
-                      width: 28,
-                      height: 28,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onAdjust,
+                child: SizedBox(
+                  width: tileSize,
+                  height: tileSize,
+                  child: Image.network(
+                    photoUrl,
+                    fit: BoxFit.cover,
+                    width: tileSize,
+                    height: tileSize,
+                    errorBuilder: (_, _, _) => ColoredBox(
+                      color: AppColors.backgroundSecondary,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icons/icon-add-photo.svg',
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1536,6 +1952,54 @@ class _ProfileSectionTitle extends StatelessWidget {
   }
 }
 
+class _StudioPreviewFooter extends StatelessWidget {
+  const _StudioPreviewFooter({
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingHorizontal,
+            10,
+            kScreenPaddingHorizontal,
+            10,
+          ),
+          child: FilledButton.icon(
+            onPressed: enabled ? onTap : null,
+            icon: const Icon(Icons.visibility_outlined, size: 20),
+            label: Text(
+              label,
+              style: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+              disabledBackgroundColor: AppColors.neutral200,
+              disabledForegroundColor: AppColors.textTertiary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+    );
+  }
+}
+
 class _ProfileSection extends StatelessWidget {
   const _ProfileSection({
     super.key,
@@ -1543,6 +2007,8 @@ class _ProfileSection extends StatelessWidget {
     required this.child,
     this.carded = true,
   });
+
+  static const double cardPadding = 16;
 
   final String title;
   final Widget child;
@@ -1556,8 +2022,9 @@ class _ProfileSection extends StatelessWidget {
         _ProfileSectionTitle(title: title),
         if (carded)
           Container(
+            clipBehavior: Clip.antiAlias,
             decoration: settingsSectionDecoration(),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(cardPadding),
             child: child,
           )
         else

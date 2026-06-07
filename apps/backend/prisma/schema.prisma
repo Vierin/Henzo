@@ -72,6 +72,8 @@ model Studio {
   instagram        String?
   logoUrl          String?
   photos           String[]
+  /// Gallery assets: original + per-format crops + cached hero/card URLs.
+  photoGallery     Json?
   workingHours     Json?
   reminderSettings Json?         @default("{\"intervals\":[24]}")
   ownerId          String

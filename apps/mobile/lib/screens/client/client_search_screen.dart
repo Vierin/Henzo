@@ -8,7 +8,9 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
+import '../../models/studio_photo_asset.dart';
 import '../../models/training_category_option.dart';
+import '../../utils/studio_photo_urls.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/training_categories_cache.dart';
@@ -731,9 +733,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           }
         }
         final photos = map['photos'];
-        final photoUrl = photos is List && photos.isNotEmpty
-            ? photos.first?.toString()
-            : null;
+        final gallery = StudioPhotoAsset.listFromJson(map['photoGallery']);
+        final photoUrl = studioBrowsePhotoUrl(
+          gallery: gallery.isEmpty ? null : gallery,
+          photos: photos is List
+              ? photos.map((e) => e?.toString() ?? '').toList()
+              : null,
+        );
 
         studios.add(
           ExploreStudioItem(

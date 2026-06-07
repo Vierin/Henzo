@@ -37,6 +37,8 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
   TrainingLocationPickerMode mode = TrainingLocationPickerMode.select,
   String? titleL10nKey,
   Future<bool> Function(TrainingLocationItem location)? onDeleteLocation,
+  Future<TrainingLocationItem?> Function(TrainingLocationItem location)?
+      onEditLocation,
 }) async {
   await context.read<LocaleProvider>().loadStrings();
   if (!context.mounted) return null;
@@ -48,8 +50,20 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
     builder: (sheetCtx) {
       var currentId = selectedId;
       var items = List<TrainingLocationItem>.from(locations);
+
       return StatefulBuilder(
         builder: (context, setModalState) {
+          Future<void> handleEdit(TrainingLocationItem loc) async {
+            if (onEditLocation == null) return;
+            final updated = await onEditLocation(loc);
+            if (updated == null || !sheetCtx.mounted) return;
+            setModalState(() {
+              items = items
+                  .map((l) => l.id == updated.id ? updated : l)
+                  .toList();
+            });
+          }
+
           return Consumer<LocaleProvider>(
             builder: (context, locale, _) => SafeArea(
               top: false,
@@ -96,8 +110,10 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                       const SizedBox(height: 16),
                       ...items.map((loc) {
                         final isHighlighted = loc.id == currentId;
-                        final showDefaultBadge = mode ==
-                                TrainingLocationPickerMode.setDefault
+                        final isDefaultLoc =
+                            loc.id == 'default' || loc.isDefault;
+                        final showDefaultBadge =
+                            mode == TrainingLocationPickerMode.setDefault
                             ? isHighlighted
                             : loc.isDefault;
                         final canDelete = onDeleteLocation != null &&
@@ -105,6 +121,7 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                             loc.id != 'default';
                         final showDeleteOnCard = onDeleteLocation != null &&
                             !isHighlighted;
+                        final showEdit = onEditLocation != null;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _LocationOptionCard(
@@ -120,6 +137,8 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                             showDelete: showDeleteOnCard,
                             canDelete: canDelete,
                             deleteTooltip: locale.t('common.delete'),
+                            showEdit: showEdit,
+                            editTooltip: locale.t('common.edit'),
                             onDelete: canDelete
                                 ? () async {
                                     final ok = await onDeleteLocation(loc);
@@ -134,7 +153,17 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                                     });
                                   }
                                 : null,
-                            onTap: () {
+                            onEdit: showEdit
+                                ? () => handleEdit(loc)
+                                : null,
+                            onTap: () async {
+                              if (mode ==
+                                      TrainingLocationPickerMode.setDefault &&
+                                  showEdit &&
+                                  isDefaultLoc) {
+                                await handleEdit(loc);
+                                return;
+                              }
                               setModalState(() => currentId = loc.id);
                               Navigator.of(sheetCtx).pop(
                                 TrainingLocationPicked(loc),
@@ -172,7 +201,10 @@ class _LocationOptionCard extends StatelessWidget {
     required this.showDelete,
     required this.canDelete,
     required this.deleteTooltip,
+    required this.showEdit,
+    required this.editTooltip,
     this.onDelete,
+    this.onEdit,
   });
 
   final TrainingLocationItem location;
@@ -184,7 +216,10 @@ class _LocationOptionCard extends StatelessWidget {
   final bool showDelete;
   final bool canDelete;
   final String deleteTooltip;
+  final bool showEdit;
+  final String editTooltip;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -234,10 +269,20 @@ class _LocationOptionCard extends StatelessWidget {
                   ),
                   if (showDelete) ...[
                     const SizedBox(width: 8),
-                    _LocationDeleteButton(
+                    _LocationActionButton(
                       onPressed: onDelete,
                       tooltip: deleteTooltip,
                       color: deleteColor,
+                      iconAsset: 'assets/icons/icon-trash.svg',
+                    ),
+                  ],
+                  if (showEdit) ...[
+                    const SizedBox(width: 4),
+                    _LocationActionButton(
+                      onPressed: onEdit,
+                      tooltip: editTooltip,
+                      color: AppColors.textSecondary,
+                      iconAsset: 'assets/icons/icon-pencil.svg',
                     ),
                   ],
                   if (showCheckmark) ...[
@@ -270,21 +315,24 @@ class _LocationOptionCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.only(left: 27),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.neutral100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      defaultBadgeLabel,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.neutral100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        defaultBadgeLabel,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
@@ -298,16 +346,18 @@ class _LocationOptionCard extends StatelessWidget {
   }
 }
 
-class _LocationDeleteButton extends StatelessWidget {
-  const _LocationDeleteButton({
+class _LocationActionButton extends StatelessWidget {
+  const _LocationActionButton({
     required this.onPressed,
     required this.tooltip,
     required this.color,
+    required this.iconAsset,
   });
 
   final VoidCallback? onPressed;
   final String tooltip;
   final Color color;
+  final String iconAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +371,7 @@ class _LocationDeleteButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(6),
             child: SvgPicture.asset(
-              'assets/icons/icon-trash.svg',
+              iconAsset,
               width: 18,
               height: 18,
               colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

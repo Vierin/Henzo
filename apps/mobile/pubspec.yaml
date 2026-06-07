@@ -72,6 +72,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
 
   image_picker_platform_interface: any
+  crop_your_image: ^2.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

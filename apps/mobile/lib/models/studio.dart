@@ -1,4 +1,6 @@
+import 'studio_photo_asset.dart';
 import 'studio_status.dart';
+import '../utils/studio_photo_urls.dart';
 
 class Studio {
   final String id;
@@ -11,6 +13,7 @@ class Studio {
   final String? instagram;
   final String? logoUrl;
   final List<String>? photos;
+  final List<StudioPhotoAsset>? photoGallery;
   final Map<String, dynamic>? workingHours;
   final Map<String, dynamic>? reminderSettings;
   final String? slug;
@@ -31,6 +34,7 @@ class Studio {
     this.instagram,
     this.logoUrl,
     this.photos,
+    this.photoGallery,
     this.workingHours,
     this.reminderSettings,
     this.slug,
@@ -51,6 +55,13 @@ class Studio {
           .map((e) => e?.toString() ?? '')
           .where((s) => s.isNotEmpty)
           .toList();
+    }
+    final gallery = studioPhotoGalleryFromPayload(
+      photoGallery: json['photoGallery'],
+      photos: photosList,
+    );
+    if (photosList == null || photosList.isEmpty) {
+      photosList = studioHeroPhotoUrls(gallery: gallery);
     }
     Map<String, dynamic>? wh;
     final whRaw = json['workingHours'];
@@ -94,6 +105,7 @@ class Studio {
       instagram: json['instagram'] as String?,
       logoUrl: json['logoUrl'] as String?,
       photos: photosList,
+      photoGallery: gallery.isEmpty ? null : gallery,
       workingHours: wh,
       reminderSettings: rs,
       slug: json['slug'] as String?,
@@ -117,6 +129,8 @@ class Studio {
       'instagram': instagram,
       'logoUrl': logoUrl,
       'photos': photos,
+      if (photoGallery != null)
+        'photoGallery': photoGallery!.map((asset) => asset.toJson()).toList(),
       'workingHours': workingHours,
       'reminderSettings': reminderSettings,
       'slug': slug,
@@ -141,6 +155,8 @@ class Studio {
       if (instagram != null) 'instagram': instagram,
       if (logoUrl != null) 'logoUrl': logoUrl,
       if (photos != null) 'photos': photos,
+      if (photoGallery != null)
+        'photoGallery': photoGallery!.map((asset) => asset.toJson()).toList(),
       if (workingHours != null) 'workingHours': workingHours,
       if (reminderSettings != null) 'reminderSettings': reminderSettings,
       if (latitude != null) 'latitude': latitude,
