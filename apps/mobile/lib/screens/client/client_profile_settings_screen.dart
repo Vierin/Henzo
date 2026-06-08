@@ -17,7 +17,10 @@ class ClientProfileSettingsScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     await context.read<AuthService>().logout();
     if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).popUntil((route) => route.isFirst);
   }
 
   @override
@@ -42,7 +45,7 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                 SettingsGroupCard(
                   children: [
                     SettingsListTile(
-                      svgAsset: 'assets/icons/icon-profile.svg',
+                      svgAsset: 'assets/icons/icon-profile-large.svg',
                       title: locale.t('profileForm.personalData'),
                       onTap: () {
                         Navigator.of(context).push(
@@ -62,12 +65,21 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                 SettingsGroupCard(
                   children: [
                     SettingsListTile(
-                      icon: Icons.language_outlined,
+                      svgAsset: 'assets/icons/icon-globe.svg',
+                      svgIconSize: 15,
                       title: locale.t('settings.changeLanguage'),
                       onTap: () => showLanguageSelectorModal(context, locale),
                     ),
                     SettingsListTile(
-                      icon: Icons.description_outlined,
+                      svgAsset: 'assets/icons/icon-shield.svg',
+                      svgIconSize: 15,
+                      title: locale.t('settings.privacyPolicy'),
+                      onTap: () =>
+                          openLegalWebPage(context, locale, '/privacy-policy'),
+                    ),
+                    SettingsListTile(
+                      svgAsset: 'assets/icons/icon-terms.svg',
+                      svgIconSize: 15,
                       title: locale.t('settings.termsOfUse'),
                       onTap: () => openLegalWebPage(
                         context,
@@ -76,16 +88,8 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                       ),
                     ),
                     SettingsListTile(
-                      svgAsset: 'assets/icons/icon-settings.svg',
-                      title: locale.t('settings.privacyPolicy'),
-                      onTap: () => openLegalWebPage(
-                        context,
-                        locale,
-                        '/privacy-policy',
-                      ),
-                    ),
-                    SettingsListTile(
                       icon: Icons.chat_bubble_outline,
+                      materialIconSize: 15,
                       title: locale.t('settings.feedback.sendFeedback'),
                       onTap: () => showFeedbackSheet(context),
                     ),
