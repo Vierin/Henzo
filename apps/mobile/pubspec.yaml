@@ -73,6 +73,7 @@ dependencies:
 
   image_picker_platform_interface: any
   crop_your_image: ^2.0.0
+  vibration: ^3.1.8
 dev_dependencies:
   flutter_test:
     sdk: flutter

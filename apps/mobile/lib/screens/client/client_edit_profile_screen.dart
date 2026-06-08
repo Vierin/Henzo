@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../widgets/common/henzo_modal.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../constants/colors.dart';
@@ -281,32 +279,11 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
     }
   }
 
-  void _showDeleteAccountDialog() {
-    final locale = context.read<LocaleProvider>();
-    showHenzoDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(locale.t('profileForm.deleteAccount')),
-        content: Text(locale.t('profileForm.deleteAccountConfirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(locale.t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _deleteAccount();
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: kAccountDangerPurple,
-            ),
-            child: Text(locale.t('profileForm.deleteAccount')),
-          ),
-        ],
-      ),
-    );
+  Future<void> _showDeleteAccountDialog() async {
+    final confirmed = await showDeleteAccountConfirmDialog(context);
+    if (confirmed == true) {
+      await _deleteAccount();
+    }
   }
 
   @override

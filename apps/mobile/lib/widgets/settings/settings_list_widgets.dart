@@ -60,6 +60,8 @@ class SettingsListTile extends StatelessWidget {
     this.subtitle,
     this.trailingText = '',
     this.trailingWidget,
+    this.svgIconSize = _settingsSvgIconSize,
+    this.materialIconSize = _settingsMaterialIconSize,
   }) : assert(icon != null || svgAsset != null, 'Provide icon or svgAsset');
 
   final IconData? icon;
@@ -69,6 +71,8 @@ class SettingsListTile extends StatelessWidget {
   final String trailingText;
   final Widget? trailingWidget;
   final VoidCallback onTap;
+  final double svgIconSize;
+  final double materialIconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +86,12 @@ class SettingsListTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
             children: [
-              _SettingsIconBadge(icon: icon, svgAsset: svgAsset),
+              _SettingsIconBadge(
+                icon: icon,
+                svgAsset: svgAsset,
+                svgIconSize: svgIconSize,
+                materialIconSize: materialIconSize,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -93,7 +102,7 @@ class SettingsListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -147,10 +156,17 @@ class SettingsListTile extends StatelessWidget {
 }
 
 class _SettingsIconBadge extends StatelessWidget {
-  const _SettingsIconBadge({this.icon, this.svgAsset});
+  const _SettingsIconBadge({
+    this.icon,
+    this.svgAsset,
+    this.svgIconSize = _settingsSvgIconSize,
+    this.materialIconSize = _settingsMaterialIconSize,
+  });
 
   final IconData? icon;
   final String? svgAsset;
+  final double svgIconSize;
+  final double materialIconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -165,14 +181,14 @@ class _SettingsIconBadge extends StatelessWidget {
       child: svgAsset != null
           ? SvgPicture.asset(
               svgAsset!,
-              width: _settingsSvgIconSize,
-              height: _settingsSvgIconSize,
+              width: svgIconSize,
+              height: svgIconSize,
               colorFilter: const ColorFilter.mode(
                 Colors.white,
                 BlendMode.srcIn,
               ),
             )
-          : Icon(icon, color: Colors.white, size: _settingsMaterialIconSize),
+          : Icon(icon, color: Colors.white, size: materialIconSize),
     );
   }
 }

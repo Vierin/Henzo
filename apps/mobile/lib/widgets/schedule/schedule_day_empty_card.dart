@@ -57,7 +57,7 @@ class ScheduleDayEmptyCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
                     height: 1.1,

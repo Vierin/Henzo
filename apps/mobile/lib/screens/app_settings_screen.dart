@@ -267,6 +267,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     children: [
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-card.svg',
+                        svgIconSize: 11,
                         title: locale.t('settings.owner.subscriptionBilling'),
                         onTap: () async {
                           await Navigator.of(context).push(
@@ -330,7 +331,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         ),
                       ),
                       SettingsListTile(
-                        icon: Icons.star_outline,
+                        svgAsset: 'assets/icons/icon-star.svg',
                         title: locale.t('dashboard.reviewsTitle'),
                         onTap: () {
                           final studioId = _studio?.id ?? '';
@@ -353,7 +354,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                   SettingsGroupCard(
                     children: [
                       SettingsListTile(
-                        icon: Icons.language_outlined,
+                        svgAsset: 'assets/icons/icon-globe.svg',
+                        svgIconSize: 15,
                         title: locale.t('settings.changeLanguage'),
                         onTap: () => showLanguageSelectorModal(
                           context,
@@ -373,6 +375,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-shield.svg',
+                        svgIconSize: 15,
                         title: locale.t('settings.privacyPolicy'),
                         onTap: () => openLegalWebPage(
                           context,
@@ -381,7 +384,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         ),
                       ),
                       SettingsListTile(
-                        icon: Icons.description_outlined,
+                        svgAsset: 'assets/icons/icon-terms.svg',
+                        svgIconSize: 15,
                         title: locale.t('settings.termsOfUse'),
                         onTap: () => openLegalWebPage(
                           context,
@@ -391,6 +395,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       ),
                       SettingsListTile(
                         icon: Icons.chat_bubble_outline,
+                        materialIconSize: 15,
                         title: locale.t('settings.feedback.sendFeedback'),
                         onTap: () => showFeedbackSheet(context),
                       ),
@@ -467,8 +472,7 @@ class _OwnerHeroCard extends StatelessWidget {
                   CircleAvatar(
                     radius: _avatarRadius,
                     backgroundColor: AppColors.primary100,
-                    backgroundImage:
-                        hasPhoto ? NetworkImage(avatarUrl!) : null,
+                    backgroundImage: hasPhoto ? NetworkImage(avatarUrl!) : null,
                     child: hasPhoto
                         ? null
                         : Text(
@@ -527,11 +531,9 @@ class _OwnerHeroCard extends StatelessWidget {
                                     child: _UsageStat(
                                       svgAsset:
                                           'assets/icons/icon-calendar.svg',
-                                      label: context
-                                          .read<LocaleProvider>()
-                                          .t(
-                                            'settings.usage.classesThisMonth',
-                                          ),
+                                      label: context.read<LocaleProvider>().t(
+                                        'settings.usage.classesThisMonth',
+                                      ),
                                       used: monthlySessionsCount,
                                       limit: monthlySessionsLimit,
                                     ),
@@ -539,11 +541,10 @@ class _OwnerHeroCard extends StatelessWidget {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: _UsageStat(
-                                      svgAsset:
-                                          'assets/icons/icon-clients.svg',
-                                      label: context
-                                          .read<LocaleProvider>()
-                                          .t('settings.usage.trainers'),
+                                      svgAsset: 'assets/icons/icon-people.svg',
+                                      label: context.read<LocaleProvider>().t(
+                                        'settings.usage.trainers',
+                                      ),
                                       used: staffCount,
                                       limit: staffLimit,
                                     ),

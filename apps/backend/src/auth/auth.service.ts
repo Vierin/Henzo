@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtVerifierService } from './jwt-verifier.service';
 import * as crypto from 'crypto';
 import { renderOtpEmailHtml } from '../email/templates/transactional-email-templates';
+import { Prisma } from '@prisma/client';
 
 type RegistrationOtpKind = 'client' | 'owner';
 
@@ -263,12 +264,26 @@ export class AuthService {
   }
 
   /** Drop cached GET /auth/user so role changes from registerOwner are visible immediately. */
-  private invalidateGetCurrentUserCacheForAuthHeader(
-    authHeader: string | undefined,
+  private invalidateGetCurrentUserCacheForUserId(
+    userId: string | null | undefined,
   ): void {
+    if (!userId) return;
+    this.getCurrentUserCache.delete(userId);
+  }
+
+  private async invalidateGetCurrentUserCacheForAuthHeader(
+    authHeader: string | undefined,
+  ): Promise<void> {
     if (!authHeader?.startsWith('Bearer ')) return;
-    const cacheKey = authHeader.substring(7, 27);
-    this.getCurrentUserCache.delete(cacheKey);
+    const token = authHeader.substring(7);
+    try {
+      const decoded = await this.jwtVerifier.verifyToken(token);
+      this.invalidateGetCurrentUserCacheForUserId(
+        this.jwtVerifier.getUserIdFromToken(decoded),
+      );
+    } catch {
+      // Token unreadable — nothing to invalidate.
+    }
   }
 
   async registerOwner(
@@ -540,7 +555,10 @@ export class AuthService {
         `Owner registration failed: ${error.message || 'Unknown error'}`,
       );
     } finally {
-      this.invalidateGetCurrentUserCacheForAuthHeader(options?.authHeader);
+      this.invalidateGetCurrentUserCacheForUserId(data.userId);
+      await this.invalidateGetCurrentUserCacheForAuthHeader(
+        options?.authHeader,
+      );
     }
   }
 
@@ -1028,16 +1046,6 @@ export class AuthService {
 
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-      // Check cache to prevent duplicate calls
-      const cacheKey = token.substring(0, 20); // Use first 20 chars as cache key
-      const cached = this.getCurrentUserCache.get(cacheKey);
-      const now = Date.now();
-
-      if (cached && now - cached.timestamp < this.CACHE_TTL) {
-        console.log('✅ Using cached getCurrentUser result');
-        return cached.result;
-      }
-
       console.log('🔑 Token extracted, length:', token.length);
 
       // Локальная верификация JWT (быстро, без сетевых запросов)
@@ -1091,6 +1099,14 @@ export class AuthService {
           user.id,
           user.email,
         );
+      }
+
+      const cacheKey = user.id;
+      const now = Date.now();
+      const cached = this.getCurrentUserCache.get(cacheKey);
+      if (cached && now - cached.timestamp < this.CACHE_TTL) {
+        console.log('✅ Using cached getCurrentUser result for', cacheKey);
+        return cached.result;
       }
 
       // Get user data from our database
@@ -1372,7 +1388,7 @@ export class AuthService {
         },
       };
 
-      // Cache the result (use same cacheKey as defined earlier)
+      // Cache the result per Supabase user id (not JWT header — same for all tokens).
       this.getCurrentUserCache.set(cacheKey, {
         result,
         timestamp: Date.now(),
@@ -1615,6 +1631,114 @@ export class AuthService {
     }
   }
 
+  private async deleteStudioCascade(
+    tx: Prisma.TransactionClient,
+    studioId: string,
+  ) {
+    const sessions = await tx.trainingSession.findMany({
+      where: { studioId },
+      select: { id: true },
+    });
+    const sessionIds = sessions.map((s: { id: string }) => s.id);
+
+    if (sessionIds.length > 0) {
+      const enrollments = await tx.sessionEnrollment.findMany({
+        where: { sessionId: { in: sessionIds } },
+        select: { id: true },
+      });
+      const enrollmentIds = enrollments.map((e: { id: string }) => e.id);
+
+      if (enrollmentIds.length > 0) {
+        await tx.scheduledPushReminder.deleteMany({
+          where: { enrollmentId: { in: enrollmentIds } },
+        });
+      }
+
+      await tx.scheduledPushReminder.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+      await tx.waitlistEntry.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+      await tx.sessionEnrollment.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+      await tx.trainingSession.deleteMany({
+        where: { id: { in: sessionIds } },
+      });
+    }
+
+    await tx.review.deleteMany({ where: { studioId } });
+    await tx.sessionBooking.deleteMany({ where: { studioId } });
+    await tx.trainerInvite.deleteMany({ where: { studioId } });
+
+    await tx.$executeRaw`
+      DELETE FROM "_TrainerTrainings"
+      WHERE "A" IN (SELECT id FROM "Training" WHERE "studioId" = ${studioId})
+         OR "B" IN (SELECT id FROM "Trainer" WHERE "studioId" = ${studioId})
+    `;
+
+    await tx.trainer.deleteMany({ where: { studioId } });
+    await tx.training.deleteMany({ where: { studioId } });
+    await tx.subscription.deleteMany({ where: { studioId } });
+    await tx.studioClientBlock.deleteMany({ where: { studioId } });
+    await tx.studioClient.deleteMany({ where: { studioId } });
+    await tx.adminEventLog.deleteMany({ where: { studioId } });
+
+    await tx.$executeRaw`
+      UPDATE "User"
+      SET "favoriteStudios" = array_remove("favoriteStudios", ${studioId})
+      WHERE ${studioId} = ANY("favoriteStudios")
+    `;
+
+    await tx.studio.delete({ where: { id: studioId } });
+  }
+
+  private async cleanupOwnerStorage(userId: string) {
+    const bucket =
+      this.configService.get<string>('SUPABASE_STUDIO_PHOTOS_BUCKET') ||
+      'studio-photos';
+    const prefix = `owners/${userId}`;
+
+    try {
+      const { data: files, error } = await supabase.storage
+        .from(bucket)
+        .list(prefix, { limit: 1000 });
+
+      if (error) {
+        console.warn(
+          `⚠️ Failed to list owner storage for ${userId}:`,
+          error.message,
+        );
+        return;
+      }
+
+      if (!files?.length) return;
+
+      const paths = files
+        .filter((file) => file.name && !file.name.endsWith('/'))
+        .map((file) => `${prefix}/${file.name}`);
+
+      if (paths.length === 0) return;
+
+      const { error: removeError } = await supabase.storage
+        .from(bucket)
+        .remove(paths);
+
+      if (removeError) {
+        console.warn(
+          `⚠️ Failed to remove owner storage for ${userId}:`,
+          removeError.message,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        `⚠️ Owner storage cleanup failed for ${userId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
   async deleteUserAccount(userId: string) {
     try {
       console.log(`🗑️ Starting account deletion for user: ${userId}`);
@@ -1637,62 +1761,33 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         role: user.role,
-        hasStudio: !!user.Studio && user.Studio.length > 0,
+        studiosCount: user.Studio?.length ?? 0,
         bookingsCount: user.Booking.length,
         reviewsCount: user.Review.length,
       });
 
-      // Удаляем связанные данные в зависимости от роли
-      if (user.role === 'OWNER' && user.Studio && user.Studio.length > 0) {
-        const studio = user.Studio[0];
-        console.log(`🏢 Deleting studio data for owner: ${studio.id}`);
+      await this.prisma.$transaction(async (tx: any) => {
+        for (const studio of user.Studio ?? []) {
+          console.log(`🏢 Deleting studio data: ${studio.id}`);
+          await this.deleteStudioCascade(tx, studio.id);
+        }
 
-        // Удаляем все связанные со студией данные
-        await this.prisma.sessionBooking.deleteMany({
-          where: { studioId: studio.id },
+        await tx.sessionEnrollment.deleteMany({ where: { userId } });
+        await tx.waitlistEntry.deleteMany({ where: { userId } });
+        await tx.sessionBooking.deleteMany({ where: { userId } });
+        await tx.review.deleteMany({ where: { userId } });
+        await tx.studioClient.deleteMany({ where: { userId } });
+        await tx.studioClientBlock.deleteMany({ where: { userId } });
+        await tx.clientRegistrationOtp.deleteMany({
+          where: { email: user.email },
         });
 
-        await this.prisma.review.deleteMany({
-          where: { studioId: studio.id },
-        });
-
-        await this.prisma.trainer.deleteMany({
-          where: { studioId: studio.id },
-        });
-
-        await this.prisma.training.deleteMany({
-          where: { studioId: studio.id },
-        });
-
-        // Удаляем саму студию
-        await this.prisma.studio.delete({
-          where: { id: studio.id },
-        });
-      }
-
-      // Удаляем все бронирования пользователя
-      if (user.Booking.length > 0) {
-        console.log(`Deleting ${user.Booking.length} bookings`);
-        await this.prisma.sessionBooking.deleteMany({
-          where: { userId: userId },
-        });
-      }
-
-      // Удаляем все отзывы пользователя
-      if (user.Review.length > 0) {
-        console.log(`⭐ Deleting ${user.Review.length} reviews`);
-        await this.prisma.review.deleteMany({
-          where: { userId: userId },
-        });
-      }
-
-      // Удаляем самого пользователя
-      console.log(`👤 Deleting user: ${userId}`);
-      await this.prisma.user.delete({
-        where: { id: userId },
+        console.log(`👤 Deleting user: ${userId}`);
+        await tx.user.delete({ where: { id: userId } });
       });
 
-      // Удаляем пользователя из Supabase Auth
+      await this.cleanupOwnerStorage(userId);
+
       try {
         console.log(`🔐 Deleting user from Supabase Auth: ${userId}`);
         const { error } = await supabase.auth.admin.deleteUser(userId);
@@ -1701,14 +1796,14 @@ export class AuthService {
             '⚠️ Failed to delete user from Supabase Auth:',
             error.message,
           );
-          // Не выбрасываем ошибку, так как основное удаление уже выполнено
         }
       } catch (supabaseError) {
         console.warn(
           '⚠️ Supabase Auth deletion failed:',
-          supabaseError.message,
+          supabaseError instanceof Error
+            ? supabaseError.message
+            : String(supabaseError),
         );
-        // Не выбрасываем ошибку, так как основное удаление уже выполнено
       }
 
       console.log(`✅ Account deletion completed for user: ${userId}`);
@@ -1717,14 +1812,17 @@ export class AuthService {
         userId,
         email: user.email,
         role: user.role,
+        deletedStudios: (user.Studio ?? []).map((s: { id: string }) => s.id),
         deletedAt: new Date().toISOString(),
       };
     } catch (error) {
       console.error(
         `❌ Account deletion failed for user ${userId}:`,
-        error.message,
+        error instanceof Error ? error.message : String(error),
       );
-      throw new Error(`Failed to delete account: ${error.message}`);
+      throw new Error(
+        `Failed to delete account: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 

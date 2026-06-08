@@ -445,7 +445,7 @@ class _StaffScreenState extends State<StaffScreen> {
       backgroundColor: AppColors.backgroundSecondary,
       appBar: buildBrandedSettingsAppBar(
         context,
-        title: locale.t('staffScreen.title'),
+        title: locale.t('settings.owner.team'),
       ),
       floatingActionButton: showAddFab
           ? SafeArea(
@@ -467,19 +467,6 @@ class _StaffScreenState extends State<StaffScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
             )
-          : _studio == null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  locale.t('common.setupSalonFirst'),
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            )
           : RefreshIndicator(
               onRefresh: _loadData,
               color: AppColors.primary500,
@@ -491,6 +478,18 @@ class _StaffScreenState extends State<StaffScreen> {
                   showAddFab ? 88 : 24,
                 ),
                 children: [
+                  if (_studio == null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        locale.t('common.setupSalonFirst'),
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: AppColors.textSecondary,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
                   StaffPersonTile(
                     name: ownerName,
                     role: locale.t('settings.owner.ownerRole'),

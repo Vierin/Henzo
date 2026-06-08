@@ -224,7 +224,7 @@ class MainShellState extends State<MainShell> {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(16), 
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Consumer<LocaleProvider>(
               builder: (context, locale, _) {
@@ -266,7 +266,9 @@ class MainShellState extends State<MainShell> {
                                 isSelected: _currentIndex == 1,
                                 onTap: () {
                                   setState(() => _currentIndex = 1);
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
                                     _scheduleCalendarKey.currentState
                                         ?.ensureSessionsLoaded();
                                   });
@@ -275,7 +277,7 @@ class MainShellState extends State<MainShell> {
                             ),
                             Expanded(
                               child: _NavItem(
-                                svgAsset: 'assets/icons/icon-clients.svg',
+                                svgAsset: 'assets/icons/icon-people.svg',
                                 label: t('shell.tabClients'),
                                 isSelected: _currentIndex == 2,
                                 onTap: () => setState(() => _currentIndex = 2),
@@ -286,6 +288,7 @@ class MainShellState extends State<MainShell> {
                                 svgAsset: 'assets/icons/icon-settings.svg',
                                 label: t('shell.tabSettings'),
                                 isSelected: _currentIndex == 3,
+                                iconSize: 22,
                                 onTap: () => setState(() => _currentIndex = 3),
                               ),
                             ),
@@ -311,18 +314,24 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final double iconSize;
 
   const _NavItem({
     required this.svgAsset,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.iconSize = 20,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = isSelected ? AppColors.textInverse : _inactiveIconAndLabel;
-    final textColor = isSelected ? AppColors.textInverse : _inactiveIconAndLabel;
+    final iconColor = isSelected
+        ? AppColors.textInverse
+        : _inactiveIconAndLabel;
+    final textColor = isSelected
+        ? AppColors.textInverse
+        : _inactiveIconAndLabel;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -337,8 +346,8 @@ class _NavItem extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 svgAsset,
-                width: 20,
-                height: 20,
+                width: iconSize,
+                height: iconSize,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
               const SizedBox(height: 4),
@@ -346,7 +355,7 @@ class _NavItem extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 12.sp,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w500,
                   color: textColor,
                   height: 1,
                 ),
@@ -404,7 +413,9 @@ class _ClientsTabOpenerState extends State<_ClientsTabOpener> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator(color: AppColors.primary500)),
+      body: Center(
+        child: CircularProgressIndicator(color: AppColors.primary500),
+      ),
     );
   }
 }

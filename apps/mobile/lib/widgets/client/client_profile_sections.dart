@@ -450,10 +450,10 @@ class ClientProfileHealthSection extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.favorite_rounded,
-                  color: AppColors.primary500,
-                  size: 22,
+                child: Image.asset(
+                  'assets/icons/icon-health.png',
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
                 ),
               ),
               const SizedBox(width: 12),

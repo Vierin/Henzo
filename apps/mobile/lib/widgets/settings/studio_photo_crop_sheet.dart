@@ -130,18 +130,24 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
     Size imageSize,
   ) {
     _pendingAreaRestore[format] = true;
-    _restoreAreaIfNeeded(format, crop: crop, imageSize: imageSize);
   }
 
-  void _restoreAreaIfNeeded(
+  bool _isFullFrameCrop(StudioPhotoCropRect crop) =>
+      crop.x <= 0 && crop.y <= 0 && crop.w >= 1 && crop.h >= 1;
+
+  /// Returns `true` when a saved crop area was applied.
+  bool _restoreAreaIfNeeded(
     _StudioPhotoCropFormat format, {
     StudioPhotoCropRect? crop,
     Size? imageSize,
   }) {
-    if (_pendingAreaRestore[format] != true) return;
+    if (_pendingAreaRestore[format] != true) return false;
     final imageSizeValue = imageSize ?? _imageSize;
     final crops = widget.initialCrops;
-    if (imageSizeValue == null || crops == null) return;
+    if (imageSizeValue == null || crops == null) {
+      _pendingAreaRestore[format] = false;
+      return false;
+    }
 
     final normalized = crop ??
         switch (format) {
@@ -149,9 +155,30 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
           _StudioPhotoCropFormat.browseCard => crops.browseCard,
         };
 
+    _pendingAreaRestore[format] = false;
+    if (_isFullFrameCrop(normalized)) return false;
+
     _controllers[format]!.area =
         _imageRectFromNormalized(normalized, imageSizeValue);
-    _pendingAreaRestore[format] = false;
+    return true;
+  }
+
+  void _applyCenteredCropRect(
+    _StudioPhotoCropFormat format,
+    Size viewport,
+  ) {
+    if (viewport.width <= 0 || viewport.height <= 0) return;
+    _controllers[format]!.cropRect = _cropRectFor(
+      viewport,
+      _aspectRatioFor(format),
+    );
+  }
+
+  void _onCropPaneReady(_StudioPhotoCropFormat format, Size viewport) {
+    final restored = _restoreAreaIfNeeded(format);
+    if (!restored) {
+      _applyCenteredCropRect(format, viewport);
+    }
   }
 
   Rect _imageRectFromNormalized(StudioPhotoCropRect crop, Size imageSize) {
@@ -363,7 +390,7 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
                       cropRectFor: _cropRectFor,
                       onMoved: _onCropMoved,
                       onCropped: _onCropped,
-                      onReady: () => _restoreAreaIfNeeded(format),
+                      onReady: (viewport) => _onCropPaneReady(format, viewport),
                     ),
                 ],
               ),
@@ -418,7 +445,7 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
   }
 }
 
-class _CropEditorPane extends StatelessWidget {
+class _CropEditorPane extends StatefulWidget {
   const _CropEditorPane({
     super.key,
     required this.format,
@@ -445,41 +472,89 @@ class _CropEditorPane extends StatelessWidget {
   )
   onMoved;
   final void Function(_StudioPhotoCropFormat format, CropResult result) onCropped;
-  final VoidCallback onReady;
+  final void Function(Size viewport) onReady;
+
+  @override
+  State<_CropEditorPane> createState() => _CropEditorPaneState();
+}
+
+class _CropEditorPaneState extends State<_CropEditorPane> {
+  var _didApplyReadyRect = false;
+  var _cropIsReady = false;
+  Size? _lastViewport;
+
+  void _scheduleApplyReadyRect(Size viewport) {
+    if (_didApplyReadyRect || !_cropIsReady) return;
+    if (viewport.width <= 0 || viewport.height <= 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didApplyReadyRect || !_cropIsReady) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _didApplyReadyRect || !_cropIsReady) return;
+        _didApplyReadyRect = true;
+        widget.onReady(viewport);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Crop(
-      image: imageBytes,
-      controller: controller,
-      aspectRatio: aspectRatio,
-      interactive: true,
-      fixCropRect: true,
-      baseColor: screenBg,
-      maskColor: _cropMaskColor,
-      radius: 0,
-      onStatusChanged: (status) {
-        if (status == CropStatus.ready) onReady();
-      },
-      onCropped: (result) => onCropped(format, result),
-      onMoved: (viewportRect, imageRect) =>
-          onMoved(format, viewportRect, imageRect),
-      cornerDotBuilder: (_, _) => const SizedBox.shrink(),
-      overlayBuilder: (context, rect) {
-        return CustomPaint(
-          painter: const _CropFramePainter(),
-          child: const SizedBox.expand(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = Size(constraints.maxWidth, constraints.maxHeight);
+        final hasViewport =
+            viewport.width > 0 && viewport.height > 0;
+
+        if (hasViewport &&
+            (_lastViewport == null || _lastViewport != viewport)) {
+          _lastViewport = viewport;
+          _didApplyReadyRect = false;
+        }
+
+        if (!hasViewport) {
+          return ColoredBox(color: widget.screenBg);
+        }
+
+        if (_cropIsReady && !_didApplyReadyRect) {
+          _scheduleApplyReadyRect(viewport);
+        }
+
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(size: viewport),
+          child: Crop(
+            image: widget.imageBytes,
+            controller: widget.controller,
+            aspectRatio: widget.aspectRatio,
+            interactive: true,
+            fixCropRect: true,
+            baseColor: widget.screenBg,
+            maskColor: _cropMaskColor,
+            radius: 0,
+            onStatusChanged: (status) {
+              if (status == CropStatus.ready) {
+                _cropIsReady = true;
+                _scheduleApplyReadyRect(viewport);
+              }
+            },
+            onCropped: (result) => widget.onCropped(widget.format, result),
+            onMoved: (viewportRect, imageRect) =>
+                widget.onMoved(widget.format, viewportRect, imageRect),
+            cornerDotBuilder: (_, _) => const SizedBox.shrink(),
+            overlayBuilder: (context, rect) {
+              return CustomPaint(
+                painter: const _CropFramePainter(),
+                size: Size(rect.width, rect.height),
+              );
+            },
+            initialRectBuilder: InitialRectBuilder.withBuilder((
+              viewportRect,
+              imageRect,
+            ) {
+              return widget.cropRectFor(viewport, widget.aspectRatio);
+            }),
+          ),
         );
       },
-      initialRectBuilder: InitialRectBuilder.withBuilder((
-        viewportRect,
-        imageRect,
-      ) {
-        return cropRectFor(
-          Size(viewportRect.width, viewportRect.height),
-          aspectRatio,
-        );
-      }),
     );
   }
 }

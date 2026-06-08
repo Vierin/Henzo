@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import '../../widgets/auth/auth_form_styles.dart';
+import '../../widgets/common/henzo_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Shared with owner [AccountSettingsScreen] and client personal data.
@@ -222,4 +225,76 @@ class AccountDangerButton extends StatelessWidget {
       ),
     );
   }
+}
+
+const _deleteAccountDialogRadius = 14.0;
+
+/// Returns `true` when the user confirms account deletion.
+Future<bool?> showDeleteAccountConfirmDialog(BuildContext context) {
+  final locale = context.read<LocaleProvider>();
+
+  return showHenzoDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      final screenWidth = MediaQuery.sizeOf(dialogContext).width;
+      final dialogWidth = (screenWidth - 40).clamp(340.0, 380.0);
+
+      return Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+        backgroundColor: AppColors.backgroundPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_deleteAccountDialogRadius),
+        ),
+        child: SizedBox(
+          width: dialogWidth,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  locale.t('profileForm.deleteAccount'),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  locale.t('profileForm.deleteAccountConfirm'),
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    height: 1.4,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      child: Text(locale.t('common.cancel')),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () =>
+                          Navigator.of(dialogContext).pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: kAccountDangerPurple,
+                      ),
+                      child: Text(locale.t('profileForm.deleteAccount')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
