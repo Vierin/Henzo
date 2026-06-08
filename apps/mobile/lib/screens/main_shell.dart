@@ -224,7 +224,7 @@ class MainShellState extends State<MainShell> {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(16), 
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Consumer<LocaleProvider>(
               builder: (context, locale, _) {
@@ -266,7 +266,9 @@ class MainShellState extends State<MainShell> {
                                 isSelected: _currentIndex == 1,
                                 onTap: () {
                                   setState(() => _currentIndex = 1);
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
                                     _scheduleCalendarKey.currentState
                                         ?.ensureSessionsLoaded();
                                   });
@@ -321,8 +323,12 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = isSelected ? AppColors.textInverse : _inactiveIconAndLabel;
-    final textColor = isSelected ? AppColors.textInverse : _inactiveIconAndLabel;
+    final iconColor = isSelected
+        ? AppColors.textInverse
+        : _inactiveIconAndLabel;
+    final textColor = isSelected
+        ? AppColors.textInverse
+        : _inactiveIconAndLabel;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -404,7 +410,9 @@ class _ClientsTabOpenerState extends State<_ClientsTabOpener> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator(color: AppColors.primary500)),
+      body: Center(
+        child: CircularProgressIndicator(color: AppColors.primary500),
+      ),
     );
   }
 }

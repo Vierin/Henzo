@@ -211,7 +211,7 @@ class _MandatoryPhaseHeader extends StatelessWidget {
           tr('onboardingTagline'),
           style: TextStyle(
             fontSize: 11.sp,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0.6,
             color: AppColors.textSecondary,
           ),
@@ -237,7 +237,7 @@ class _MandatoryPhaseHeader extends StatelessWidget {
             children: [
               TextSpan(
                 text: '$percent%',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
               TextSpan(text: tr('onboardingStudioReadySuffix')),
             ],
@@ -377,7 +377,11 @@ class _PreviewPublicPageButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 16),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
             ],
           ),
         ),
@@ -594,7 +598,7 @@ class _OnboardingTaskRow extends StatelessWidget {
                         title,
                         style: TextStyle(
                           fontSize: 15.sp,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
                         ),
                       ),

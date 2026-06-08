@@ -10,7 +10,14 @@ jest.mock('../lib/supabase', () => ({
         createUser: jest.fn(),
         updateUserById: jest.fn(),
         getUserById: jest.fn(),
+        deleteUser: jest.fn().mockResolvedValue({ error: null }),
       },
+    },
+    storage: {
+      from: jest.fn(() => ({
+        list: jest.fn().mockResolvedValue({ data: [], error: null }),
+        remove: jest.fn().mockResolvedValue({ error: null }),
+      })),
     },
   },
 }));
@@ -21,18 +28,23 @@ describe('AuthService email flows', () => {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
+        delete: jest.fn(),
       },
       clientRegistrationOtp: {
         upsert: jest.fn(),
         findUnique: jest.fn(),
         delete: jest.fn(),
+        deleteMany: jest.fn(),
         update: jest.fn(),
       },
+      $transaction: jest.fn(),
     };
     const emailService = {
       sendEmail: jest.fn(),
     };
-    const configService = { get: jest.fn() };
+    const configService = {
+      get: jest.fn().mockReturnValue(undefined),
+    };
     const jwtVerifier = {
       verifyToken: jest.fn(),
       getUserIdFromToken: jest.fn(),
@@ -131,5 +143,77 @@ describe('AuthService email flows', () => {
         code: '000000',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('deletes owner account together with all owned studios in one transaction', async () => {
+    const { service, prisma } = makeService();
+    const tx = {
+      trainingSession: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'sess-1' }]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      sessionEnrollment: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'enr-1' }]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      scheduledPushReminder: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      waitlistEntry: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      review: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      sessionBooking: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      trainerInvite: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      trainer: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      training: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      subscription: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      studioClientBlock: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      studioClient: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      adminEventLog: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      studio: { delete: jest.fn().mockResolvedValue({ id: 'studio-1' }) },
+      clientRegistrationOtp: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      user: { delete: jest.fn().mockResolvedValue({ id: 'owner-1' }) },
+      $executeRaw: jest.fn().mockResolvedValue(0),
+    };
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'owner-1',
+      email: 'owner@example.com',
+      role: 'OWNER',
+      Studio: [{ id: 'studio-1' }],
+      Booking: [],
+      Review: [],
+    });
+    prisma.$transaction.mockImplementation(async (callback: Function) =>
+      callback(tx),
+    );
+
+    const result = await service.deleteUserAccount('owner-1');
+
+    expect(result.deletedStudios).toEqual(['studio-1']);
+    expect(tx.subscription.deleteMany).toHaveBeenCalledWith({
+      where: { studioId: 'studio-1' },
+    });
+    expect(tx.studio.delete).toHaveBeenCalledWith({
+      where: { id: 'studio-1' },
+    });
+    expect(tx.user.delete).toHaveBeenCalledWith({
+      where: { id: 'owner-1' },
+    });
   });
 });
