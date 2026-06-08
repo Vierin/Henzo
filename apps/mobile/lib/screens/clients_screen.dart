@@ -679,16 +679,16 @@ class ClientsScreenState extends State<ClientsScreen> {
                                 SizedBox(
                                   height: MediaQuery.of(context).size.height * 0.45,
                                   child: HenzoEmptyState(
-                                    icon:
-                                        _filter == ClientFilter.all &&
-                                            _searchQuery.isEmpty
-                                        ? Icons.people_outline
-                                        : null,
                                     svgAsset:
                                         _filter == ClientFilter.all &&
                                             _searchQuery.isEmpty
+                                        ? 'assets/icons/icon-people.svg'
+                                        : null,
+                                    icon:
+                                        _filter == ClientFilter.all &&
+                                            _searchQuery.isEmpty
                                         ? null
-                                        : 'assets/icons/icon-clients.svg',
+                                        : Icons.search_off_outlined,
                                     message: _filter == ClientFilter.all &&
                                             _searchQuery.isEmpty
                                         ? tr('ownerClient.emptyClientsTitle')

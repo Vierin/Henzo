@@ -109,28 +109,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (widget.trainerMode) {
         final auth = context.read<AuthService>();
-        final trainerName =
-            auth.trainerInfo?.name.trim().isNotEmpty == true
+        final trainerName = auth.trainerInfo?.name.trim().isNotEmpty == true
             ? auth.trainerInfo!.name.trim()
             : (auth.user?.name?.trim().isNotEmpty == true
-                ? auth.user!.name!.trim()
-                : '—');
+                  ? auth.user!.name!.trim()
+                  : '—');
         final studioId = auth.trainerInfo?.studioId;
         try {
           final results = await Future.wait([
-            TrainerApiService.getSessions(
-              token,
-              from: fromUtc,
-              to: toUtc,
-            ),
+            TrainerApiService.getSessions(token, from: fromUtc, to: toUtc),
             if (studioId != null && studioId.isNotEmpty)
               TrainerApiService.fetchStudioForLocations(studioId)
             else
               Future<Studio?>.value(null),
           ]);
           final result = results[0] as Map<String, dynamic>;
-          final trainerStudio = results.length > 1 ? results[1] as Studio? : null;
-          final rawSessions = (result['sessions'] as List?)
+          final trainerStudio = results.length > 1
+              ? results[1] as Studio?
+              : null;
+          final rawSessions =
+              (result['sessions'] as List?)
                   ?.whereType<Map>()
                   .map((e) => Map<String, dynamic>.from(e))
                   .toList() ??
@@ -186,18 +184,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .getSessions(token, fromUtc: fromUtc, toUtc: toUtc)
           .then<List<OwnerTrainingSession>>((s) => s)
           .catchError((Object e) {
-        if (mounted) {
-          sessionsLoadError = loadErrorMessage(
-            context.read<LocaleProvider>(),
-            e,
-          );
-        }
-        return <OwnerTrainingSession>[];
-      });
+            if (mounted) {
+              sessionsLoadError = loadErrorMessage(
+                context.read<LocaleProvider>(),
+                e,
+              );
+            }
+            return <OwnerTrainingSession>[];
+          });
 
       final checklistFuture = studio != null
-          ? DashboardApiService.getCurrentStudioOnboardingChecklist(token)
-              .catchError((_) => null)
+          ? DashboardApiService.getCurrentStudioOnboardingChecklist(
+              token,
+            ).catchError((_) => null)
           : Future<StudioOnboardingChecklist?>.value(null);
 
       final results = await Future.wait([sessionsFuture, checklistFuture]);
@@ -345,8 +344,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String? _venueLabel() {
     if (widget.trainerMode) {
-      final studioName =
-          context.read<AuthService>().trainerInfo?.studioName.trim();
+      final studioName = context
+          .read<AuthService>()
+          .trainerInfo
+          ?.studioName
+          .trim();
       if (studioName != null && studioName.isNotEmpty) return studioName;
       return null;
     }
@@ -445,13 +447,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (widget.trainerMode) {
       final raw = _trainerRawSessionsById[s.sessionId];
       if (raw == null) return;
-      Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => TrainerSessionEnrollmentsScreen(session: raw),
-        ),
-      ).then((_) {
-        if (mounted) _loadData();
-      });
+      Navigator.of(context)
+          .push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => TrainerSessionEnrollmentsScreen(session: raw),
+            ),
+          )
+          .then((_) {
+            if (mounted) _loadData();
+          });
       return;
     }
     Navigator.of(context).push<void>(
@@ -511,39 +515,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: hasUnread ? 14 : 10,
-                    vertical: 8,
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppColors.backgroundPrimary,
+                    shape: BoxShape.circle,
                   ),
-                  decoration: BoxDecoration(
-                    color: hasUnread
-                        ? AppColors.primary500
-                        : AppColors.backgroundPrimary,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
                     children: [
-                      SvgPicture.asset(
-                        'assets/icons/icon-bell.svg',
-                        width: 18,
-                        height: 22,
-                        colorFilter: ColorFilter.mode(
-                          hasUnread ? Colors.white : AppColors.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      if (hasUnread) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          count > 99 ? '99+' : '$count',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 2),
+                        child: SvgPicture.asset(
+                          'assets/icons/icon-bell.svg',
+                          width: 22,
+                          height: 22,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.textPrimary,
+                            BlendMode.srcIn,
                           ),
                         ),
-                      ],
+                      ),
+                      if (hasUnread)
+                        Positioned(
+                          right: 8,
+                          top: 7,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary500,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              count > 9 ? '9+' : '$count',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -650,10 +669,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _statsRow(LocaleProvider loc) {
     final classesToday = _todaySessions.length;
-    final classesBg =
-        classesToday > 0 ? _statGreen : _statClassesEmpty;
-    final classesText =
-        classesToday > 0 ? AppColors.textPrimary : Colors.white;
+    final classesBg = classesToday > 0 ? _statGreen : _statClassesEmpty;
+    final classesText = classesToday > 0 ? AppColors.textPrimary : Colors.white;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
@@ -705,7 +722,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return '$timeRange · With ${_displayTrainer(s)}';
   }
 
-  Widget _featuredCard(LocaleProvider loc, OwnerTrainingSession s, {required bool isToday}) {
+  Widget _featuredCard(
+    LocaleProvider loc,
+    OwnerTrainingSession s, {
+    required bool isToday,
+  }) {
     final cap = s.capacity;
     final enrolled = s.enrolledCount;
     final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
@@ -781,10 +802,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   shape: BoxShape.circle,
                                 ),
                                 alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.edit_outlined,
-                                  size: 16,
-                                  color: AppColors.primary500,
+                                child: SvgPicture.asset(
+                                  'assets/icons/icon-pencil.svg',
+                                  width: 16,
+                                  height: 16,
+                                  colorFilter: const ColorFilter.mode(
+                                    AppColors.primary500,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1012,8 +1037,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             )
           : null,
-      floatingActionButtonLocation:
-          showAddFab ? FloatingActionButtonLocation.endFloat : null,
+      floatingActionButtonLocation: showAddFab
+          ? FloatingActionButtonLocation.endFloat
+          : null,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
@@ -1027,7 +1053,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _greeting(loc, authUser),
                 _statsRow(loc),
                 if (featured != null)
-                  _featuredCard(loc, featured, isToday: _isSessionToday(featured)),
+                  _featuredCard(
+                    loc,
+                    featured,
+                    isToday: _isSessionToday(featured),
+                  ),
                 if (!widget.trainerMode) _checklistBlock(),
                 if (_sessionsLoadError != null)
                   Padding(

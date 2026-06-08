@@ -263,12 +263,26 @@ export class AuthService {
   }
 
   /** Drop cached GET /auth/user so role changes from registerOwner are visible immediately. */
-  private invalidateGetCurrentUserCacheForAuthHeader(
-    authHeader: string | undefined,
+  private invalidateGetCurrentUserCacheForUserId(
+    userId: string | null | undefined,
   ): void {
+    if (!userId) return;
+    this.getCurrentUserCache.delete(userId);
+  }
+
+  private async invalidateGetCurrentUserCacheForAuthHeader(
+    authHeader: string | undefined,
+  ): Promise<void> {
     if (!authHeader?.startsWith('Bearer ')) return;
-    const cacheKey = authHeader.substring(7, 27);
-    this.getCurrentUserCache.delete(cacheKey);
+    const token = authHeader.substring(7);
+    try {
+      const decoded = await this.jwtVerifier.verifyToken(token);
+      this.invalidateGetCurrentUserCacheForUserId(
+        this.jwtVerifier.getUserIdFromToken(decoded),
+      );
+    } catch {
+      // Token unreadable — nothing to invalidate.
+    }
   }
 
   async registerOwner(
@@ -540,7 +554,10 @@ export class AuthService {
         `Owner registration failed: ${error.message || 'Unknown error'}`,
       );
     } finally {
-      this.invalidateGetCurrentUserCacheForAuthHeader(options?.authHeader);
+      this.invalidateGetCurrentUserCacheForUserId(data.userId);
+      await this.invalidateGetCurrentUserCacheForAuthHeader(
+        options?.authHeader,
+      );
     }
   }
 
@@ -1028,16 +1045,6 @@ export class AuthService {
 
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-      // Check cache to prevent duplicate calls
-      const cacheKey = token.substring(0, 20); // Use first 20 chars as cache key
-      const cached = this.getCurrentUserCache.get(cacheKey);
-      const now = Date.now();
-
-      if (cached && now - cached.timestamp < this.CACHE_TTL) {
-        console.log('✅ Using cached getCurrentUser result');
-        return cached.result;
-      }
-
       console.log('🔑 Token extracted, length:', token.length);
 
       // Локальная верификация JWT (быстро, без сетевых запросов)
@@ -1091,6 +1098,14 @@ export class AuthService {
           user.id,
           user.email,
         );
+      }
+
+      const cacheKey = user.id;
+      const now = Date.now();
+      const cached = this.getCurrentUserCache.get(cacheKey);
+      if (cached && now - cached.timestamp < this.CACHE_TTL) {
+        console.log('✅ Using cached getCurrentUser result for', cacheKey);
+        return cached.result;
       }
 
       // Get user data from our database
@@ -1372,7 +1387,7 @@ export class AuthService {
         },
       };
 
-      // Cache the result (use same cacheKey as defined earlier)
+      // Cache the result per Supabase user id (not JWT header — same for all tokens).
       this.getCurrentUserCache.set(cacheKey, {
         result,
         timestamp: Date.now(),

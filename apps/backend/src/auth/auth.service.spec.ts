@@ -133,3 +133,80 @@ describe('AuthService email flows', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe('AuthService getCurrentUser cache', () => {
+  const ownerJwtHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+  const clientJwtHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+
+  const makeGetCurrentUserService = () => {
+    const prisma = {
+      user: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+      },
+      studio: {
+        findMany: jest.fn(),
+      },
+      $transaction: jest.fn(),
+    };
+    const emailService = { sendEmail: jest.fn() };
+    const configService = { get: jest.fn() };
+    const jwtVerifier = {
+      verifyToken: jest.fn(),
+      getUserIdFromToken: jest.fn(),
+      getEmailFromToken: jest.fn(),
+    };
+
+    const service = new AuthService(
+      prisma as any,
+      emailService as any,
+      configService as any,
+      jwtVerifier as any,
+    );
+
+    return { service, prisma, jwtVerifier };
+  };
+
+  it('caches by Supabase user id, not shared JWT header prefix', async () => {
+    const { service, prisma, jwtVerifier } = makeGetCurrentUserService();
+
+    jwtVerifier.verifyToken
+      .mockResolvedValueOnce({ sub: 'owner-id', email: 'owner@test.com' })
+      .mockResolvedValueOnce({ sub: 'client-id', email: 'client@test.com' });
+    jwtVerifier.getUserIdFromToken
+      .mockReturnValueOnce('owner-id')
+      .mockReturnValueOnce('client-id');
+    jwtVerifier.getEmailFromToken
+      .mockReturnValueOnce('owner@test.com')
+      .mockReturnValueOnce('client@test.com');
+
+    prisma.user.findUnique
+      .mockResolvedValueOnce({
+        id: 'owner-id',
+        email: 'owner@test.com',
+        name: 'Owner',
+        phone: null,
+        avatarUrl: null,
+        role: 'OWNER',
+      })
+      .mockResolvedValueOnce({
+        id: 'client-id',
+        email: 'client@test.com',
+        name: 'Client',
+        phone: null,
+        avatarUrl: null,
+        role: 'CLIENT',
+      });
+
+    const ownerResult = await service.getCurrentUser(
+      `Bearer ${ownerJwtHeader}.owner.payload`,
+    );
+    const clientResult = await service.getCurrentUser(
+      `Bearer ${clientJwtHeader}.client.payload`,
+    );
+
+    expect(ownerResult.user.role).toBe('OWNER');
+    expect(clientResult.user.role).toBe('CLIENT');
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(2);
+  });
+});

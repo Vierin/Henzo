@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import '../../utils/henzo_haptics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// PageView physics for day strip (7 pills visible per viewport).
@@ -10,6 +11,58 @@ class SmoothDayPageScrollPhysics extends PageScrollPhysics {
   @override
   SmoothDayPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
     return SmoothDayPageScrollPhysics(parent: buildParent(ancestor));
+  }
+}
+
+/// Light ticks while dragging day strip; muted during programmatic scrolls.
+class CalendarDayStripScrollHaptics {
+  int? _lastTickIndex;
+  int _suppressCount = 0;
+
+  void beginSuppress() => _suppressCount++;
+
+  void endSuppress({int? index}) {
+    if (_suppressCount > 0) _suppressCount--;
+    if (index != null) _lastTickIndex = index;
+  }
+
+  void markIndex(int index) => _lastTickIndex = index;
+
+  void onScrollIndex(int index) {
+    if (_suppressCount > 0) {
+      _lastTickIndex = index;
+      return;
+    }
+    if (_lastTickIndex == index) return;
+    _lastTickIndex = index;
+    HenzoHaptics.selectionTick();
+  }
+
+  void jumpScroll(
+    ScrollController controller, {
+    required double offset,
+    required int index,
+  }) {
+    beginSuppress();
+    controller.jumpTo(offset);
+    endSuppress(index: index);
+  }
+
+  void animateScroll(
+    ScrollController controller, {
+    required double offset,
+    required int index,
+    Duration duration = const Duration(milliseconds: 280),
+    Curve curve = Curves.easeOutCubic,
+  }) {
+    beginSuppress();
+    controller
+        .animateTo(
+          offset,
+          duration: duration,
+          curve: curve,
+        )
+        .whenComplete(() => endSuppress(index: index));
   }
 }
 
@@ -73,6 +126,27 @@ class CalendarDayPill extends StatelessWidget {
 
   static bool isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  static DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// ISO week start (Monday) for [day].
+  static DateTime weekStartMonday(DateTime day) {
+    final d = dateOnly(day);
+    return d.subtract(Duration(days: d.weekday - DateTime.monday));
+  }
+
+  /// Leftmost strip index so the week containing [day] starts on Monday.
+  static int stripIndexForWeekStart({
+    required DateTime day,
+    required DateTime stripStart,
+    required int itemCount,
+  }) {
+    if (itemCount <= 0) return 0;
+    final start = dateOnly(stripStart);
+    final monday = weekStartMonday(day);
+    final aligned = monday.isBefore(start) ? start : monday;
+    return aligned.difference(start).inDays.clamp(0, itemCount - 1);
+  }
 
   @override
   Widget build(BuildContext context) {

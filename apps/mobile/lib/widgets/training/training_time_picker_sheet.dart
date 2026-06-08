@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
+import '../../utils/henzo_haptics.dart';
 import '../common/henzo_modal.dart';
 
 const double _kTimeWheelHeight = 216;
@@ -13,6 +14,8 @@ Future<TimeOfDay?> showTrainingTimePickerSheet(
   TimeOfDay initialTime,
 ) {
   var selected = initialTime;
+  var lastHapticHour = initialTime.hour;
+  var lastHapticMinute = initialTime.minute;
   final initialDateTime = DateTime(
     2000,
     1,
@@ -61,10 +64,14 @@ Future<TimeOfDay?> showTrainingTimePickerSheet(
                 minuteInterval: 5,
                 initialDateTime: initialDateTime,
                 onDateTimeChanged: (value) {
-                  selected = TimeOfDay(
-                    hour: value.hour,
-                    minute: value.minute,
-                  );
+                  final hour = value.hour;
+                  final minute = value.minute;
+                  if (hour != lastHapticHour || minute != lastHapticMinute) {
+                    lastHapticHour = hour;
+                    lastHapticMinute = minute;
+                    HenzoHaptics.selectionTick();
+                  }
+                  selected = TimeOfDay(hour: hour, minute: minute);
                 },
               ),
             ),

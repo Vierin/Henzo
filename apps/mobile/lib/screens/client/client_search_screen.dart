@@ -39,6 +39,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const int _kExploreHorizonDays = 31;
 
+/// Expanded Browse calendar: current month + one ahead.
+const int _kBrowseMaxMonthSpan = 2;
+
 /// Default ?Activities by start time? on Browse: 05:00?22:00.
 const RangeValues _kExploreDefaultTimeRange = RangeValues(300, 1320);
 const int _kExploreDefaultTimeStartMin = 300;
@@ -70,6 +73,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   late final ValueNotifier<DateTime> _stripDayNotifier;
   late final ScrollController _dayStripScrollController;
   double? _browseStripViewportWidth;
+  final CalendarDayStripScrollHaptics _dayStripHaptics =
+      CalendarDayStripScrollHaptics();
   final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
     DateTime.now(),
   );
@@ -184,47 +189,107 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   double _browseDayStride(double viewportWidth) => viewportWidth / 7;
 
-  void _scrollBrowseStripToIndex(
-    int index, {
-    bool animate = false,
-  }) {
+  void _scrollBrowseStripToIndex(int index, {bool animate = false}) {
     final w = _browseStripViewportWidth;
     if (w == null || !_dayStripScrollController.hasClients) return;
     final raw = index * _browseDayStride(w);
     final maxExtent = _dayStripScrollController.position.maxScrollExtent;
     final offset = raw.clamp(0.0, maxExtent);
+    final clampedIndex = index.clamp(0, _kExploreHorizonDays - 1);
     if (animate) {
-      _dayStripScrollController.animateTo(
-        offset,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
+      _dayStripHaptics.animateScroll(
+        _dayStripScrollController,
+        offset: offset,
+        index: clampedIndex,
       );
     } else {
-      _dayStripScrollController.jumpTo(offset);
+      _dayStripHaptics.jumpScroll(
+        _dayStripScrollController,
+        offset: offset,
+        index: clampedIndex,
+      );
     }
   }
 
   void _goToToday() {
     final today = _calendarDateOnly(DateTime.now());
-    _scrollBrowseStripToIndex(0, animate: true);
+    _scrollBrowseStripToIndex(
+      _browseStripIndexForWeekStart(today),
+      animate: true,
+    );
     _applyExploreDay(today);
   }
 
   bool _isDayInExploreHorizon(DateTime day) {
     final normalized = _calendarDateOnly(day);
-    final today = _calendarDateOnly(DateTime.now());
-    final diff = normalized.difference(today).inDays;
+    final diff = normalized.difference(_exploreStripStart).inDays;
     return diff >= 0 && diff < _kExploreHorizonDays;
   }
+
+  int _browseStripIndexForWeekStart(DateTime day) =>
+      CalendarDayPill.stripIndexForWeekStart(
+        day: day,
+        stripStart: _exploreStripStart,
+        itemCount: _kExploreHorizonDays,
+      );
 
   void _jumpBrowseToDay(DateTime day) {
     final normalized = _calendarDateOnly(day);
     if (!_isDayInExploreHorizon(normalized)) return;
-    final index = normalized
-        .difference(_calendarDateOnly(DateTime.now()))
-        .inDays;
-    _scrollBrowseStripToIndex(index, animate: true);
+    _scrollBrowseStripToIndex(
+      _browseStripIndexForWeekStart(normalized),
+      animate: true,
+    );
     _applyExploreDay(normalized);
+  }
+
+  DateTime get _browseMonthWindowStart => DateTime(
+    _exploreStripStart.year,
+    _exploreStripStart.month,
+    1,
+  );
+
+  DateTime get _browseMonthWindowEnd => DateTime(
+    _browseMonthWindowStart.year,
+    _browseMonthWindowStart.month + _kBrowseMaxMonthSpan - 1,
+    1,
+  );
+
+  bool _canShiftBrowseMonth(int deltaMonths) {
+    final strip = _stripDayNotifier.value;
+    final targetMonthStart = DateTime(
+      strip.year,
+      strip.month + deltaMonths,
+      1,
+    );
+    return !targetMonthStart.isBefore(_browseMonthWindowStart) &&
+        !targetMonthStart.isAfter(_browseMonthWindowEnd);
+  }
+
+  void _shiftBrowseMonth(int deltaMonths) {
+    if (!_canShiftBrowseMonth(deltaMonths)) return;
+
+    final strip = _stripDayNotifier.value;
+    final targetMonth = DateTime(strip.year, strip.month + deltaMonths, 1);
+    final daysInTargetMonth = DateUtils.getDaysInMonth(
+      targetMonth.year,
+      targetMonth.month,
+    );
+    final targetDay = strip.day.clamp(1, daysInTargetMonth);
+    final next = _calendarDateOnly(
+      DateTime(targetMonth.year, targetMonth.month, targetDay),
+    );
+    _stripDayNotifier.value = next;
+    _stripPagerDayNotifier.value = next;
+    if (!_isDayInExploreHorizon(next)) return;
+    if (CalendarDayPill.isSameDay(next, _selectedDay)) return;
+    setState(() {
+      _selectedDay = next;
+      _derivedInputsHash = 0;
+    });
+    _scrollBrowseStripToIndex(
+      _browseStripIndexForWeekStart(next),
+    );
   }
 
   /// Keeps the strip layout as before; only nudges scroll so the pill is tappable.
@@ -252,20 +317,21 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     }
     if (target == null) return;
 
-    _dayStripScrollController.animateTo(
-      target.clamp(0.0, maxExtent),
+    final clampedTarget = target.clamp(0.0, maxExtent);
+    final snapIndex = (clampedTarget / stride).round().clamp(
+      0,
+      _kExploreHorizonDays - 1,
+    );
+    _dayStripHaptics.animateScroll(
+      _dayStripScrollController,
+      offset: clampedTarget,
+      index: snapIndex,
       duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
     );
   }
 
   void _syncBrowseStripPagerToSelectedDay() {
-    final today = _calendarDateOnly(DateTime.now());
-    final index = _selectedDay
-        .difference(today)
-        .inDays
-        .clamp(0, _kExploreHorizonDays - 1);
-    _scrollBrowseStripToIndex(index);
+    _scrollBrowseStripToIndex(_browseStripIndexForWeekStart(_selectedDay));
     _stripPagerDayNotifier.value = _selectedDay;
   }
 
@@ -274,9 +340,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     if (w == null || !_dayStripScrollController.hasClients) return;
     final stride = _browseDayStride(w);
     if (stride <= 0) return;
-    final index = (_dayStripScrollController.offset / stride)
-        .round()
-        .clamp(0, _kExploreHorizonDays - 1);
+    final index = (_dayStripScrollController.offset / stride).round().clamp(
+      0,
+      _kExploreHorizonDays - 1,
+    );
+    _dayStripHaptics.onScrollIndex(index);
     final day = _exploreDayAt(index);
     final normalized = _calendarDateOnly(day);
     if (_stripPagerDayNotifier.value == normalized) return;
@@ -298,19 +366,51 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     });
   }
 
+  TextStyle get _browseMonthYearStyle => TextStyle(
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w500,
+    letterSpacing: -0.3,
+    color: AppColors.textPrimary,
+    height: 1.1,
+  );
+
+  Widget _browseCollapsedMonthLabel() {
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: _stripPagerDayNotifier,
+      builder: (context, pagerDay, _) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            CalendarDayPill.monthYearUpperEn(pagerDay),
+            style: _browseMonthYearStyle,
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildBrowseMonthExpanded(DateTime monthAnchor) {
     final monthStart = DateTime(monthAnchor.year, monthAnchor.month, 1);
     final cells = _browseMonthCells(monthStart);
     const dow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              CalendarDayPill.monthYearUpperEn(monthAnchor),
+              style: _browseMonthYearStyle,
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: List.generate(
               7,
@@ -370,13 +470,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               color: selected
                                   ? AppColors.primary500
                                   : AppColors.backgroundTertiary,
-                              border: Border.all(
-                                color: selected
-                                    ? AppColors.primary500
-                                    : AppColors.borderPrimary.withValues(
-                                        alpha: 0.5,
-                                      ),
-                              ),
                             ),
                             child: Text(
                               '${day.day}',
@@ -414,8 +507,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   static DateTime _calendarDateOnly(DateTime d) =>
       DateTime(d.year, d.month, d.day);
 
+  DateTime get _exploreStripStart =>
+      CalendarDayPill.weekStartMonday(_calendarDateOnly(DateTime.now()));
+
   DateTime _exploreDayAt(int index) =>
-      _calendarDateOnly(DateTime.now()).add(Duration(days: index));
+      _exploreStripStart.add(Duration(days: index));
 
   bool _matchesSearchClass(ExploreClassItem c) {
     final q = _searchQuery.trim().toLowerCase();
@@ -516,18 +612,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   bool _studioMatchesLanguage(ExploreStudioItem s) {
     if (_selectedLanguages.isEmpty) return true;
-    return _classes.any(
-      (c) => c.studioId == s.id && _classMatchesLanguage(c),
-    );
+    return _classes.any((c) => c.studioId == s.id && _classMatchesLanguage(c));
   }
 
   Future<void> _openLocationPicker() async {
     final loc = context.read<ClientLocationStore>();
     final picked = await Navigator.of(context).push<LocationPickerResult>(
       MaterialPageRoute(
-        builder: (_) => LocationPickerScreen(
-          initialCity: loc.displayLabel(''),
-        ),
+        builder: (_) => LocationPickerScreen(initialCity: loc.displayLabel('')),
       ),
     );
     if (picked == null || picked.city.trim().isEmpty || !mounted) return;
@@ -603,8 +695,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     String fromQuery,
     String toQuery,
   ) async {
-    final defaultClassName =
-        context.read<LocaleProvider>().t('common.class');
+    final defaultClassName = context.read<LocaleProvider>().t('common.class');
     try {
       final raw = await ApiClient.get(
         '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=500',
@@ -716,7 +807,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text(context.read<LocaleProvider>().t('clientHome.failedToUpdateFavorites'))),
+          SnackBar(
+            content: Text(
+              context.read<LocaleProvider>().t(
+                'clientHome.failedToUpdateFavorites',
+              ),
+            ),
+          ),
         );
     }
   }
@@ -768,11 +865,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       }
 
       final radiusKm = _currentRadiusKm();
-      final nearbyQuery = StringBuffer('/studios/nearby?limit=50&radius=$radiusKm')
-        ..write('&lat=')
-        ..write(loc.lat!.toStringAsFixed(6))
-        ..write('&lng=')
-        ..write(loc.lon!.toStringAsFixed(6));
+      final nearbyQuery =
+          StringBuffer('/studios/nearby?limit=50&radius=$radiusKm')
+            ..write('&lat=')
+            ..write(loc.lat!.toStringAsFixed(6))
+            ..write('&lng=')
+            ..write(loc.lon!.toStringAsFixed(6));
       final nearbyPath = nearbyQuery.toString();
       var nearbyRaw = ClientNearbyCache.get(nearbyPath);
       if (nearbyRaw == null) {
@@ -841,8 +939,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             photoUrl: photoUrl,
             photoOriginalUrl:
                 photoOriginalUrl != null && photoOriginalUrl.isNotEmpty
-                    ? photoOriginalUrl
-                    : null,
+                ? photoOriginalUrl
+                : null,
             studioPageCrop: firstAsset?.crops.studioPage,
             browseCardCrop: firstAsset?.crops.browseCard,
             logoUrl:
@@ -1214,7 +1312,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                             ),
-                            child: Text(context.watch<LocaleProvider>().t('common.apply')),
+                            child: Text(
+                              context.watch<LocaleProvider>().t('common.apply'),
+                            ),
                           ),
                         ),
                       ],
@@ -1255,9 +1355,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             color: AppColors.backgroundPrimary,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: selected
-                  ? AppColors.primary500
-                  : AppColors.borderPrimary,
+              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
             ),
           ),
           child: Column(
@@ -1481,10 +1579,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _filterSheetTitleRow(ctx, context.read<LocaleProvider>().t('clientHome.filterByTime')),
+                      _filterSheetTitleRow(
+                        ctx,
+                        context.read<LocaleProvider>().t(
+                          'clientHome.filterByTime',
+                        ),
+                      ),
                       const SizedBox(height: 14),
                       Text(
-                        context.read<LocaleProvider>().t('clientHome.activitiesByTimePeriod'),
+                        context.read<LocaleProvider>().t(
+                          'clientHome.activitiesByTimePeriod',
+                        ),
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w700,
@@ -1495,19 +1600,25 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         children: [
                           periodTile(
                             id: 'morning',
-                            label: context.read<LocaleProvider>().t('clientHome.timePeriodMorning'),
+                            label: context.read<LocaleProvider>().t(
+                              'clientHome.timePeriodMorning',
+                            ),
                             icon: Icons.wb_twilight_outlined,
                             setModalState: setModalState,
                           ),
                           periodTile(
                             id: 'afternoon',
-                            label: context.read<LocaleProvider>().t('clientHome.timePeriodAfternoon'),
+                            label: context.read<LocaleProvider>().t(
+                              'clientHome.timePeriodAfternoon',
+                            ),
                             icon: Icons.wb_sunny_outlined,
                             setModalState: setModalState,
                           ),
                           periodTile(
                             id: 'evening',
-                            label: context.read<LocaleProvider>().t('clientHome.timePeriodEvening'),
+                            label: context.read<LocaleProvider>().t(
+                              'clientHome.timePeriodEvening',
+                            ),
                             icon: Icons.nights_stay_outlined,
                             setModalState: setModalState,
                           ),
@@ -1515,7 +1626,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        context.read<LocaleProvider>().t('clientHome.activitiesByStartTime'),
+                        context.read<LocaleProvider>().t(
+                          'clientHome.activitiesByStartTime',
+                        ),
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w700,
@@ -1573,7 +1686,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
+                          child: Text(
+                            context.watch<LocaleProvider>().t('common.apply'),
+                          ),
                         ),
                       ),
                     ],
@@ -1725,20 +1840,30 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       const SizedBox(height: 12),
                       option(
                         value: 'recommended',
-                        title: context.read<LocaleProvider>().t('clientHome.sortRecommended'),
-                        subtitle: context.read<LocaleProvider>().t('common.default'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.sortRecommended',
+                        ),
+                        subtitle: context.read<LocaleProvider>().t(
+                          'common.default',
+                        ),
                         setModalState: setModalState,
                       ),
                       option(
                         value: 'ratings',
-                        title: context.read<LocaleProvider>().t('clientHome.sortRatings'),
-                        subtitle: context.read<LocaleProvider>().t('clientHome.sortRatingsDesc'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.sortRatings',
+                        ),
+                        subtitle: context.read<LocaleProvider>().t(
+                          'clientHome.sortRatingsDesc',
+                        ),
                         setModalState: setModalState,
                       ),
                       option(
                         value: 'distance',
                         title: 'Distance',
-                        subtitle: context.read<LocaleProvider>().t('clientHome.sortDistanceAsc'),
+                        subtitle: context.read<LocaleProvider>().t(
+                          'clientHome.sortDistanceAsc',
+                        ),
                         setModalState: setModalState,
                       ),
                       const SizedBox(height: 4),
@@ -1764,7 +1889,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
+                          child: Text(
+                            context.watch<LocaleProvider>().t('common.apply'),
+                          ),
                         ),
                       ),
                     ],
@@ -1884,27 +2011,37 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       const SizedBox(height: 12),
                       option(
                         value: 'auto',
-                        title: context.read<LocaleProvider>().t('clientHome.distanceAuto'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.distanceAuto',
+                        ),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '5',
-                        title: context.read<LocaleProvider>().t('clientHome.distance5km'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.distance5km',
+                        ),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '10',
-                        title: context.read<LocaleProvider>().t('clientHome.distance10km'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.distance10km',
+                        ),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '15',
-                        title: context.read<LocaleProvider>().t('clientHome.distance15km'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.distance15km',
+                        ),
                         setModalState: setModalState,
                       ),
                       option(
                         value: '30+',
-                        title: context.read<LocaleProvider>().t('clientHome.distance30plus'),
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.distance30plus',
+                        ),
                         setModalState: setModalState,
                       ),
                       const SizedBox(height: 4),
@@ -1930,7 +2067,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
+                          child: Text(
+                            context.watch<LocaleProvider>().t('common.apply'),
+                          ),
                         ),
                       ),
                     ],
@@ -2111,55 +2250,88 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _filterSheetTitleRow(ctx, context.read<LocaleProvider>().t('clientHome.filtersTitle')),
+                        _filterSheetTitleRow(
+                          ctx,
+                          context.read<LocaleProvider>().t(
+                            'clientHome.filtersTitle',
+                          ),
+                        ),
                         const SizedBox(height: 14),
-                        sectionTitle(context.read<LocaleProvider>().t('clientHome.sortBySection')),
+                        sectionTitle(
+                          context.read<LocaleProvider>().t(
+                            'clientHome.sortBySection',
+                          ),
+                        ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.sortRecommended'),
-                          subtitle: context.read<LocaleProvider>().t('common.default'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.sortRecommended',
+                          ),
+                          subtitle: context.read<LocaleProvider>().t(
+                            'common.default',
+                          ),
                           selected: tempSort == 'recommended',
                           onTap: () =>
                               setModalState(() => tempSort = 'recommended'),
                         ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.sortRatings'),
-                          subtitle: context.read<LocaleProvider>().t('clientHome.sortRatingsDesc'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.sortRatings',
+                          ),
+                          subtitle: context.read<LocaleProvider>().t(
+                            'clientHome.sortRatingsDesc',
+                          ),
                           selected: tempSort == 'ratings',
                           onTap: () =>
                               setModalState(() => tempSort = 'ratings'),
                         ),
                         radioBox(
                           title: 'Distance',
-                          subtitle: context.read<LocaleProvider>().t('clientHome.sortDistanceAsc'),
+                          subtitle: context.read<LocaleProvider>().t(
+                            'clientHome.sortDistanceAsc',
+                          ),
                           selected: tempSort == 'distance',
                           onTap: () =>
                               setModalState(() => tempSort = 'distance'),
                         ),
                         const SizedBox(height: 6),
-                        sectionTitle(context.read<LocaleProvider>().t('clientHome.distanceFromLocation')),
+                        sectionTitle(
+                          context.read<LocaleProvider>().t(
+                            'clientHome.distanceFromLocation',
+                          ),
+                        ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.distanceAuto'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.distanceAuto',
+                          ),
                           selected: tempDistance == 'auto',
                           onTap: () =>
                               setModalState(() => tempDistance = 'auto'),
                         ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.distance5km'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.distance5km',
+                          ),
                           selected: tempDistance == '5',
                           onTap: () => setModalState(() => tempDistance = '5'),
                         ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.distance10km'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.distance10km',
+                          ),
                           selected: tempDistance == '10',
                           onTap: () => setModalState(() => tempDistance = '10'),
                         ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.distance15km'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.distance15km',
+                          ),
                           selected: tempDistance == '15',
                           onTap: () => setModalState(() => tempDistance = '15'),
                         ),
                         radioBox(
-                          title: context.read<LocaleProvider>().t('clientHome.distance30plus'),
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.distance30plus',
+                          ),
                           selected: tempDistance == '30+',
                           onTap: () =>
                               setModalState(() => tempDistance = '30+'),
@@ -2190,12 +2362,18 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           ],
                         ),
                         const SizedBox(height: 6),
-                        sectionTitle(context.read<LocaleProvider>().t('clientHome.activitiesByTimePeriod')),
+                        sectionTitle(
+                          context.read<LocaleProvider>().t(
+                            'clientHome.activitiesByTimePeriod',
+                          ),
+                        ),
                         Row(
                           children: [
                             periodTile(
                               id: 'morning',
-                              label: context.read<LocaleProvider>().t('clientHome.timePeriodMorning'),
+                              label: context.read<LocaleProvider>().t(
+                                'clientHome.timePeriodMorning',
+                              ),
                               icon: Icons.wb_twilight_outlined,
                               selected: tempPeriods.contains('morning'),
                               onTap: () {
@@ -2214,7 +2392,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             ),
                             periodTile(
                               id: 'afternoon',
-                              label: context.read<LocaleProvider>().t('clientHome.timePeriodAfternoon'),
+                              label: context.read<LocaleProvider>().t(
+                                'clientHome.timePeriodAfternoon',
+                              ),
                               icon: Icons.wb_sunny_outlined,
                               selected: tempPeriods.contains('afternoon'),
                               onTap: () {
@@ -2233,7 +2413,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             ),
                             periodTile(
                               id: 'evening',
-                              label: context.read<LocaleProvider>().t('clientHome.timePeriodEvening'),
+                              label: context.read<LocaleProvider>().t(
+                                'clientHome.timePeriodEvening',
+                              ),
                               icon: Icons.nights_stay_outlined,
                               selected: tempPeriods.contains('evening'),
                               onTap: () {
@@ -2253,7 +2435,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           ],
                         ),
                         const SizedBox(height: 14),
-                        sectionTitle(context.read<LocaleProvider>().t('clientHome.activitiesByStartTime')),
+                        sectionTitle(
+                          context.read<LocaleProvider>().t(
+                            'clientHome.activitiesByStartTime',
+                          ),
+                        ),
                         Align(
                           alignment: Alignment.centerRight,
                           child: Text(
@@ -2311,7 +2497,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                             ),
-                            child: Text(context.watch<LocaleProvider>().t('common.apply')),
+                            child: Text(
+                              context.watch<LocaleProvider>().t('common.apply'),
+                            ),
                           ),
                         ),
                       ],
@@ -2350,9 +2538,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         ..addAll(periods.map((e) => e.toString()));
       _selectedLanguages
         ..clear()
-        ..addAll(
-          languages.map((e) => e.toString().trim().toLowerCase()),
-        );
+        ..addAll(languages.map((e) => e.toString().trim().toLowerCase()));
       _timeRange = RangeValues(start, end);
       if (!distanceChanged) {
         final sorted = List<ExploreStudioItem>.from(_studios);
@@ -2392,10 +2578,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                   _dayStripScrollController.position.maxScrollExtent,
                 );
                 if ((_dayStripScrollController.offset - target).abs() > 0.5) {
-                  _dayStripScrollController.animateTo(
-                    target,
+                  _dayStripHaptics.animateScroll(
+                    _dayStripScrollController,
+                    offset: target,
+                    index: index,
                     duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
                   );
                 }
               }
@@ -2409,9 +2596,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
               ),
               clipBehavior: Clip.none,
               itemCount: _kExploreHorizonDays,
-              separatorBuilder: (context, index) => const SizedBox(
-                width: _kBrowseDayPillGap,
-              ),
+              separatorBuilder: (context, index) =>
+                  const SizedBox(width: _kBrowseDayPillGap),
               itemBuilder: (_, index) {
                 final day = _exploreDayAt(index);
                 return SizedBox(
@@ -2624,8 +2810,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           useLargeTrainerIcon: true,
           showSubtitleLeadingIcon: subtitle.isNotEmpty,
           dimPastSessions: false,
-          trailingPriceLabel:
-              c.price != null ? formatVnd(c.price!) : null,
+          trailingPriceLabel: c.price != null ? formatVnd(c.price!) : null,
           trailingPriceColor: AppColors.textPrimary,
           bookActionLabel: 'Book',
           onBookAgain: () => _openExploreClassDetail(c),
@@ -2654,8 +2839,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
         final s = _derivedVisibleStudios[index];
-        final todayClasses =
-            _derivedTodayClassesByStudio[s.id] ?? const [];
+        final todayClasses = _derivedTodayClassesByStudio[s.id] ?? const [];
         return BrowseStudioListCard(
           studio: s,
           todayClasses: todayClasses,
@@ -2719,7 +2903,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           children: [
                             _browseModeTab(
                               label: 'Classes',
-                              iconAsset: 'assets/icons/icon-clients.svg',
+                              iconAsset: 'assets/icons/icon-people.svg',
                               count: _derivedDayClassesCount,
                               emphasis: classesBlend,
                               onTap: () => _setBrowseShowClasses(true),
@@ -2794,9 +2978,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
     final locationStore = context.watch<ClientLocationStore>();
-    final locationLabel = locationStore.displayLabel(
-      locale.t('clientHome.setLocation'),
-    ).toUpperCase();
+    final locationLabel = locationStore
+        .displayLabel(locale.t('clientHome.setLocation'))
+        .toUpperCase();
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
@@ -2806,10 +2990,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _loadError != null
-            ? LoadErrorView(
-                message: _loadError!,
-                onRetry: _loadExplore,
-              )
+            ? LoadErrorView(message: _loadError!, onRetry: _loadExplore)
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -2830,8 +3011,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           const SizedBox(width: 6),
                           ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth:
-                                  MediaQuery.sizeOf(context).width - 120,
+                              maxWidth: MediaQuery.sizeOf(context).width - 120,
                             ),
                             child: Text(
                               locationLabel,
@@ -2876,18 +3056,34 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       ],
                     ),
                   ),
-                  if (!_isMonthExpanded)
+                  if (!_isMonthExpanded) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 13, 20, 8),
+                      child: _browseCollapsedMonthLabel(),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: _buildDayStrip(),
-                    )
-                  else
+                    ),
+                  ] else
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
                       child: ValueListenableBuilder<DateTime>(
                         valueListenable: _stripDayNotifier,
-                        builder: (context, stripDay, _) =>
-                            _buildBrowseMonthExpanded(stripDay),
+                        builder: (context, stripDay, _) {
+                          return GestureDetector(
+                            onHorizontalDragEnd: (details) {
+                              const threshold = 90.0;
+                              final velocity = details.primaryVelocity ?? 0;
+                              if (velocity < -threshold) {
+                                _shiftBrowseMonth(1);
+                              } else if (velocity > threshold) {
+                                _shiftBrowseMonth(-1);
+                              }
+                            },
+                            child: _buildBrowseMonthExpanded(stripDay),
+                          );
+                        },
                       ),
                     ),
                   const SizedBox(height: 28),

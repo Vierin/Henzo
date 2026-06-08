@@ -340,6 +340,9 @@ class AuthService extends ChangeNotifier {
     }
     if (kDebugMode) debugPrint('[Auth] loginWithGoogle: start');
     try {
+      try {
+        await _supabase.auth.signOut();
+      } catch (_) {}
       final googleSignIn = GoogleSignIn(
         serverClientId: webClientId,
         clientId: Platform.isIOS ? iosClientId : null,
@@ -911,6 +914,10 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    unawaited(_signOutGoogleAccount());
+    try {
+      await _supabase.auth.signOut();
+    } catch (_) {}
     _user = null;
     _trainerInfo = null;
     _isAuthenticated = false;
@@ -920,10 +927,6 @@ class AuthService extends ChangeNotifier {
       RevenueCatService.onAuthUserChanged(userId: null, isOwner: false),
     );
     unawaited(OwnerNavigationRestore.clearOwnerNavigationRestore());
-    unawaited(_signOutGoogleAccount());
-    try {
-      await _supabase.auth.signOut();
-    } catch (_) {}
   }
 
   Future<AuthUiResult> updateProfile({

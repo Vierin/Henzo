@@ -277,7 +277,7 @@ class MainShellState extends State<MainShell> {
                             ),
                             Expanded(
                               child: _NavItem(
-                                svgAsset: 'assets/icons/icon-clients.svg',
+                                svgAsset: 'assets/icons/icon-people.svg',
                                 label: t('shell.tabClients'),
                                 isSelected: _currentIndex == 2,
                                 onTap: () => setState(() => _currentIndex = 2),
@@ -288,6 +288,7 @@ class MainShellState extends State<MainShell> {
                                 svgAsset: 'assets/icons/icon-settings.svg',
                                 label: t('shell.tabSettings'),
                                 isSelected: _currentIndex == 3,
+                                iconSize: 22,
                                 onTap: () => setState(() => _currentIndex = 3),
                               ),
                             ),
@@ -313,12 +314,14 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final double iconSize;
 
   const _NavItem({
     required this.svgAsset,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.iconSize = 20,
   });
 
   @override
@@ -343,8 +346,8 @@ class _NavItem extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 svgAsset,
-                width: 20,
-                height: 20,
+                width: iconSize,
+                height: iconSize,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
               const SizedBox(height: 4),
@@ -352,7 +355,7 @@ class _NavItem extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 12.sp,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w500,
                   color: textColor,
                   height: 1,
                 ),

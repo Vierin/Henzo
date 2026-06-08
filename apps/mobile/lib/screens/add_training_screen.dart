@@ -374,7 +374,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   loc.t('addTraining.durationSuffix'),
                   style: TextStyle(
                     fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -393,7 +393,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   );
 
   Widget _stepFormLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 10, left: 12),
+    padding: const EdgeInsets.only(bottom: 10),
     child: Text(
       text.toUpperCase(),
       style: TextStyle(

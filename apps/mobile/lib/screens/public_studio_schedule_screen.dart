@@ -66,6 +66,8 @@ class _PublicStudioScheduleScreenState
   late final ScrollController _dayStripScrollController;
 
   double? _dayStripViewportWidth;
+  final CalendarDayStripScrollHaptics _dayStripHaptics =
+      CalendarDayStripScrollHaptics();
 
   late final ValueNotifier<DateTime> _stripDayNotifier;
 
@@ -129,6 +131,7 @@ class _PublicStudioScheduleScreenState
     final index = (_dayStripScrollController.offset / stride)
         .round()
         .clamp(0, _bookableDayCount - 1);
+    _dayStripHaptics.onScrollIndex(index);
     final day = _bookableDayAt(index);
     final normalized = _normalizeDay(day);
     if (_stripPagerDayNotifier.value == normalized) return;
@@ -256,8 +259,9 @@ class _PublicStudioScheduleScreenState
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final index = scheduleDay.difference(_minBookableDay).inDays;
-        _scrollScheduleStripToIndex(index);
+        _scrollScheduleStripToIndex(
+          _scheduleStripIndexForWeekStart(scheduleDay),
+        );
       });
       _loadBookedSessionIds();
     } catch (e) {
@@ -340,14 +344,19 @@ class _PublicStudioScheduleScreenState
         return;
       }
       final offset = index.clamp(0, _bookableDayCount - 1) * _dayStride(w);
+      final clampedIndex = index.clamp(0, _bookableDayCount - 1);
       if (animate) {
-        _dayStripScrollController.animateTo(
-          offset,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOutCubic,
+        _dayStripHaptics.animateScroll(
+          _dayStripScrollController,
+          offset: offset,
+          index: clampedIndex,
         );
       } else {
-        _dayStripScrollController.jumpTo(offset);
+        _dayStripHaptics.jumpScroll(
+          _dayStripScrollController,
+          offset: offset,
+          index: clampedIndex,
+        );
       }
     }
 
@@ -362,21 +371,38 @@ class _PublicStudioScheduleScreenState
     _stripPagerDayNotifier.value = normalized;
   }
 
+  int _scheduleStripIndexForWeekStart(DateTime day) =>
+      CalendarDayPill.stripIndexForWeekStart(
+        day: day,
+        stripStart: _minBookableDay,
+        itemCount: _bookableDayCount,
+      );
+
   void _goToToday() {
-    _jumpScheduleToDay(DateTime.now());
+    final today = _normalizeDay(DateTime.now());
+    if (!_isDayInRange(today)) return;
+    _applyScheduleDay(today);
+    _scrollScheduleStripToIndex(
+      _scheduleStripIndexForWeekStart(today),
+      animate: true,
+    );
   }
 
   void _jumpScheduleToDay(DateTime day) {
     final normalized = _normalizeDay(day);
     if (!_isDayInRange(normalized)) return;
-    final index = normalized.difference(_minBookableDay).inDays;
     _applyScheduleDay(normalized);
-    _scrollScheduleStripToIndex(index, animate: true);
+    _scrollScheduleStripToIndex(
+      _scheduleStripIndexForWeekStart(normalized),
+      animate: true,
+    );
   }
 
   void _syncStripPagerToSelectedDay() {
-    final index = _stripDayNotifier.value.difference(_minBookableDay).inDays;
-    _scrollScheduleStripToIndex(index, animate: true);
+    _scrollScheduleStripToIndex(
+      _scheduleStripIndexForWeekStart(_stripDayNotifier.value),
+      animate: true,
+    );
   }
 
   List<DateTime?> _scheduleMonthCells(DateTime monthDate) {
@@ -466,13 +492,6 @@ class _PublicStudioScheduleScreenState
                               color: selected
                                   ? AppColors.primary500
                                   : AppColors.backgroundTertiary,
-                              border: Border.all(
-                                color: selected
-                                    ? AppColors.primary500
-                                    : AppColors.borderPrimary.withValues(
-                                        alpha: 0.5,
-                                      ),
-                              ),
                             ),
                             child: Text(
                               '${day.day}',
