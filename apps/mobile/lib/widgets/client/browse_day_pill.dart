@@ -10,20 +10,29 @@ class BrowseDayPill extends StatelessWidget {
     super.key,
     required this.day,
     required this.selected,
+    this.isToday,
     this.onTap,
   });
 
   final DateTime day;
   final bool selected;
+  final bool? isToday;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final today = isToday ?? CalendarDayPill.isSameDay(day, DateTime.now());
+    final bg = selected
+        ? AppColors.primary500
+        : today
+        ? AppColors.primary100
+        : AppColors.backgroundPrimary;
+
     Widget pill = AspectRatio(
       aspectRatio: 2 / 3,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary500 : Colors.transparent,
+          color: bg,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -56,7 +65,11 @@ class BrowseDayPill extends StatelessWidget {
     );
 
     if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: pill);
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(width: double.infinity, child: pill),
+      );
     }
     return pill;
   }

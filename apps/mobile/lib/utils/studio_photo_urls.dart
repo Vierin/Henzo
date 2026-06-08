@@ -1,5 +1,16 @@
 import '../models/studio_photo_asset.dart';
 
+/// Cover image for home carousel cards (studio-page hero when available).
+String? studioHomePhotoUrl({
+  List<StudioPhotoAsset>? gallery,
+  List<String>? photos,
+}) {
+  final first = gallery != null && gallery.isNotEmpty ? gallery.first : null;
+  final hero = first?.heroUrl.trim();
+  if (hero != null && hero.isNotEmpty) return hero;
+  return studioBrowsePhotoUrl(gallery: gallery, photos: photos);
+}
+
 /// Cover image for browse/list cards (card crop when available).
 String? studioBrowsePhotoUrl({
   List<StudioPhotoAsset>? gallery,

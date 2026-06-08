@@ -180,7 +180,7 @@ Future<bool?> showOwnerBookingPeriodSheet(
                             textAlign: TextAlign.center,
                             enabled: !applying,
                             decoration: settingsInputDecoration(
-                              labelText: locale.t(
+                              hintText: locale.t(
                                 'settings.owner.bookingPeriodDaysLabel',
                               ),
                             ),

@@ -112,7 +112,6 @@ class _ClientShellState extends State<ClientShell> {
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {

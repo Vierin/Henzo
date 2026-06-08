@@ -892,10 +892,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                                 _selectedStudioIndex = i;
                                 _showCarouselCard = _isStudioInMapViewport(i);
                               });
+                              _focusStudioOnMap(i);
                               _carouselController.animateToPage(
                                 i,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeOut,
+                              );
+                              unawaited(
+                                _ensureStudioClassesLoaded(_filteredStudios[i]),
                               );
                             },
                             child: Icon(
@@ -976,7 +980,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary500,
                       foregroundColor: Colors.white,
-                      elevation: 4,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 10,
@@ -997,7 +1002,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomInset + _carouselBottomPadding,
+            bottom: bottomInset +
+                (_filteredStudios.isEmpty && !_isLoadingStudios
+                    ? 10
+                    : _carouselBottomPadding),
             child: _StudioCarousel(
               isLoading: _isLoadingStudios,
               loadError: _studiosLoadError,
@@ -1085,10 +1093,31 @@ class _StudioCarousel extends StatelessWidget {
     if (studios.isEmpty) {
       return SizedBox(
         height: _height,
-        child: Center(
-          child: Text(
-            noStudiosLabel,
-            style: TextStyle(color: AppColors.textSecondary),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              noStudiosLabel,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+                height: 1.35,
+              ),
+            ),
           ),
         ),
       );

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/push_notification_service.dart';
+import '../../widgets/shell/shell_nav_item.dart';
 import '../calendar_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import 'trainer_profile_screen.dart';
@@ -78,7 +77,6 @@ class TrainerShellState extends State<TrainerShell> {
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -103,7 +101,7 @@ class TrainerShellState extends State<TrainerShell> {
                     Row(
                       children: [
                         Expanded(
-                          child: _NavItem(
+                          child: ShellNavItem(
                             svgAsset: 'assets/icons/icon-house.svg',
                             label: t('shell.tabHome'),
                             isSelected: _currentIndex == 0,
@@ -111,7 +109,7 @@ class TrainerShellState extends State<TrainerShell> {
                           ),
                         ),
                         Expanded(
-                          child: _NavItem(
+                          child: ShellNavItem(
                             svgAsset: 'assets/icons/icon-schedule.svg',
                             label: t('shell.tabSchedule'),
                             isSelected: _currentIndex == 1,
@@ -125,7 +123,7 @@ class TrainerShellState extends State<TrainerShell> {
                           ),
                         ),
                         Expanded(
-                          child: _NavItem(
+                          child: ShellNavItem(
                             svgAsset: 'assets/icons/icon-profile-large.svg',
                             label: t('clientShell.profile'),
                             isSelected: _currentIndex == 2,
@@ -140,49 +138,6 @@ class TrainerShellState extends State<TrainerShell> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.svgAsset,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String svgAsset;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isSelected ? Colors.white : AppColors.textSecondary;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            svgAsset,
-            width: 20,
-            height: 20,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

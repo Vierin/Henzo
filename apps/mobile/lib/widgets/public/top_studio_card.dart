@@ -75,7 +75,7 @@ class _HomeStudioCard extends StatelessWidget {
 
   static const _cardWidth = kStudioCoverPhotoWidth;
   static const _cardRadius = 18.0;
-  static const _imageHeight = kStudioCoverPhotoHeight;
+  static const _imageHeight = kStudioHomeCardPhotoHeight;
   static const _contentHeight = 54.0;
   static const _distanceColor = Color(0x663F3F3F);
 
@@ -113,9 +113,12 @@ class _HomeStudioCard extends StatelessWidget {
                       children: [
                         if (studio.photoUrl != null &&
                             studio.photoUrl!.isNotEmpty)
-                          CachedSalonNetworkImage(
+                          SalonFramedCoverImage(
                             imageUrl: studio.photoUrl!,
-                            fit: BoxFit.cover,
+                            originalUrl: studio.photoOriginalUrl,
+                            studioPageCrop: studio.studioPageCrop,
+                            width: _cardWidth,
+                            height: _imageHeight,
                           )
                         else
                           Container(

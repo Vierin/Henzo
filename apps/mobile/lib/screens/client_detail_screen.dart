@@ -19,8 +19,8 @@ import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/synthetic_guest.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import '../../widgets/clients/book_client_session_sheet.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
-import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientDetailScreen extends StatefulWidget {
@@ -344,13 +344,36 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     await _launchExternalUri(Uri(scheme: 'mailto', path: email));
   }
 
-  void _openBookTraining() {
-    final shell = context.findAncestorStateOfType<MainShellState>();
-    Navigator.of(context).pop();
-    if (shell == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      shell.navigateToTab0Route('/trainings/new');
-    });
+  Future<void> _openBookTraining() async {
+    final tr = context.read<LocaleProvider>().t;
+    final identity = _resolveClientIdentity();
+    final target = ClientBookTarget(
+      displayName: widget.name,
+      userId: identity.userId,
+      email: identity.email,
+      phone: identity.phone,
+      isBlocked: _blocked,
+    );
+
+    if (_blocked) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(tr('ownerClient.bookBlocked'))),
+      );
+      return;
+    }
+    if (!target.canBook) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(tr('ownerClient.bookNeedsIdentity'))),
+      );
+      return;
+    }
+
+    final booked = await showBookClientSessionSheet(
+      context,
+      client: target,
+    );
+    if (!mounted || booked != true) return;
+    await _loadData();
   }
 
   @override
@@ -366,6 +389,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     final hasEmail =
         resolvedEmail.isNotEmpty && !isSyntheticGuestEmail(resolvedEmail);
     final ownerName = _ownerTrainerFallback(auth);
+    final bookTarget = ClientBookTarget(
+      displayName: widget.name,
+      userId: identity.userId,
+      email: identity.email,
+      phone: identity.phone,
+      isBlocked: _blocked,
+    );
+    final canBook = bookTarget.canBook;
 
     return Scaffold(
       backgroundColor: _kClientPageBg,
@@ -540,8 +571,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                           ),
                           label: tr('booking.book'),
                           filled: true,
-                          enabled: true,
-                          onTap: _openBookTraining,
+                          enabled: canBook,
+                          onTap: canBook ? _openBookTraining : null,
                         ),
                       ),
                     ],

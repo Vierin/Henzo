@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Shared formatting helpers for client UI (VND, time).
@@ -142,6 +143,11 @@ String formatMinutesSliderLabel(double minutes) {
 String timeLabelHm(DateTime? dt) {
   if (dt == null) return '--:--';
   return formatTime24(dt);
+}
+
+/// Passes card left column: `7 Jun` (locale-aware).
+String formatPassCardDayMonth(DateTime dt, String localeTag) {
+  return DateFormat('d MMM', localeTag).format(dt.toLocal());
 }
 
 /// Passes list: `01.05 14:30`

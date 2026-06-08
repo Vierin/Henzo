@@ -2135,6 +2135,7 @@ export class StudiosService {
             duration: true,
             price: true,
             trainingCategoryId: true,
+            language: true,
             displayColor: true,
             trainingCategory: {
               select: {
@@ -2188,6 +2189,7 @@ export class StudiosService {
               duration: s.Training.duration,
               price: s.Training.price,
               trainingCategoryId: s.Training.trainingCategoryId,
+              language: s.Training.language ?? 'en',
               displayColor: computeTrainingDisplayColor({
                 trainingId: s.Training.id,
                 trainingName: s.Training.name,
@@ -2425,6 +2427,7 @@ export class StudiosService {
         latitude: Studio.latitude ?? undefined,
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,
+        photoGallery: Studio.photoGallery,
         avgRating: ratingData.avgRating,
         reviewCount: ratingData.reviewCount,
         categories,
@@ -2567,6 +2570,7 @@ export class StudiosService {
         latitude: s.latitude ?? undefined,
         longitude: s.longitude ?? undefined,
         photos: s.photos,
+        photoGallery: s.photoGallery,
         logoUrl: s.logoUrl,
         distance: s.distance,
         avgRating: r.avgRating,

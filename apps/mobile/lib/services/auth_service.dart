@@ -857,6 +857,26 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  void _syncTrainerInfoFromUserProfile() {
+    final trainer = _trainerInfo;
+    final user = _user;
+    if (trainer == null || user == null) return;
+
+    final name = user.name?.trim();
+    final phone = user.phone?.trim();
+    _trainerInfo = TrainerInfo(
+      id: trainer.id,
+      name: name != null && name.isNotEmpty ? name : trainer.name,
+      studioId: trainer.studioId,
+      studioName: trainer.studioName,
+      email: user.email.trim().isNotEmpty ? user.email.trim() : trainer.email,
+      phone: phone != null && phone.isNotEmpty ? phone : trainer.phone,
+      studioLogoUrl: trainer.studioLogoUrl,
+      accessLevel: trainer.accessLevel,
+      trainings: trainer.trainings,
+    );
+  }
+
   Future<void> _fetchTrainerInfo(String? token) async {
     if (token == null || token.isEmpty) return;
     try {
@@ -938,6 +958,7 @@ class AuthService extends ChangeNotifier {
         final userData = data['user'] as Map<String, dynamic>?;
         if (userData != null) {
           _user = UserModel.fromJson(userData);
+          _syncTrainerInfoFromUserProfile();
           notifyListeners();
         }
         return (success: true, errorL10nKey: null, errorRaw: null);

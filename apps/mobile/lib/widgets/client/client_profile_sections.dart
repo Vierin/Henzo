@@ -73,12 +73,14 @@ class ClientProfileUserRow extends StatelessWidget {
     required this.email,
     required this.location,
     this.avatarUrl,
+    this.roleLabel,
   });
 
   final String name;
   final String email;
   final String? location;
   final String? avatarUrl;
+  final String? roleLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +157,27 @@ class ClientProfileUserRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.sp,
                       color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+                if (roleLabel != null && roleLabel!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary100,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      roleLabel!,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary700,
+                      ),
                     ),
                   ),
                 ],

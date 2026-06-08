@@ -12,6 +12,9 @@ const double kStudioCoverPhotoHeight = 136;
 const double kStudioCoverPhotoAspectRatio =
     kStudioCoverPhotoWidth / kStudioCoverPhotoHeight;
 
+/// Home carousel (Top picks / Favorites) — shorter than studio-page hero crop.
+const double kStudioHomeCardPhotoHeight = 118;
+
 /// Studio list card photo (Browse tab).
 const double kStudioListPhotoWidth = 121;
 const double kStudioListPhotoHeight = 145;

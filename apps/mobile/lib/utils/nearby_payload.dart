@@ -131,12 +131,17 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
   final distanceKm = (data['distance'] as num?)?.toDouble();
   final photos = data['photos'];
   final gallery = StudioPhotoAsset.listFromJson(data['photoGallery']);
-  final photoUrl = studioBrowsePhotoUrl(
-    gallery: gallery.isEmpty ? null : gallery,
-    photos: photos is List
-        ? photos.map((e) => e?.toString() ?? '').toList()
-        : null,
+  final galleryOrNull = gallery.isEmpty ? null : gallery;
+  final legacyPhotos = photos is List
+      ? photos.map((e) => e?.toString() ?? '').toList()
+      : null;
+  final photoUrl = studioHomePhotoUrl(
+    gallery: galleryOrNull,
+    photos: legacyPhotos,
   );
+  final firstAsset = galleryOrNull?.first;
+  final photoOriginalUrl = firstAsset?.originalUrl.trim();
+  final studioPageCrop = firstAsset?.crops.studioPage;
   final studioName = (data['studioName'] ?? data['name'] ?? 'Studio')
       .toString()
       .trim();
@@ -174,6 +179,11 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
     lat: lat,
     lng: lng,
     photoUrl: photoUrl,
+    photoOriginalUrl:
+        photoOriginalUrl != null && photoOriginalUrl.isNotEmpty
+            ? photoOriginalUrl
+            : null,
+    studioPageCrop: studioPageCrop,
     reviewCount: reviewCount,
   );
 }
