@@ -190,25 +190,34 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   double _browseDayStride(double viewportWidth) => viewportWidth / 7;
 
   void _scrollBrowseStripToIndex(int index, {bool animate = false}) {
-    final w = _browseStripViewportWidth;
-    if (w == null || !_dayStripScrollController.hasClients) return;
-    final raw = index * _browseDayStride(w);
-    final maxExtent = _dayStripScrollController.position.maxScrollExtent;
-    final offset = raw.clamp(0.0, maxExtent);
-    final clampedIndex = index.clamp(0, _kExploreHorizonDays - 1);
-    if (animate) {
-      _dayStripHaptics.animateScroll(
-        _dayStripScrollController,
-        offset: offset,
-        index: clampedIndex,
-      );
-    } else {
-      _dayStripHaptics.jumpScroll(
-        _dayStripScrollController,
-        offset: offset,
-        index: clampedIndex,
-      );
+    void tryScroll() {
+      final w = _browseStripViewportWidth;
+      if (w == null || !_dayStripScrollController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) tryScroll();
+        });
+        return;
+      }
+      final raw = index * _browseDayStride(w);
+      final maxExtent = _dayStripScrollController.position.maxScrollExtent;
+      final offset = raw.clamp(0.0, maxExtent);
+      final clampedIndex = index.clamp(0, _kExploreHorizonDays - 1);
+      if (animate) {
+        _dayStripHaptics.animateScroll(
+          _dayStripScrollController,
+          offset: offset,
+          index: clampedIndex,
+        );
+      } else {
+        _dayStripHaptics.jumpScroll(
+          _dayStripScrollController,
+          offset: offset,
+          index: clampedIndex,
+        );
+      }
     }
+
+    tryScroll();
   }
 
   void _goToToday() {
@@ -233,14 +242,24 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
         itemCount: _kExploreHorizonDays,
       );
 
-  void _jumpBrowseToDay(DateTime day) {
+  void _jumpBrowseToDay(DateTime day, {bool afterBuild = false}) {
     final normalized = _calendarDateOnly(day);
     if (!_isDayInExploreHorizon(normalized)) return;
-    _scrollBrowseStripToIndex(
+    _applyExploreDay(normalized);
+
+    void scroll() => _scrollBrowseStripToIndex(
       _browseStripIndexForWeekStart(normalized),
       animate: true,
     );
-    _applyExploreDay(normalized);
+
+    if (afterBuild) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        scroll();
+      });
+    } else {
+      scroll();
+    }
   }
 
   DateTime get _browseMonthWindowStart => DateTime(
@@ -456,7 +475,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         onTap: inHorizon
                             ? () {
                                 setState(() => _isMonthExpanded = false);
-                                _jumpBrowseToDay(day);
+                                _jumpBrowseToDay(day, afterBuild: true);
                               }
                             : null,
                         child: Opacity(

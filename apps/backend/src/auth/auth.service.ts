@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtVerifierService } from './jwt-verifier.service';
 import * as crypto from 'crypto';
 import { renderOtpEmailHtml } from '../email/templates/transactional-email-templates';
+import { Prisma } from '@prisma/client';
 
 type RegistrationOtpKind = 'client' | 'owner';
 
@@ -1631,23 +1632,7 @@ export class AuthService {
   }
 
   private async deleteStudioCascade(
-    tx: {
-      trainingSession: { findMany: Function; deleteMany: Function };
-      sessionEnrollment: { findMany: Function; deleteMany: Function };
-      scheduledPushReminder: { deleteMany: Function };
-      waitlistEntry: { deleteMany: Function };
-      review: { deleteMany: Function };
-      sessionBooking: { deleteMany: Function };
-      trainerInvite: { deleteMany: Function };
-      trainer: { deleteMany: Function };
-      training: { deleteMany: Function };
-      subscription: { deleteMany: Function };
-      studioClientBlock: { deleteMany: Function };
-      studioClient: { deleteMany: Function };
-      adminEventLog: { deleteMany: Function };
-      studio: { delete: Function };
-      $executeRaw: Function;
-    },
+    tx: Prisma.TransactionClient,
     studioId: string,
   ) {
     const sessions = await tx.trainingSession.findMany({

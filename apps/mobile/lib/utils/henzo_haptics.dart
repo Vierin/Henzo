@@ -17,16 +17,31 @@ abstract final class HenzoHaptics {
       return;
     }
     if (Platform.isAndroid) {
-      unawaited(_androidSelectionTick());
+      unawaited(_androidMotorPulse(durationMs: 10, amplitude: 48));
     }
   }
 
-  static Future<void> _androidSelectionTick() async {
-    if (!await Vibration.hasVibrator()) return;
-    if (await Vibration.hasAmplitudeControl()) {
-      await Vibration.vibrate(duration: 8, amplitude: 48);
+  /// Day-strip scroll — stronger on Android so slow drags are perceptible.
+  static void scrollTick() {
+    if (kIsWeb) return;
+    if (Platform.isIOS) {
+      HapticFeedback.selectionClick();
       return;
     }
-    await Vibration.vibrate(duration: 10);
+    if (Platform.isAndroid) {
+      unawaited(_androidMotorPulse(durationMs: 14, amplitude: 112));
+    }
+  }
+
+  static Future<void> _androidMotorPulse({
+    required int durationMs,
+    required int amplitude,
+  }) async {
+    if (!await Vibration.hasVibrator()) return;
+    if (await Vibration.hasAmplitudeControl()) {
+      await Vibration.vibrate(duration: durationMs, amplitude: amplitude);
+      return;
+    }
+    await Vibration.vibrate(duration: durationMs + 6);
   }
 }

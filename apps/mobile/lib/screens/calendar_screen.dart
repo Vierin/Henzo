@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -17,6 +16,7 @@ import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
+import '../../widgets/schedule/schedule_calendar_header.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
 import 'trainer/trainer_session_enrollments_screen.dart';
@@ -364,23 +364,21 @@ class CalendarScreenState extends State<CalendarScreen> {
     Navigator.of(context).pushNamed('/trainings/new');
   }
 
-  static const _kEnMon = [
-    'JAN',
-    'FEB',
-    'MAR',
-    'APR',
-    'MAY',
-    'JUN',
-    'JUL',
-    'AUG',
-    'SEP',
-    'OCT',
-    'NOV',
-    'DEC',
-  ];
-
-  /// «MAY 2026» как на макете.
-  String _monthYearUpperEn(DateTime d) => '${_kEnMon[d.month - 1]} ${d.year}';
+  String _studioHeaderLabel(BuildContext context) {
+    if (widget.trainerMode) {
+      final trainerStudio = context
+          .read<AuthService>()
+          .trainerInfo
+          ?.studioName
+          .trim();
+      if (trainerStudio != null && trainerStudio.isNotEmpty) {
+        return trainerStudio.toUpperCase();
+      }
+    }
+    final name = _studio?.name?.trim();
+    if (name != null && name.isNotEmpty) return name.toUpperCase();
+    return 'BUSINESS';
+  }
 
   void _shiftMonth(int deltaMonths) {
     final strip = _stripDayNotifier.value;
@@ -452,13 +450,16 @@ class CalendarScreenState extends State<CalendarScreen> {
     const dow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          ScheduleCalendarMonthYearAlign(day: monthAnchor),
+          const SizedBox(height: 12),
           Row(
             children: List.generate(
               7,
@@ -618,141 +619,25 @@ class CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _todayButton() {
-    return Material(
-      color: AppColors.primary500,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: () {
-          final now = DateTime.now();
-          _jumpToDay(DateTime(now.year, now.month, now.day));
-        },
-        borderRadius: BorderRadius.circular(999),
-        child: SizedBox(
-          height: 30,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Center(
-              child: Text(
-                'Today',
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  height: 1.1,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  void _toggleMonthExpanded() {
+    final wasExpanded = _isMonthExpanded;
+    setState(() => _isMonthExpanded = !_isMonthExpanded);
+    if (wasExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncCalendarStripToSelectedWeek();
+      });
+    }
   }
 
-  Widget _expandCollapseButton() {
-    return Material(
-      color: AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: () {
-          final wasExpanded = _isMonthExpanded;
-          setState(() => _isMonthExpanded = !_isMonthExpanded);
-              if (wasExpanded) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _syncCalendarStripToSelectedWeek();
-            });
-          }
-        },
-        borderRadius: BorderRadius.circular(999),
-        child: SizedBox(
-          height: 30,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  'assets/icons/icon-calendar.svg',
-                  width: 13,
-                  height: 12,
-                  fit: BoxFit.contain,
-                  excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _isMonthExpanded ? 'Collapse' : 'Expand',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.sp,
-                    color: AppColors.textPrimary,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Верхний ряд: месяц/год + Today + Expand (месяц от скролла пиллов или от выбранного дня в сетке).
-  Widget _monthYearAndActionsRow() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        kScreenPaddingHorizontal,
-        16,
-        kScreenPaddingHorizontal,
-        0,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: _isMonthExpanded
-                ? ValueListenableBuilder<DateTime>(
-                    valueListenable: _stripDayNotifier,
-                    builder: (context, stripDay, _) {
-                      return Text(
-                        _monthYearUpperEn(stripDay),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                          color: AppColors.textPrimary,
-                        ),
-                      );
-                    },
-                  )
-                : ValueListenableBuilder<DateTime>(
-                    valueListenable: _stripPagerDayNotifier,
-                    builder: (context, pagerDay, _) {
-                      return Text(
-                        _monthYearUpperEn(pagerDay),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                          color: AppColors.textPrimary,
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          _todayButton(),
-          const SizedBox(width: 10),
-          _expandCollapseButton(),
-        ],
-      ),
-    );
+  void _goToScheduleToday() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (_isMonthExpanded) {
+      setState(() => _isMonthExpanded = false);
+      _jumpToDay(today, afterBuild: true);
+    } else {
+      _jumpToDay(today);
+    }
   }
 
   @override
@@ -789,25 +674,31 @@ class CalendarScreenState extends State<CalendarScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _monthYearAndActionsRow(),
-                    Padding(
+                    ScheduleCalendarTitleRow(
+                      overtitle: _studioHeaderLabel(context),
+                      title: 'Schedule',
+                      titleStyle: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                        letterSpacing: -0.8,
+                        color: AppColors.textPrimary,
+                      ),
+                      onToday: _goToScheduleToday,
+                      isMonthExpanded: _isMonthExpanded,
+                      onToggleMonthExpanded: _toggleMonthExpanded,
                       padding: const EdgeInsets.fromLTRB(
                         kScreenPaddingHorizontal,
-                        5,
+                        16,
                         kScreenPaddingHorizontal,
-                        7,
-                      ),
-                      child: Text(
-                        'Schedule',
-                        style: TextStyle(
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
-                          letterSpacing: -0.8,
-                          color: AppColors.textPrimary,
-                        ),
+                        8,
                       ),
                     ),
+                    if (!_isMonthExpanded)
+                      ScheduleCalendarMonthYearLabel(
+                        dayListenable: _stripPagerDayNotifier,
+                        padding: const EdgeInsets.fromLTRB(16, 13, 20, 8),
+                      ),
                     Expanded(
                       child: CustomScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -822,7 +713,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 return SliverPersistentHeader(
                                   pinned: true,
                                   delegate: _PinnedDayStripDelegate(
-                                    height: 86 + 12,
+                                    height: 86,
                                     backgroundColor:
                                         AppColors.backgroundSecondary,
                                     stripDayKey: Object.hash(
@@ -830,11 +721,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                                       _dayKey(_stripPagerDayNotifier.value),
                                     ),
                                     strip: Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        kScreenPaddingHorizontal,
-                                        12,
-                                        kScreenPaddingHorizontal,
-                                        0,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
                                       ),
                                       child: _buildDayStrip(),
                                     ),
@@ -849,10 +737,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 return SliverToBoxAdapter(
                                   child: Padding(
                                     padding: const EdgeInsets.fromLTRB(
-                                      kScreenPaddingHorizontal,
                                       12,
-                                      kScreenPaddingHorizontal,
+                                      4,
                                       12,
+                                      0,
                                     ),
                                     child: GestureDetector(
                                       onHorizontalDragEnd: (details) {

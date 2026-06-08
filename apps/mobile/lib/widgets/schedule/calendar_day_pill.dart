@@ -35,7 +35,7 @@ class CalendarDayStripScrollHaptics {
     }
     if (_lastTickIndex == index) return;
     _lastTickIndex = index;
-    HenzoHaptics.selectionTick();
+    HenzoHaptics.scrollTick();
   }
 
   void jumpScroll(
