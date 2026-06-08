@@ -112,9 +112,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _openRegister() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()));
   }
 
   Future<void> _showForgotPassword() async {
@@ -146,7 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return locale.t('auth.enterEmail');
+                  if (v == null || v.isEmpty)
+                    return locale.t('auth.enterEmail');
                   if (!v.contains('@')) return locale.t('auth.invalidEmail');
                   return null;
                 },
@@ -171,10 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
               if (res.success) {
                 showSuccess(context, loc.t('auth.resetEmailSent'));
               } else {
-                showApiError(
-                  context,
-                  resolveAuthUiMessage(loc, res),
-                );
+                showApiError(context, resolveAuthUiMessage(loc, res));
               }
             },
             child: Text(locale.t('auth.sendResetLink')),
@@ -244,19 +242,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: Image.asset(
                       'assets/logo.png',
-                      height: 75,
+                      height: 62,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => Text(
                         'Henzo',
                         style: TextStyle(
-                          fontSize: 44.sp,
+                          fontSize: 39.6.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 36),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -275,8 +273,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return locale.t('auth.enterEmail');
-                      if (!v.contains('@')) return locale.t('auth.invalidEmail');
+                      if (v == null || v.isEmpty)
+                        return locale.t('auth.enterEmail');
+                      if (!v.contains('@'))
+                        return locale.t('auth.invalidEmail');
                       return null;
                     },
                   ),
@@ -315,7 +315,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
+                      if (v == null || v.isEmpty)
+                        return locale.t('auth.enterPassword');
                       if (v.length < 6) return locale.t('auth.passwordMin');
                       return null;
                     },
@@ -369,14 +370,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed:
-                        (_isSubmitting || _isOAuthBusy) ? null : _openRegister,
+                    onPressed: (_isSubmitting || _isOAuthBusy)
+                        ? null
+                        : _openRegister,
                     style: TextButton.styleFrom(
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       minimumSize: Size.zero,
                     ),
                     child: Text(
-                      context.read<LocaleProvider>().t('auth.noAccountRegister'),
+                      context.read<LocaleProvider>().t(
+                        'auth.noAccountRegister',
+                      ),
                       style: TextStyle(
                         color: AppColors.primary500,
                         fontSize: 14.sp,

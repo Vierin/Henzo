@@ -481,12 +481,20 @@ class _CropEditorPane extends StatefulWidget {
 class _CropEditorPaneState extends State<_CropEditorPane> {
   var _didApplyReadyRect = false;
   var _cropIsReady = false;
+  Size? _lastViewport;
 
-  void _tryApplyReadyRect(Size viewport) {
+  void _scheduleApplyReadyRect(Size viewport) {
     if (_didApplyReadyRect || !_cropIsReady) return;
     if (viewport.width <= 0 || viewport.height <= 0) return;
-    _didApplyReadyRect = true;
-    widget.onReady(viewport);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didApplyReadyRect || !_cropIsReady) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _didApplyReadyRect || !_cropIsReady) return;
+        _didApplyReadyRect = true;
+        widget.onReady(viewport);
+      });
+    });
   }
 
   @override
@@ -494,47 +502,57 @@ class _CropEditorPaneState extends State<_CropEditorPane> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewport = Size(constraints.maxWidth, constraints.maxHeight);
-        if (_cropIsReady && !_didApplyReadyRect) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _tryApplyReadyRect(viewport);
-          });
+        final hasViewport =
+            viewport.width > 0 && viewport.height > 0;
+
+        if (hasViewport &&
+            (_lastViewport == null || _lastViewport != viewport)) {
+          _lastViewport = viewport;
+          _didApplyReadyRect = false;
         }
 
-        return Crop(
-          image: widget.imageBytes,
-          controller: widget.controller,
-          aspectRatio: widget.aspectRatio,
-          interactive: true,
-          fixCropRect: true,
-          baseColor: widget.screenBg,
-          maskColor: _cropMaskColor,
-          radius: 0,
-          onStatusChanged: (status) {
-            if (status == CropStatus.ready) {
-              _cropIsReady = true;
-              _tryApplyReadyRect(viewport);
-            }
-          },
-          onCropped: (result) => widget.onCropped(widget.format, result),
-          onMoved: (viewportRect, imageRect) =>
-              widget.onMoved(widget.format, viewportRect, imageRect),
-          cornerDotBuilder: (_, _) => const SizedBox.shrink(),
-          overlayBuilder: (context, rect) {
-            return CustomPaint(
-              painter: const _CropFramePainter(),
-              child: const SizedBox.expand(),
-            );
-          },
-          initialRectBuilder: InitialRectBuilder.withBuilder((
-            viewportRect,
-            imageRect,
-          ) {
-            return widget.cropRectFor(
-              Size(viewportRect.width, viewportRect.height),
-              widget.aspectRatio,
-            );
-          }),
+        if (!hasViewport) {
+          return ColoredBox(color: widget.screenBg);
+        }
+
+        if (_cropIsReady && !_didApplyReadyRect) {
+          _scheduleApplyReadyRect(viewport);
+        }
+
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(size: viewport),
+          child: Crop(
+            image: widget.imageBytes,
+            controller: widget.controller,
+            aspectRatio: widget.aspectRatio,
+            interactive: true,
+            fixCropRect: true,
+            baseColor: widget.screenBg,
+            maskColor: _cropMaskColor,
+            radius: 0,
+            onStatusChanged: (status) {
+              if (status == CropStatus.ready) {
+                _cropIsReady = true;
+                _scheduleApplyReadyRect(viewport);
+              }
+            },
+            onCropped: (result) => widget.onCropped(widget.format, result),
+            onMoved: (viewportRect, imageRect) =>
+                widget.onMoved(widget.format, viewportRect, imageRect),
+            cornerDotBuilder: (_, _) => const SizedBox.shrink(),
+            overlayBuilder: (context, rect) {
+              return CustomPaint(
+                painter: const _CropFramePainter(),
+                size: Size(rect.width, rect.height),
+              );
+            },
+            initialRectBuilder: InitialRectBuilder.withBuilder((
+              viewportRect,
+              imageRect,
+            ) {
+              return widget.cropRectFor(viewport, widget.aspectRatio);
+            }),
+          ),
         );
       },
     );

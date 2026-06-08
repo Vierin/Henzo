@@ -979,14 +979,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _openCreateTraining() {
+    final shell = context.findAncestorStateOfType<MainShellState>();
+    if (shell != null) {
+      shell.navigateToTab0Route('/trainings/new');
+      return;
+    }
+    Navigator.of(context).pushNamed('/trainings/new');
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = context.watch<LocaleProvider>();
     final authUser = context.watch<AuthService>().user;
     final featured = _featuredSession;
+    final showAddFab = !widget.trainerMode;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
+      floatingActionButton: showAddFab
+          ? SafeArea(
+              minimum: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton(
+                onPressed: _openCreateTraining,
+                elevation: 0,
+                focusElevation: 0,
+                hoverElevation: 0,
+                highlightElevation: 0,
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation:
+          showAddFab ? FloatingActionButtonLocation.endFloat : null,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
@@ -1038,6 +1065,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         : null,
                   ),
                 const SizedBox(height: 16),
+                SizedBox(height: showAddFab ? 72 : 0),
               ],
             ),
           ),
