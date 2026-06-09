@@ -11,11 +11,12 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const res = NextResponse.next();
 
-  // Ignore next internals and files
+  // Ignore next internals, static files, and Digital Asset Links (no locale redirect)
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
+    pathname.startsWith('/.well-known') ||
     pathname.includes('.')
   ) {
     return res;

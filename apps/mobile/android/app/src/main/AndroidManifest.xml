@@ -61,24 +61,24 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="henzo" android:host="trainer-invite" />
             </intent-filter>
-            <!-- App Links (HTTPS): henzo.app/class*, /studio/*, /trainer-invite/* -->
+            <!-- App Links (HTTPS): www.henzo.app — apex henzo.app 307→www breaks autoVerify -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="henzo.app" android:pathPrefix="/trainer-invite/" />
+                <data android:scheme="https" android:host="www.henzo.app" android:pathPrefix="/trainer-invite/" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="henzo.app" android:pathPrefix="/studio/" />
+                <data android:scheme="https" android:host="www.henzo.app" android:pathPrefix="/studio/" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="henzo.app" android:pathPrefix="/class" />
+                <data android:scheme="https" android:host="www.henzo.app" android:pathPrefix="/class" />
             </intent-filter>
             <!-- Health Connect: permissions rationale (health plugin README) -->
             <intent-filter>
