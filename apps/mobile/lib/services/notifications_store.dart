@@ -7,6 +7,22 @@ import '../models/app_notification.dart';
 
 const String _keyList = 'henzo_notifications_list';
 
+/// Keys safe to persist locally for deep-link routing only.
+const _allowedPushDataKeys = <String>{
+  'type',
+  'screen',
+  'studioId',
+  'sessionId',
+  'enrollmentId',
+  'trainingId',
+};
+
+Map<String, String> _sanitizePushData(Map<String, String> data) {
+  return Map.fromEntries(
+    data.entries.where((e) => _allowedPushDataKeys.contains(e.key)),
+  );
+}
+
 class NotificationsStore extends ChangeNotifier {
   NotificationsStore() : _items = [];
 
@@ -54,7 +70,7 @@ class NotificationsStore extends ChangeNotifier {
         title: title,
         body: body,
         createdAt: DateTime.now(),
-        data: data,
+        data: _sanitizePushData(data),
         read: false,
       ),
     );

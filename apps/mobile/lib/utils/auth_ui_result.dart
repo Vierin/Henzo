@@ -16,8 +16,5 @@ String resolveAuthUiMessage(
   if (result.errorL10nKey != null && result.errorL10nKey!.isNotEmpty) {
     return locale.t(result.errorL10nKey!);
   }
-  if (result.errorRaw != null && result.errorRaw!.isNotEmpty) {
-    return result.errorRaw!;
-  }
   return locale.t(fallbackKey);
 }

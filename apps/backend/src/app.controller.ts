@@ -1,8 +1,10 @@
-import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Res, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { Response } from 'express';
 import { register } from 'prom-client';
+import { Public } from './auth/public.decorator';
+import { MetricsSecretGuard } from './auth/metrics-secret.guard';
 
 @Controller()
 export class AppController {
@@ -11,11 +13,13 @@ export class AppController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @Public()
   @Get()
   getHello(): string {
     return this.appService.getHello();
   }
 
+  @Public()
   @Get('health')
   async getHealth(@Res() res: Response) {
     const checks = {
@@ -43,6 +47,7 @@ export class AppController {
     return res.status(statusCode).json(checks);
   }
 
+  @Public()
   @Get('test-routes')
   testRoutes() {
     return {
@@ -56,6 +61,8 @@ export class AppController {
     };
   }
 
+  @Public()
+  @UseGuards(MetricsSecretGuard)
   @Get('metrics')
   async metrics(@Res() res: Response) {
     res.setHeader('Content-Type', register.contentType);

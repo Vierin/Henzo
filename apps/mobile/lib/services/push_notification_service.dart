@@ -16,8 +16,7 @@ class PushNotificationService {
   static const String _tag = '[Push]';
 
   static void _log(String msg) {
-    // Always log in debug; use tag so logcat can filter: adb logcat -s "flutter"
-    debugPrint('$_tag $msg');
+    if (kDebugMode) debugPrint('$_tag $msg');
   }
 
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -177,7 +176,6 @@ class PushNotificationService {
         body: {'token': token, 'platform': platform, 'language': language},
       );
       _log('registerToken OK: backend saved token');
-      if (kDebugMode) debugPrint('$_tag FCM token (copy for test): $token');
     } on ApiException catch (e) {
       _log('registerToken API error: ${e.statusCode} ${e.message}');
     } catch (e) {

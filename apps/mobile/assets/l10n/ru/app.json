@@ -336,6 +336,10 @@
     "passwordUpdateFailed": "Не удалось обновить пароль.",
     "profileUpdateFailed": "Не удалось обновить профиль.",
     "deleteAccountFailed": "Не удалось удалить аккаунт.",
+    "accountExistsLogin": "Аккаунт с такой почтой уже есть. Войдите в существующий аккаунт.",
+    "accountExistsUseGoogle": "Эта почта зарегистрирована через Google. Войдите через Google.",
+    "accountExistsUseApple": "Эта почта зарегистрирована через Apple. Войдите через Apple.",
+    "accountExistsUseOauth": "Эта почта зарегистрирована через соцсеть. Войдите через Google или Apple.",
     "generic": "Что-то пошло не так",
     "loadFailed": "Не удалось загрузить"
   },

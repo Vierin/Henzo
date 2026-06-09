@@ -508,6 +508,22 @@ export class NotificationsService {
       },
     ].filter((r) => r.scheduledFor > now);
 
+    if (reminders.length === 0) {
+      await this.prisma.scheduledPushReminder.deleteMany({
+        where: { enrollmentId, sentAt: null },
+      });
+      return;
+    }
+
+    const typesToKeep = reminders.map((r) => r.type);
+    await this.prisma.scheduledPushReminder.deleteMany({
+      where: {
+        enrollmentId,
+        sentAt: null,
+        type: { notIn: typesToKeep },
+      },
+    });
+
     for (const { type, scheduledFor } of reminders) {
       await this.prisma.scheduledPushReminder.upsert({
         where: { enrollmentId_type: { enrollmentId, type } },
@@ -521,6 +537,18 @@ export class NotificationsService {
         update: { scheduledFor, sentAt: null },
       });
     }
+  }
+
+  async clearPreClassRemindersForEnrollment(enrollmentId: string) {
+    await this.prisma.scheduledPushReminder.deleteMany({
+      where: { enrollmentId },
+    });
+  }
+
+  async clearPreClassRemindersForSession(sessionId: string) {
+    await this.prisma.scheduledPushReminder.deleteMany({
+      where: { sessionId, sentAt: null },
+    });
   }
 
   /** Called by RemindersScheduler — sends all due push reminders. */
@@ -537,48 +565,67 @@ export class NotificationsService {
 
     for (const reminder of pending) {
       try {
-        const tokens = await this.getPushTokensByUserId(reminder.userId);
-        if (tokens.length > 0) {
-          const session = await this.prisma.trainingSession.findUnique({
-            where: { id: reminder.sessionId },
-            select: {
-              startsAt: true,
-              Training: { select: { name: true } },
-              Studio: { select: { name: true } },
-            },
+        const enrollment = await this.prisma.sessionEnrollment.findFirst({
+          where: { id: reminder.enrollmentId, status: 'ACTIVE' },
+          select: { id: true },
+        });
+        if (!enrollment) {
+          await this.prisma.scheduledPushReminder.delete({
+            where: { id: reminder.id },
           });
-
-          if (session) {
-            const lang = tokens[0]?.language || 'en';
-            const timeStr = session.startsAt.toLocaleTimeString(
-              lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
-              { hour: '2-digit', minute: '2-digit', hour12: false },
-            );
-            const titleKey =
-              reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
-            const bodyKey =
-              reminder.type === '24h' ? 'reminder24hBody' : 'reminder1hBody';
-
-            const title = getNotificationText(lang, titleKey as any);
-            const body = formatNotificationTemplate(
-              getNotificationText(lang, bodyKey as any),
-              {
-                class: session.Training?.name || 'class',
-                studio: session.Studio?.name || 'studio',
-                time: timeStr,
-              },
-            );
-
-            await this.sendPushNotification(
-              tokens,
-              title,
-              body,
-              { type: 'PRE_CLASS_REMINDER', sessionId: reminder.sessionId },
-              undefined,
-              'henzo_default',
-            );
-          }
+          continue;
         }
+
+        const tokens = await this.getPushTokensByUserId(reminder.userId);
+        if (tokens.length === 0) {
+          continue;
+        }
+
+        const session = await this.prisma.trainingSession.findUnique({
+          where: { id: reminder.sessionId },
+          select: {
+            startsAt: true,
+            status: true,
+            Training: { select: { name: true } },
+            Studio: { select: { name: true } },
+          },
+        });
+
+        if (!session || session.status !== 'ACTIVE') {
+          await this.prisma.scheduledPushReminder.delete({
+            where: { id: reminder.id },
+          });
+          continue;
+        }
+
+        const lang = tokens[0]?.language || 'en';
+        const timeStr = session.startsAt.toLocaleTimeString(
+          lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
+          { hour: '2-digit', minute: '2-digit', hour12: false },
+        );
+        const titleKey =
+          reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
+        const bodyKey =
+          reminder.type === '24h' ? 'reminder24hBody' : 'reminder1hBody';
+
+        const title = getNotificationText(lang, titleKey as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, bodyKey as any),
+          {
+            class: session.Training?.name || 'class',
+            studio: session.Studio?.name || 'studio',
+            time: timeStr,
+          },
+        );
+
+        await this.sendPushNotification(
+          tokens,
+          title,
+          body,
+          { type: 'PRE_CLASS_REMINDER', sessionId: reminder.sessionId },
+          undefined,
+          'henzo_default',
+        );
 
         await this.prisma.scheduledPushReminder.update({
           where: { id: reminder.id },
@@ -603,6 +650,8 @@ export class NotificationsService {
     sessionInfo: { className: string; studioName: string; startsAt: Date },
   ): Promise<void> {
     try {
+      await this.clearPreClassRemindersForSession(sessionId);
+
       const enrollments = await this.prisma.sessionEnrollment.findMany({
         where: { sessionId, status: 'ACTIVE' },
         select: { userId: true },
@@ -655,9 +704,23 @@ export class NotificationsService {
     try {
       const enrollments = await this.prisma.sessionEnrollment.findMany({
         where: { sessionId, status: 'ACTIVE' },
-        select: { userId: true },
+        select: { id: true, userId: true },
       });
       if (enrollments.length === 0) return;
+
+      for (const enrollment of enrollments) {
+        try {
+          await this.schedulePreClassReminders(
+            enrollment.id,
+            enrollment.userId,
+          );
+        } catch (scheduleErr) {
+          console.error(
+            '[Notifications] reschedule pre-class reminders failed:',
+            scheduleErr,
+          );
+        }
+      }
 
       const dateStr = sessionInfo.newStartsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
@@ -667,8 +730,8 @@ export class NotificationsService {
         hour12: false,
       });
 
-      for (const { userId } of enrollments) {
-        const tokens = await this.getPushTokensByUserId(userId);
+      for (const enrollment of enrollments) {
+        const tokens = await this.getPushTokensByUserId(enrollment.userId);
         if (tokens.length === 0) continue;
 
         const lang = tokens[0]?.language || 'en';

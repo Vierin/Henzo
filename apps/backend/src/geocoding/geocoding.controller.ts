@@ -6,7 +6,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { GeocodingService } from './geocoding.service';
+import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
+@Public()
+@Throttle({ short: { limit: 30, ttl: 60000 } })
 @Controller('geocoding')
 export class GeocodingController {
   constructor(private readonly geocodingService: GeocodingService) {}

@@ -28,6 +28,7 @@ describe('AuthService email flows', () => {
         delete: jest.fn(),
         update: jest.fn(),
       },
+      $queryRaw: jest.fn(),
     };
     const emailService = {
       sendEmail: jest.fn(),
@@ -52,6 +53,7 @@ describe('AuthService email flows', () => {
   it('stores client OTP in DB and sends verification email', async () => {
     const { service, prisma, emailService } = makeService();
     prisma.user.findUnique.mockResolvedValue(null);
+    prisma.$queryRaw.mockResolvedValue([]);
 
     const result = await service.requestClientRegistrationCode({
       email: 'User@Example.com',
@@ -68,9 +70,50 @@ describe('AuthService email flows', () => {
     expect(emailService.sendEmail).toHaveBeenCalledTimes(1);
   });
 
+  it('blocks client registration OTP when email already uses Google', async () => {
+    const { service, prisma } = makeService();
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'user@example.com',
+      role: 'CLIENT',
+      isGuest: false,
+    });
+    prisma.$queryRaw.mockResolvedValue([
+      { user_id: 'auth-1', provider: 'google' },
+    ]);
+
+    await expect(
+      service.requestClientRegistrationCode({
+        email: 'user@example.com',
+        password: 'secret123',
+      }),
+    ).rejects.toThrow('ACCOUNT_EXISTS_USE_GOOGLE');
+  });
+
+  it('allows client registration OTP for guest upgrade', async () => {
+    const { service, prisma, emailService } = makeService();
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'guest-1',
+      email: 'guest@example.com',
+      role: 'CLIENT',
+      isGuest: true,
+    });
+
+    const result = await service.requestClientRegistrationCode({
+      email: 'guest@example.com',
+      password: 'secret123',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(prisma.clientRegistrationOtp.upsert).toHaveBeenCalledTimes(1);
+    expect(emailService.sendEmail).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
   it('stores owner OTP in DB and sends verification email', async () => {
     const { service, prisma, emailService } = makeService();
     prisma.user.findUnique.mockResolvedValue(null);
+    prisma.$queryRaw.mockResolvedValue([]);
 
     const result = await service.requestOwnerRegistrationCode({
       email: 'owner@example.com',
@@ -113,6 +156,28 @@ describe('AuthService email flows', () => {
       where: { email: 'user@example.com' },
     });
     expect(registerClientSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns Google sign-in hint for OAuth-only accounts', async () => {
+    const { service, prisma } = makeService();
+    prisma.$queryRaw.mockResolvedValue([
+      { user_id: 'auth-1', provider: 'google' },
+    ]);
+
+    await expect(service.getSignInHint('user@example.com')).resolves.toEqual({
+      hint: 'ACCOUNT_EXISTS_USE_GOOGLE',
+    });
+  });
+
+  it('returns no sign-in hint when password provider exists', async () => {
+    const { service, prisma } = makeService();
+    prisma.$queryRaw.mockResolvedValue([
+      { user_id: 'auth-1', provider: 'email' },
+    ]);
+
+    await expect(service.getSignInHint('user@example.com')).resolves.toEqual({
+      hint: null,
+    });
   });
 
   it('rejects verification after max attempts', async () => {
@@ -208,5 +273,80 @@ describe('AuthService getCurrentUser cache', () => {
     expect(ownerResult.user.role).toBe('OWNER');
     expect(clientResult.user.role).toBe('CLIENT');
     expect(prisma.user.findUnique).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('resolveAutoProvisionRole', () => {
+  const makeService = () => {
+    const service = new AuthService(
+      {} as any,
+      {} as any,
+      { get: jest.fn() } as any,
+      {} as any,
+    );
+    return service;
+  };
+
+  it('defaults to CLIENT without app_metadata or studios', () => {
+    const service = makeService();
+    const resolve = (service as any).resolveAutoProvisionRole.bind(service);
+    expect(resolve(undefined, false)).toBe('CLIENT');
+  });
+
+  it('trusts app_metadata role from service-role flows', () => {
+    const service = makeService();
+    const resolve = (service as any).resolveAutoProvisionRole.bind(service);
+    expect(resolve('OWNER', false)).toBe('OWNER');
+  });
+
+  it('promotes to OWNER when user already owns studios', () => {
+    const service = makeService();
+    const resolve = (service as any).resolveAutoProvisionRole.bind(service);
+    expect(resolve(undefined, true)).toBe('OWNER');
+  });
+});
+
+describe('deleteUserAccount', () => {
+  it('deletes user data and returns summary', async () => {
+    const prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'u1',
+          email: 'user@test.com',
+          role: 'CLIENT',
+          Studio: [],
+          Booking: [],
+          Review: [],
+        }),
+      },
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<void>) => {
+        const tx = {
+          sessionEnrollment: { deleteMany: jest.fn() },
+          waitlistEntry: { deleteMany: jest.fn() },
+          sessionBooking: { deleteMany: jest.fn() },
+          review: { deleteMany: jest.fn() },
+          studioClient: { deleteMany: jest.fn() },
+          studioClientBlock: { deleteMany: jest.fn() },
+          clientRegistrationOtp: { deleteMany: jest.fn() },
+          user: { delete: jest.fn() },
+        };
+        await fn(tx);
+      }),
+    };
+    const service = new AuthService(
+      prisma as any,
+      { sendEmail: jest.fn() } as any,
+      { get: jest.fn() } as any,
+      { verifyToken: jest.fn() } as any,
+    );
+    jest
+      .spyOn(service as any, 'cleanupOwnerStorage')
+      .mockResolvedValue(undefined);
+
+    const result = await service.deleteUserAccount('u1');
+
+    expect(result.userId).toBe('u1');
+    expect(result.email).toBe('user@test.com');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });

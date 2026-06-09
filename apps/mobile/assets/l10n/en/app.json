@@ -336,6 +336,10 @@
     "passwordUpdateFailed": "Could not update password.",
     "profileUpdateFailed": "Could not update profile.",
     "deleteAccountFailed": "Could not delete account.",
+    "accountExistsLogin": "An account with this email already exists. Please sign in instead.",
+    "accountExistsUseGoogle": "This email is registered with Google. Continue with Google to sign in.",
+    "accountExistsUseApple": "This email is registered with Apple. Continue with Apple to sign in.",
+    "accountExistsUseOauth": "This email is registered with a social account. Use Google or Apple to sign in.",
     "generic": "Something went wrong",
     "loadFailed": "Failed to load"
   },

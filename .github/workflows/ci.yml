@@ -34,6 +34,17 @@ jobs:
       - name: Typecheck
         run: pnpm turbo run check-types --filter=backend --filter=frontend
 
+      - name: Security audit (backend)
+        working-directory: apps/backend
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Secret scanning (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
   mobile-flutter:
     name: Flutter analyze & test
     runs-on: ubuntu-latest

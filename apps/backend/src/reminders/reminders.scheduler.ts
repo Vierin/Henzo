@@ -19,13 +19,18 @@ export class RemindersScheduler {
     try {
       await this.fitnessSessionsService.completePastTrainingSessions();
 
+      const emailRemindersEnabled =
+        process.env.EMAIL_REMINDERS_ENABLED === 'true';
+
       const [emailResult, pushResult] = await Promise.all([
-        this.remindersService.sendBookingReminders(),
+        emailRemindersEnabled
+          ? this.remindersService.sendBookingReminders()
+          : Promise.resolve({ sent: 0, errors: 0 }),
         this.notificationsService.sendPendingPushReminders(),
       ]);
 
       console.log(
-        `✅ Reminders: email ${emailResult.sent} sent, push ${pushResult.sent} sent`,
+        `✅ Reminders: email ${emailResult.sent} sent (enabled=${emailRemindersEnabled}), push ${pushResult.sent} sent`,
       );
     } catch (error) {
       console.error('❌ Error in reminders check:', error);

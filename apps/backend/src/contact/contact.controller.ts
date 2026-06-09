@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ContactService } from './contact.service';
 import { ContactDto } from './dto/contact.dto';
+import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 const contactValidationPipe = new ValidationPipe({
   transform: true,
@@ -29,6 +31,8 @@ const contactValidationPipe = new ValidationPipe({
   },
 });
 
+@Public()
+@Throttle({ short: { limit: 5, ttl: 3600000 } })
 @Controller('contact')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}

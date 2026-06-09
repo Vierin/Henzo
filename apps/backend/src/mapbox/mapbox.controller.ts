@@ -1,6 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { MapboxService } from './mapbox.service';
+import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
+@Public()
+@Throttle({ short: { limit: 30, ttl: 60000 } })
 @Controller('mapbox')
 export class MapboxController {
   constructor(private readonly mapboxService: MapboxService) {}

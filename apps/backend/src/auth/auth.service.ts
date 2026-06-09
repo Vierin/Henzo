@@ -3,6 +3,7 @@ import {
   Inject,
   BadRequestException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { supabase } from '../lib/supabase';
@@ -18,6 +19,8 @@ type RegistrationOtpKind = 'client' | 'owner';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   // Cache for getCurrentUser to prevent duplicate calls
   private getCurrentUserCache = new Map<
     string,
@@ -46,8 +49,242 @@ export class AuthService {
     return crypto.createHash('sha256').update(code).digest('hex');
   }
 
+  private otpPayloadCipherKey(): Buffer {
+    const secret =
+      this.configService.get<string>('JWT_SECRET')?.trim() || 'henzo-otp';
+    return crypto.createHash('sha256').update(`otp-payload:${secret}`).digest();
+  }
+
+  private encryptOtpPassword(password: string): string {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(
+      'aes-256-gcm',
+      this.otpPayloadCipherKey(),
+      iv,
+    );
+    const encrypted = Buffer.concat([
+      cipher.update(password, 'utf8'),
+      cipher.final(),
+    ]);
+    return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString(
+      'base64',
+    );
+  }
+
+  private decryptOtpPassword(blob: string): string {
+    const buf = Buffer.from(blob, 'base64');
+    const iv = buf.subarray(0, 12);
+    const tag = buf.subarray(12, 28);
+    const data = buf.subarray(28);
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      this.otpPayloadCipherKey(),
+      iv,
+    );
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString(
+      'utf8',
+    );
+  }
+
+  private sanitizeOtpPayloadForStorage(payload: Record<string, unknown>) {
+    const next = { ...payload };
+    if (typeof next.password === 'string' && next.password.length > 0) {
+      next.passwordEnc = this.encryptOtpPassword(next.password);
+      delete next.password;
+    }
+    return next;
+  }
+
+  private restoreOtpPayloadFromStorage(payload: Record<string, unknown>) {
+    const next = { ...payload };
+    if (typeof next.passwordEnc === 'string') {
+      next.password = this.decryptOtpPassword(next.passwordEnc);
+      delete next.passwordEnc;
+    }
+    return next;
+  }
+
   private normalizeEmail(email: string) {
     return email.toLowerCase().trim();
+  }
+
+  private redactEmail(email: string): string {
+    const at = email.indexOf('@');
+    if (at <= 1) return '***';
+    return `${email.slice(0, 2)}***${email.slice(at)}`;
+  }
+
+  private redactLogDetails(details: unknown): unknown {
+    if (!details || typeof details !== 'object') return details;
+    const copy = { ...(details as Record<string, unknown>) };
+    if (typeof copy.email === 'string') {
+      copy.email = this.redactEmail(copy.email);
+    }
+    return copy;
+  }
+
+  private authDebug(message: string, details?: unknown): void {
+    if (process.env.NODE_ENV === 'production') return;
+    if (details === undefined) {
+      this.logger.debug(message);
+      return;
+    }
+    this.logger.debug(
+      `${message} ${JSON.stringify(this.redactLogDetails(details))}`,
+    );
+  }
+
+  private authWarn(message: string, details?: unknown): void {
+    if (details === undefined) {
+      this.logger.warn(message);
+      return;
+    }
+    this.logger.warn(
+      `${message} ${JSON.stringify(this.redactLogDetails(details))}`,
+    );
+  }
+
+  private authError(message: string, details?: unknown): void {
+    if (details === undefined) {
+      this.logger.error(message);
+      return;
+    }
+    this.logger.error(
+      `${message} ${JSON.stringify(this.redactLogDetails(details))}`,
+    );
+  }
+
+  /** Role for syncIfMissing auto-provision — never trust user_metadata. */
+  private resolveAutoProvisionRole(
+    appMetadataRole: unknown,
+    hasOwnedStudios: boolean,
+  ): 'CLIENT' | 'OWNER' | 'ADMIN' {
+    const allowed = new Set(['CLIENT', 'OWNER', 'ADMIN']);
+    if (typeof appMetadataRole === 'string' && allowed.has(appMetadataRole)) {
+      return appMetadataRole as 'CLIENT' | 'OWNER' | 'ADMIN';
+    }
+    if (hasOwnedStudios) {
+      return 'OWNER';
+    }
+    return 'CLIENT';
+  }
+
+  private async getAuthProvidersByEmail(
+    email: string,
+  ): Promise<{ userId: string; providers: string[] } | null> {
+    const normalized = this.normalizeEmail(email);
+    if (!normalized) return null;
+
+    try {
+      const rows = await this.prisma.$queryRaw<
+        { user_id: string; provider: string }[]
+      >`
+        SELECT i.user_id, i.provider
+        FROM auth.users u
+        JOIN auth.identities i ON i.user_id = u.id
+        WHERE LOWER(u.email) = ${normalized}
+      `;
+      if (!rows.length) return null;
+
+      const providers: string[] = Array.from(
+        new Set(
+          rows
+            .map((row) => row.provider)
+            .filter((provider): provider is string => Boolean(provider)),
+        ),
+      );
+      return { userId: rows[0].user_id, providers };
+    } catch (error) {
+      this.authError('Failed to look up auth providers by email:', error);
+      return null;
+    }
+  }
+
+  private throwPasswordRegistrationConflict(providers: string[]): never {
+    const oauthProviders = providers.filter(
+      (provider) => provider === 'google' || provider === 'apple',
+    );
+    const hasEmailProvider = providers.includes('email');
+
+    if (hasEmailProvider) {
+      throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
+    }
+    if (oauthProviders.length === 1 && oauthProviders[0] === 'google') {
+      throw new BadRequestException('ACCOUNT_EXISTS_USE_GOOGLE');
+    }
+    if (oauthProviders.length === 1 && oauthProviders[0] === 'apple') {
+      throw new BadRequestException('ACCOUNT_EXISTS_USE_APPLE');
+    }
+    if (oauthProviders.length > 0) {
+      throw new BadRequestException('ACCOUNT_EXISTS_USE_OAUTH');
+    }
+    throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
+  }
+
+  private async assertPasswordRegistrationAllowed(
+    email: string,
+    options: { allowGuestUpgrade?: boolean } = {},
+  ): Promise<void> {
+    const normalized = this.normalizeEmail(email);
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: normalized },
+    });
+
+    if (existingUser) {
+      if (existingUser.role !== 'CLIENT') {
+        throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
+      }
+      if (existingUser.isGuest && options.allowGuestUpgrade !== false) {
+        return;
+      }
+      if (!existingUser.isGuest) {
+        const authLookup = await this.getAuthProvidersByEmail(normalized);
+        if (authLookup) {
+          this.throwPasswordRegistrationConflict(authLookup.providers);
+        }
+        throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
+      }
+    }
+
+    const authLookup = await this.getAuthProvidersByEmail(normalized);
+    if (authLookup) {
+      this.throwPasswordRegistrationConflict(authLookup.providers);
+    }
+  }
+
+  private resolveSignInHintFromProviders(providers: string[]): string | null {
+    const hasEmailProvider = providers.includes('email');
+    if (hasEmailProvider) return null;
+
+    const hasGoogle = providers.includes('google');
+    const hasApple = providers.includes('apple');
+    if (hasGoogle && !hasApple) {
+      return 'ACCOUNT_EXISTS_USE_GOOGLE';
+    }
+    if (hasApple && !hasGoogle) {
+      return 'ACCOUNT_EXISTS_USE_APPLE';
+    }
+    if (hasGoogle || hasApple) {
+      return 'ACCOUNT_EXISTS_USE_OAUTH';
+    }
+    return null;
+  }
+
+  async getSignInHint(email: string): Promise<{ hint: string | null }> {
+    const normalized = this.normalizeEmail(email);
+    if (!normalized) {
+      return { hint: null };
+    }
+
+    const authLookup = await this.getAuthProvidersByEmail(normalized);
+    if (!authLookup) {
+      return { hint: null };
+    }
+
+    return {
+      hint: this.resolveSignInHintFromProviders(authLookup.providers),
+    };
   }
 
   private async sendRegistrationOtpEmail(
@@ -72,20 +309,24 @@ export class AuthService {
     payload: Record<string, unknown>,
   ) {
     const code = this.generateOtpCode();
+    const storedPayload = {
+      ...this.sanitizeOtpPayloadForStorage(payload),
+      kind,
+    };
     await this.prisma.clientRegistrationOtp.upsert({
       where: { email },
       update: {
         codeHash: this.hashOtpCode(code),
         expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
         attempts: 0,
-        payload: { ...payload, kind },
+        payload: storedPayload,
       },
       create: {
         email,
         codeHash: this.hashOtpCode(code),
         expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
         attempts: 0,
-        payload: { ...payload, kind },
+        payload: storedPayload,
       },
     });
     await this.sendRegistrationOtpEmail(email, code, kind);
@@ -128,7 +369,9 @@ export class AuthService {
     }
 
     await this.prisma.clientRegistrationOtp.delete({ where: { email } });
-    return otp.payload as Record<string, unknown>;
+    return this.restoreOtpPayloadFromStorage(
+      otp.payload as Record<string, unknown>,
+    );
   }
 
   async requestClientRegistrationCode(data: {
@@ -146,8 +389,12 @@ export class AuthService {
       where: { email },
     });
     if (existingUser && existingUser.role !== 'CLIENT') {
-      throw new BadRequestException('User with this email already exists');
+      throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
     }
+
+    await this.assertPasswordRegistrationAllowed(email, {
+      allowGuestUpgrade: true,
+    });
 
     return this.upsertRegistrationOtp(email, 'client', {
       email,
@@ -171,15 +418,16 @@ export class AuthService {
       where: { email },
     });
     if (existingUser) {
-      if (existingUser.role === 'OWNER') {
-        throw new BadRequestException(
-          'A business account with this email already exists. Please login instead.',
-        );
+      const authLookup = await this.getAuthProvidersByEmail(email);
+      if (authLookup) {
+        this.throwPasswordRegistrationConflict(authLookup.providers);
       }
-      throw new BadRequestException(
-        'An account with this email already exists. Please login instead.',
-      );
+      throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
     }
+
+    await this.assertPasswordRegistrationAllowed(email, {
+      allowGuestUpgrade: false,
+    });
 
     return this.upsertRegistrationOtp(email, 'owner', {
       email,
@@ -323,7 +571,7 @@ export class AuthService {
             (data.role as 'OWNER' | 'CLIENT' | 'ADMIN') || 'OWNER';
 
           if (existingUser.role !== targetRole) {
-            console.log(
+            this.authDebug(
               `🔄 Updating user role from ${existingUser.role} to ${targetRole}`,
             );
             const updatedUser = await this.prisma.user.update({
@@ -342,11 +590,11 @@ export class AuthService {
                   role: targetRole,
                 },
               });
-              console.log(
+              this.authDebug(
                 `✅ Role updated to ${targetRole} for user ${userId}`,
               );
             } catch (error) {
-              console.error('⚠️ Failed to sync role to app_metadata:', error);
+              this.authError('⚠️ Failed to sync role to app_metadata:', error);
             }
 
             return {
@@ -362,7 +610,7 @@ export class AuthService {
           }
 
           // Пользователь уже имеет нужную роль - но все равно синхронизируем в app_metadata
-          console.log(
+          this.authDebug(
             `ℹ️ User already has role ${existingUser.role}, syncing to app_metadata`,
           );
 
@@ -374,11 +622,11 @@ export class AuthService {
                 role: targetRole,
               },
             });
-            console.log(
+            this.authDebug(
               `✅ Role synced to app_metadata for user ${userId}: ${targetRole}`,
             );
           } catch (error) {
-            console.error('⚠️ Failed to sync role to app_metadata:', error);
+            this.authError('⚠️ Failed to sync role to app_metadata:', error);
           }
 
           return {
@@ -399,12 +647,15 @@ export class AuthService {
           const { data: authUser } =
             await supabase.auth.admin.getUserById(userId);
           emailConfirmed = authUser?.user?.email_confirmed_at !== null;
-          console.log(
+          this.authDebug(
             `📧 Email confirmed status for user ${userId}:`,
             emailConfirmed,
           );
         } catch (error) {
-          console.error('⚠️ Failed to check email confirmation status:', error);
+          this.authError(
+            '⚠️ Failed to check email confirmation status:',
+            error,
+          );
           // Для OAuth предполагаем, что email подтвержден
           emailConfirmed = true;
         }
@@ -414,15 +665,15 @@ export class AuthService {
 
       // Проверяем что userId определен
       if (!userId) {
-        console.error('❌ userId is null or undefined');
+        this.authError('❌ userId is null or undefined');
         throw new Error('Failed to get user ID');
       }
 
-      console.log('✅ userId confirmed:', userId);
+      this.authDebug('✅ userId confirmed:', userId);
 
       // Используем upsert для избежания ошибок при race conditions
       // (например, если getCurrentUser уже создал пользователя)
-      console.log('📝 Creating/updating user in database...');
+      this.authDebug('📝 Creating/updating user in database...');
       try {
         const user = await this.prisma.user.upsert({
           where: { id: userId },
@@ -440,7 +691,7 @@ export class AuthService {
           },
         });
 
-        console.log('✅ User created/updated in database:', {
+        this.authDebug('✅ User created/updated in database:', {
           id: user.id,
           email: user.email,
           role: user.role,
@@ -461,16 +712,16 @@ export class AuthService {
                 role: user.role,
               },
             });
-            console.log(
+            this.authDebug(
               `✅ Role synced to app_metadata for user ${userId}: ${user.role}`,
             );
           } else {
-            console.log(
+            this.authDebug(
               `ℹ️ Role already set in app_metadata for user ${userId}: ${user.role}`,
             );
           }
         } catch (error) {
-          console.error('⚠️ Failed to sync role to app_metadata:', error);
+          this.authError('⚠️ Failed to sync role to app_metadata:', error);
           // Не блокируем регистрацию, если не удалось обновить метаданные
         }
 
@@ -485,7 +736,7 @@ export class AuthService {
           emailConfirmed,
         };
       } catch (upsertError: any) {
-        console.error('❌ Error in user upsert:', {
+        this.authError('❌ Error in user upsert:', {
           message: upsertError.message,
           code: upsertError.code,
           meta: upsertError.meta,
@@ -496,7 +747,7 @@ export class AuthService {
           upsertError.code === 'P2002' ||
           upsertError.message?.includes('Unique constraint')
         ) {
-          console.log(
+          this.authDebug(
             '⚠️ Unique constraint error, trying to find existing user...',
           );
           const existingUser = await this.prisma.user.findUnique({
@@ -519,9 +770,9 @@ export class AuthService {
                   role: updatedUser.role,
                 },
               });
-              console.log(`✅ Role updated and synced for user ${userId}`);
+              this.authDebug(`✅ Role updated and synced for user ${userId}`);
             } catch (error) {
-              console.error('⚠️ Failed to sync role to app_metadata:', error);
+              this.authError('⚠️ Failed to sync role to app_metadata:', error);
             }
 
             return {
@@ -540,7 +791,7 @@ export class AuthService {
         throw upsertError;
       }
     } catch (error: any) {
-      console.error('❌ registerOwner error:', {
+      this.authError('❌ registerOwner error:', {
         message: error.message,
         stack: error.stack,
         code: error.code,
@@ -582,7 +833,7 @@ export class AuthService {
       }
 
       if (getUserError || !existingAuthUser) {
-        console.error(
+        this.authError(
           '❌ User not found in Supabase after retries:',
           getUserError,
         );
@@ -598,14 +849,14 @@ export class AuthService {
       );
 
       if (updateError) {
-        console.error('❌ Failed to confirm email:', updateError);
+        this.authError('❌ Failed to confirm email:', updateError);
         return false;
       }
 
-      console.log('✅ Email confirmed successfully for userId:', userId);
+      this.authDebug('✅ Email confirmed successfully for userId:', userId);
       return true;
     } catch (error) {
-      console.error('❌ Error confirming existing user:', error);
+      this.authError('❌ Error confirming existing user:', error);
       return false;
     }
   }
@@ -617,33 +868,38 @@ export class AuthService {
     phone?: string;
   }) {
     try {
-      console.log('🔐 Starting client registration for:', data.email);
+      const email = this.normalizeEmail(data.email);
+      this.authDebug('🔐 Starting client registration for:', email);
+
+      await this.assertPasswordRegistrationAllowed(email, {
+        allowGuestUpgrade: true,
+      });
 
       // Проверяем, существует ли пользователь в нашей базе данных
       const existingUser = await this.prisma.user.findUnique({
-        where: { email: data.email },
+        where: { email },
       });
 
       if (existingUser) {
         // Если пользователь уже есть и это не клиент — блокируем регистрацию
         if (existingUser.role !== 'CLIENT') {
-          console.log(
+          this.authDebug(
             '❌ User with this email exists but is not a client:',
-            data.email,
+            email,
           );
-          throw new Error('User with this email already exists');
+          throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
         }
 
         // Вариант 3: "апгрейд" гостевого клиента до полноценного аккаунта
         if (existingUser.isGuest) {
-          console.log(
+          this.authDebug(
             '🔁 Upgrading guest client user to full account:',
             data.email,
           );
 
           // Email уже подтвержден при подтверждении бронирования через magic link
           // Используем Admin API для создания пользователя с уже подтвержденным email
-          console.log(
+          this.authDebug(
             '📧 Creating user in Supabase with confirmed email via Admin API (email already verified via booking confirmation)...',
           );
           const { data: authData, error: authError } =
@@ -661,7 +917,7 @@ export class AuthService {
             });
 
           if (authError) {
-            console.error(
+            this.authError(
               '❌ Supabase auth error while upgrading guest client:',
               authError.message,
             );
@@ -671,7 +927,7 @@ export class AuthService {
               authError.message?.includes('already been registered') ||
               authError.message?.includes('already exists')
             ) {
-              console.log(
+              this.authDebug(
                 '⚠️ User already exists in Supabase, attempting to sign in...',
               );
 
@@ -706,11 +962,11 @@ export class AuthService {
                     role: 'CLIENT',
                   },
                 });
-                console.log(
+                this.authDebug(
                   `✅ Role synced to app_metadata for upgraded client ${signInData.user.id}`,
                 );
               } catch (error) {
-                console.error(
+                this.authError(
                   '⚠️ Failed to sync role to app_metadata for upgraded client:',
                   error,
                 );
@@ -733,13 +989,13 @@ export class AuthService {
           }
 
           if (!authData.user) {
-            console.error(
+            this.authError(
               '❌ No user data returned from Supabase while upgrading guest client',
             );
             throw new Error('Failed to create user');
           }
 
-          console.log(
+          this.authDebug(
             '✅ Guest client user created in Supabase with confirmed email:',
             authData.user.id,
           );
@@ -762,11 +1018,11 @@ export class AuthService {
                 role: 'CLIENT',
               },
             });
-            console.log(
+            this.authDebug(
               `✅ Role synced to app_metadata for upgraded client ${authData.user.id}`,
             );
           } catch (error) {
-            console.error(
+            this.authError(
               '⚠️ Failed to sync role to app_metadata for upgraded client:',
               error,
             );
@@ -780,7 +1036,7 @@ export class AuthService {
             });
 
           if (signInError || !signInData.session) {
-            console.warn(
+            this.authWarn(
               '⚠️ Could not create session after user creation, but user was created successfully',
             );
             // Возвращаем без сессии - фронтенд может попросить пользователя войти
@@ -812,20 +1068,26 @@ export class AuthService {
 
         // Если пользователь уже существует и не является гостем-клиентом —
         // считаем, что аккаунт уже полностью зарегистрирован.
-        console.log('❌ User already exists as full client:', data.email);
-        throw new Error('User with this email already exists');
+        this.authDebug('❌ User already exists as full client:', email);
+        const authLookup = await this.getAuthProvidersByEmail(email);
+        if (authLookup) {
+          this.throwPasswordRegistrationConflict(authLookup.providers);
+        }
+        throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
       }
 
-      console.log(
+      this.authDebug(
         '✅ User not found in database, proceeding with registration',
       );
 
       // Создаем пользователя через Admin API с подтвержденным email:
       // подтверждение мы уже сделали через OTP от Henzo.
-      console.log('📧 Creating user in Supabase (admin, email confirmed)...');
+      this.authDebug(
+        '📧 Creating user in Supabase (admin, email confirmed)...',
+      );
       const { data: authData, error: authError } =
         await supabase.auth.admin.createUser({
-          email: data.email,
+          email,
           password: data.password,
           email_confirm: true,
           user_metadata: {
@@ -838,22 +1100,32 @@ export class AuthService {
         });
 
       if (authError) {
-        console.error('❌ Supabase auth error:', authError.message);
+        this.authError('❌ Supabase auth error:', authError.message);
+        if (
+          authError.message?.includes('already been registered') ||
+          authError.message?.includes('already exists')
+        ) {
+          const authLookup = await this.getAuthProvidersByEmail(email);
+          if (authLookup) {
+            this.throwPasswordRegistrationConflict(authLookup.providers);
+          }
+          throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
+        }
         throw new Error(authError.message);
       }
 
       if (!authData.user) {
-        console.error('❌ No user data returned from Supabase');
+        this.authError('❌ No user data returned from Supabase');
         throw new Error('Failed to create user');
       }
 
-      console.log('✅ User created in Supabase:', authData.user.id);
+      this.authDebug('✅ User created in Supabase:', authData.user.id);
 
       // Создаем запись пользователя в нашей базе данных
       const user = await this.prisma.user.create({
         data: {
           id: authData.user.id,
-          email: data.email,
+          email,
           name: data.name,
           phone: data.phone,
           role: 'CLIENT',
@@ -868,18 +1140,18 @@ export class AuthService {
             role: 'CLIENT',
           },
         });
-        console.log(
+        this.authDebug(
           `✅ Role synced to app_metadata for client ${authData.user.id}`,
         );
       } catch (error) {
-        console.error('⚠️ Failed to sync role to app_metadata:', error);
+        this.authError('⚠️ Failed to sync role to app_metadata:', error);
         // Не блокируем регистрацию, если не удалось обновить метаданные
       }
 
       // Получаем session после создания (admin.createUser не возвращает её).
       const { data: signInData, error: signInError } =
         await supabase.auth.signInWithPassword({
-          email: data.email,
+          email,
           password: data.password,
         });
       if (signInError) {
@@ -897,6 +1169,9 @@ export class AuthService {
         session: signInData.session,
       };
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new Error(`Registration failed: ${error.message}`);
     }
   }
@@ -907,19 +1182,9 @@ export class AuthService {
     name?: string;
   }) {
     const email = this.normalizeEmail(data.email);
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
+    await this.assertPasswordRegistrationAllowed(email, {
+      allowGuestUpgrade: false,
     });
-    if (existingUser) {
-      if (existingUser.role === 'OWNER') {
-        throw new BadRequestException(
-          'A business account with this email already exists. Please login instead.',
-        );
-      }
-      throw new BadRequestException(
-        'An account with this email already exists. Please login instead.',
-      );
-    }
 
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
@@ -935,6 +1200,16 @@ export class AuthService {
       });
 
     if (authError) {
+      if (
+        authError.message?.includes('already been registered') ||
+        authError.message?.includes('already exists')
+      ) {
+        const authLookup = await this.getAuthProvidersByEmail(email);
+        if (authLookup) {
+          this.throwPasswordRegistrationConflict(authLookup.providers);
+        }
+        throw new BadRequestException('ACCOUNT_EXISTS_LOGIN');
+      }
       throw new BadRequestException(
         authError.message || 'Failed to create user',
       );
@@ -957,7 +1232,7 @@ export class AuthService {
         app_metadata: { role: 'OWNER' },
       });
     } catch (error) {
-      console.error('⚠️ Failed to sync owner role to app_metadata:', error);
+      this.authError('⚠️ Failed to sync owner role to app_metadata:', error);
     }
 
     const { data: signInData, error: signInError } =
@@ -1034,26 +1309,26 @@ export class AuthService {
     options: { syncIfMissing?: boolean } = {},
   ) {
     try {
-      console.log(
+      this.authDebug(
         '🔐 Getting current user, authHeader:',
         authHeader ? 'Present' : 'Missing',
       );
 
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log('❌ No valid authorization header provided');
+        this.authDebug('❌ No valid authorization header provided');
         throw new Error('No authorization header provided');
       }
 
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-      console.log('🔑 Token extracted, length:', token.length);
+      this.authDebug('🔑 Token extracted, length:', token.length);
 
       // Локальная верификация JWT (быстро, без сетевых запросов)
       let decodedToken: any;
       let user: any;
 
       try {
-        console.log('🔍 Verifying token locally (JWT)...');
+        this.authDebug('🔍 Verifying token locally (JWT)...');
         decodedToken = await this.jwtVerifier.verifyToken(token);
 
         // Создаем объект user из decoded token для совместимости
@@ -1064,15 +1339,18 @@ export class AuthService {
           user_metadata: decodedToken.user_metadata || {},
         };
 
-        console.log('✅ Token verified locally:', user.id, user.email);
+        this.authDebug('✅ Token verified locally:', {
+          id: user.id,
+          email: user.email,
+        });
       } catch (jwtError: any) {
         // Fallback на Supabase API если локальная верификация не удалась
         // (например, ключи еще не загружены или токен использует другой алгоритм)
-        console.log(
+        this.authDebug(
           '⚠️ Local JWT verification failed, falling back to Supabase API:',
           jwtError.message,
         );
-        console.log('🔍 Verifying token with Supabase API (fallback)...');
+        this.authDebug('🔍 Verifying token with Supabase API (fallback)...');
 
         const {
           data: { user: supabaseUser },
@@ -1080,7 +1358,10 @@ export class AuthService {
         } = await supabase.auth.getUser(token);
 
         if (error) {
-          console.error('❌ Supabase token verification error:', error.message);
+          this.authError(
+            '❌ Supabase token verification error:',
+            error.message,
+          );
           const cause = (error as { cause?: { code?: string } }).cause;
           if (cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
             throw new Error('Auth service unavailable');
@@ -1089,23 +1370,22 @@ export class AuthService {
         }
 
         if (!supabaseUser) {
-          console.log('❌ No user returned from Supabase');
+          this.authDebug('❌ No user returned from Supabase');
           throw new Error('User not found');
         }
 
         user = supabaseUser;
-        console.log(
-          '✅ User verified via Supabase API (fallback):',
-          user.id,
-          user.email,
-        );
+        this.authDebug('✅ User verified via Supabase API (fallback):', {
+          id: user.id,
+          email: user.email,
+        });
       }
 
       const cacheKey = user.id;
       const now = Date.now();
       const cached = this.getCurrentUserCache.get(cacheKey);
       if (cached && now - cached.timestamp < this.CACHE_TTL) {
-        console.log('✅ Using cached getCurrentUser result for', cacheKey);
+        this.authDebug('✅ Using cached getCurrentUser result for', cacheKey);
         return cached.result;
       }
 
@@ -1113,7 +1393,7 @@ export class AuthService {
       // IMPORTANT: we use email as the stable link between Supabase and our DB,
       // because some users (e.g. guests created via bookings) may have been
       // created before a Supabase account existed.
-      console.log('🔍 Looking up user in database...');
+      this.authDebug('🔍 Looking up user in database...');
       if (!user.email) {
         throw new Error('User email is missing');
       }
@@ -1140,7 +1420,7 @@ export class AuthService {
         if (shouldSync) {
           // Синхронизируем в фоне (не блокируем ответ)
           this.syncRoleToAppMetadata(user.id, dbUser.role).catch((error) => {
-            console.error('⚠️ Background role sync failed:', error);
+            this.authError('⚠️ Background role sync failed:', error);
           });
 
           // Обновляем кэш синхронизации
@@ -1153,13 +1433,13 @@ export class AuthService {
 
       // If user not found by ID, try to find by email (for Google OAuth cases)
       if (!dbUser && user.email) {
-        console.log('🔍 User not found by ID, trying to find by email...');
+        this.authDebug('🔍 User not found by ID, trying to find by email...');
         dbUser = await this.prisma.user.findUnique({
           where: { email: user.email },
         });
 
         if (dbUser) {
-          console.log(
+          this.authDebug(
             '✅ Found existing user by email, updating ID to match Supabase Auth...',
           );
           const oldUserId = dbUser.id;
@@ -1200,7 +1480,7 @@ export class AuthService {
 
       if (!dbUser) {
         if (!options.syncIfMissing) {
-          console.log(
+          this.authDebug(
             '❌ User not found in database (login without registration):',
             user.email,
           );
@@ -1208,28 +1488,29 @@ export class AuthService {
         }
 
         // Registration / explicit sync: create user from Supabase Auth identity.
-        console.log('⚠️ User not found in database, creating automatically...');
+        this.authDebug(
+          '⚠️ User not found in database, creating automatically...',
+        );
         try {
-          // Проверяем роль в app_metadata Supabase (устанавливается при регистрации)
-          const roleFromMetadata =
-            user.app_metadata?.role || user.user_metadata?.role;
+          // Only app_metadata.role is trusted (service-role writes).
+          // user_metadata.role is user-writable — never use it for provisioning.
+          const roleFromAppMetadata = user.app_metadata?.role;
 
           // Проверяем, есть ли у пользователя студии (для восстановления роли OWNER).
           const existingStudios = await this.prisma.studio.findMany({
             where: { ownerId: user.id },
           });
 
-          // Определяем роль: сначала из метаданных, потом из студий, потом CLIENT по умолчанию
-          const userRole =
-            roleFromMetadata ||
-            (existingStudios.length > 0 ? 'OWNER' : 'CLIENT');
+          const userRole = this.resolveAutoProvisionRole(
+            roleFromAppMetadata,
+            existingStudios.length > 0,
+          );
 
-          console.log('📝 Creating user with role:', {
-            roleFromMetadata,
+          this.authDebug('📝 Creating user with role:', {
+            roleFromAppMetadata,
             hasStudios: existingStudios.length > 0,
             finalRole: userRole,
             userId: user.id,
-            email: user.email,
           });
 
           // Проверяем, не существует ли пользователь с таким email (для Google OAuth случаев)
@@ -1242,7 +1523,7 @@ export class AuthService {
           if (existingUserByEmail && existingUserByEmail.id !== user.id) {
             // Пользователь с таким email уже существует, но с другим ID
             // Это может быть случай, когда пользователь регистрировался через email, а потом логинился через Google
-            console.log(
+            this.authDebug(
               '⚠️ User with same email exists but different ID, updating ID...',
             );
             // Обновляем ID существующего пользователя на новый из Supabase Auth
@@ -1301,27 +1582,10 @@ export class AuthService {
                 role: userRole as 'CLIENT' | 'OWNER' | 'ADMIN',
               },
             });
-
-            // Если пользователь уже существовал, проверяем и обновляем роль из app_metadata если нужно
-            if (
-              dbUser &&
-              roleFromMetadata &&
-              dbUser.role !== roleFromMetadata
-            ) {
-              console.log(
-                `🔄 Updating existing user role from ${dbUser.role} to ${roleFromMetadata} based on app_metadata`,
-              );
-              dbUser = await this.prisma.user.update({
-                where: { id: user.id },
-                data: {
-                  role: roleFromMetadata as 'CLIENT' | 'OWNER' | 'ADMIN',
-                },
-              });
-            }
           }
 
           if (dbUser) {
-            console.log(
+            this.authDebug(
               `✅ User created/updated automatically in database with role ${dbUser.role}:`,
               dbUser.id,
             );
@@ -1329,11 +1593,10 @@ export class AuthService {
             throw new Error('Failed to create or retrieve user from database');
           }
         } catch (createError: any) {
-          console.error(
-            '❌ Failed to create/update user in database:',
-            createError.message,
-            createError.code,
-          );
+          this.authError('❌ Failed to create/update user in database:', {
+            message: createError.message,
+            code: createError.code,
+          });
           // Если ошибка из-за уникальности, пытаемся получить пользователя еще раз
           if (
             createError.message?.includes('Unique constraint') ||
@@ -1352,12 +1615,12 @@ export class AuthService {
               });
             }
             if (dbUser) {
-              console.log(
+              this.authDebug(
                 '✅ User found after unique constraint error:',
                 dbUser.id,
               );
             } else {
-              console.error('❌ User not found after unique constraint error');
+              this.authError('❌ User not found after unique constraint error');
               throw new Error(
                 `Failed to create user in database: ${createError.message}`,
               );
@@ -1371,11 +1634,14 @@ export class AuthService {
       }
 
       if (!dbUser) {
-        console.error('❌ User not found in database after all attempts');
+        this.authError('❌ User not found in database after all attempts');
         throw new Error('User not found in database');
       }
 
-      console.log('✅ User found in database:', dbUser.id, dbUser.email);
+      this.authDebug('✅ User found in database:', {
+        id: dbUser.id,
+        email: dbUser.email,
+      });
 
       const result = {
         user: {
@@ -1406,7 +1672,7 @@ export class AuthService {
       if (error?.message === 'ACCOUNT_NOT_FOUND') {
         throw error;
       }
-      console.error('❌ Error in getCurrentUser:', {
+      this.authError('❌ Error in getCurrentUser:', {
         message: error.message,
         code: error.code,
         stack: error.stack,
@@ -1430,9 +1696,11 @@ export class AuthService {
           role: role,
         },
       });
-      console.log(`✅ Role synced to app_metadata for user ${userId}: ${role}`);
+      this.authDebug(
+        `✅ Role synced to app_metadata for user ${userId}: ${role}`,
+      );
     } catch (error) {
-      console.error('⚠️ Failed to sync role to app_metadata:', error);
+      this.authError('⚠️ Failed to sync role to app_metadata:', error);
       throw error;
     }
   }
@@ -1482,14 +1750,14 @@ export class AuthService {
             result.needsSetup = true;
           }
         } catch (studioError) {
-          console.error('⚠️ Error fetching studio:', studioError);
+          this.authError('⚠️ Error fetching studio:', studioError);
           result.needsSetup = true;
         }
       }
 
       return result;
     } catch (error: any) {
-      console.error('❌ Error in initializeUser:', {
+      this.authError('❌ Error in initializeUser:', {
         message: error.message,
         stack: error.stack,
       });
@@ -1579,11 +1847,11 @@ export class AuthService {
             role: role,
           },
         });
-        console.log(
+        this.authDebug(
           `✅ Role synced to app_metadata for user ${userId}: ${role}`,
         );
       } catch (error) {
-        console.error('⚠️ Failed to sync role to app_metadata:', error);
+        this.authError('⚠️ Failed to sync role to app_metadata:', error);
         // Не блокируем обновление, если не удалось синхронизировать метаданные
       }
 
@@ -1706,7 +1974,7 @@ export class AuthService {
         .list(prefix, { limit: 1000 });
 
       if (error) {
-        console.warn(
+        this.authWarn(
           `⚠️ Failed to list owner storage for ${userId}:`,
           error.message,
         );
@@ -1726,13 +1994,13 @@ export class AuthService {
         .remove(paths);
 
       if (removeError) {
-        console.warn(
+        this.authWarn(
           `⚠️ Failed to remove owner storage for ${userId}:`,
           removeError.message,
         );
       }
     } catch (error) {
-      console.warn(
+      this.authWarn(
         `⚠️ Owner storage cleanup failed for ${userId}:`,
         error instanceof Error ? error.message : String(error),
       );
@@ -1741,7 +2009,7 @@ export class AuthService {
 
   async deleteUserAccount(userId: string) {
     try {
-      console.log(`🗑️ Starting account deletion for user: ${userId}`);
+      this.authDebug(`🗑️ Starting account deletion for user: ${userId}`);
 
       // Получаем информацию о пользователе
       const user = await this.prisma.user.findUnique({
@@ -1757,7 +2025,7 @@ export class AuthService {
         throw new Error('User not found');
       }
 
-      console.log(`📊 User data to delete:`, {
+      this.authDebug(`📊 User data to delete:`, {
         userId: user.id,
         email: user.email,
         role: user.role,
@@ -1768,7 +2036,7 @@ export class AuthService {
 
       await this.prisma.$transaction(async (tx: any) => {
         for (const studio of user.Studio ?? []) {
-          console.log(`🏢 Deleting studio data: ${studio.id}`);
+          this.authDebug(`🏢 Deleting studio data: ${studio.id}`);
           await this.deleteStudioCascade(tx, studio.id);
         }
 
@@ -1782,23 +2050,23 @@ export class AuthService {
           where: { email: user.email },
         });
 
-        console.log(`👤 Deleting user: ${userId}`);
+        this.authDebug(`👤 Deleting user: ${userId}`);
         await tx.user.delete({ where: { id: userId } });
       });
 
       await this.cleanupOwnerStorage(userId);
 
       try {
-        console.log(`🔐 Deleting user from Supabase Auth: ${userId}`);
+        this.authDebug(`🔐 Deleting user from Supabase Auth: ${userId}`);
         const { error } = await supabase.auth.admin.deleteUser(userId);
         if (error) {
-          console.warn(
+          this.authWarn(
             '⚠️ Failed to delete user from Supabase Auth:',
             error.message,
           );
         }
       } catch (supabaseError) {
-        console.warn(
+        this.authWarn(
           '⚠️ Supabase Auth deletion failed:',
           supabaseError instanceof Error
             ? supabaseError.message
@@ -1806,7 +2074,7 @@ export class AuthService {
         );
       }
 
-      console.log(`✅ Account deletion completed for user: ${userId}`);
+      this.authDebug(`✅ Account deletion completed for user: ${userId}`);
 
       return {
         userId,
@@ -1816,7 +2084,7 @@ export class AuthService {
         deletedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error(
+      this.authError(
         `❌ Account deletion failed for user ${userId}:`,
         error instanceof Error ? error.message : String(error),
       );

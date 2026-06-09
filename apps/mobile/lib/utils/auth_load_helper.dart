@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
+import 'load_error_message.dart';
 
 /// Runs [fn] with the current access token. Returns the result or null on no token/error.
 /// If [mounted] and [showErrorSnackBar] are true, shows a SnackBar on exception.
@@ -23,14 +24,7 @@ Future<T?> loadWithAuth<T>(
   } catch (e) {
     if (showErrorSnackBar && context.mounted) {
       final locale = context.read<LocaleProvider>();
-      String msg;
-      if (e is Exception) {
-        final raw = e.toString().replaceFirst('Exception: ', '');
-        msg = raw.length > 80 ? locale.t('errors.generic') : raw;
-      } else {
-        final raw = e.toString();
-        msg = raw.length > 80 ? locale.t('errors.generic') : raw;
-      }
+      final msg = loadErrorMessage(locale, e);
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(msg),

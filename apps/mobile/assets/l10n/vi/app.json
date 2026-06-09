@@ -336,6 +336,10 @@
     "passwordUpdateFailed": "Không thể cập nhật mật khẩu.",
     "profileUpdateFailed": "Không thể cập nhật hồ sơ.",
     "deleteAccountFailed": "Không thể xóa tài khoản.",
+    "accountExistsLogin": "Đã có tài khoản với email này. Vui lòng đăng nhập.",
+    "accountExistsUseGoogle": "Email này đã đăng ký bằng Google. Hãy tiếp tục với Google để đăng nhập.",
+    "accountExistsUseApple": "Email này đã đăng ký bằng Apple. Hãy tiếp tục với Apple để đăng nhập.",
+    "accountExistsUseOauth": "Email này đã đăng ký bằng mạng xã hội. Hãy dùng Google hoặc Apple để đăng nhập.",
     "generic": "Đã xảy ra lỗi",
     "loadFailed": "Tải thất bại"
   },

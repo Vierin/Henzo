@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../services/api_client.dart';
+import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
+import '../../utils/load_error_message.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const _maxCommentLength = 500;
@@ -111,7 +113,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = e.toString();
+        _error = loadErrorMessage(context.read<LocaleProvider>(), e);
       });
     }
   }

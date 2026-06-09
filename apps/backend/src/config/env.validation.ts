@@ -155,6 +155,22 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SENTRY_DSN?: string;
+
+  @IsString()
+  @IsOptional()
+  SUPABASE_JWT_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  ADMIN_ALLOWED_EMAILS?: string;
+
+  @IsString()
+  @IsOptional()
+  METRICS_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  EMAIL_REMINDERS_ENABLED?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
@@ -175,6 +191,22 @@ export function validate(config: Record<string, unknown>) {
     throw new Error(
       `❌ Environment validation failed:\n${missingVars.join('\n')}\n\nPlease check your .env file.`,
     );
+  }
+
+  const henzoEnv = String(config.HENZO_ENV ?? '').toLowerCase();
+  if (henzoEnv === 'production') {
+    const adminEmails = String(config.ADMIN_ALLOWED_EMAILS ?? '').trim();
+    if (!adminEmails) {
+      throw new Error(
+        '❌ Environment validation failed:\n  - ADMIN_ALLOWED_EMAILS is required when HENZO_ENV=production',
+      );
+    }
+    const jwtSecret = String(config.SUPABASE_JWT_SECRET ?? '').trim();
+    if (!jwtSecret) {
+      throw new Error(
+        '❌ Environment validation failed:\n  - SUPABASE_JWT_SECRET is required when HENZO_ENV=production',
+      );
+    }
   }
 
   return validatedConfig;

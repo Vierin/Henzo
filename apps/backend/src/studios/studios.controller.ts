@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { generateStudioSlug } from '../utils/slug';
+import { Public } from '../auth/public.decorator';
 
 @Controller('studios')
 export class StudiosController {
@@ -56,6 +57,7 @@ export class StudiosController {
     private readonly analytics: AnalyticsService,
   ) {}
 
+  @Public()
   @Get('with-services')
   @Header('Cache-Control', 'public, max-age=600') // P1: Кэш на 10 минут
   async getStudiosWithServices() {
@@ -70,6 +72,7 @@ export class StudiosController {
     }
   }
 
+  @Public()
   @Get('search')
   @Header('Cache-Control', 'public, max-age=300') // P1: Кэш на 5 минут
   async searchStudios(
@@ -114,6 +117,7 @@ export class StudiosController {
     };
   }
 
+  @Public()
   @Get('preview')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getStudiosPreview(
@@ -132,6 +136,7 @@ export class StudiosController {
     return this.studiosService.findStudiosPreview(params);
   }
 
+  @Public()
   @Get('featured')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getFeaturedStudios(@Query('limit') limit?: string) {
@@ -139,6 +144,7 @@ export class StudiosController {
     return this.studiosService.findFeaturedStudios(limitNum);
   }
 
+  @Public()
   @Get('nearby')
   async getNearbyStudios(
     @Query('lat') lat?: string,
@@ -170,6 +176,7 @@ export class StudiosController {
     return this.studiosService.getStudioAvailability(id, date, serviceId);
   }
 
+  @Public()
   @Get('categories')
   @Header('Cache-Control', 'public, max-age=86400') // Cache for 24 hours - categories rarely change
   async getStudioCategories() {
@@ -235,7 +242,9 @@ export class StudiosController {
       });
 
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      console.log('✅ User authenticated:', currentUser.user.email);
+      if (currentUser.user.role !== 'OWNER') {
+        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+      }
 
       const result = await this.studiosService.createCurrentUserStudio(
         createStudioDto,
@@ -262,7 +271,9 @@ export class StudiosController {
       });
 
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      console.log('✅ User authenticated:', currentUser.user.email);
+      if (currentUser.user.role !== 'OWNER') {
+        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+      }
 
       const result = await this.studiosService.updateCurrentUserStudio(
         updateStudioDto,
@@ -604,6 +615,7 @@ export class StudiosController {
     }
   }
 
+  @Public()
   @Get('public/by-slug/:slug')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getPublicStudioBySlug(@Param('slug') slug: string) {
@@ -619,11 +631,12 @@ export class StudiosController {
     }
   }
 
+  @Public()
   @Get('by-slug/:slug')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getStudioBySlug(@Param('slug') slug: string) {
     try {
-      const result = await this.studiosService.findBySlug(slug);
+      const result = await this.studiosService.findPublicBySlug(slug);
       if (!result) {
         throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
       }
@@ -634,6 +647,7 @@ export class StudiosController {
     }
   }
 
+  @Public()
   @Get(':id/schedule')
   @Header('Cache-Control', 'public, max-age=60, stale-while-revalidate=120')
   async getPublicStudioSchedule(
@@ -770,6 +784,7 @@ export class StudiosController {
         throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
       }
 
+      let enrollmentId = existing?.id ?? '';
       const booking = await this.prisma.$transaction(async (tx) => {
         const activeAgain = await tx.sessionEnrollment.findFirst({
           where: { sessionId, userId, status: 'ACTIVE' },
@@ -790,15 +805,18 @@ export class StudiosController {
               cancelledAt: null,
             },
           });
+          enrollmentId = existing.id;
         } else {
           try {
-            await tx.sessionEnrollment.create({
+            const created = await tx.sessionEnrollment.create({
               data: {
                 sessionId,
                 userId,
                 status: 'ACTIVE',
               },
+              select: { id: true },
             });
+            enrollmentId = created.id;
           } catch (createError: any) {
             if (createError?.code === 'P2002') {
               throw new HttpException(
@@ -828,6 +846,20 @@ export class StudiosController {
       });
 
       try {
+        if (enrollmentId) {
+          await this.notificationsService.schedulePreClassReminders(
+            enrollmentId,
+            userId,
+          );
+        }
+      } catch (scheduleError) {
+        console.error(
+          '⚠️ Failed to schedule pre-class push reminders:',
+          scheduleError,
+        );
+      }
+
+      try {
         if (session.Studio?.ownerId) {
           await this.notificationsService.sendGroupClassBookingNotification({
             studioId: session.studioId,
@@ -852,6 +884,7 @@ export class StudiosController {
       return {
         success: true,
         alreadyBooked: false,
+        enrollmentId,
         booking: {
           sessionId: booking.id,
           status: 'ACTIVE',
@@ -975,6 +1008,7 @@ export class StudiosController {
     }
   }
 
+  @Public()
   @Get(':id')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getStudioById(@Param('id') id: string) {

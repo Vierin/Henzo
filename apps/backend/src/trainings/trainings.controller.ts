@@ -20,6 +20,8 @@ import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
 import { UpdateTrainingSessionDefaultsDto } from './dto/update-training-session-defaults.dto';
 import { AuthService } from '../auth/auth.service';
+import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('trainings')
 export class TrainingsController {
@@ -29,6 +31,7 @@ export class TrainingsController {
     private readonly authService: AuthService,
   ) {}
 
+  @Public()
   @Get()
   async getTrainingsByStudio(@Query('studioId') studioId: string) {
     if (!studioId) {
@@ -37,28 +40,33 @@ export class TrainingsController {
     return this.trainingsService.findByStudioId(studioId);
   }
 
+  @Public()
   @Get('public')
   async getPublicTrainings() {
     return this.trainingsService.findAllPublicTrainings();
   }
 
+  @Public()
   @Get('popular')
   async getPopularTrainings(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.trainingsService.findPopularServices(limitNum);
   }
 
+  @Public()
   @Get('trending')
   async getTrendingTrainings(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 8;
     return this.trainingsService.findTrendingServices(limitNum);
   }
 
+  @Public()
   @Get('categories')
   async getTrainingCategories() {
     return this.trainingsService.getTrainingCategories();
   }
 
+  @Public()
   @Get('search')
   async searchTrainings(@Query('q') query: string) {
     if (!query || query.trim().length < 3) {
@@ -84,6 +92,7 @@ export class TrainingsController {
     }
   }
 
+  @Throttle({ short: { limit: 20, ttl: 60000 } })
   @Post('translate')
   async generateTranslations(
     @Body()

@@ -8,7 +8,9 @@ import {
 } from '@nestjs/common';
 
 import { RevenueCatService } from './revenuecat.service';
+import { Public } from '../auth/public.decorator';
 
+@Public()
 @Controller('webhooks')
 export class RevenueCatWebhookController {
   constructor(private readonly revenueCat: RevenueCatService) {}

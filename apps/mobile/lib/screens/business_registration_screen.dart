@@ -84,9 +84,11 @@ class _BusinessRegistrationScreenState
 
     showApiError(
       context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.businessRegisterError'),
+      resolveAuthUiMessage(
+        locale,
+        result,
+        fallbackKey: 'auth.businessRegisterError',
+      ),
     );
   }
 
@@ -128,9 +130,11 @@ class _BusinessRegistrationScreenState
     }
     showApiError(
       context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.businessRegisterError'),
+      resolveAuthUiMessage(
+        locale,
+        result,
+        fallbackKey: 'auth.businessRegisterError',
+      ),
     );
   }
 
@@ -152,9 +156,11 @@ class _BusinessRegistrationScreenState
     }
     showApiError(
       context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.businessRegisterError'),
+      resolveAuthUiMessage(
+        locale,
+        result,
+        fallbackKey: 'auth.businessRegisterError',
+      ),
     );
   }
 

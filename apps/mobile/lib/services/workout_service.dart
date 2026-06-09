@@ -22,7 +22,9 @@ class WorkoutService {
 
   static const _channel = MethodChannel('henzo/watch');
   static const _tag = '[WorkoutService]';
-  static void _log(String msg) => debugPrint('$_tag $msg');
+  static void _log(String msg) {
+    if (kDebugMode) debugPrint('$_tag $msg');
+  }
 
   /// Sends a remote push (via backend → FCM → APNs) with WORKOUT_REMINDER
   /// category so Apple Watch renders the "Начать" action button.
@@ -62,7 +64,10 @@ class WorkoutService {
       return WorkoutSendResult(WorkoutSendStatus.failed, error: e.message);
     } catch (e) {
       _log('remote push error: $e');
-      return WorkoutSendResult(WorkoutSendStatus.failed, error: e.toString());
+      return const WorkoutSendResult(
+        WorkoutSendStatus.failed,
+        error: 'Could not send workout reminder',
+      );
     }
 
     if (Platform.isIOS) {
