@@ -426,6 +426,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                         return TopStudioCard(
                           homeLayout: true,
                           studio: studio,
+                          categoryOptions: _trainingCategories,
                           isFavorite: favStore.isFavorite(studio.id),
                           isFavoriteLoading: _favoriteLoadingIds.contains(
                             studio.id,

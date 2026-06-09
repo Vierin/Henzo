@@ -376,7 +376,7 @@ class BrowseStudioListCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'No classes today',
+                locale.t('clientHome.noClassesTodayShort'),
                 style: TextStyle(fontSize: 12.sp, color: AppColors.textPrimary),
               ),
             ),

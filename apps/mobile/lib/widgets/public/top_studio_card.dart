@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../models/public_studio_preview.dart';
+import '../../models/training_category_option.dart';
 import '../../services/client_location_store.dart';
 import '../../utils/formatters.dart';
 import 'cached_salon_network_image.dart';
@@ -18,6 +19,7 @@ class TopStudioCard extends StatelessWidget {
     required this.onToggleFavorite,
     required this.onTap,
     this.homeLayout = false,
+    this.categoryOptions = const [],
   });
 
   final PublicStudioPreview studio;
@@ -26,6 +28,7 @@ class TopStudioCard extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
   final bool homeLayout;
+  final List<TrainingCategoryOption> categoryOptions;
 
   String? _distanceLabel(BuildContext context) {
     final loc = context.watch<ClientLocationStore>();
@@ -50,6 +53,7 @@ class TopStudioCard extends StatelessWidget {
         onToggleFavorite: onToggleFavorite,
         onTap: onTap,
         distanceLabel: distanceLabel,
+        categoryOptions: categoryOptions,
       );
     }
 
@@ -60,6 +64,47 @@ class TopStudioCard extends StatelessWidget {
       onToggleFavorite: onToggleFavorite,
       onTap: onTap,
       distanceLabel: distanceLabel,
+      categoryOptions: categoryOptions,
+    );
+  }
+}
+
+class _StudioCategoryLine extends StatelessWidget {
+  const _StudioCategoryLine({
+    required this.categories,
+    required this.categoryOptions,
+    required this.style,
+  });
+
+  final List<String> categories;
+  final List<TrainingCategoryOption> categoryOptions;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = TrainingCategoryOption.previewLabels(
+      categories,
+      options: categoryOptions.isEmpty ? null : categoryOptions,
+    );
+    if (preview.visible.isEmpty && preview.moreCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final moreStyle = style.copyWith(fontWeight: FontWeight.w600);
+    return Text.rich(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      TextSpan(
+        style: style,
+        children: [
+          TextSpan(text: preview.visible.join(' • ')),
+          if (preview.moreCount > 0)
+            TextSpan(
+              text: '  +${preview.moreCount}',
+              style: moreStyle,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -71,6 +116,7 @@ class _HomeStudioCard extends StatelessWidget {
     required this.onToggleFavorite,
     required this.onTap,
     required this.distanceLabel,
+    required this.categoryOptions,
   });
 
   static const _cardWidth = kStudioCoverPhotoWidth;
@@ -84,9 +130,17 @@ class _HomeStudioCard extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
   final String? distanceLabel;
+  final List<TrainingCategoryOption> categoryOptions;
 
   @override
   Widget build(BuildContext context) {
+    final categoryStyle = TextStyle(
+      fontSize: 12.sp,
+      fontWeight: FontWeight.w400,
+      color: AppColors.textSecondary,
+      height: 1.1,
+    );
+
     return Container(
       width: _cardWidth,
       margin: const EdgeInsets.only(right: 12),
@@ -173,16 +227,10 @@ class _HomeStudioCard extends StatelessWidget {
                           ),
                           if (studio.categories.isNotEmpty) ...[
                             const SizedBox(height: 6),
-                            Text(
-                              studio.categories.take(3).join(' • '),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textSecondary,
-                                height: 1.1,
-                              ),
+                            _StudioCategoryLine(
+                              categories: studio.categories,
+                              categoryOptions: categoryOptions,
+                              style: categoryStyle,
                             ),
                           ],
                           const Spacer(),
@@ -251,6 +299,7 @@ class _BrowseStudioCard extends StatelessWidget {
     required this.onToggleFavorite,
     required this.onTap,
     required this.distanceLabel,
+    required this.categoryOptions,
   });
 
   final PublicStudioPreview studio;
@@ -259,6 +308,7 @@ class _BrowseStudioCard extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
   final String? distanceLabel;
+  final List<TrainingCategoryOption> categoryOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -387,10 +437,9 @@ class _BrowseStudioCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        studio.categories.take(3).join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: _StudioCategoryLine(
+                        categories: studio.categories,
+                        categoryOptions: categoryOptions,
                         style: TextStyle(
                           fontSize: 11.sp,
                           fontWeight: FontWeight.w600,

@@ -67,12 +67,16 @@ List<String> extractStudioCategoryLabels(
     }
   }
 
-  final ids = <int>{};
+  final ids = <int>[];
   void addId(dynamic raw) {
+    int? id;
     if (raw is num) {
-      ids.add(raw.toInt());
+      id = raw.toInt();
     } else if (raw is String && isCategoryId(raw)) {
-      ids.add(int.parse(raw.trim()));
+      id = int.parse(raw.trim());
+    }
+    if (id != null && !ids.contains(id)) {
+      ids.add(id);
     }
   }
 
@@ -100,17 +104,22 @@ List<String> extractStudioCategoryLabels(
   }
 
   if (categoryOptions != null && categoryOptions.isNotEmpty) {
-    for (final id in ids) {
-      for (final opt in categoryOptions) {
-        if (opt.id == id) {
-          addUnique(opt.label(localeCode));
-          break;
-        }
+    final sortedIds = TrainingCategoryOption.sortIdsWithOtherLast(
+      ids,
+      categoryOptions,
+    );
+    for (final id in sortedIds) {
+      final opt = TrainingCategoryOption.findById(id, categoryOptions);
+      if (opt != null) {
+        addUnique(opt.label(localeCode));
       }
     }
   }
 
-  return out;
+  return TrainingCategoryOption.sortLabelsWithOtherLast(
+    out,
+    options: categoryOptions,
+  );
 }
 
 PublicStudioPreview parsePublicStudioPreviewFromNearby(

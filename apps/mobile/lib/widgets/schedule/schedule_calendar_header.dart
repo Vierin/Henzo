@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import 'calendar_day_pill.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -214,8 +216,9 @@ class ScheduleCalendarMonthYearText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeCode = context.watch<LocaleProvider>().localeCode;
     return Text(
-      CalendarDayPill.monthYearUpperEn(day),
+      CalendarDayPill.monthYearUpper(day, localeCode),
       style: style ?? monthYearTextStyle(),
     );
   }

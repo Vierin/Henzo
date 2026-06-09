@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
 import '../../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
@@ -49,6 +48,29 @@ const int _kBrowseMaxMonthSpan = 2;
 const RangeValues _kExploreDefaultTimeRange = RangeValues(300, 1320);
 const int _kExploreDefaultTimeStartMin = 300;
 const int _kExploreDefaultTimeEndMin = 1320;
+
+TextStyle _browseFilterResetTextStyle() => const TextStyle(
+      fontSize: 16,
+      color: AppColors.textPrimary,
+      fontWeight: FontWeight.w600,
+    );
+
+TextStyle _browseFilterApplyTextStyle() => const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: AppColors.textInverse,
+    );
+
+ButtonStyle _browseFilterResetButtonStyle() => TextButton.styleFrom(
+      textStyle: _browseFilterResetTextStyle(),
+      foregroundColor: AppColors.textPrimary,
+    );
+
+ButtonStyle _browseFilterApplyButtonStyle() => FilledButton.styleFrom(
+      backgroundColor: AppColors.primary500,
+      textStyle: _browseFilterApplyTextStyle(),
+      foregroundColor: AppColors.textInverse,
+    );
 
 class ClientSearchScreen extends StatefulWidget {
   const ClientSearchScreen({super.key});
@@ -393,14 +415,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     height: 1.1,
   );
 
-  Widget _browseCollapsedMonthLabel() {
+  Widget _browseCollapsedMonthLabel(String localeCode) {
     return ValueListenableBuilder<DateTime>(
       valueListenable: _stripPagerDayNotifier,
       builder: (context, pagerDay, _) {
         return Align(
           alignment: Alignment.centerRight,
           child: Text(
-            CalendarDayPill.monthYearUpperEn(pagerDay),
+            CalendarDayPill.monthYearUpper(pagerDay, localeCode),
             style: _browseMonthYearStyle,
           ),
         );
@@ -408,10 +430,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     );
   }
 
-  Widget _buildBrowseMonthExpanded(DateTime monthAnchor) {
+  Widget _buildBrowseMonthExpanded(DateTime monthAnchor, String localeCode) {
     final monthStart = DateTime(monthAnchor.year, monthAnchor.month, 1);
     final cells = _browseMonthCells(monthStart);
-    const dow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    final dow = calendarWeekdayHeaders(localeCode);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
@@ -425,7 +447,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              CalendarDayPill.monthYearUpperEn(monthAnchor),
+              CalendarDayPill.monthYearUpper(monthAnchor, localeCode),
               style: _browseMonthYearStyle,
             ),
           ),
@@ -548,9 +570,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   }
 
   String _typesChipLabel(String localeCode) {
+    final tr = context.read<LocaleProvider>().t;
     final id = _selectedCategoryId;
-    if (id == null) return 'Types';
-    return _categoryOptionById(id)?.label(localeCode) ?? 'Types';
+    if (id == null) return tr('clientHome.filterTypes');
+    return _categoryOptionById(id)?.label(localeCode) ??
+        tr('clientHome.filterTypes');
   }
 
   String get _timeFilterChipLabel {
@@ -564,34 +588,36 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       return context.read<LocaleProvider>().t('clientHome.timePeriodEvening');
     }
     if (_hasActiveTimeFilter) return _timeChipLabel;
-    return 'Time';
+    return context.read<LocaleProvider>().t('clientHome.filterTime');
   }
 
   String get _distanceChipLabel {
+    final tr = context.read<LocaleProvider>().t;
     switch (_distanceFilter) {
       case '5':
-        return context.read<LocaleProvider>().t('clientHome.distance5km');
+        return tr('clientHome.distance5km');
       case '10':
-        return context.read<LocaleProvider>().t('clientHome.distance10km');
+        return tr('clientHome.distance10km');
       case '15':
-        return context.read<LocaleProvider>().t('clientHome.distance15km');
+        return tr('clientHome.distance15km');
       case '30+':
-        return context.read<LocaleProvider>().t('clientHome.distance30plus');
+        return tr('clientHome.distance30plus');
       case 'auto':
       default:
-        return 'Distance';
+        return tr('clientHome.filterDistance');
     }
   }
 
   String get _sortChipLabel {
+    final tr = context.read<LocaleProvider>().t;
     switch (_sortBy) {
       case 'distance':
-        return 'Nearest';
+        return tr('clientHome.sortNearest');
       case 'ratings':
-        return context.read<LocaleProvider>().t('clientHome.sortRatings');
+        return tr('clientHome.sortRatings');
       case 'recommended':
       default:
-        return 'Sort';
+        return tr('clientHome.filterSort');
     }
   }
 
@@ -1125,14 +1151,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return 13 + 8 + 8 + stripH + chrome;
   }
 
-  String _browseCompactDateLabel(LocaleProvider locale) {
-    final d = _selectedDay;
-    final weekday = DateFormat.E(locale.localeCode).format(d).toUpperCase();
-    return '$weekday ${d.day}';
-  }
+  String _browseCompactDateLabel(LocaleProvider locale) =>
+      formatBrowseCompactDateLabel(_selectedDay, locale.localeCode);
 
   String get _timeChipLabel {
-    if (!_hasActiveTimeFilter) return 'Time';
+    final tr = context.read<LocaleProvider>().t;
+    if (!_hasActiveTimeFilter) return tr('clientHome.filterTime');
     return '${formatMinutesSliderLabel(_timeRange.start)} - ${formatMinutesSliderLabel(_timeRange.end)}';
   }
 
@@ -1337,7 +1361,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _filterSheetTitleRow(ctx, 'Types'),
+                        _filterSheetTitleRow(
+                          ctx,
+                          context.read<LocaleProvider>().t(
+                            'clientHome.filterByType',
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         Expanded(
                           child: SingleChildScrollView(
@@ -1346,7 +1375,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               runSpacing: 8,
                               children: [
                                 TrainingCategoryColorChip(
-                                  label: 'All types',
+                                  label: context.read<LocaleProvider>().t(
+                                    'clientHome.filterAllTypes',
+                                  ),
                                   selected: tempSelection < 0,
                                   onTap: () =>
                                       setModalState(() => tempSelection = -1),
@@ -1370,12 +1401,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           child: TextButton(
                             onPressed: () =>
                                 setModalState(() => tempSelection = -1),
+                            style: _browseFilterResetButtonStyle(),
                             child: Text(
                               context.read<LocaleProvider>().t('common.reset'),
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
                             ),
                           ),
                         ),
@@ -1385,9 +1413,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           child: FilledButton(
                             onPressed: () =>
                                 Navigator.of(ctx).pop(tempSelection),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                            ),
+                            style: _browseFilterApplyButtonStyle(),
                             child: Text(
                               context.watch<LocaleProvider>().t('common.apply'),
                             ),
@@ -1517,12 +1543,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => tempLanguages.clear()),
+                          style: _browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
                           ),
                         ),
                       ),
@@ -1532,9 +1555,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: FilledButton(
                           onPressed: () =>
                               Navigator.of(ctx).pop(tempLanguages.toList()),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
+                          style: _browseFilterApplyButtonStyle(),
                           child: Text(
                             context.watch<LocaleProvider>().t('common.apply'),
                           ),
@@ -1741,12 +1762,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               tempRange = _kExploreDefaultTimeRange;
                             });
                           },
+                          style: _browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
                           ),
                         ),
                       ),
@@ -1759,9 +1777,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             'start': tempRange.start,
                             'end': tempRange.end,
                           }),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
+                          style: _browseFilterApplyButtonStyle(),
                           child: Text(
                             context.watch<LocaleProvider>().t('common.apply'),
                           ),
@@ -1912,7 +1928,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _filterSheetTitleRow(ctx, 'Sort'),
+                      _filterSheetTitleRow(
+                        ctx,
+                        context.read<LocaleProvider>().t(
+                          'clientHome.filterSort',
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       option(
                         value: 'recommended',
@@ -1920,7 +1941,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           'clientHome.sortRecommended',
                         ),
                         subtitle: context.read<LocaleProvider>().t(
-                          'common.default',
+                          'clientHome.sortRecommendedDesc',
                         ),
                         setModalState: setModalState,
                       ),
@@ -1936,7 +1957,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       ),
                       option(
                         value: 'distance',
-                        title: 'Distance',
+                        title: context.read<LocaleProvider>().t(
+                          'clientHome.sortDistance',
+                        ),
                         subtitle: context.read<LocaleProvider>().t(
                           'clientHome.sortDistanceAsc',
                         ),
@@ -1948,12 +1971,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => temp = 'recommended'),
+                          style: _browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
                           ),
                         ),
                       ),
@@ -1962,9 +1982,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         width: double.infinity,
                         child: FilledButton(
                           onPressed: () => Navigator.of(ctx).pop(temp),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
+                          style: _browseFilterApplyButtonStyle(),
                           child: Text(
                             context.watch<LocaleProvider>().t('common.apply'),
                           ),
@@ -2083,7 +2101,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _filterSheetTitleRow(ctx, 'Distance'),
+                      _filterSheetTitleRow(
+                        ctx,
+                        context.read<LocaleProvider>().t(
+                          'clientHome.filterDistance',
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       option(
                         value: 'auto',
@@ -2126,12 +2149,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         child: TextButton(
                           onPressed: () =>
                               setModalState(() => tempDistance = 'auto'),
+                          style: _browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
                           ),
                         ),
                       ),
@@ -2140,9 +2160,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         width: double.infinity,
                         child: FilledButton(
                           onPressed: () => Navigator.of(ctx).pop(tempDistance),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
+                          style: _browseFilterApplyButtonStyle(),
                           child: Text(
                             context.watch<LocaleProvider>().t('common.apply'),
                           ),
@@ -2343,7 +2361,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             'clientHome.sortRecommended',
                           ),
                           subtitle: context.read<LocaleProvider>().t(
-                            'common.default',
+                            'clientHome.sortRecommendedDesc',
                           ),
                           selected: tempSort == 'recommended',
                           onTap: () =>
@@ -2361,7 +2379,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               setModalState(() => tempSort = 'ratings'),
                         ),
                         radioBox(
-                          title: 'Distance',
+                          title: context.read<LocaleProvider>().t(
+                            'clientHome.sortDistance',
+                          ),
                           subtitle: context.read<LocaleProvider>().t(
                             'clientHome.sortDistanceAsc',
                           ),
@@ -2549,12 +2569,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                 tempRange = _kExploreDefaultTimeRange;
                               });
                             },
+                            style: _browseFilterResetButtonStyle(),
                             child: Text(
                               context.read<LocaleProvider>().t('common.reset'),
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
                             ),
                           ),
                         ),
@@ -2570,9 +2587,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               'start': tempRange.start,
                               'end': tempRange.end,
                             }),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                            ),
+                            style: _browseFilterApplyButtonStyle(),
                             child: Text(
                               context.watch<LocaleProvider>().t('common.apply'),
                             ),
@@ -2627,7 +2642,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     }
   }
 
-  Widget _buildDayStrip() {
+  Widget _buildDayStrip(String localeCode) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportWidth = constraints.maxWidth;
@@ -2685,6 +2700,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       return BrowseDayPill(
                         day: day,
                         selected: selected,
+                        localeCode: localeCode,
                         onTap: () => _selectBrowseStripDay(index, day),
                       );
                     },
@@ -2818,17 +2834,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     );
   }
 
-  Widget _buildBrowseDateSection() {
+  Widget _buildBrowseDateSection(String localeCode) {
     if (!_isMonthExpanded) {
       return Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 13, 20, 8),
-            child: _browseCollapsedMonthLabel(),
+            child: _browseCollapsedMonthLabel(localeCode),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: _buildDayStrip(),
+            child: _buildDayStrip(localeCode),
           ),
         ],
       );
@@ -2848,7 +2864,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                 _shiftBrowseMonth(-1);
               }
             },
-            child: _buildBrowseMonthExpanded(stripDay),
+            child: _buildBrowseMonthExpanded(stripDay, localeCode),
           );
         },
       ),
@@ -2957,9 +2973,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildBrowseDateSection(),
+          _buildBrowseDateSection(localeCode),
           const SizedBox(height: 15),
-          _buildBrowseModeToggler(),
+          _buildBrowseModeToggler(locale),
           const SizedBox(height: 10),
           _buildBrowseSearchField(locale),
           const SizedBox(height: 10),
@@ -3112,7 +3128,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     ? formatVnd(c.price!)
                     : null,
                 trailingPriceColor: AppColors.textPrimary,
-                bookActionLabel: 'Book',
+                bookActionLabel: locale.t('clientClassDetail.bookClass'),
                 onBookAgain: () => _openExploreClassDetail(c),
                 onTap: () => _openExploreClassDetail(c),
               );
@@ -3168,7 +3184,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     ];
   }
 
-  Widget _buildBrowseModeToggler() {
+  Widget _buildBrowseModeToggler(LocaleProvider locale) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: DecoratedBox(
@@ -3208,14 +3224,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         Row(
                           children: [
                             _browseModeTab(
-                              label: 'Classes',
+                              label: locale.t('clientHome.classesSectionTitle'),
                               iconAsset: 'assets/icons/icon-people.svg',
                               count: _derivedDayClassesCount,
                               emphasis: classesBlend,
                               onTap: () => _setBrowseShowClasses(true),
                             ),
                             _browseModeTab(
-                              label: 'Studios',
+                              label: locale.t('clientHome.studiosTab'),
                               iconAsset: 'assets/icons/icon-studio.svg',
                               count: _derivedVisibleStudiosCount,
                               emphasis: studiosBlend,
@@ -3355,7 +3371,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Browse',
+                                  locale.t('clientShell.browse'),
                                   style: TextStyle(
                                     fontSize: 28.sp,
                                     fontWeight: FontWeight.w700,
@@ -3458,7 +3474,12 @@ class _BrowseCompactFilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = count > 0 ? 'Filters($count)' : 'Filters';
+    final locale = context.watch<LocaleProvider>();
+    final label = count > 0
+        ? locale
+              .t('clientHome.filtersCompactCount')
+              .replaceAll('{count}', '$count')
+        : locale.t('clientHome.filtersCompact');
     return Material(
       color: AppColors.backgroundPrimary,
       borderRadius: BorderRadius.circular(999),

@@ -16,6 +16,7 @@ import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
 import '../utils/formatters.dart';
 import '../utils/show_api_error.dart';
+import '../utils/subscription_plan_features.dart';
 import '../utils/subscription_tier.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/subscription_legal_disclosure.dart';
@@ -25,19 +26,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 const Color _activeBadgeBg = Color(0xFFE8F5E9);
 const Color _activeBadgeFg = Color(0xFF2E7D32);
 
+TextStyle _subscriptionButtonTextStyle() =>
+    TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500);
+
 BoxDecoration _subscriptionCardDecoration() => BoxDecoration(
   color: AppColors.backgroundPrimary,
   borderRadius: BorderRadius.circular(14),
 );
-
-List<String> _proFeatureLabels(LocaleProvider locale) => [
-  locale.t('subscription.feature1'),
-  locale.t('subscription.feature2'),
-  locale.t('subscription.feature3'),
-  locale.t('subscription.feature4'),
-  locale.t('subscription.feature5'),
-  locale.t('subscription.feature6'),
-];
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -94,7 +89,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       if (RevenueCatService.isConfigured) {
         final offerings = await RevenueCatService.fetchOfferings();
         studioPkg = RevenueCatService.packageForTier(offerings, 'studio');
-        enterprisePkg = RevenueCatService.packageForTier(offerings, 'enterprise');
+        enterprisePkg = RevenueCatService.packageForTier(
+          offerings,
+          'enterprise',
+        );
 
         // Detect active tier from CustomerInfo
         try {
@@ -118,8 +116,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   bool get _hasPaidPlan =>
-      _activeTier != null ||
-      subscriptionTypeIsPaid(_subscription?.type);
+      _activeTier != null || subscriptionTypeIsPaid(_subscription?.type);
+
+  SubscriptionPlanTier get _activePlanTier {
+    if (_activeTier != null) {
+      return subscriptionPlanTierFromActiveCode(_activeTier);
+    }
+    return subscriptionPlanTierFromSubscriptionType(_subscription?.type);
+  }
 
   Future<void> _openUrl(String? url) async {
     if (url == null || url.isEmpty) return;
@@ -286,62 +290,89 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       children: [
                         const SizedBox(height: 8),
                         if (!_hasPaidPlan) ...[
-                          _CurrentPlanCard(
-                            planType: _subscription?.type,
+                          _PlanCard(
+                            title: locale.t(
+                              subscriptionPlanTitleKey(
+                                SubscriptionPlanTier.solo,
+                              ),
+                            ),
+                            tagline: locale.t(
+                              subscriptionPlanTaglineKey(
+                                SubscriptionPlanTier.solo,
+                              ),
+                            ),
+                            priceLabel: locale.t('subscription.soloFreePrice'),
+                            showPricePeriod: false,
+                            features: subscriptionPlanFeatureLabels(
+                              locale,
+                              SubscriptionPlanTier.solo,
+                            ),
+                            highlighted: false,
+                            showActiveBadge: true,
                           ),
                           const SizedBox(height: 20),
-
-                          // Studio
                           _PlanCard(
-                            title: locale.t('subscription.studioTitle'),
-                            tagline: locale.t('subscription.studioTagline'),
-                            priceLabel: _studioPackage?.storeProduct.priceString ??
+                            title: locale.t(
+                              subscriptionPlanTitleKey(
+                                SubscriptionPlanTier.studio,
+                              ),
+                            ),
+                            tagline: locale.t(
+                              subscriptionPlanTaglineKey(
+                                SubscriptionPlanTier.studio,
+                              ),
+                            ),
+                            priceLabel:
+                                _studioPackage?.storeProduct.priceString ??
                                 locale.t('subscription.studioFallbackPrice'),
-                            features: [
-                              locale.t('subscription.feature_studio_1'),
-                              locale.t('subscription.feature_studio_2'),
-                              locale.t('subscription.feature_studio_3'),
-                              locale.t('subscription.feature_studio_4'),
-                              locale.t('subscription.feature_studio_5'),
-                            ],
-                            subscribeLabel: locale.t('subscription.subscribeToStudioBtn'),
+                            features: subscriptionPlanFeatureLabels(
+                              locale,
+                              SubscriptionPlanTier.studio,
+                            ),
+                            subscribeLabel: locale.t(
+                              'subscription.subscribeToStudioBtn',
+                            ),
                             isLoading: _checkoutLoading == 'studio',
                             onSubscribe: () => _handleSelectPlan('studio'),
                           ),
-
                           const SizedBox(height: 20),
-
-                          // Enterprise
                           _PlanCard(
-                            title: locale.t('subscription.enterpriseTitle'),
-                            tagline: locale.t('subscription.enterpriseTagline'),
-                            priceLabel: _enterprisePackage?.storeProduct.priceString ??
-                                locale.t('subscription.enterpriseFallbackPrice'),
-                            features: [
-                              // Enterprise includes all Studio features:
-                              locale.t('subscription.feature_studio_1'),
-                              locale.t('subscription.feature_studio_2'),
-                              locale.t('subscription.feature_studio_3'),
-                              locale.t('subscription.feature_studio_4'),
-                              locale.t('subscription.feature_studio_5'),
-                              // + Enterprise-exclusive:
-                              locale.t('subscription.feature_enterprise_3'),
-                              locale.t('subscription.feature_enterprise_4'),
-                              locale.t('subscription.feature_enterprise_5'),
-                              locale.t('subscription.feature_enterprise_6'),
-                            ],
-                            subscribeLabel: locale.t('subscription.subscribeToEnterpriseBtn'),
+                            title: locale.t(
+                              subscriptionPlanTitleKey(
+                                SubscriptionPlanTier.enterprise,
+                              ),
+                            ),
+                            tagline: locale.t(
+                              subscriptionPlanTaglineKey(
+                                SubscriptionPlanTier.enterprise,
+                              ),
+                            ),
+                            priceLabel:
+                                _enterprisePackage?.storeProduct.priceString ??
+                                locale.t(
+                                  'subscription.enterpriseFallbackPrice',
+                                ),
+                            features: subscriptionPlanFeatureLabels(
+                              locale,
+                              SubscriptionPlanTier.enterprise,
+                            ),
+                            subscribeLabel: locale.t(
+                              'subscription.subscribeToEnterpriseBtn',
+                            ),
                             isLoading: _checkoutLoading == 'enterprise',
                             onSubscribe: () => _handleSelectPlan('enterprise'),
                           ),
 
                           const SizedBox(height: 12),
                           TextButton(
-                            onPressed: _restoreLoading ? null : _restorePurchases,
+                            onPressed: _restoreLoading
+                                ? null
+                                : _restorePurchases,
                             child: Text(
                               _restoreLoading
                                   ? locale.t('common.loading')
                                   : locale.t('subscription.restorePurchases'),
+                              style: _subscriptionButtonTextStyle(),
                             ),
                           ),
                         ] else ...[
@@ -351,12 +382,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             nextPaymentDate:
                                 _nextPaymentDateLabel(context) ?? '—',
                             activeLabel: locale.t('profile.active'),
-                            planTitle: _activeTier == 'enterprise'
-                                ? locale.t('subscription.enterpriseTitle')
-                                : locale.t('subscription.studioTitle'),
-                            tagline: _activeTier == 'enterprise'
-                                ? locale.t('subscription.enterpriseTagline')
-                                : locale.t('subscription.studioTagline'),
+                            planTitle: locale.t(
+                              subscriptionPlanTitleKey(_activePlanTier),
+                            ),
+                            tagline: locale.t(
+                              subscriptionPlanTaglineKey(_activePlanTier),
+                            ),
                             nextPaymentLabel: locale.t(
                               'subscription.nextPayment',
                             ),
@@ -364,7 +395,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           const SizedBox(height: 12),
                           _ProWhatsIncludedCard(
                             title: locale.t('subscription.whatsIncluded'),
-                            features: _proFeatureLabels(locale),
+                            features: subscriptionPlanFeatureLabels(
+                              locale,
+                              _activePlanTier,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           SizedBox(
@@ -375,6 +409,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               style: AuthFormStyles.primaryButtonStyle(),
                               child: Text(
                                 locale.t('subscription.manageSubscription'),
+                                style: _subscriptionButtonTextStyle(),
                               ),
                             ),
                           ),
@@ -397,87 +432,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
         );
       },
-    );
-  }
-}
-
-class _CurrentPlanCard extends StatelessWidget {
-  final String? planType;
-
-  const _CurrentPlanCard({this.planType});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _subscriptionCardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.asset(
-                'assets/icons/icon-rocket.png',
-                width: 24,
-                height: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Builder(builder: (context) {
-                      final locale = context.read<LocaleProvider>();
-                      final planName = locale.t(
-                        subscriptionPlanLabelKey(planType),
-                      );
-                      return Text(
-                        locale.t('subscription.currentPlanLabel')
-                            .replaceAll('{plan}', planName),
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                    Builder(builder: (context) {
-                      final locale = context.read<LocaleProvider>();
-                      return Text(
-                        locale.t('subscription.currentSoloDesc'),
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: AppColors.textSecondary,
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _activeBadgeBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  context.read<LocaleProvider>().t('profile.active').toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.bold,
-                    color: _activeBadgeFg,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
@@ -695,13 +649,50 @@ class _ProWhatsIncludedCard extends StatelessWidget {
   }
 }
 
+class _PlanFeatureRow extends StatelessWidget {
+  const _PlanFeatureRow({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Image.asset(
+            'assets/icons/icon-fire.png',
+            width: 22,
+            height: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14.sp,
+                height: 1.35,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PlanCard extends StatelessWidget {
   final String title;
   final String tagline;
   final String priceLabel;
   final List<String> features;
-  final String subscribeLabel;
-  final VoidCallback onSubscribe;
+  final bool showPricePeriod;
+  final bool highlighted;
+  final bool showActiveBadge;
+  final String? subscribeLabel;
+  final VoidCallback? onSubscribe;
   final bool isLoading;
 
   const _PlanCard({
@@ -709,8 +700,11 @@ class _PlanCard extends StatelessWidget {
     required this.tagline,
     required this.priceLabel,
     required this.features,
-    required this.subscribeLabel,
-    required this.onSubscribe,
+    this.showPricePeriod = true,
+    this.highlighted = true,
+    this.showActiveBadge = false,
+    this.subscribeLabel,
+    this.onSubscribe,
     this.isLoading = false,
   });
 
@@ -718,26 +712,36 @@ class _PlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.read<LocaleProvider>();
 
+    final decoration = highlighted
+        ? BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            border: Border.all(
+              color: AppColors.primary500.withValues(alpha: 0.5),
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary500.withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          )
+        : _subscriptionCardDecoration();
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        border: Border.all(color: AppColors.primary500.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary500.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: decoration,
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset('assets/icons/icon-rocket.png', width: 28, height: 28),
+              Image.asset(
+                'assets/icons/icon-rocket.png',
+                width: 28,
+                height: 28,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -763,6 +767,25 @@ class _PlanCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (showActiveBadge)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _activeBadgeBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    locale.t('profile.active').toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.bold,
+                      color: _activeBadgeFg,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 20),
@@ -775,65 +798,51 @@ class _PlanCard extends StatelessWidget {
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            locale.t('subscription.perMonthShort'),
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ...features.map(
-            (f) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Image.asset('assets/icons/icon-fire.png', width: 22, height: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      f,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        height: 1.35,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
+          if (showPricePeriod) ...[
+            const SizedBox(height: 4),
+            Text(
+              locale.t('subscription.perMonthShort'),
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          const SubscriptionLegalDisclosure(),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: AuthFormStyles.buttonHeight,
-            child: FilledButton(
-              onPressed: isLoading ? null : onSubscribe,
-              style: AuthFormStyles.primaryButtonStyle(),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+          ],
+          const SizedBox(height: 20),
+          ...features.map((f) => _PlanFeatureRow(label: f)),
+          if (onSubscribe != null) ...[
+            const SizedBox(height: 12),
+            const SubscriptionLegalDisclosure(),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: AuthFormStyles.buttonHeight,
+              child: FilledButton(
+                onPressed: isLoading ? null : onSubscribe,
+                style: AuthFormStyles.primaryButtonStyle(),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        subscribeLabel ?? '',
+                        style: _subscriptionButtonTextStyle(),
                       ),
-                    )
-                  : Text(subscribeLabel),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            locale.t('subscription.noLongTerm'),
-            style: TextStyle(fontSize: 12.sp, color: AppColors.textTertiary),
-            textAlign: TextAlign.center,
-          ),
+            const SizedBox(height: 12),
+            Text(
+              locale.t('subscription.noLongTerm'),
+              style: TextStyle(fontSize: 12.sp, color: AppColors.textTertiary),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );

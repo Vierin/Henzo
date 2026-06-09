@@ -667,7 +667,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Filter by type',
+                          locale.t('clientHome.filterByType'),
                           style: TextStyle(
                             fontSize: 17.sp,
                             fontWeight: FontWeight.w700,
@@ -694,7 +694,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       runSpacing: 8,
                       children: [
                         TrainingCategoryColorChip(
-                          label: 'All types',
+                          label: locale.t('clientHome.filterAllTypes'),
                           selected: tempSelected.isEmpty,
                           onTap: () => setModalState(() => tempSelected = {}),
                         ),
@@ -722,7 +722,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.primary500,
                         ),
-                        child: const Text('Apply'),
+                        child: Text(locale.t('common.apply')),
                       ),
                     ),
                   ],

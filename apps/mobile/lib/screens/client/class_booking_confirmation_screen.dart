@@ -102,38 +102,20 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   final String? studioId;
   final String? sessionId;
 
-  static const _weekdays = [
-    'MONDAY',
-    'TUESDAY',
-    'WEDNESDAY',
-    'THURSDAY',
-    'FRIDAY',
-    'SATURDAY',
-    'SUNDAY',
-  ];
+  String _headerDateLine(String localeCode) =>
+      '${formatCalendarWeekdayDayMonthUpper(startsAt, localeCode)} · '
+      '${formatTime24(startsAt)}';
 
-  static const _monthsShort = [
-    'JAN',
-    'FEB',
-    'MAR',
-    'APR',
-    'MAY',
-    'JUN',
-    'JUL',
-    'AUG',
-    'SEP',
-    'OCT',
-    'NOV',
-    'DEC',
-  ];
-
-  String get _headerDateLine {
-    final day = _weekdays[startsAt.weekday - 1];
-    final month = _monthsShort[startsAt.month - 1];
-    return '$day, ${startsAt.day} $month · ${formatTime24(startsAt)}';
+  String _gridDate(String localeCode) {
+    final weekday = formatCalendarWeekdayShort(startsAt, localeCode);
+    final monthDay = DateFormat('MMM d', localeCode).format(startsAt);
+    return '$weekday, $monthDay';
   }
 
-  String get _gridDate => DateFormat('EEE, MMM d').format(startsAt);
+  String _durationMuted(LocaleProvider locale) {
+    final suffix = locale.t('addTraining.durationSuffix');
+    return ' · ($durationMin $suffix)';
+  }
 
   static Color _resolveCategoryAccent(
     Map<String, dynamic> training,
@@ -164,12 +146,16 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
 
   String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
 
-  String _shareMessage() {
+  String _shareMessage(LocaleProvider locale) {
     final sid = studioId;
     final sesId = sessionId;
     final buf = StringBuffer()
-      ..writeln('Join me for $classTitle!')
-      ..writeln('📅 $_headerDateLine');
+      ..writeln(
+        locale
+            .t('clientBooking.shareForClass')
+            .replaceAll('{class}', classTitle),
+      )
+      ..writeln('📅 ${_headerDateLine(locale.localeCode)}');
     if (trainerName.trim().isNotEmpty) {
       buf.writeln('👤 ${trainerName.trim()}');
     }
@@ -192,17 +178,23 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       );
       buf
         ..writeln()
-        ..writeln('🔗 Join me:')
+        ..writeln('🔗 ${locale.t('clientClassDetail.shareJoinMe')}')
         ..write(link.toShareUri().toString());
     }
     return buf.toString().trim();
   }
 
   Future<void> _shareBooking(BuildContext context) async {
-    await Share.share(_shareMessage(), subject: classTitle, sharePositionOrigin: shareOrigin(context));
+    final locale = context.read<LocaleProvider>();
+    await Share.share(
+      _shareMessage(locale),
+      subject: classTitle,
+      sharePositionOrigin: shareOrigin(context),
+    );
   }
 
   Future<void> _openCalendar(BuildContext context) async {
+    final locale = context.read<LocaleProvider>();
     String fmtUtc(DateTime d) =>
         DateFormat("yyyyMMdd'T'HHmmss'Z'").format(d.toUtc());
     final loc = [
@@ -210,7 +202,10 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       if (studioAddress?.trim().isNotEmpty == true) studioAddress!.trim(),
     ].join(', ');
     final details = [
-      if (trainerName.isNotEmpty) 'with $trainerName',
+      if (trainerName.isNotEmpty)
+        locale
+            .t('clientBooking.calendarWithTrainer')
+            .replaceAll('{trainer}', trainerName),
       if (loc.isNotEmpty) loc,
     ].join(' · ');
     final uri = Uri.parse(
@@ -311,7 +306,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                               BlendMode.srcIn,
                             ),
                           ),
-                          label: const Text('Share'),
+                          label: Text(locale.t('common.share')),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                             foregroundColor: Colors.white,
@@ -353,13 +348,14 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _BookingConfirmationHero(
+                        title: locale.t('clientBooking.youreIn'),
                         titleStyle: wixTextTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 39.sp,
                           color: AppColors.textPrimary,
                           letterSpacing: -0.5,
                         ),
-                        dateLine: _headerDateLine,
+                        dateLine: _headerDateLine(locale.localeCode),
                         dateStyle: wixTextTheme.labelLarge?.copyWith(
                           color: AppColors.textPrimary,
                           fontSize: 14.sp,
@@ -372,9 +368,9 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         accent: accent,
                         accentIcon: accentIcon,
                         classTitle: classTitle,
-                        gridDate: _gridDate,
+                        gridDate: _gridDate(locale.localeCode),
                         gridTimePrimary: formatTime24(startsAt),
-                        gridTimeMuted: ' · ($durationMin min)',
+                        gridTimeMuted: _durationMuted(locale),
                         trainerName: trainerName,
                         costPrimary: _costPrimary(locale),
                         costMuted: _costMuted,
@@ -417,11 +413,13 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
 /// Hero: centered title + rocket/cloud above the “in!” (mockup).
 class _BookingConfirmationHero extends StatelessWidget {
   const _BookingConfirmationHero({
+    required this.title,
     required this.titleStyle,
     required this.dateLine,
     required this.dateStyle,
   });
 
+  final String title;
   final TextStyle? titleStyle;
   final String dateLine;
   final TextStyle? dateStyle;
@@ -439,7 +437,7 @@ class _BookingConfirmationHero extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'You\'re in!',
+                  title,
                   textAlign: TextAlign.center,
                   style: titleStyle,
                 ),
@@ -647,7 +645,9 @@ class _BookingTicketCard extends StatelessWidget {
                     svgAsset: 'assets/icons/icon-calendar.svg',
                     iconWidth: 13,
                     iconHeight: 12,
-                    label: context.read<LocaleProvider>().t('common.addToCalendar'),
+                    label: context
+                        .read<LocaleProvider>()
+                        .t('clientBooking.addToCalendar'),
                   ),
                 ),
                 const SizedBox(width: 10),

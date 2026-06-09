@@ -150,6 +150,38 @@ String formatPassCardDayMonth(DateTime dt, String localeTag) {
   return DateFormat('d MMM', localeTag).format(dt.toLocal());
 }
 
+/// Mon–Sun column headers for calendar grids (uppercase).
+List<String> calendarWeekdayHeaders(String localeCode) {
+  return List.generate(7, (i) {
+    final d = DateTime(2024, 1, 1 + i);
+    return DateFormat('EEE', localeCode).format(d).toUpperCase();
+  });
+}
+
+/// Short weekday label for day pills (`MON` / `ПН` / …).
+String formatCalendarWeekdayShort(DateTime day, String localeCode) =>
+    DateFormat('EEE', localeCode).format(day).toUpperCase();
+
+/// Month + year header (`JUN 2026` / `ИЮН 2026` / …).
+String formatCalendarMonthYearUpper(DateTime day, String localeCode) =>
+    DateFormat('MMM yyyy', localeCode).format(day).toUpperCase();
+
+/// Month, day, year (`JUN 9, 2026`).
+String formatCalendarMonthDayYearUpper(DateTime day, String localeCode) {
+  final monthDay = DateFormat('MMM d', localeCode).format(day).toUpperCase();
+  return '$monthDay, ${day.year}';
+}
+
+/// Browse sticky date pill (`MON 9`).
+String formatBrowseCompactDateLabel(DateTime day, String localeCode) {
+  final weekday = DateFormat('EEE', localeCode).format(day).toUpperCase();
+  return '$weekday ${day.day}';
+}
+
+/// Weekday, day, month (`MON, 9 JUN`).
+String formatCalendarWeekdayDayMonthUpper(DateTime day, String localeCode) =>
+    DateFormat('EEE, d MMM', localeCode).format(day).toUpperCase();
+
 /// Passes list: `01.05 14:30`
 String dateTimeLabelDayMonthHm(DateTime? dt) {
   if (dt == null) return 'Date TBD';

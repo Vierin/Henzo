@@ -4,16 +4,21 @@ import '../../constants/colors.dart';
 
 /// White circle back control with iOS-style chevron for app headers.
 class HenzoHeaderBackButton extends StatelessWidget {
-  const HenzoHeaderBackButton({super.key, required this.onPressed});
+  const HenzoHeaderBackButton({
+    super.key,
+    required this.onPressed,
+    this.leadingPadding = 8,
+  });
 
   final VoidCallback onPressed;
+  final double leadingPadding;
 
   static const double size = 34;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: EdgeInsets.only(left: leadingPadding),
       child: Center(
         child: SizedBox(
           width: size,
