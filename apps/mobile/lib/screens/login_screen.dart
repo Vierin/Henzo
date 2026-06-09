@@ -146,8 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
-                  if (v == null || v.isEmpty)
+                  if (v == null || v.isEmpty) {
                     return locale.t('auth.enterEmail');
+                  }
                   if (!v.contains('@')) return locale.t('auth.invalidEmail');
                   return null;
                 },
@@ -273,10 +274,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return locale.t('auth.enterEmail');
-                      if (!v.contains('@'))
+                      }
+                      if (!v.contains('@')) {
                         return locale.t('auth.invalidEmail');
+                      }
                       return null;
                     },
                   ),
@@ -315,8 +318,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return locale.t('auth.enterPassword');
+                      }
                       if (v.length < 6) return locale.t('auth.passwordMin');
                       return null;
                     },

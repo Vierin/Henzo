@@ -98,12 +98,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
       }
       return;
     }
+    final studioCache = context.read<StudioCache>();
+    final servicesCache = context.read<ServicesStaffCache>();
+    final categoriesCache = context.read<TrainingCategoriesCache>();
     try {
-      final studioCache = context.read<StudioCache>();
-      final servicesCache = context.read<ServicesStaffCache>();
       final studio = await studioCache.getStudio(token);
-      final categories =
-          await context.read<TrainingCategoriesCache>().getCategories();
+      final categories = await categoriesCache.getCategories();
       final services = studio != null
           ? await servicesCache.getServicesForStudio(
               token,
