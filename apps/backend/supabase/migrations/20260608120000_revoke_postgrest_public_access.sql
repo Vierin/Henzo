@@ -14,7 +14,7 @@ BEGIN
   LOOP
     EXECUTE format(
       'REVOKE ALL ON TABLE public.%I FROM anon, authenticated',
-      r.tablename,
+      r.tablename
     );
   END LOOP;
 END $$;
