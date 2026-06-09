@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
 import '../../utils/client_schedule_owner_session.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../public_studio_detail_screen.dart';
@@ -198,11 +199,15 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
       );
     } else if (_allItems.isEmpty) {
       content = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: [
-          ClientPlaceholderCard(
-            title: locale.t('clientActivity.scheduleEmptyTitle'),
-            subtitle: locale.t('clientActivity.scheduleEmptySubtitle'),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.45,
+            child: ClientPanelEmptyState(
+              title: locale.t('clientActivity.scheduleEmptyTitle'),
+              subtitle: locale.t('clientActivity.scheduleEmptySubtitle'),
+            ),
           ),
         ],
       );

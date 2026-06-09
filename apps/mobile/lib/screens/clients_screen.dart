@@ -383,12 +383,13 @@ class ClientsScreenState extends State<ClientsScreen> {
           withoutUserId.add(c);
         }
       }
-      final list = [...byUserId.values, ...withoutUserId]
-          .where(
-            (c) => !isAnonymousRosterClient(email: c.email, name: c.name),
-          )
-          .toList()
-        ..sort((a, b) => b.lastVisit.compareTo(a.lastVisit));
+      final list =
+          [...byUserId.values, ...withoutUserId]
+              .where(
+                (c) => !isAnonymousRosterClient(email: c.email, name: c.name),
+              )
+              .toList()
+            ..sort((a, b) => b.lastVisit.compareTo(a.lastVisit));
 
       if (mounted) {
         setState(() {
@@ -589,13 +590,16 @@ class ClientsScreenState extends State<ClientsScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: context.watch<LocaleProvider>().t('ownerClient.searchHint'),
+                  hintText: context.watch<LocaleProvider>().t(
+                    'ownerClient.searchHint',
+                  ),
                   hintStyle: TextStyle(
                     fontSize: 14.sp,
                     color: AppColors.textTertiary,
                   ),
                   prefixIcon: const AppSearchPrefixIcon(),
-                  prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(),
+                  prefixIconConstraints:
+                      AppSearchPrefixIcon.prefixConstraints(),
                   isDense: true,
                   filled: true,
                   fillColor: AppColors.backgroundPrimary,
@@ -632,28 +636,40 @@ class ClientsScreenState extends State<ClientsScreen> {
                     label: tr('ownerClient.filterAll'),
                     count: _countFor(ClientFilter.all),
                     isSelected: _filter == ClientFilter.all,
-                    onTap: () => setState(() { _filter = ClientFilter.all; _rebuildRows(); }),
+                    onTap: () => setState(() {
+                      _filter = ClientFilter.all;
+                      _rebuildRows();
+                    }),
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
                     label: tr('ownerClient.filterSleepers'),
                     count: _countFor(ClientFilter.sleepers),
                     isSelected: _filter == ClientFilter.sleepers,
-                    onTap: () => setState(() { _filter = ClientFilter.sleepers; _rebuildRows(); }),
+                    onTap: () => setState(() {
+                      _filter = ClientFilter.sleepers;
+                      _rebuildRows();
+                    }),
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
                     label: tr('ownerClient.filterWhiteList'),
                     count: _countFor(ClientFilter.whiteList),
                     isSelected: _filter == ClientFilter.whiteList,
-                    onTap: () => setState(() { _filter = ClientFilter.whiteList; _rebuildRows(); }),
+                    onTap: () => setState(() {
+                      _filter = ClientFilter.whiteList;
+                      _rebuildRows();
+                    }),
                   ),
                   const SizedBox(width: 4),
                   ClientsFilterChip(
                     label: tr('ownerClient.filterBlocked'),
                     count: _countFor(ClientFilter.blocked),
                     isSelected: _filter == ClientFilter.blocked,
-                    onTap: () => setState(() { _filter = ClientFilter.blocked; _rebuildRows(); }),
+                    onTap: () => setState(() {
+                      _filter = ClientFilter.blocked;
+                      _rebuildRows();
+                    }),
                   ),
                 ],
               ),
@@ -677,19 +693,12 @@ class ClientsScreenState extends State<ClientsScreen> {
                               ),
                               children: [
                                 SizedBox(
-                                  height: MediaQuery.of(context).size.height * 0.45,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.45,
                                   child: HenzoEmptyState(
-                                    svgAsset:
+                                    icon: null,
+                                    message:
                                         _filter == ClientFilter.all &&
-                                            _searchQuery.isEmpty
-                                        ? 'assets/icons/icon-people.svg'
-                                        : null,
-                                    icon:
-                                        _filter == ClientFilter.all &&
-                                            _searchQuery.isEmpty
-                                        ? null
-                                        : Icons.search_off_outlined,
-                                    message: _filter == ClientFilter.all &&
                                             _searchQuery.isEmpty
                                         ? tr('ownerClient.emptyClientsTitle')
                                         : tr('ownerClient.emptyFilteredTitle'),

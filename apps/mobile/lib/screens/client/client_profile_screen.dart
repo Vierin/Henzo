@@ -17,7 +17,9 @@ import '../../services/client_location_store.dart';
 import '../../services/health_service.dart';
 import '../../services/workout_service.dart';
 import '../../utils/nearby_payload.dart';
+import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/client/client_profile_sections.dart';
+import 'client_shell_scope.dart';
 import '../../widgets/client/client_section_header.dart';
 import '../../widgets/public/top_studio_card.dart';
 import '../public_studio_detail_screen.dart';
@@ -397,11 +399,17 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   onAction: favorites.isNotEmpty ? () {} : null,
                 ),
                 if (favorites.isEmpty)
-                  Text(
-                    locale.t('clientFavorites.emptySubtitle'),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppColors.textSecondary,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: ClientPanelEmptyState(
+                      title: locale.t('clientFavorites.emptyTitle'),
+                      subtitle: locale.t('clientFavorites.emptySubtitle'),
+                      actionLabel: locale.t('clientFavorites.explore'),
+                      onAction: () {
+                        ClientShellScope.maybeOf(context)?.goToExplore(
+                          showClasses: false,
+                        );
+                      },
                     ),
                   )
                 else
@@ -418,6 +426,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                         return TopStudioCard(
                           homeLayout: true,
                           studio: studio,
+                          categoryOptions: _trainingCategories,
                           isFavorite: favStore.isFavorite(studio.id),
                           isFavoriteLoading: _favoriteLoadingIds.contains(
                             studio.id,

@@ -14,6 +14,7 @@ import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/notifications_store.dart';
 import '../utils/color_hex.dart';
+import '../widgets/client/client_panel_empty_state.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../utils/show_api_error.dart';
 import 'public_class_detail_screen.dart';
@@ -127,23 +128,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   onChanged: (v) => setState(() => _filter = v),
                 ),
                 const SizedBox(height: 16),
-                if (items.isEmpty)
+                if (items.isEmpty || filteredItems.isEmpty)
                   SizedBox(
                     height: (constraints.maxHeight - 72).clamp(280.0, 520.0),
-                    child: _NotificationsEmptyState(locale: locale),
-                  )
-                else if (filteredItems.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 48),
-                    child: Center(
-                      child: Text(
-                        locale.t('notifications.filterEmpty'),
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                    child: ClientPanelEmptyState(
+                      title: items.isEmpty
+                          ? locale.t('notifications.emptyTitle')
+                          : locale.t('notifications.filterEmpty'),
+                      subtitle: items.isEmpty
+                          ? locale.t('notifications.emptySubtitle')
+                          : null,
                     ),
                   )
                 else
@@ -282,74 +276,6 @@ class _NotificationTheme {
         typeLabelKey: 'notifications.typeAnnouncement',
       ),
     };
-  }
-}
-
-class _NotificationsEmptyState extends StatelessWidget {
-  const _NotificationsEmptyState({required this.locale});
-
-  final LocaleProvider locale;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 88,
-              height: 88,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary500.withValues(alpha: 0.12),
-                    ),
-                  ),
-                  SvgPicture.asset(
-                    'assets/icons/icon-bell.svg',
-                    width: 40,
-                    height: 50,
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.primary500,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              locale.t('notifications.emptyTitle'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              locale.t('notifications.emptySubtitle'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15.sp,
-                height: 1.45,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -138,21 +139,27 @@ class OwnerChecklistCard extends StatelessWidget {
             if (!showOptionalPhase) ...[
               if (!studioDetailsCompleted)
                 _OnboardingTaskRow(
-                  icon: Icons.storefront_outlined,
+                  svgAsset: 'assets/icons/icon-studio.svg',
+                  svgWidth: 16,
+                  svgHeight: 16,
                   title: tr('onboardingStudioDetailsTitle'),
                   subtitle: tr('onboardingStudioDetailsSubtitle'),
                   onTap: onStudioDetailsTap,
                 ),
               if (!hasTraining)
                 _OnboardingTaskRow(
-                  icon: Icons.calendar_today_outlined,
+                  svgAsset: 'assets/icons/icon-calendar.svg',
+                  svgWidth: 16,
+                  svgHeight: 16,
                   title: tr('onboardingCreateClassTitle'),
                   subtitle: tr('onboardingCreateClassSubtitle'),
                   onTap: onCreateTrainingTap,
                 ),
               if (!hasPhoto)
                 _OnboardingTaskRow(
-                  icon: Icons.photo_outlined,
+                  svgAsset: 'assets/icons/icon-img.svg',
+                  svgWidth: 16,
+                  svgHeight: 16,
                   title: tr('onboardingPhotoTitle'),
                   subtitle: tr('onboardingPhotoSubtitle'),
                   onTap: onAddPhotoTap,
@@ -281,12 +288,7 @@ class _OnboardingActionButtons extends StatelessWidget {
     return Row(
       children: [
         if (showPreview)
-          Expanded(
-            child: _PreviewPublicPageButton(
-              label: previewLabel,
-              onTap: onPreviewTap,
-            ),
-          ),
+          _PreviewPublicPageButton(label: previewLabel, onTap: onPreviewTap),
         if (showPreview && showActivate) const SizedBox(width: 8),
         if (showActivate)
           Expanded(
@@ -361,26 +363,21 @@ class _PreviewPublicPageButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(width: 4),
               const Icon(
                 Icons.chevron_right_rounded,
                 color: Colors.white,
-                size: 16,
+                size: 18,
               ),
             ],
           ),
@@ -555,13 +552,19 @@ class _RingPainter extends CustomPainter {
 
 class _OnboardingTaskRow extends StatelessWidget {
   const _OnboardingTaskRow({
-    required this.icon,
+    this.icon,
+    this.svgAsset,
+    this.svgWidth,
+    this.svgHeight,
     required this.title,
     required this.subtitle,
     required this.onTap,
-  });
+  }) : assert(icon != null || svgAsset != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final String? svgAsset;
+  final double? svgWidth;
+  final double? svgHeight;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -587,7 +590,20 @@ class _OnboardingTaskRow extends StatelessWidget {
                     color: OwnerChecklistCard._taskIconColor,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: Colors.white, size: 20),
+                  child: Center(
+                    child: svgAsset != null
+                        ? SvgPicture.asset(
+                            svgAsset!,
+                            width: svgWidth ?? 20,
+                            height: svgHeight ?? 20,
+                            fit: BoxFit.contain,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          )
+                        : Icon(icon, color: Colors.white, size: 20),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

@@ -16,6 +16,7 @@ import '../../services/auth_service.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/studio_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
+import '../../services/cache/training_categories_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
@@ -57,6 +58,7 @@ class ServicesScreen extends StatefulWidget {
 class _ServicesScreenState extends State<ServicesScreen> {
   Studio? _studio;
   List<ServiceItem> _services = [];
+  List<TrainingCategoryOption> _trainingCategories = const [];
   bool _isLoading = true;
   bool _isActionLoading = false;
   bool _didAutoOpenCreate = false;
@@ -65,7 +67,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  String? _selectedCategory;
+  int? _selectedCategoryId;
 
   @override
   void initState() {
@@ -100,6 +102,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
       final studioCache = context.read<StudioCache>();
       final servicesCache = context.read<ServicesStaffCache>();
       final studio = await studioCache.getStudio(token);
+      final categories =
+          await context.read<TrainingCategoriesCache>().getCategories();
       final services = studio != null
           ? await servicesCache.getServicesForStudio(
               token,
@@ -109,11 +113,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
       if (mounted) {
         setState(() {
           _studio = studio;
+          _trainingCategories = categories;
           _services = services;
           _isLoading = false;
-          if (_selectedCategory != null &&
-              !_services.any((s) => s.categoryName == _selectedCategory)) {
-            _selectedCategory = null;
+          if (_selectedCategoryId != null &&
+              !_services.any(
+                (s) => s.trainingCategoryId == _selectedCategoryId,
+              )) {
+            _selectedCategoryId = null;
           }
         });
         if (widget.openCreateOnStart && !_didAutoOpenCreate && studio != null) {
@@ -143,13 +150,35 @@ class _ServicesScreenState extends State<ServicesScreen> {
     return '$minutes min';
   }
 
-  List<String> get _uniqueCategories {
-    final set = <String>{};
-    for (final s in _services) {
-      final c = s.categoryName;
-      if (c != null && c.isNotEmpty) set.add(c);
+  String _categoryLabelForId(int id, String localeCode) {
+    for (final c in _trainingCategories) {
+      if (c.id == id) return c.label(localeCode);
     }
-    return set.toList()..sort();
+    for (final s in _services) {
+      if (s.trainingCategoryId == id) {
+        final name = s.categoryName?.trim();
+        if (name != null && name.isNotEmpty) return name;
+      }
+    }
+    return 'Category';
+  }
+
+  List<int> _filterCategoryIds(String localeCode) {
+    final ids = <int>{};
+    for (final s in _services) {
+      final id = s.trainingCategoryId;
+      if (id != null) ids.add(id);
+    }
+    final list = ids.toList()
+      ..sort(
+        (a, b) => _categoryLabelForId(
+          a,
+          localeCode,
+        ).toLowerCase().compareTo(
+          _categoryLabelForId(b, localeCode).toLowerCase(),
+        ),
+      );
+    return list;
   }
 
   List<ServiceItem> get _filteredAndSortedServices {
@@ -160,8 +189,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
           .where((s) => s.displayName.toLowerCase().contains(q))
           .toList();
     }
-    if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
-      list = list.where((s) => s.categoryName == _selectedCategory).toList();
+    if (_selectedCategoryId != null) {
+      list = list
+          .where((s) => s.trainingCategoryId == _selectedCategoryId)
+          .toList();
     }
     list.sort((a, b) {
       switch (_sort) {
@@ -492,21 +523,24 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                     label: locale.t(
                                       'servicesScreen.allCategories',
                                     ),
-                                    selected: _selectedCategory == null,
+                                    selected: _selectedCategoryId == null,
                                     onSelected: (_) => setState(
-                                      () => _selectedCategory = null,
+                                      () => _selectedCategoryId = null,
                                     ),
                                   ),
                                 ),
-                                ..._uniqueCategories.map(
-                                  (c) => Padding(
+                                ..._filterCategoryIds(locale.localeCode).map(
+                                  (id) => Padding(
                                     padding: const EdgeInsets.only(right: 8),
                                     child: TrainingFilterChip(
-                                      label: c,
-                                      selected: _selectedCategory == c,
+                                      label: _categoryLabelForId(
+                                        id,
+                                        locale.localeCode,
+                                      ),
+                                      selected: _selectedCategoryId == id,
                                       onSelected: (on) {
                                         if (!on) return;
-                                        setState(() => _selectedCategory = c);
+                                        setState(() => _selectedCategoryId = id);
                                       },
                                     ),
                                   ),

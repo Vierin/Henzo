@@ -5,7 +5,9 @@
       "namespace": "android_app",
       "package_name": "com.henzo.app",
       "sha256_cert_fingerprints": [
-        "D4:2E:C2:73:A5:B0:36:72:69:6C:8C:AC:F6:91:A9:B6:77:4F:89:0E:63:A7:3D:C4:F6:C4:34:37:24:E6:C5:D0"
+        "D4:2E:C2:73:A5:B0:36:72:69:6C:8C:AC:F6:91:A9:B6:77:4F:89:0E:63:A7:3D:C4:F6:C4:34:37:24:E6:C5:D0",
+        "F0:B3:45:74:47:D6:DB:1E:40:18:60:AF:76:4E:6C:79:79:20:CC:44:90:82:2C:70:80:35:75:CE:F4:C3:F3:39",
+        "0B:67:6E:87:5F:2F:BB:96:86:C7:AB:48:4E:B2:AB:12:FE:3B:85:A1:EC:A2:F1:84:16:27:F6:A8:A3:4C:9B:D0"
       ]
     }
   }

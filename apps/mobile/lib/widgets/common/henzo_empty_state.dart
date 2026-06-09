@@ -10,7 +10,7 @@ class HenzoEmptyState extends StatelessWidget {
   const HenzoEmptyState({
     super.key,
     required this.message,
-    this.icon = Icons.search_off_outlined,
+    this.icon,
     this.svgAsset,
     this.iconColor,
     this.iconSize = 64,
@@ -32,23 +32,25 @@ class HenzoEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (svgAsset != null)
+          if (svgAsset != null) ...[
             SvgPicture.asset(
               svgAsset!,
               width: iconSize,
               height: iconSize,
               colorFilter: ColorFilter.mode(
-                iconColor ?? AppColors.neutral300,
+                iconColor ?? AppColors.textSecondary,
                 BlendMode.srcIn,
               ),
-            )
-          else if (icon != null)
+            ),
+            const SizedBox(height: 16),
+          ] else if (icon != null) ...[
             Icon(
               icon,
               size: iconSize,
-              color: iconColor ?? AppColors.neutral300,
+              color: iconColor ?? AppColors.textSecondary,
             ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           Text(
             message,
             textAlign: TextAlign.center,

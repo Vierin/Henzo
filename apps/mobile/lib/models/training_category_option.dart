@@ -20,6 +20,79 @@ class TrainingCategoryOption {
 
   bool get isOtherCategory => nameEn.trim().toLowerCase() == 'other';
 
+  static TrainingCategoryOption? findById(
+    int id,
+    List<TrainingCategoryOption> options,
+  ) {
+    for (final c in options) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  /// Puts «Other» category ids last (studio cards, browse list).
+  static List<int> sortIdsWithOtherLast(
+    Iterable<int> ids,
+    List<TrainingCategoryOption> options,
+  ) {
+    final rest = <int>[];
+    final other = <int>[];
+    for (final id in ids) {
+      if (findById(id, options)?.isOtherCategory == true) {
+        other.add(id);
+      } else {
+        rest.add(id);
+      }
+    }
+    return [...rest, ...other];
+  }
+
+  static bool isOtherCategoryLabel(
+    String name, {
+    List<TrainingCategoryOption>? options,
+  }) {
+    final n = name.trim().toLowerCase();
+    if (n == 'other') return true;
+    if (options == null) return false;
+    for (final c in options) {
+      if (!c.isOtherCategory) continue;
+      if (c.nameEn.trim().toLowerCase() == n) return true;
+      if (c.nameRu.trim().toLowerCase() == n) return true;
+      if (c.nameVn.trim().toLowerCase() == n) return true;
+    }
+    return false;
+  }
+
+  static List<String> sortLabelsWithOtherLast(
+    List<String> labels, {
+    List<TrainingCategoryOption>? options,
+  }) {
+    final rest = <String>[];
+    final other = <String>[];
+    for (final label in labels) {
+      if (isOtherCategoryLabel(label, options: options)) {
+        other.add(label);
+      } else {
+        rest.add(label);
+      }
+    }
+    return [...rest, ...other];
+  }
+
+  /// First [maxVisible] labels + count of hidden categories (for +N chip).
+  static ({List<String> visible, int moreCount}) previewLabels(
+    List<String> labels, {
+    List<TrainingCategoryOption>? options,
+    int maxVisible = 2,
+  }) {
+    final sorted = sortLabelsWithOtherLast(labels, options: options);
+    final visible = sorted.take(maxVisible).toList();
+    return (
+      visible: visible,
+      moreCount: sorted.length - visible.length,
+    );
+  }
+
   /// Puts the «Other» category last (matches category picker sheet).
   static List<TrainingCategoryOption> withOtherLast(
     List<TrainingCategoryOption> list,

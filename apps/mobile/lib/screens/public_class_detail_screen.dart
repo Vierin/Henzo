@@ -161,7 +161,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       tr: locale.t,
     );
     final dateTimeLine = startsAt != null
-        ? '${_formatClassHeaderDate(startsAt)} · ${formatTime24(startsAt)}'
+        ? '${formatCalendarWeekdayDayMonthUpper(startsAt, locale.localeCode)}'
+              ' · ${formatTime24(startsAt)}'
         : '';
     final sessionLink = ClassSessionLink(
       studioId: widget.studioId,
@@ -295,7 +296,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
             ? const Center(child: CircularProgressIndicator())
             : session == null
             ? LoadErrorView(
-                message: _error ?? 'Class not found.',
+                message: _error ??
+                    context.read<LocaleProvider>().t(
+                      'publicClassDetail.notFound',
+                    ),
                 onRetry: _load,
               )
             : _ClassDetailBody(
@@ -329,7 +333,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                       : (owner['name'] ?? '').toString().trim();
                   final address = (_studio?['address'] ?? '').toString().trim();
                   _shareClass(
-                    classTitle: (training['name'] ?? 'Class').toString(),
+                    classTitle: (training['name'] ??
+                            context.read<LocaleProvider>().t('common.class'))
+                        .toString(),
                     trainerName: instructor.isNotEmpty ? instructor : null,
                     startsAt: startsAt,
                     addressLine: address,
@@ -360,33 +366,6 @@ Color _resolveCategoryAccent(
 Color _resolveCategoryLabelColor(Map<String, dynamic> category, Color accent) {
   return parseHexColor(category['chip_fg_hex']?.toString()) ??
       AppColors.textPrimary;
-}
-
-String _formatClassHeaderDate(DateTime d) {
-  const weekdays = [
-    'MONDAY',
-    'TUESDAY',
-    'WEDNESDAY',
-    'THURSDAY',
-    'FRIDAY',
-    'SATURDAY',
-    'SUNDAY',
-  ];
-  const months = [
-    'JANUARY',
-    'FEBRUARY',
-    'MARCH',
-    'APRIL',
-    'MAY',
-    'JUNE',
-    'JULY',
-    'AUGUST',
-    'SEPTEMBER',
-    'OCTOBER',
-    'NOVEMBER',
-    'DECEMBER',
-  ];
-  return '${weekdays[d.weekday - 1]}, ${d.day} ${months[d.month - 1]}';
 }
 
 String _categoryLabel(Map<String, dynamic> cat, String localeCode) {
@@ -548,11 +527,13 @@ class _ClassDetailBody extends StatelessWidget {
     final cap = (session['capacity'] as num?)?.toInt() ?? 0;
     final booked = (session['bookedCount'] as num?)?.toInt() ?? 0;
     final waitlist = (session['waitlistCount'] as num?)?.toInt() ?? 0;
-    final classTitle = (training['name'] ?? 'Class').toString();
+    final classTitle =
+        (training['name'] ?? tr('common.class')).toString();
     final catLabel = _categoryLabel(category, localeCode);
     final chipFg = _resolveCategoryLabelColor(category, accent);
     final locName = (session['locationName'] ?? '').toString().trim();
-    final studioName = (studio?['name'] ?? 'Studio').toString();
+    final studioName =
+        (studio?['name'] ?? tr('common.studio')).toString();
     final address = (studio?['address'] ?? '').toString().trim();
     final logoUrl = resolveStudioBrandImageUrl(studio) ?? '';
     final initials = studioName.isEmpty
@@ -580,12 +561,15 @@ class _ClassDetailBody extends StatelessWidget {
       fallbackKey: 'description',
     );
 
+    final durationSuffix = tr('addTraining.durationSuffix');
     final timeLabel = startsAt != null
         ? '${formatTime24(startsAt)}'
-              '${durationMin != null ? ' · ($durationMin min)' : ''}'
+              '${durationMin != null ? ' · ($durationMin $durationSuffix)' : ''}'
         : '—';
 
-    final dateLabel = startsAt != null ? _formatClassHeaderDate(startsAt) : '';
+    final dateLabel = startsAt != null
+        ? formatCalendarWeekdayDayMonthUpper(startsAt, localeCode)
+        : '';
 
     final locationTitle = locName.isNotEmpty ? locName : studioName;
     final locStore = context.watch<ClientLocationStore>();
@@ -640,7 +624,7 @@ class _ClassDetailBody extends StatelessWidget {
                           BlendMode.srcIn,
                         ),
                       ),
-                      label: const Text('Share'),
+                      label: Text(tr('common.share')),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary500,
                         foregroundColor: Colors.white,
@@ -662,7 +646,7 @@ class _ClassDetailBody extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  'Class',
+                  tr('common.class'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16.sp,
@@ -690,7 +674,12 @@ class _ClassDetailBody extends StatelessWidget {
                 logoUrl: logoUrl,
                 initials: initials,
                 avgRating: avgRating,
-                reviewCount: reviewCount,
+                reviewsLabel: reviewCount > 0
+                    ? tr('common.reviewsCount').replaceAll(
+                        '{count}',
+                        '$reviewCount',
+                      )
+                    : null,
                 distanceLabel: distanceLabel,
                 onTap: onOpenStudio,
               ),
@@ -768,7 +757,7 @@ class _StudioHeroBanner extends StatelessWidget {
     required this.logoUrl,
     required this.initials,
     required this.avgRating,
-    required this.reviewCount,
+    this.reviewsLabel,
     required this.distanceLabel,
     required this.onTap,
   });
@@ -779,7 +768,7 @@ class _StudioHeroBanner extends StatelessWidget {
   final String logoUrl;
   final String initials;
   final double avgRating;
-  final int reviewCount;
+  final String? reviewsLabel;
   final String? distanceLabel;
   final VoidCallback onTap;
 
@@ -805,11 +794,11 @@ class _StudioHeroBanner extends StatelessWidget {
         ),
       ]);
     }
-    if (reviewCount > 0) {
+    if (reviewsLabel != null && reviewsLabel!.isNotEmpty) {
       if (metaParts.isNotEmpty) {
         metaParts.add(Text(_metaSeparator, style: _metaStyle()));
       }
-      metaParts.add(Text('$reviewCount reviews', style: _metaStyle()));
+      metaParts.add(Text(reviewsLabel!, style: _metaStyle()));
     }
     if (distanceLabel != null && distanceLabel!.isNotEmpty) {
       if (metaParts.isNotEmpty) {

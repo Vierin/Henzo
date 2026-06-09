@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import 'henzo_map_attribution.dart';
 
 /// Shared CARTO basemap tiles (OSM data) and legal attribution.
 abstract final class HenzoMapLayers {
@@ -30,29 +32,8 @@ abstract final class HenzoMapLayers {
       );
 
   /// OSM + CARTO attribution (required by tile ToS).
-  static RichAttributionWidget cartoAttribution({
+  static Widget cartoAttribution({
     AttributionAlignment alignment = AttributionAlignment.bottomRight,
   }) =>
-      RichAttributionWidget(
-        alignment: alignment,
-        attributions: [
-          TextSourceAttribution(
-            'OpenStreetMap contributors',
-            onTap: () => _openAttributionUrl(
-              Uri.parse('https://www.openstreetmap.org/copyright'),
-            ),
-          ),
-          TextSourceAttribution(
-            'CARTO',
-            onTap: () => _openAttributionUrl(
-              Uri.parse('https://carto.com/attributions/'),
-            ),
-          ),
-        ],
-      );
-
-  static Future<void> _openAttributionUrl(Uri uri) async {
-    if (!await canLaunchUrl(uri)) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
+      HenzoMapAttributionWidget(alignment: alignment);
 }

@@ -616,6 +616,7 @@ class _PublicStudioScheduleScreenState
             children: [
               HenzoHeaderBackButton(
                 onPressed: () => Navigator.of(context).pop(),
+                leadingPadding: 0,
               ),
               const Spacer(),
               _scheduleTodayButton(),
@@ -631,7 +632,10 @@ class _PublicStudioScheduleScreenState
                 return Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    CalendarDayPill.monthYearUpperEn(pagerDay),
+                    CalendarDayPill.monthYearUpper(
+                      pagerDay,
+                      context.read<LocaleProvider>().localeCode,
+                    ),
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
@@ -790,6 +794,9 @@ class _PublicStudioScheduleScreenState
                       return BrowseDayPill(
                         day: day,
                         selected: selected,
+                        localeCode: context
+                            .read<LocaleProvider>()
+                            .localeCode,
                         onTap: _isDayInRange(day)
                             ? () => _applyScheduleDay(day)
                             : null,

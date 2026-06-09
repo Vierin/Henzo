@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import '../../utils/formatters.dart';
 import '../../utils/henzo_haptics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -78,6 +79,7 @@ class CalendarDayPill extends StatelessWidget {
     this.showBorder = false,
     this.highlightTodayWhenUnselected = true,
     this.onTap,
+    this.localeCode,
   });
 
   final DateTime day;
@@ -90,39 +92,24 @@ class CalendarDayPill extends StatelessWidget {
   /// When false, unselected today has no fill (e.g. Browse on beige).
   final bool highlightTodayWhenUnselected;
   final VoidCallback? onTap;
+  final String? localeCode;
 
-  static const _weekdayNames = [
-    'MON',
-    'TUE',
-    'WED',
-    'THU',
-    'FRI',
-    'SAT',
-    'SUN',
-  ];
+  static String weekdayShort(DateTime day, String localeCode) =>
+      formatCalendarWeekdayShort(day, localeCode);
 
-  static const _monthNames = [
-    'JAN',
-    'FEB',
-    'MAR',
-    'APR',
-    'MAY',
-    'JUN',
-    'JUL',
-    'AUG',
-    'SEP',
-    'OCT',
-    'NOV',
-    'DEC',
-  ];
+  static String monthYearUpper(DateTime day, String localeCode) =>
+      formatCalendarMonthYearUpper(day, localeCode);
 
-  static String weekdayShort(DateTime day) => _weekdayNames[day.weekday - 1];
+  @Deprecated('Use monthYearUpper(day, localeCode)')
+  static String monthYearUpperEn(DateTime day) =>
+      monthYearUpper(day, 'en');
 
-  static String monthYearUpperEn(DateTime d) =>
-      '${_monthNames[d.month - 1]} ${d.year}';
+  static String monthDayYearUpper(DateTime day, String localeCode) =>
+      formatCalendarMonthDayYearUpper(day, localeCode);
 
-  static String monthDayYearUpperEn(DateTime d) =>
-      '${_monthNames[d.month - 1]} ${d.day}, ${d.year}';
+  @Deprecated('Use monthDayYearUpper(day, localeCode)')
+  static String monthDayYearUpperEn(DateTime day) =>
+      monthDayYearUpper(day, 'en');
 
   static bool isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
@@ -150,6 +137,8 @@ class CalendarDayPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final code =
+        localeCode ?? Localizations.localeOf(context).languageCode;
     final today = isToday ?? isSameDay(day, DateTime.now());
     final canTap = enabled && onTap != null;
 
@@ -182,7 +171,7 @@ class CalendarDayPill extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            weekdayShort(day),
+            weekdayShort(day, code),
             style: TextStyle(
               fontSize: 11.sp,
               fontWeight: FontWeight.w400,

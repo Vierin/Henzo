@@ -10,12 +10,14 @@ class BrowseDayPill extends StatelessWidget {
     super.key,
     required this.day,
     required this.selected,
+    required this.localeCode,
     this.isToday,
     this.onTap,
   });
 
   final DateTime day;
   final bool selected;
+  final String localeCode;
   final bool? isToday;
   final VoidCallback? onTap;
 
@@ -39,7 +41,7 @@ class BrowseDayPill extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              CalendarDayPill.weekdayShort(day),
+              CalendarDayPill.weekdayShort(day, localeCode),
               style: TextStyle(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w500,

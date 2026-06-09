@@ -12,6 +12,7 @@ import '../../services/cache/studio_cache.dart';
 import '../../utils/owner_studio_setup_errors.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../utils/henzo_haptics.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
@@ -381,6 +382,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _shiftMonth(int deltaMonths) {
+    HenzoHaptics.scrollTick();
     final strip = _stripDayNotifier.value;
     final targetMonth = DateTime(strip.year, strip.month + deltaMonths, 1);
     final daysInTargetMonth = DateTime(
