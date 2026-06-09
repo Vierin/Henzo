@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
+import 'load_error_message.dart';
 
 /// Shows a SnackBar with the error message. Handles [ApiException] and generic [Exception].
 void showApiError(BuildContext context, dynamic e, {Color? backgroundColor}) {
   if (!context.mounted) return;
-  final message = e is ApiException
-      ? e.message
-      : e is Exception
-      ? e.toString()
-      : e?.toString() ?? 'Unknown error';
+  final locale = context.read<LocaleProvider>();
+  final message = loadErrorMessage(locale, e);
   ScaffoldMessenger.maybeOf(context)?.showSnackBar(
     SnackBar(
       content: Text(message),

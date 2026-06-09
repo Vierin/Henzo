@@ -10,6 +10,7 @@ import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart'
     show DashboardApiService, OwnerTrainingSession;
+import '../../utils/load_error_message.dart';
 import '../../utils/owner_session_card_subtitle.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/synthetic_guest.dart';
@@ -134,7 +135,7 @@ class _BookClientSessionSheetState extends State<_BookClientSessionSheet> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _loadError = e.toString();
+        _loadError = loadErrorMessage(context.read<LocaleProvider>(), e);
       });
     }
   }

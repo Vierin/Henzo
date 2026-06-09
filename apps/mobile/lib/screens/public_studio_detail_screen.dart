@@ -9,6 +9,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../utils/load_error_message.dart';
 import '../widgets/public/public_studio_detail_body.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -72,7 +73,9 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        if (_studio == null) _error = e.toString();
+        if (_studio == null) {
+          _error = loadErrorMessage(context.read<LocaleProvider>(), e);
+        }
         _isLoading = false;
       });
     }

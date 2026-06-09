@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'app_config.dart';
 import 'load_app_env.dart';
 
@@ -34,6 +36,21 @@ void assertValidReleaseConfiguration() {
 
   if (AppConfig.apiUrl.isEmpty) {
     throw StateError('Release build: EXPO_PUBLIC_API_URL is empty.');
+  }
+
+  if (!AppConfig.apiUrl.toLowerCase().startsWith('https://')) {
+    throw StateError(
+      'Release build: EXPO_PUBLIC_API_URL must use https://',
+    );
+  }
+
+  final appEnv =
+      (dotenv.env['EXPO_PUBLIC_APP_ENV'] ?? '').trim().toLowerCase();
+  const allowed = {'production', 'staging', 'prod', 'stage'};
+  if (appEnv.isEmpty || !allowed.contains(appEnv)) {
+    throw StateError(
+      'Release build: EXPO_PUBLIC_APP_ENV must be production or staging.',
+    );
   }
 
   final rc = AppConfig.revenueCatApiKey;

@@ -14,6 +14,7 @@ import '../services/client_schedule_store.dart';
 import '../services/dashboard_api_service.dart';
 
 import '../utils/formatters.dart';
+import '../utils/load_error_message.dart';
 
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
@@ -270,7 +271,7 @@ class _PublicStudioScheduleScreenState
       setState(() {
         _loading = false;
 
-        _loadError = e.toString();
+        _loadError = loadErrorMessage(context.read<LocaleProvider>(), e);
       });
     }
   }

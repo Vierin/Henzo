@@ -919,6 +919,27 @@ export class FitnessSessionsService {
       console.error('post-enrollment email failed:', e);
     }
 
+    if (wasCreated && !payload.anonymousSpot) {
+      try {
+        const enrollment = await this.prisma.sessionEnrollment.findFirst({
+          where: {
+            sessionId,
+            userId: targetUserId!,
+            status: SessionEnrollmentStatus.ACTIVE,
+          },
+          select: { id: true },
+        });
+        if (enrollment) {
+          await this.notificationsService.schedulePreClassReminders(
+            enrollment.id,
+            targetUserId!,
+          );
+        }
+      } catch (e) {
+        console.error('post-enrollment push schedule failed:', e);
+      }
+    }
+
     return { success: true };
   }
 
@@ -1062,6 +1083,30 @@ export class FitnessSessionsService {
       }
     });
 
+    if (nextStatus === SessionEnrollmentStatus.CANCELLED) {
+      await this.notificationsService.clearPreClassRemindersForEnrollment(
+        enrollmentId,
+      );
+    } else if (
+      nextStatus === SessionEnrollmentStatus.ACTIVE &&
+      row.status === SessionEnrollmentStatus.CANCELLED
+    ) {
+      const enrollment = await this.prisma.sessionEnrollment.findUnique({
+        where: { id: enrollmentId },
+        select: { userId: true },
+      });
+      if (enrollment) {
+        try {
+          await this.notificationsService.schedulePreClassReminders(
+            enrollmentId,
+            enrollment.userId,
+          );
+        } catch (e) {
+          console.error('re-activate push schedule failed:', e);
+        }
+      }
+    }
+
     if (
       row.status === SessionEnrollmentStatus.ACTIVE &&
       nextStatus === SessionEnrollmentStatus.CANCELLED
@@ -1130,6 +1175,10 @@ export class FitnessSessionsService {
       });
     });
 
+    await this.notificationsService.clearPreClassRemindersForEnrollment(
+      enrollmentId,
+    );
+
     // Auto-promote first waitlist entry if one exists
     void this.promoteFromWaitlist(row.sessionId);
 
@@ -1191,6 +1240,21 @@ export class FitnessSessionsService {
         className: session.Training?.name || 'class',
         studioName: session.Studio?.name || 'studio',
       });
+
+      const enrollment = await this.prisma.sessionEnrollment.findFirst({
+        where: {
+          sessionId,
+          userId: next.userId,
+          status: SessionEnrollmentStatus.ACTIVE,
+        },
+        select: { id: true },
+      });
+      if (enrollment) {
+        await this.notificationsService.schedulePreClassReminders(
+          enrollment.id,
+          next.userId,
+        );
+      }
     } catch (err) {
       console.error('[FitnessSessions] Waitlist promote failed:', err);
     }

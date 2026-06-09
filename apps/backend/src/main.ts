@@ -183,8 +183,18 @@ async function bootstrap() {
           return callback(null, true);
         }
 
-        // Allow Vercel preview deployments
-        if (origin.includes('vercel.app')) {
+        const previewOrigins = (process.env.VERCEL_PREVIEW_ORIGINS ?? '')
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean);
+        if (previewOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        if (
+          process.env.HENZO_ENV !== 'production' &&
+          origin.includes('vercel.app')
+        ) {
           return callback(null, true);
         }
 

@@ -17,4 +17,8 @@ abstract final class AuthErrorKeys {
   static const passwordUpdateFailed = 'errors.passwordUpdateFailed';
   static const profileUpdateFailed = 'errors.profileUpdateFailed';
   static const deleteAccountFailed = 'errors.deleteAccountFailed';
+  static const accountExistsLogin = 'errors.accountExistsLogin';
+  static const accountExistsUseGoogle = 'errors.accountExistsUseGoogle';
+  static const accountExistsUseApple = 'errors.accountExistsUseApple';
+  static const accountExistsUseOauth = 'errors.accountExistsUseOauth';
 }

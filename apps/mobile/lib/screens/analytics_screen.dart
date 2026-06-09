@@ -5,6 +5,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
+import '../utils/load_error_message.dart';
 import '../utils/show_api_error.dart';
 import '../utils/currency_format.dart';
 import 'clients_screen.dart';
@@ -121,7 +122,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       setState(() => _analytics = data);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _errorText = e.toString());
+      setState(
+        () => _errorText = loadErrorMessage(
+          context.read<LocaleProvider>(),
+          e,
+        ),
+      );
       showApiError(context, e);
     } finally {
       if (mounted) setState(() => _isLoading = false);

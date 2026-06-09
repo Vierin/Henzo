@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/trainers_api_service.dart';
 import '../services/trainer_api_service.dart';
+import '../utils/load_error_message.dart';
 import '../utils/plan_limit_dialogs.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
@@ -90,7 +91,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           offerUpgrade: true,
         );
       } else {
-        setState(() => _error = e.toString());
+        setState(() => _error = loadErrorMessage(locale, e));
         showApiError(context, e);
       }
     } finally {
@@ -148,7 +149,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           offerUpgrade: true,
         );
       } else {
-        setState(() => _error = e.toString());
+        setState(() => _error = loadErrorMessage(locale, e));
         showApiError(context, e);
       }
     }

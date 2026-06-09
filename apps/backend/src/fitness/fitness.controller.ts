@@ -19,6 +19,7 @@ import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-train
 import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
 import { CreateOwnerStudioClientDto } from './dto/create-owner-studio-client.dto';
 import { AddOwnerSessionEnrollmentDto } from './dto/add-owner-session-enrollment.dto';
+import { Public } from '../auth/public.decorator';
 
 @Controller('fitness')
 export class FitnessController {
@@ -61,6 +62,7 @@ export class FitnessController {
     return this.studiosService.findFeaturedStudios(limitNum);
   }
 
+  @Public()
   @Get('studios/search')
   async searchStudios(
     @Query('page') page?: string,
@@ -90,6 +92,7 @@ export class FitnessController {
     });
   }
 
+  @Public()
   @Get('studios/categories')
   async getStudioCategories() {
     return await this.studiosService.getStudioCategories();

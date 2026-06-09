@@ -1,9 +1,19 @@
 import 'dart:developer' show log;
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+void _healthLog(
+  String message, {
+  Object? error,
+  StackTrace? stackTrace,
+}) {
+  if (!kDebugMode) return;
+  log(message, error: error, stackTrace: stackTrace);
+}
 
 class HealthData {
   final int steps;
@@ -81,7 +91,7 @@ class HealthService {
         );
         return granted == true;
       } catch (e) {
-        log('HealthService.hasAccess: $e');
+        _healthLog('HealthService.hasAccess: $e');
         return false;
       }
     }
@@ -98,7 +108,7 @@ class HealthService {
       );
       return true;
     } catch (e) {
-      log('HealthService.hasAccess iOS check: $e');
+      _healthLog('HealthService.hasAccess iOS check: $e');
       return false;
     }
   }
@@ -108,7 +118,7 @@ class HealthService {
 
     if (Platform.isAndroid) {
       final sdk = await _health.getHealthConnectSdkStatus();
-      log('Health Connect SDK status: $sdk');
+      _healthLog('Health Connect SDK status: $sdk');
 
       if (sdk != HealthConnectSdkStatus.sdkAvailable) {
         await _promptInstallHealthConnect();
@@ -154,7 +164,7 @@ class HealthService {
         try {
           await _health.requestHealthDataHistoryAuthorization();
         } catch (e) {
-          log('requestHealthDataHistoryAuthorization: $e');
+          _healthLog('requestHealthDataHistoryAuthorization: $e');
         }
       }
 
@@ -178,7 +188,7 @@ class HealthService {
 
       return HealthConnectResult.success;
     } on UnsupportedError catch (e) {
-      log('HealthService.connect UnsupportedError: $e');
+      _healthLog('HealthService.connect UnsupportedError: $e');
       await _promptInstallHealthConnect();
       return const HealthConnectResult(
         ok: false,
@@ -186,11 +196,11 @@ class HealthService {
         userMessage: 'Install Health Connect first, then retry.',
       );
     } catch (e, st) {
-      log('HealthService.connect error: $e', stackTrace: st);
+      _healthLog('HealthService.connect error: $e', stackTrace: st);
       return HealthConnectResult(
         ok: false,
         issue: HealthConnectIssue.permissionDenied,
-        userMessage: 'Could not connect: $e',
+        userMessage: 'Could not connect to Health. Please try again.',
       );
     }
   }
@@ -199,7 +209,7 @@ class HealthService {
     try {
       await _health.installHealthConnect();
     } catch (e) {
-      log('installHealthConnect failed: $e');
+      _healthLog('installHealthConnect failed: $e');
     }
     final store = Uri.parse(_playStoreUrl);
     if (await canLaunchUrl(store)) {
@@ -217,7 +227,7 @@ class HealthService {
     final calories = await _readCalories(startOfDay, now);
     final workouts = await _readWorkoutCount(sevenDaysAgo, now);
 
-    log(
+    _healthLog(
       'HealthService.fetchData steps=$steps cal=$calories workouts=$workouts',
     );
 
@@ -231,11 +241,11 @@ class HealthService {
     try {
       final total = await _health.getTotalStepsInInterval(start, end);
       if (total != null && total > 0) {
-        log('steps via getTotalStepsInInterval: $total');
+        _healthLog('steps via getTotalStepsInInterval: $total');
         return total;
       }
     } catch (e) {
-      log('getTotalStepsInInterval failed: $e');
+      _healthLog('getTotalStepsInInterval failed: $e');
     }
     // Fallback: sum raw points (less accurate but better than nothing)
     return _sumNumericPoints(start, end, [HealthDataType.STEPS], label: 'steps');
@@ -285,10 +295,10 @@ class HealthService {
           }
         }
       }
-      log('calories type=$type raw=${raw.length} total=$total');
+      _healthLog('calories type=$type raw=${raw.length} total=$total');
       return total;
     } catch (e) {
-      log('_sumCaloriesRaw $type: $e');
+      _healthLog('_sumCaloriesRaw $type: $e');
       return 0;
     }
   }
@@ -301,10 +311,10 @@ class HealthService {
         types: [HealthDataType.WORKOUT],
       );
       final unique = _health.removeDuplicates(points);
-      log('workout points: ${unique.length}');
+      _healthLog('workout points: ${unique.length}');
       return unique.length;
     } catch (e) {
-      log('workouts read: $e');
+      _healthLog('workouts read: $e');
       return 0;
     }
   }
@@ -322,7 +332,7 @@ class HealthService {
         types: types,
       );
       final points = _health.removeDuplicates(raw);
-      log('$label raw=${raw.length} unique=${points.length}');
+      _healthLog('$label raw=${raw.length} unique=${points.length}');
       return points.fold<int>(
         0,
         (sum, e) {
@@ -334,7 +344,7 @@ class HealthService {
         },
       );
     } catch (e) {
-      log('$label sum error: $e');
+      _healthLog('$label sum error: $e');
       return 0;
     }
   }

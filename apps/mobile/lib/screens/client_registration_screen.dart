@@ -91,12 +91,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
       });
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   void _startResendCountdown() {
@@ -135,12 +130,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   Future<void> _resendCode() async {
@@ -160,12 +150,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
       _startResendCountdown();
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   Future<void> _submitGoogle() async {

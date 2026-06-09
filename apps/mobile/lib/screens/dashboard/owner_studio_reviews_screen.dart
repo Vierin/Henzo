@@ -6,6 +6,7 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
 import '../../utils/formatters.dart';
+import '../../utils/load_error_message.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/common/load_error_view.dart';
 import '../../widgets/public/studio_review_card.dart';
@@ -89,7 +90,7 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = loadErrorMessage(context.read<LocaleProvider>(), e);
       });
     }
   }

@@ -10,6 +10,9 @@ export async function assertAdmin(
     throw new ForbiddenException('Admin access required');
   }
   const allowed = process.env.ADMIN_ALLOWED_EMAILS?.trim();
+  if (!allowed && process.env.HENZO_ENV === 'production') {
+    throw new ForbiddenException('Admin email allowlist is not configured');
+  }
   if (allowed) {
     const list = allowed
       .split(',')

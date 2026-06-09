@@ -194,23 +194,13 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     if (_booking) return;
     setState(() => _booking = true);
     try {
-      final raw = await ApiClient.post(
+      await ApiClient.post(
         '/studios/sessions/${widget.sessionId}/book',
         token,
         body: const <String, dynamic>{},
       );
       if (!mounted) return;
       ClientScheduleStore.invalidate();
-      // Schedule reminder push via backend — fire-and-forget, silent fallback
-      final enrollmentId =
-          (raw is Map ? (raw['id'] ?? raw['enrollmentId']) : null)?.toString();
-      if (enrollmentId != null && enrollmentId.isNotEmpty) {
-        ApiClient.post(
-          '/notifications/remind-before-class',
-          token,
-          body: {'enrollmentId': enrollmentId},
-        ).catchError((_) {});
-      }
       final session = _session;
       if (session == null) return;
       await Navigator.of(context).pushReplacement(

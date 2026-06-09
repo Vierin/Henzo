@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { TrainersService } from './trainers.service';
 import { AuthService } from '../auth/auth.service';
+import { Public } from '../auth/public.decorator';
 
 @Controller('trainers')
 export class TrainersController {
@@ -21,17 +22,62 @@ export class TrainersController {
     private readonly authService: AuthService,
   ) {}
 
+  private async includePrivateTrainerFields(
+    authHeader: string | undefined,
+    studioId: string,
+  ): Promise<boolean> {
+    if (!authHeader?.trim()) return false;
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      if (currentUser.user.role !== 'OWNER') return false;
+      return this.trainersService.isStudioOwnedByOwner(
+        studioId,
+        currentUser.user.id,
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  @Public()
   @Get()
-  async getTrainersByStudio(@Query('studioId') studioId: string) {
+  async getTrainersByStudio(
+    @Query('studioId') studioId: string,
+    @Headers('authorization') authHeader?: string,
+  ) {
     if (!studioId) {
       throw new Error('Studio ID is required');
     }
-    return this.trainersService.findByStudioId(studioId);
+    const includePrivate = await this.includePrivateTrainerFields(
+      authHeader,
+      studioId,
+    );
+    return this.trainersService.findByStudioId(studioId, includePrivate);
   }
 
+  @Public()
+  @Get('invite/:token')
+  async getInviteInfo(@Param('token') token: string) {
+    return this.trainersService.getInviteInfo(token);
+  }
+
+  @Get('me/profile')
+  async getMyTrainerProfile(@Headers('authorization') authHeader: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.trainersService.getTrainerByUserId(currentUser.user.id);
+  }
+
+  @Public()
   @Get(':id')
-  async getTrainerById(@Param('id') id: string) {
-    return this.trainersService.findTrainerById(id);
+  async getTrainerById(
+    @Param('id') id: string,
+    @Headers('authorization') authHeader?: string,
+  ) {
+    const studioId = await this.trainersService.findTrainerStudioId(id);
+    const includePrivate =
+      studioId != null &&
+      (await this.includePrivateTrainerFields(authHeader, studioId));
+    return this.trainersService.findTrainerById(id, includePrivate);
   }
 
   @Post()
@@ -112,12 +158,6 @@ export class TrainersController {
     );
   }
 
-  /** Public — return studio name + trainer name for the invite landing page. */
-  @Get('invite/:token')
-  async getInviteInfo(@Param('token') token: string) {
-    return this.trainersService.getInviteInfo(token);
-  }
-
   /** Authenticated trainer accepts the invite and gets linked to the Trainer record. */
   @Post('invite/:token/accept')
   async acceptInvite(
@@ -125,14 +165,11 @@ export class TrainersController {
     @Param('token') token: string,
   ) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
-    return this.trainersService.acceptInvite(token, currentUser.user.id);
-  }
-
-  /** Return Trainer record for the current user (used by Flutter for role detection). */
-  @Get('me/profile')
-  async getMyTrainerProfile(@Headers('authorization') authHeader: string) {
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    return this.trainersService.getTrainerByUserId(currentUser.user.id);
+    return this.trainersService.acceptInvite(
+      token,
+      currentUser.user.id,
+      currentUser.user.email,
+    );
   }
 
   @Delete(':id')

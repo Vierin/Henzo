@@ -51,26 +51,34 @@ export class TrainersService {
     },
   } as const;
 
-  private mapTrainerListRow(row: {
-    id: string;
-    name: string;
-    email: string | null;
-    phone: string | null;
-    accessLevel: string;
-    studioId: string;
-    userId: string | null;
-    TrainerInvite: { status: string; expiresAt: Date } | null;
-    Training?: { id: string; name: string; duration: number; price: number }[];
-  }) {
+  private mapTrainerListRow(
+    row: {
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+      accessLevel: string;
+      studioId: string;
+      userId: string | null;
+      TrainerInvite: { status: string; expiresAt: Date } | null;
+      Training?: {
+        id: string;
+        name: string;
+        duration: number;
+        price: number;
+      }[];
+    },
+    includePrivateFields: boolean,
+  ) {
     const invite = row.TrainerInvite;
     return {
       id: row.id,
       name: row.name,
-      email: row.email,
-      phone: row.phone,
+      email: includePrivateFields ? row.email : null,
+      phone: includePrivateFields ? row.phone : null,
       accessLevel: row.accessLevel,
       studioId: row.studioId,
-      userId: row.userId,
+      userId: includePrivateFields ? row.userId : null,
       invite: invite
         ? {
             status: invite.status,
@@ -81,16 +89,16 @@ export class TrainersService {
     };
   }
 
-  async findByStudioId(studioId: string) {
+  async findByStudioId(studioId: string, includePrivateFields = false) {
     const rows = await this.prisma.trainer.findMany({
       where: { studioId },
       select: this.trainerListSelect,
       orderBy: { name: 'asc' },
     });
-    return rows.map((row) => this.mapTrainerListRow(row));
+    return rows.map((row) => this.mapTrainerListRow(row, includePrivateFields));
   }
 
-  async findTrainerById(id: string) {
+  async findTrainerById(id: string, includePrivateFields = false) {
     const row = await this.prisma.trainer.findUnique({
       where: { id },
       select: {
@@ -115,7 +123,20 @@ export class TrainersService {
       },
     });
     if (!row) return null;
-    return { ...this.mapTrainerListRow(row), Studio: row.Studio };
+    const studio = includePrivateFields
+      ? row.Studio
+      : row.Studio
+        ? {
+            id: row.Studio.id,
+            name: row.Studio.name,
+            address: row.Studio.address,
+            phone: null,
+          }
+        : null;
+    return {
+      ...this.mapTrainerListRow(row, includePrivateFields),
+      Studio: studio,
+    };
   }
 
   async createTrainer(data: {
@@ -169,7 +190,7 @@ export class TrainersService {
       },
       select: this.trainerListSelect,
     });
-    return this.mapTrainerListRow(row);
+    return this.mapTrainerListRow(row, true);
   }
 
   async updateTrainer(
@@ -219,7 +240,7 @@ export class TrainersService {
       },
       select: this.trainerListSelect,
     });
-    return this.mapTrainerListRow(row);
+    return this.mapTrainerListRow(row, true);
   }
 
   async deleteTrainer(id: string) {
@@ -395,7 +416,7 @@ export class TrainersService {
     };
   }
 
-  async acceptInvite(token: string, userId: string) {
+  async acceptInvite(token: string, userId: string, userEmail?: string | null) {
     const invite = await this.prisma.trainerInvite.findUnique({
       where: { token },
       select: {
@@ -408,6 +429,7 @@ export class TrainersService {
           select: {
             id: true,
             name: true,
+            email: true,
             phone: true,
             userId: true,
           },
@@ -426,6 +448,15 @@ export class TrainersService {
       throw new HttpException(
         'Trainer already linked to another account',
         HttpStatus.CONFLICT,
+      );
+    }
+
+    const inviteEmail = invite.Trainer?.email?.trim().toLowerCase();
+    const acceptorEmail = userEmail?.trim().toLowerCase();
+    if (inviteEmail && acceptorEmail && inviteEmail !== acceptorEmail) {
+      throw new HttpException(
+        'Invite email does not match your account',
+        HttpStatus.FORBIDDEN,
       );
     }
 

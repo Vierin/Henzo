@@ -1,40 +1,25 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from '../auth/auth.module';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Module({
   imports: [
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        throttlers: [
-          {
-            name: 'short',
-            ttl: 60000, // 1 minute
-            limit: 100, // default; AuthController uses @Throttle({ short: … }) for 25/min
-          },
-          {
-            name: 'medium',
-            ttl: 600000, // 10 minutes
-            limit: 1000, // 1000 requests per 10 minutes for authenticated users
-          },
-          {
-            name: 'long',
-            ttl: 3600000, // 1 hour
-            limit: 5000, // 5000 requests per hour
-          },
-        ],
-        // Using in-memory storage (sufficient for MVP)
-      }),
-      inject: [ConfigService],
+    ConfigModule,
+    AuthModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        { name: 'short', ttl: 60000, limit: 100 },
+        { name: 'medium', ttl: 600000, limit: 1000 },
+        { name: 'long', ttl: 3600000, limit: 5000 },
+      ],
     }),
   ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
 export class AppThrottlerModule {}

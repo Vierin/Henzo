@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { Public } from './public.decorator';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { GetUserRoleDto } from './dto/get-user-role.dto';
@@ -26,6 +27,7 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('register-owner/request-code')
   async requestOwnerRegistrationCode(
     @Body() data: { email: string; password: string; name?: string },
@@ -46,6 +48,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('register-owner/verify-code')
   async verifyOwnerRegistrationCode(
     @Body() data: { email: string; code: string },
@@ -64,6 +67,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('register')
   async registerUser(
     @Body()
@@ -92,8 +96,15 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('register-client')
   async registerClient(@Body() data: RegisterClientDto) {
+    if (process.env.HENZO_ENV === 'production') {
+      throw new HttpException(
+        'Use POST /auth/register-client/request-code and verify-code',
+        HttpStatus.GONE,
+      );
+    }
     try {
       this.logger.log('Client registration request');
       const result = await this.authService.registerClient(data);
@@ -112,6 +123,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('register-client/request-code')
   async requestClientRegistrationCode(@Body() data: RegisterClientDto) {
     try {
@@ -128,6 +140,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('register-client/verify-code')
   async verifyClientRegistrationCode(
     @Body() data: { email: string; code: string },
@@ -146,6 +159,20 @@ export class AuthController {
     }
   }
 
+  @Public()
+  @Post('sign-in-hint')
+  async getSignInHint(@Body() data: { email: string }) {
+    try {
+      return await this.authService.getSignInHint(data.email);
+    } catch (error) {
+      this.logger.warn(
+        `Sign-in hint failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return { hint: null };
+    }
+  }
+
+  @Public()
   @Post('login-client')
   async loginClient(@Body() data: { email: string; password: string }) {
     try {

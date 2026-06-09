@@ -15,6 +15,7 @@ import '../../services/trainers_api_service.dart';
 import '../../services/trainer_api_service.dart';
 import '../../utils/plan_limit_dialogs.dart';
 import '../../utils/share_utils.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/owner_paid_plan.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
@@ -559,7 +560,7 @@ class _InviteSheetContentState extends State<_InviteSheetContent> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = loadErrorMessage(context.read<LocaleProvider>(), e);
         _loading = false;
       });
     }

@@ -50,12 +50,13 @@ class TrainerShellState extends State<TrainerShell> {
   Future<void> _registerPush() async {
     final token = context.read<AuthService>().accessToken;
     final locale = context.read<LocaleProvider>();
-    if (token != null) {
-      await PushNotificationService.registerToken(
-        accessToken: token,
-        language: locale.localeCode,
-      );
-    }
+    if (token == null) return;
+    await PushNotificationService.requestNotificationPermission();
+    if (!mounted) return;
+    await PushNotificationService.registerToken(
+      accessToken: token,
+      language: locale.localeCode,
+    );
   }
 
   @override

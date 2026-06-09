@@ -135,12 +135,57 @@ class AuthService extends ChangeNotifier {
     });
   }
 
+  String? _authConflictL10nKey(String msg) {
+    if (msg.contains('ACCOUNT_EXISTS_USE_GOOGLE')) {
+      return AuthErrorKeys.accountExistsUseGoogle;
+    }
+    if (msg.contains('ACCOUNT_EXISTS_USE_APPLE')) {
+      return AuthErrorKeys.accountExistsUseApple;
+    }
+    if (msg.contains('ACCOUNT_EXISTS_USE_OAUTH')) {
+      return AuthErrorKeys.accountExistsUseOauth;
+    }
+    if (msg.contains('ACCOUNT_EXISTS_LOGIN')) {
+      return AuthErrorKeys.accountExistsLogin;
+    }
+    return null;
+  }
+
   String? _fetchErrorL10nKey(String msg) {
+    final conflictKey = _authConflictL10nKey(msg);
+    if (conflictKey != null) return conflictKey;
     if (msg.contains('ACCOUNT_NOT_FOUND') ||
         msg.contains('User not found in database')) {
       return AuthErrorKeys.accountNotFoundForEmail;
     }
     return null;
+  }
+
+  Future<String?> _fetchSignInHint(String email) async {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) return null;
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/sign-in-hint');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': trimmed}),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      final payload = json.decode(response.body) as Map<String, dynamic>?;
+      final hint = payload?['hint'] as String?;
+      return _authConflictL10nKey(hint ?? '');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _isInvalidPasswordLoginError(String msg) {
+    final lower = msg.toLowerCase();
+    return lower.contains('invalid login credentials') ||
+        lower.contains('invalid email or password');
   }
 
   AuthUiResult _loginFetchFailure(
@@ -643,6 +688,12 @@ class AuthService extends ChangeNotifier {
         e,
         st,
       );
+      if (_isInvalidPasswordLoginError(msg)) {
+        final hintKey = await _fetchSignInHint(emailForLog);
+        if (hintKey != null) {
+          return (success: false, errorL10nKey: hintKey, errorRaw: null);
+        }
+      }
       return (success: false, errorL10nKey: null, errorRaw: msg);
     }
   }
@@ -696,7 +747,11 @@ class AuthService extends ChangeNotifier {
           msg = err['message'] as String;
         }
       } catch (_) {}
-      return (success: false, errorL10nKey: null, errorRaw: msg);
+      return (
+        success: false,
+        errorL10nKey: _authConflictL10nKey(msg),
+        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+      );
     } catch (e) {
       return (
         success: false,
@@ -752,7 +807,11 @@ class AuthService extends ChangeNotifier {
           msg = err['message'] as String;
         }
       } catch (_) {}
-      return (success: false, errorL10nKey: null, errorRaw: msg);
+      return (
+        success: false,
+        errorL10nKey: _authConflictL10nKey(msg),
+        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+      );
     } catch (e) {
       return (
         success: false,
@@ -794,7 +853,11 @@ class AuthService extends ChangeNotifier {
           msg = err['message'] as String;
         }
       } catch (_) {}
-      return (success: false, errorL10nKey: null, errorRaw: msg);
+      return (
+        success: false,
+        errorL10nKey: _authConflictL10nKey(msg),
+        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+      );
     } catch (e) {
       return (
         success: false,
@@ -850,7 +913,11 @@ class AuthService extends ChangeNotifier {
           msg = err['message'] as String;
         }
       } catch (_) {}
-      return (success: false, errorL10nKey: null, errorRaw: msg);
+      return (
+        success: false,
+        errorL10nKey: _authConflictL10nKey(msg),
+        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+      );
     } catch (e) {
       return (
         success: false,

@@ -7,7 +7,9 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import 'trainer_registration_screen.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_client.dart';
 import '../../services/trainer_api_service.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/trainer_invite_pending.dart';
 import '../../widgets/language_selector_modal.dart';
 
@@ -52,7 +54,7 @@ class _TrainerInviteAcceptScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = loadErrorMessage(context.read<LocaleProvider>(), e);
         _loading = false;
       });
     }
@@ -79,10 +81,9 @@ class _TrainerInviteAcceptScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().contains('Conflict') ||
-                    e.toString().contains('409')
+            e is ApiException && e.statusCode == 409
                 ? locale.t('trainer.acceptFailed')
-                : e.toString(),
+                : loadErrorMessage(locale, e),
           ),
         ),
       );

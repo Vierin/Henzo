@@ -123,6 +123,7 @@ export class TrainingsService {
         studioId: true,
         trainingCategoryId: true,
         displayColor: true,
+        language: true,
         Trainer: {
           select: {
             id: true,
@@ -168,6 +169,7 @@ export class TrainingsService {
         studioId: true,
         trainingCategoryId: true,
         displayColor: true,
+        language: true,
         Trainer: {
           select: {
             id: true,
