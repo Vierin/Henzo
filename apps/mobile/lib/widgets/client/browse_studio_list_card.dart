@@ -10,6 +10,8 @@ import '../../utils/formatters.dart';
 import '../public/cached_salon_network_image.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+double _browseCategoryChipExtent() => 10 + 11.sp * 1.1 + 2;
+
 /// Studio row on client Browse (Studios tab) — horizontal card per design.
 class BrowseStudioListCard extends StatelessWidget {
   const BrowseStudioListCard({
@@ -26,7 +28,7 @@ class BrowseStudioListCard extends StatelessWidget {
 
   static const _cardRadius = 12.0;
   static const _imageWidth = 121.0;
-  static const _cardMinHeight = 145.0;
+  static const _cardMinHeight = 166.0;
   static const _todaySlotHeight = 44.0;
   static const _distanceColor = Color(0x993F3F3F);
   static const _classSlotBg = Color(0xFFF8F3EB);
@@ -66,6 +68,44 @@ class BrowseStudioListCard extends StatelessWidget {
     return null;
   }
 
+  List<int> _sortedCategoryIds(List<int> ids) {
+    final rest = <int>[];
+    final other = <int>[];
+    for (final id in ids) {
+      if (_categoryById(id)?.isOtherCategory == true) {
+        other.add(id);
+      } else {
+        rest.add(id);
+      }
+    }
+    return [...rest, ...other];
+  }
+
+  bool _isOtherCategoryLabel(String name) {
+    final n = name.trim().toLowerCase();
+    if (n == 'other') return true;
+    for (final c in trainingCategories) {
+      if (!c.isOtherCategory) continue;
+      if (c.nameEn.trim().toLowerCase() == n) return true;
+      if (c.nameRu.trim().toLowerCase() == n) return true;
+      if (c.nameVn.trim().toLowerCase() == n) return true;
+    }
+    return false;
+  }
+
+  List<String> _sortedCategoryNames(List<String> names) {
+    final rest = <String>[];
+    final other = <String>[];
+    for (final name in names) {
+      if (_isOtherCategoryLabel(name)) {
+        other.add(name);
+      } else {
+        rest.add(name);
+      }
+    }
+    return [...rest, ...other];
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
@@ -73,10 +113,15 @@ class BrowseStudioListCard extends StatelessWidget {
     final seeAllLabel = locale.t('clientHome.seeAll');
     final classesTitle = locale.t('clientHome.classesSectionTitle');
     final firstClass = todayClasses.isNotEmpty ? todayClasses.first : null;
-    final categoryIds = studio.trainingCategoryIds;
-    final visibleCategoryIds = categoryIds.take(3).toList();
+    final hasTodayClass = firstClass != null;
+    final categoryIds = _sortedCategoryIds(studio.trainingCategoryIds);
+    final visibleCategoryIds = categoryIds.take(2).toList();
     final moreCategories = categoryIds.length - visibleCategoryIds.length;
-    final fallbackNames = studio.categoryNames.take(3).toList();
+    final sortedFallbackNames = _sortedCategoryNames(studio.categoryNames);
+    final fallbackNames = sortedFallbackNames.take(2).toList();
+    final moreFallbackCategories = sortedFallbackNames.length > 2
+        ? sortedFallbackNames.length - 2
+        : 0;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -89,182 +134,254 @@ class BrowseStudioListCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: _cardMinHeight),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: _imageWidth,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (_imageUrl != null)
-                          SalonFramedCoverImage(
-                            imageUrl: _imageUrl!,
-                            originalUrl: studio.photoOriginalUrl,
-                            crop: studio.browseCardCrop,
-                          )
-                        else
-                          const ColoredBox(
-                            color: AppColors.secondary100,
-                            child: Icon(
-                              Icons.fitness_center,
-                              size: 32,
-                              color: AppColors.primary500,
-                            ),
-                          ),
-                        Positioned(
-                          left: 8,
-                          bottom: 8,
-                          child: _FavoriteButton(
-                            isFavorite: isFavorite,
-                            onTap: onToggleFavorite,
-                          ),
-                        ),
-                        if (studio.rating > 0)
-                          Positioned(
-                            right: 6,
-                            bottom: 8,
-                            child: _ImageRatingBadge(
-                              rating: studio.rating,
-                              reviewCount: studio.reviewCount,
-                            ),
-                          ),
-                      ],
+          child: hasTodayClass
+              ? _buildCardRow(
+                  hasTodayClass: true,
+                  imageUrl: _imageUrl,
+                  studio: studio,
+                  isFavorite: isFavorite,
+                  onToggleFavorite: onToggleFavorite,
+                  content: _buildCardContent(
+                    context,
+                    locale: locale,
+                    localeCode: localeCode,
+                    seeAllLabel: seeAllLabel,
+                    classesTitle: classesTitle,
+                    firstClass: firstClass,
+                    visibleCategoryIds: visibleCategoryIds,
+                    moreCategories: moreCategories,
+                    moreFallbackCategories: moreFallbackCategories,
+                    fallbackNames: fallbackNames,
+                    hasTodayClass: true,
+                  ),
+                )
+              : ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: _cardMinHeight),
+                  child: _buildCardRow(
+                    hasTodayClass: false,
+                    imageUrl: _imageUrl,
+                    studio: studio,
+                    isFavorite: isFavorite,
+                    onToggleFavorite: onToggleFavorite,
+                    content: _buildCardContent(
+                      context,
+                      locale: locale,
+                      localeCode: localeCode,
+                      seeAllLabel: seeAllLabel,
+                      classesTitle: classesTitle,
+                      firstClass: firstClass,
+                      visibleCategoryIds: visibleCategoryIds,
+                      moreCategories: moreCategories,
+                      moreFallbackCategories: moreFallbackCategories,
+                      fallbackNames: fallbackNames,
+                      hasTodayClass: false,
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 10, 8, 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  studio.name,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.3,
-                                    color: AppColors.textPrimary,
-                                    height: 1.15,
-                                  ),
-                                ),
-                              ),
-                              if (distanceLabel != null &&
-                                  distanceLabel!.isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  distanceLabel!,
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w400,
-                                    letterSpacing: -0.3,
-                                    color: _distanceColor,
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          if (_locationLabel != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 1),
-                                  child: SvgPicture.asset(
-                                    'assets/icons/icon-pin.svg',
-                                    width: 11,
-                                    height: 15,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    _locationLabel!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w400,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (visibleCategoryIds.isNotEmpty ||
-                              moreCategories > 0 ||
-                              fallbackNames.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                if (visibleCategoryIds.isNotEmpty)
-                                  for (final id in visibleCategoryIds)
-                                    _CategoryPill(
-                                      label:
-                                          _categoryById(
-                                            id,
-                                          )?.label(localeCode) ??
-                                          _fallbackCategoryName(id),
-                                      category: _categoryById(id),
-                                    )
-                                else
-                                  for (final name in fallbackNames)
-                                    _CategoryPill(label: name, category: null),
-                                if (moreCategories > 0)
-                                  _MoreCategoriesPill(count: moreCategories)
-                                else if (visibleCategoryIds.isEmpty &&
-                                    studio.categoryNames.length > 3)
-                                  _MoreCategoriesPill(
-                                    count: studio.categoryNames.length - 3,
-                                  ),
-                              ],
-                            ),
-                          ],
-                          if (firstClass != null) ...[
-                            const SizedBox(height: 10),
-                            _BrowseStudioClassesBlock(
-                              classesTitle: classesTitle,
-                              seeAllLabel: seeAllLabel,
-                              onSeeAll: onTap,
-                              firstClass: firstClass,
-                              onClassTap: onClassTap,
-                            ),
-                          ] else ...[
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'No classes today',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardRow({
+    required bool hasTodayClass,
+    required String? imageUrl,
+    required ExploreStudioItem studio,
+    required bool isFavorite,
+    required VoidCallback onToggleFavorite,
+    required Widget content,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: _imageWidth,
+            child: _buildImageStack(
+              imageUrl: imageUrl,
+              studio: studio,
+              isFavorite: isFavorite,
+              onToggleFavorite: onToggleFavorite,
             ),
           ),
+          Expanded(child: content),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageStack({
+    required String? imageUrl,
+    required ExploreStudioItem studio,
+    required bool isFavorite,
+    required VoidCallback onToggleFavorite,
+  }) {
+    return Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Positioned.fill(
+          child: imageUrl != null
+              ? SalonFramedCoverImage(
+                  imageUrl: imageUrl,
+                  originalUrl: studio.photoOriginalUrl,
+                  crop: studio.browseCardCrop,
+                )
+              : const ColoredBox(
+                  color: AppColors.secondary100,
+                  child: Icon(
+                    Icons.fitness_center,
+                    size: 32,
+                    color: AppColors.primary500,
+                  ),
+                ),
         ),
+        Positioned(
+          left: 8,
+          bottom: 8,
+          child: _FavoriteButton(
+            isFavorite: isFavorite,
+            onTap: onToggleFavorite,
+          ),
+        ),
+        if (studio.rating > 0)
+          Positioned(
+            right: 6,
+            bottom: 8,
+            child: _ImageRatingBadge(
+              rating: studio.rating,
+              reviewCount: studio.reviewCount,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCardContent(
+    BuildContext context, {
+    required LocaleProvider locale,
+    required String localeCode,
+    required String seeAllLabel,
+    required String classesTitle,
+    required ExploreClassItem? firstClass,
+    required List<int> visibleCategoryIds,
+    required int moreCategories,
+    required int moreFallbackCategories,
+    required List<String> fallbackNames,
+    required bool hasTodayClass,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+      child: Column(
+        mainAxisSize: hasTodayClass ? MainAxisSize.min : MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  studio.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: AppColors.textPrimary,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+              if (distanceLabel != null && distanceLabel!.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  distanceLabel!,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.3,
+                    color: _distanceColor,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (_locationLabel != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: SvgPicture.asset(
+                    'assets/icons/icon-pin.svg',
+                    width: 11,
+                    height: 15,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    _locationLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (visibleCategoryIds.isNotEmpty ||
+              moreCategories > 0 ||
+              fallbackNames.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _BrowseCategoryChipRow(
+              children: [
+                if (visibleCategoryIds.isNotEmpty)
+                  for (final id in visibleCategoryIds)
+                    _CategoryPill(
+                      label:
+                          _categoryById(id)?.label(localeCode) ??
+                          _fallbackCategoryName(id),
+                      category: _categoryById(id),
+                    )
+                else
+                  for (final name in fallbackNames)
+                    _CategoryPill(label: name, category: null),
+                if (moreCategories > 0)
+                  _MoreCategoriesPill(count: moreCategories)
+                else if (visibleCategoryIds.isEmpty &&
+                    moreFallbackCategories > 0)
+                  _MoreCategoriesPill(count: moreFallbackCategories),
+              ],
+            ),
+          ],
+          if (firstClass != null) ...[
+            const SizedBox(height: 10),
+            _BrowseStudioClassesBlock(
+              classesTitle: classesTitle,
+              seeAllLabel: seeAllLabel,
+              onSeeAll: onTap,
+              firstClass: firstClass,
+              onClassTap: onClassTap,
+            ),
+          ] else ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'No classes today',
+                style: TextStyle(fontSize: 12.sp, color: AppColors.textPrimary),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -325,15 +442,15 @@ class _BrowseStudioClassesBlock extends StatelessWidget {
                   Text(
                     seeAllLabel.toUpperCase(),
                     style: TextStyle(
-                      fontSize: 16.sp,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w500,
                       color: AppColors.primary500,
                       height: 1.1,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    size: 18,
+                    size: 14.sp,
                     color: AppColors.primary500,
                   ),
                 ],
@@ -346,9 +463,7 @@ class _BrowseStudioClassesBlock extends StatelessWidget {
           height: BrowseStudioListCard._todaySlotHeight,
           child: _TodayClassRow(
             item: firstClass,
-            onTap: onClassTap == null
-                ? null
-                : () => onClassTap!(firstClass),
+            onTap: onClassTap == null ? null : () => onClassTap!(firstClass),
           ),
         ),
       ],
@@ -425,6 +540,26 @@ class _ImageRatingBadge extends StatelessWidget {
   }
 }
 
+class _BrowseCategoryChipRow extends StatelessWidget {
+  const _BrowseCategoryChipRow({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      if (i > 0) items.add(const SizedBox(width: 6));
+      items.add(children[i]);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: items,
+    );
+  }
+}
+
 class _CategoryPill extends StatelessWidget {
   const _CategoryPill({required this.label, this.category});
 
@@ -436,31 +571,45 @@ class _CategoryPill extends StatelessWidget {
     final cat = category;
     final Color bg;
     final Color fg;
+    final bool hasBorder;
     if (cat == null || cat.isOtherCategory) {
       bg = AppColors.backgroundPrimary;
       fg = AppColors.textPrimary;
+      hasBorder = true;
     } else {
       bg = cat.backgroundColor(AppColors.neutral500);
       fg = cat.foregroundColorOn(bg);
+      hasBorder = false;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    final extent = _browseCategoryChipExtent();
+    final innerHeight = extent - (hasBorder ? 2 : 0);
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
-        border: cat == null || cat.isOtherCategory
+        border: hasBorder
             ? Border.all(color: AppColors.primary300, width: 1)
             : null,
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11.sp,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
-          color: fg,
-          height: 1.1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: SizedBox(
+          height: innerHeight,
+          child: Align(
+            alignment: Alignment.center,
+            widthFactor: 1,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+                color: fg,
+                height: 1.1,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -474,21 +623,24 @@ class _MoreCategoriesPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final extent = _browseCategoryChipExtent();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      width: extent,
+      height: extent,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(999),
+        shape: BoxShape.circle,
         border: Border.all(color: AppColors.primary500, width: 1),
       ),
       child: Text(
-        '+$count other',
+        '+$count',
         style: TextStyle(
-          fontSize: 11.sp,
+          fontSize: 10.sp,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: AppColors.textPrimary,
-          height: 1.1,
+          height: 1,
         ),
       ),
     );

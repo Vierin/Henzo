@@ -27,7 +27,7 @@ class ClientExploreFilterChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.backgroundPrimary,
           borderRadius: BorderRadius.circular(999),
@@ -41,6 +41,7 @@ class ClientExploreFilterChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
+                fontSize: 13.sp,
                 color: isActive ? AppColors.primary500 : AppColors.textPrimary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),

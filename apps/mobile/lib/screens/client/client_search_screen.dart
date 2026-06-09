@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import '../../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
@@ -31,8 +32,10 @@ import '../public_studio_detail_screen.dart';
 import 'client_explore_models.dart';
 import '../../widgets/app_search_prefix_icon.dart';
 import '../../widgets/client/browse_day_pill.dart';
+import '../../widgets/client/browse_collapsing_header.dart';
 import '../../widgets/client/browse_studio_list_card.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
+import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/language_selector_modal.dart';
 import '../../widgets/training/training_category_color_chip.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -63,6 +66,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   static const double _browseModeInset = 3;
   static const double _browseModeInnerHeight = 38;
   static const Duration _browseModeAnimDuration = Duration(milliseconds: 280);
+  static const double _kBrowseCollapsedHeaderHeight = 44;
 
   bool _loading = true;
   String? _loadError;
@@ -72,6 +76,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   late DateTime _selectedDay;
   late final ValueNotifier<DateTime> _stripDayNotifier;
   late final ScrollController _dayStripScrollController;
+  late final ScrollController _browseScrollController;
+  final FocusNode _searchFocusNode = FocusNode();
   double? _browseStripViewportWidth;
   final CalendarDayStripScrollHaptics _dayStripHaptics =
       CalendarDayStripScrollHaptics();
@@ -115,6 +121,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     _stripDayNotifier = ValueNotifier<DateTime>(today);
     _stripPagerDayNotifier.value = today;
     _dayStripScrollController = ScrollController();
+    _browseScrollController = ScrollController();
     _searchController.addListener(_onSearchChanged);
     _browseModeController = AnimationController(
       vsync: this,
@@ -152,6 +159,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     _stripDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
     _dayStripScrollController.dispose();
+    _browseScrollController.dispose();
+    _searchFocusNode.dispose();
     _browseShowClasses.dispose();
     _browseModeController.dispose();
     super.dispose();
@@ -262,11 +271,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     }
   }
 
-  DateTime get _browseMonthWindowStart => DateTime(
-    _exploreStripStart.year,
-    _exploreStripStart.month,
-    1,
-  );
+  DateTime get _browseMonthWindowStart =>
+      DateTime(_exploreStripStart.year, _exploreStripStart.month, 1);
 
   DateTime get _browseMonthWindowEnd => DateTime(
     _browseMonthWindowStart.year,
@@ -276,11 +282,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   bool _canShiftBrowseMonth(int deltaMonths) {
     final strip = _stripDayNotifier.value;
-    final targetMonthStart = DateTime(
-      strip.year,
-      strip.month + deltaMonths,
-      1,
-    );
+    final targetMonthStart = DateTime(strip.year, strip.month + deltaMonths, 1);
     return !targetMonthStart.isBefore(_browseMonthWindowStart) &&
         !targetMonthStart.isAfter(_browseMonthWindowEnd);
   }
@@ -306,9 +308,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       _selectedDay = next;
       _derivedInputsHash = 0;
     });
-    _scrollBrowseStripToIndex(
-      _browseStripIndexForWeekStart(next),
-    );
+    _scrollBrowseStripToIndex(_browseStripIndexForWeekStart(next));
   }
 
   /// Keeps the strip layout as before; only nudges scroll so the pill is tappable.
@@ -1073,6 +1073,63 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       _hasActiveTimeFilter ||
       _distanceFilter != 'auto' ||
       _sortBy != 'recommended';
+
+  int get _activeFilterCount {
+    var count = 0;
+    if (_selectedCategoryId != null) count++;
+    if (_selectedLanguages.isNotEmpty) count++;
+    if (_hasActiveTimeFilter) count++;
+    if (_distanceFilter != 'auto') count++;
+    if (_sortBy != 'recommended') count++;
+    return count;
+  }
+
+  void _scrollBrowseHeaderToTop({bool focusSearch = false}) {
+    if (!_browseScrollController.hasClients) return;
+    _browseScrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+    if (focusSearch) {
+      _searchFocusNode.requestFocus();
+    }
+  }
+
+  int get _browseHeaderRebuildToken => Object.hash(
+    _activeFilterCount,
+    _searchQuery,
+    _selectedDay,
+    _isMonthExpanded,
+    _selectedCategoryId,
+    _selectedLanguages.length,
+    _distanceFilter,
+    _sortBy,
+    _hasActiveTimeFilter,
+    _derivedDayClassesCount,
+    _derivedVisibleStudiosCount,
+    _browseShowClasses.value,
+  );
+
+  double _browseHeaderExpandedHeight(BuildContext context) {
+    const chrome = 15.0 + 44.0 + 10.0 + 48.0 + 10.0 + 38.0 + 8.0;
+    final screenW = MediaQuery.sizeOf(context).width;
+    if (_isMonthExpanded) {
+      final innerW = screenW - 48;
+      final tile = (innerW - 24) / 7;
+      final gridH = 6 * tile + 5 * 8;
+      return 12 + 16 + 12 + 16 + 12 + gridH + 16 + chrome;
+    }
+    final stripW = screenW - 24;
+    final stripH = _browsePillWidth(stripW) * 3 / 2;
+    return 13 + 8 + 8 + stripH + chrome;
+  }
+
+  String _browseCompactDateLabel(LocaleProvider locale) {
+    final d = _selectedDay;
+    final weekday = DateFormat.E(locale.localeCode).format(d).toUpperCase();
+    return '$weekday ${d.day}';
+  }
 
   String get _timeChipLabel {
     if (!_hasActiveTimeFilter) return 'Time';
@@ -2723,7 +2780,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     );
   }
 
-  Widget _buildBrowseListEmptyState({
+  Widget _buildBrowseEmptyStateBody({
     required bool forClasses,
     required LocaleProvider locale,
     required ClientLocationStore locationStore,
@@ -2753,132 +2810,362 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       body = locale.t('clientHome.browseEmptyFiltersBody');
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 56),
-      children: [
-        Column(
-          children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                height: 1.3,
-              ),
+    return ClientPanelEmptyState(
+      title: title,
+      subtitle: body,
+      actionLabel: actionLabel,
+      onAction: onAction,
+    );
+  }
+
+  Widget _buildBrowseDateSection() {
+    if (!_isMonthExpanded) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 13, 20, 8),
+            child: _browseCollapsedMonthLabel(),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _buildDayStrip(),
+          ),
+        ],
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      child: ValueListenableBuilder<DateTime>(
+        valueListenable: _stripDayNotifier,
+        builder: (context, stripDay, _) {
+          return GestureDetector(
+            onHorizontalDragEnd: (details) {
+              const threshold = 90.0;
+              final velocity = details.primaryVelocity ?? 0;
+              if (velocity < -threshold) {
+                _shiftBrowseMonth(1);
+              } else if (velocity > threshold) {
+                _shiftBrowseMonth(-1);
+              }
+            },
+            child: _buildBrowseMonthExpanded(stripDay),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBrowseSearchField(LocaleProvider locale) {
+    return Padding(
+      padding: screenPaddingH(),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        style: TextStyle(color: AppColors.textPrimary, fontSize: 14.sp),
+        decoration: InputDecoration(
+          hintText: locale.t('clientHome.searchHint'),
+          hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14.sp),
+          isDense: true,
+          prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
+          prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(
+            leftMargin: 12,
+            trailingGap: 4,
+          ),
+          suffixIcon: _FilterIconButton(
+            isActive: _hasActiveFilters,
+            onTap: _openAllFiltersSheet,
+          ),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 44,
+            minHeight: 44,
+          ),
+          filled: true,
+          fillColor: AppColors.backgroundPrimary,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: AppColors.primary500.withValues(alpha: 0.45),
             ),
-            const SizedBox(height: 8),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: AppColors.primary500,
+              width: 1.5,
             ),
-            if (onAction != null) ...[
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: onAction,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: AppColors.primary500.withValues(alpha: 0.45),
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrowseFilterChipsRow(String localeCode) {
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        children: [
+          ClientExploreFilterChip(
+            label: _typesChipLabel(localeCode),
+            isActive: _selectedCategoryId != null,
+            onTap: _openCategorySheet,
+          ),
+          ClientExploreFilterChip(
+            label: _languageChipLabel,
+            isActive: _selectedLanguages.isNotEmpty,
+            onTap: _openLanguageFilterSheet,
+          ),
+          ClientExploreFilterChip(
+            label: _timeFilterChipLabel,
+            isActive: _hasActiveTimeFilter || _timePeriods.isNotEmpty,
+            onTap: _openTimeFilterSheet,
+          ),
+          ClientExploreFilterChip(
+            label: _distanceChipLabel,
+            isActive: _distanceFilter != 'auto',
+            onTap: _openDistanceSheet,
+          ),
+          ClientExploreFilterChip(
+            label: _sortChipLabel,
+            isActive: _sortBy != 'recommended',
+            onTap: _openSortSheet,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrowseExpandedChrome(
+    BuildContext context,
+    LocaleProvider locale,
+  ) {
+    final localeCode = locale.localeCode;
+    final expandedHeight = _browseHeaderExpandedHeight(context);
+    return SizedBox(
+      height: expandedHeight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildBrowseDateSection(),
+          const SizedBox(height: 15),
+          _buildBrowseModeToggler(),
+          const SizedBox(height: 10),
+          _buildBrowseSearchField(locale),
+          const SizedBox(height: 10),
+          _buildBrowseFilterChipsRow(localeCode),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrowseCompactStickyBar(LocaleProvider locale) {
+    final query = _searchQuery.trim();
+    final hint = locale.t('clientHome.searchHint');
+    final filterCount = _activeFilterCount;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        kScreenPaddingHorizontal,
+        0,
+        kScreenPaddingHorizontal,
+        4,
+      ),
+      child: Row(
+        children: [
+          _BrowseCompactDatePill(
+            label: _browseCompactDateLabel(locale),
+            onTap: () => _scrollBrowseHeaderToTop(),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Material(
+              color: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(999),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _scrollBrowseHeaderToTop(focusSearch: true),
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          query.isEmpty ? hint : query,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w500,
+                            color: query.isEmpty
+                                ? AppColors.textTertiary
+                                : AppColors.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Text(actionLabel!),
               ),
-            ],
-          ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _BrowseCompactFilterButton(
+            count: filterCount,
+            onTap: _openAllFiltersSheet,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrowseCollapsingHeaderContent(
+    BuildContext context,
+    LocaleProvider locale,
+    double t,
+  ) {
+    final expandedHeight = _browseHeaderExpandedHeight(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: (1 - t).clamp(0.0, 1.0),
+            child: SizedBox(
+              height: expandedHeight,
+              child: _buildBrowseExpandedChrome(context, locale),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: _kBrowseCollapsedHeaderHeight * t,
+          child: Opacity(
+            opacity: t.clamp(0.0, 1.0),
+            child: _buildBrowseCompactStickyBar(locale),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildBrowseClassesList(
-    ClientLocationStore locationStore,
-    LocaleProvider locale,
-  ) {
-    if (_derivedDayClasses.isEmpty) {
-      return _buildBrowseListEmptyState(
-        forClasses: true,
-        locale: locale,
-        locationStore: locationStore,
-      );
-    }
-    return ListView.separated(
-      key: const PageStorageKey<String>('browse-classes'),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
-      itemCount: _derivedDayClasses.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, index) {
-        final c = _derivedDayClasses[index];
-        final session = _ownerSessionFromExplore(c);
-        final loc = (c.locationName ?? '').trim();
-        final subtitle = loc.isNotEmpty ? loc : c.studioName;
-        final trainerLine = scheduleTrainerLineOrNull(session, null);
-        return OwnerDailyScheduleSessionCard(
-          session: session,
-          subtitleLabel: subtitle,
-          showLocationPin: loc.isNotEmpty,
-          trainerLine: trainerLine,
-          useLargeTrainerIcon: true,
-          showSubtitleLeadingIcon: subtitle.isNotEmpty,
-          dimPastSessions: false,
-          trailingPriceLabel: c.price != null ? formatVnd(c.price!) : null,
-          trailingPriceColor: AppColors.textPrimary,
-          bookActionLabel: 'Book',
-          onBookAgain: () => _openExploreClassDetail(c),
-          onTap: () => _openExploreClassDetail(c),
-        );
-      },
-    );
-  }
-
-  Widget _buildBrowseStudiosList(
-    ClientLocationStore locationStore,
-    ClientFavoritesStore favStore,
-    LocaleProvider locale,
-  ) {
-    if (_derivedVisibleStudios.isEmpty) {
-      return _buildBrowseListEmptyState(
-        forClasses: false,
-        locale: locale,
-        locationStore: locationStore,
-      );
-    }
-    return ListView.separated(
-      key: const PageStorageKey<String>('browse-studios-v2'),
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 56),
-      itemCount: _derivedVisibleStudios.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, index) {
-        final s = _derivedVisibleStudios[index];
-        final todayClasses = _derivedTodayClassesByStudio[s.id] ?? const [];
-        return BrowseStudioListCard(
-          studio: s,
-          todayClasses: todayClasses,
-          trainingCategories: _trainingCategories,
-          distanceLabel: _distanceLabel(
-            _resolvedDistanceKmMemo(s, locationStore),
+  List<Widget> _buildBrowseResultSlivers({
+    required bool showClasses,
+    required ClientLocationStore locationStore,
+    required ClientFavoritesStore favStore,
+    required LocaleProvider locale,
+  }) {
+    if (showClasses) {
+      if (_derivedDayClasses.isEmpty) {
+        return [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _buildBrowseEmptyStateBody(
+              forClasses: true,
+              locale: locale,
+              locationStore: locationStore,
+            ),
           ),
-          isFavorite: favStore.isFavorite(s.id),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PublicStudioDetailScreen(studioId: s.id),
+        ];
+      }
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
+          sliver: SliverList.separated(
+            itemCount: _derivedDayClasses.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (_, index) {
+              final c = _derivedDayClasses[index];
+              final session = _ownerSessionFromExplore(c);
+              final loc = (c.locationName ?? '').trim();
+              final subtitle = loc.isNotEmpty ? loc : c.studioName;
+              final trainerLine = scheduleTrainerLineOrNull(session, null);
+              return OwnerDailyScheduleSessionCard(
+                session: session,
+                subtitleLabel: subtitle,
+                showLocationPin: loc.isNotEmpty,
+                trainerLine: trainerLine,
+                useLargeTrainerIcon: true,
+                showSubtitleLeadingIcon: subtitle.isNotEmpty,
+                dimPastSessions: false,
+                trailingPriceLabel: c.price != null
+                    ? formatVnd(c.price!)
+                    : null,
+                trailingPriceColor: AppColors.textPrimary,
+                bookActionLabel: 'Book',
+                onBookAgain: () => _openExploreClassDetail(c),
+                onTap: () => _openExploreClassDetail(c),
+              );
+            },
+          ),
+        ),
+      ];
+    }
+
+    if (_derivedVisibleStudios.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _buildBrowseEmptyStateBody(
+            forClasses: false,
+            locale: locale,
+            locationStore: locationStore,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 56),
+        sliver: SliverList.separated(
+          itemCount: _derivedVisibleStudios.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (_, index) {
+            final s = _derivedVisibleStudios[index];
+            final todayClasses = _derivedTodayClassesByStudio[s.id] ?? const [];
+            return BrowseStudioListCard(
+              studio: s,
+              todayClasses: todayClasses,
+              trainingCategories: _trainingCategories,
+              distanceLabel: _distanceLabel(
+                _resolvedDistanceKmMemo(s, locationStore),
               ),
+              isFavorite: favStore.isFavorite(s.id),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PublicStudioDetailScreen(studioId: s.id),
+                  ),
+                );
+              },
+              onToggleFavorite: () => _toggleBrowseStudioFavorite(s),
+              onClassTap: _openExploreClassDetail,
             );
           },
-          onToggleFavorite: () => _toggleBrowseStudioFavorite(s),
-          onClassTap: _openExploreClassDetail,
-        );
-      },
-    );
+        ),
+      ),
+    ];
   }
 
   Widget _buildBrowseModeToggler() {
@@ -2995,7 +3282,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final localeCode = locale.localeCode;
     final locationStore = context.watch<ClientLocationStore>();
     final locationLabel = locationStore
         .displayLabel(locale.t('clientHome.setLocation'))
@@ -3010,219 +3296,202 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             ? const Center(child: CircularProgressIndicator())
             : _loadError != null
             ? LoadErrorView(message: _loadError!, onRetry: _loadExplore)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: _openLocationPicker,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/icon-pin.svg',
-                            width: 12,
-                            height: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.sizeOf(context).width - 120,
+            : ValueListenableBuilder<bool>(
+                valueListenable: _browseShowClasses,
+                builder: (context, showClasses, _) {
+                  final headerExpandedHeight = _browseHeaderExpandedHeight(
+                    context,
+                  );
+                  return CustomScrollView(
+                    controller: _browseScrollController,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: _openLocationPicker,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/icons/icon-pin.svg',
+                                  width: 12,
+                                  height: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.sizeOf(context).width - 120,
+                                  ),
+                                  child: Text(
+                                    locationLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      letterSpacing: 0.4,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: _browseLocationBlue,
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              locationLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                letterSpacing: 0.4,
-                                color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Browse',
+                                  style: TextStyle(
+                                    fontSize: 28.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                    letterSpacing: -0.5,
+                                    height: 1.1,
+                                  ),
+                                ),
                               ),
-                            ),
+                              _browseTodayButton(),
+                              const SizedBox(width: 8),
+                              _browseExpandButton(),
+                            ],
                           ),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: _browseLocationBlue,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Browse',
-                            style: TextStyle(
-                              fontSize: 28.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.5,
-                              height: 1.1,
-                            ),
-                          ),
-                        ),
-                        _browseTodayButton(),
-                        const SizedBox(width: 8),
-                        _browseExpandButton(),
-                      ],
-                    ),
-                  ),
-                  if (!_isMonthExpanded) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 13, 20, 8),
-                      child: _browseCollapsedMonthLabel(),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: _buildDayStrip(),
-                    ),
-                  ] else
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-                      child: ValueListenableBuilder<DateTime>(
-                        valueListenable: _stripDayNotifier,
-                        builder: (context, stripDay, _) {
-                          return GestureDetector(
-                            onHorizontalDragEnd: (details) {
-                              const threshold = 90.0;
-                              final velocity = details.primaryVelocity ?? 0;
-                              if (velocity < -threshold) {
-                                _shiftBrowseMonth(1);
-                              } else if (velocity > threshold) {
-                                _shiftBrowseMonth(-1);
-                              }
-                            },
-                            child: _buildBrowseMonthExpanded(stripDay),
-                          );
-                        },
-                      ),
-                    ),
-                  const SizedBox(height: 28),
-                  Padding(
-                    padding: screenPaddingH(),
-                    child: TextField(
-                      controller: _searchController,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: locale.t('clientHome.searchHint'),
-                        hintStyle: TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 14.sp,
-                        ),
-                        isDense: true,
-                        prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
-                        prefixIconConstraints:
-                            AppSearchPrefixIcon.prefixConstraints(
-                              leftMargin: 12,
-                              trailingGap: 4,
-                            ),
-                        suffixIcon: _FilterIconButton(
-                          isActive: _hasActiveFilters,
-                          onTap: _openAllFiltersSheet,
-                        ),
-                        suffixIconConstraints: const BoxConstraints(
-                          minWidth: 44,
-                          minHeight: 44,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.backgroundPrimary,
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: AppColors.primary500.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary500,
-                            width: 1.5,
-                          ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: AppColors.primary500.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 12,
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildBrowseModeToggler(),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 40,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      children: [
-                        ClientExploreFilterChip(
-                          label: _typesChipLabel(localeCode),
-                          isActive: _selectedCategoryId != null,
-                          onTap: _openCategorySheet,
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: BrowseCollapsingHeaderDelegate(
+                          expandedHeight: headerExpandedHeight,
+                          collapsedHeight: _kBrowseCollapsedHeaderHeight,
+                          backgroundColor: AppColors.backgroundSecondary,
+                          rebuildToken: _browseHeaderRebuildToken,
+                          builder: (context, collapseT) =>
+                              _buildBrowseCollapsingHeaderContent(
+                                context,
+                                locale,
+                                collapseT,
+                              ),
                         ),
-                        ClientExploreFilterChip(
-                          label: _languageChipLabel,
-                          isActive: _selectedLanguages.isNotEmpty,
-                          onTap: _openLanguageFilterSheet,
-                        ),
-                        ClientExploreFilterChip(
-                          label: _timeFilterChipLabel,
-                          isActive:
-                              _hasActiveTimeFilter || _timePeriods.isNotEmpty,
-                          onTap: _openTimeFilterSheet,
-                        ),
-                        ClientExploreFilterChip(
-                          label: _distanceChipLabel,
-                          isActive: _distanceFilter != 'auto',
-                          onTap: _openDistanceSheet,
-                        ),
-                        ClientExploreFilterChip(
-                          label: _sortChipLabel,
-                          isActive: _sortBy != 'recommended',
-                          onTap: _openSortSheet,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _browseShowClasses,
-                      builder: (context, showClasses, _) {
-                        return IndexedStack(
-                          index: showClasses ? 0 : 1,
-                          sizing: StackFit.expand,
-                          children: [
-                            _buildBrowseClassesList(locationStore, locale),
-                            _buildBrowseStudiosList(
-                              locationStore,
-                              favStore,
-                              locale,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                      ),
+                      ..._buildBrowseResultSlivers(
+                        showClasses: showClasses,
+                        locationStore: locationStore,
+                        favStore: favStore,
+                        locale: locale,
+                      ),
+                    ],
+                  );
+                },
               ),
+      ),
+    );
+  }
+}
+
+class _BrowseCompactDatePill extends StatelessWidget {
+  const _BrowseCompactDatePill({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(999),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/icons/icon-calendar.svg',
+                width: 11,
+                height: 10,
+                fit: BoxFit.contain,
+                excludeFromSemantics: true,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.textPrimary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowseCompactFilterButton extends StatelessWidget {
+  const _BrowseCompactFilterButton({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 0 ? 'Filters($count)' : 'Filters';
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(999),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: count > 0
+                    ? AppColors.primary500
+                    : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w600,
+                  color: count > 0
+                      ? AppColors.primary500
+                      : AppColors.textSecondary,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
