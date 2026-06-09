@@ -164,8 +164,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
 
   bool get _hasActiveProPlan {
     final sub = _subscription;
-    if (sub == null) return false;
-    return subscriptionTypeIsPaid(sub.type) && sub.isActive;
+    return subscriptionIsActivePaid(type: sub?.type, status: sub?.status);
   }
 
   String _planBadgeLabel(LocaleProvider locale) {

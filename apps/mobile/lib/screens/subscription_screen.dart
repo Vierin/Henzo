@@ -14,8 +14,7 @@ import '../services/auth_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
-import '../utils/formatters.dart';
-import '../utils/show_api_error.dart';
+import '../utils/subscription_purchase_feedback.dart';
 import '../utils/subscription_plan_features.dart';
 import '../utils/subscription_tier.dart';
 import '../widgets/auth/auth_form_styles.dart';
@@ -45,10 +44,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Subscription? _subscription;
   Package? _studioPackage;
   Package? _enterprisePackage;
-  bool _loading = true;
+  bool _statusLoading = true;
+  bool _pricesLoading = true;
   String? _checkoutLoading; // 'studio' | 'enterprise'
   bool _restoreLoading = false;
-  String? _activeTier; // 'studio' | 'enterprise' | null
   SubscriptionRefreshNotifier? _subRefresh;
 
   @override
@@ -73,18 +72,31 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool isRefresh = false}) async {
     final token = context.read<AuthService>().accessToken;
     if (token == null) {
-      setState(() => _loading = false);
+      setState(() {
+        _statusLoading = false;
+        _pricesLoading = false;
+      });
       return;
     }
-    setState(() => _loading = true);
+    setState(() {
+      if (!isRefresh) _statusLoading = true;
+      _pricesLoading = true;
+    });
     try {
       final sub = await SubscriptionApiService.getCurrent(token);
+
+      if (mounted) {
+        setState(() {
+          _subscription = sub;
+          _statusLoading = false;
+        });
+      }
+
       Package? studioPkg;
       Package? enterprisePkg;
-      String? activeTier;
 
       if (RevenueCatService.isConfigured) {
         final offerings = await RevenueCatService.fetchOfferings();
@@ -93,35 +105,34 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           offerings,
           'enterprise',
         );
-
-        // Detect active tier from CustomerInfo
-        try {
-          final info = await Purchases.getCustomerInfo();
-          activeTier = RevenueCatService.getActiveTier(info);
-        } catch (_) {}
       }
 
       if (mounted) {
         setState(() {
-          _subscription = sub;
           _studioPackage = studioPkg;
           _enterprisePackage = enterprisePkg;
-          _activeTier = activeTier;
-          _loading = false;
+          _pricesLoading = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _statusLoading = false;
+          _pricesLoading = false;
+        });
+      }
     }
   }
 
-  bool get _hasPaidPlan =>
-      _activeTier != null || subscriptionTypeIsPaid(_subscription?.type);
+  bool get _hasPaidPlan {
+    if (_statusLoading) return false;
+    return subscriptionIsActivePaid(
+      type: _subscription?.type,
+      status: _subscription?.status,
+    );
+  }
 
   SubscriptionPlanTier get _activePlanTier {
-    if (_activeTier != null) {
-      return subscriptionPlanTierFromActiveCode(_activeTier);
-    }
     return subscriptionPlanTierFromSubscriptionType(_subscription?.type);
   }
 
@@ -139,24 +150,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     try {
       synced = await RevenueCatService.syncWithBackend(accessToken);
     } catch (e) {
-      if (mounted) showApiError(context, e);
+      if (mounted) showSubscriptionPurchaseError(context, e);
       return;
     }
     if (!mounted) return;
     if (synced) {
-      if (!mounted) return;
       context
           .read<SubscriptionRefreshNotifier>()
           .notifySubscriptionMaybeChanged();
       await _load();
       if (!mounted) return;
-      final locale = context.read<LocaleProvider>();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('subscription.purchaseSuccess'))),
+      showSubscriptionPurchaseSuccess(
+        context,
+        tier: _activePlanTier,
       );
     } else {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Подписка оформлена, обновите экран')),
+      showSubscriptionPurchaseWarning(
+        context,
+        messageKey: 'subscription.purchaseSyncPending',
+        detailKey: 'subscription.purchaseSyncPendingBody',
       );
     }
   }
@@ -165,17 +177,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       tier == 'enterprise' ? _enterprisePackage : _studioPackage;
 
   Future<void> _handleSelectPlan(String tier) async {
-    final locale = context.read<LocaleProvider>();
     if (!RevenueCatService.isConfigured) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('subscription.storeNotConfigured'))),
+      showSubscriptionPurchaseWarning(
+        context,
+        messageKey: 'subscription.storeNotConfigured',
       );
       return;
     }
     final pkg = _packageForTier(tier);
     if (pkg == null) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('subscription.offeringsUnavailable'))),
+      showSubscriptionPurchaseWarning(
+        context,
+        messageKey: 'subscription.offeringsUnavailable',
       );
       return;
     }
@@ -189,30 +202,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         RevenueCatService.debugLogEntitlements(info);
         await _afterStorePurchase(token);
         if (!mounted) return;
-        // Update active tier from fresh CustomerInfo
-        if (mounted) {
-          setState(() => _activeTier = RevenueCatService.getActiveTier(info));
-        }
         if (!RevenueCatService.hasActiveProEntitlement(info)) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(
-              content: Text(locale.t('subscription.rcEntitlementNotLinked')),
-            ),
+          showSubscriptionPurchaseWarning(
+            context,
+            messageKey: 'subscription.rcEntitlementNotLinked',
           );
         }
       }
     } catch (e) {
-      if (mounted) showApiError(context, e);
+      if (mounted) showSubscriptionPurchaseError(context, e);
     } finally {
       if (mounted) setState(() => _checkoutLoading = null);
     }
   }
 
   Future<void> _restorePurchases() async {
-    final locale = context.read<LocaleProvider>();
     if (!RevenueCatService.isConfigured) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('subscription.storeNotConfigured'))),
+      showSubscriptionPurchaseWarning(
+        context,
+        messageKey: 'subscription.storeNotConfigured',
       );
       return;
     }
@@ -224,19 +232,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       if (!mounted) return;
       if (info != null) {
         RevenueCatService.debugLogEntitlements(info);
-        if (mounted) {
-          setState(() => _activeTier = RevenueCatService.getActiveTier(info));
-        }
         if (RevenueCatService.hasActiveProEntitlement(info)) {
           await _afterStorePurchase(token);
         } else {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(content: Text(locale.t('subscription.restoreNothing'))),
+          showSubscriptionPurchaseWarning(
+            context,
+            messageKey: 'subscription.restoreNothing',
           );
         }
       }
     } catch (e) {
-      if (mounted) showApiError(context, e);
+      if (mounted) showSubscriptionPurchaseError(context, e);
     } finally {
       if (mounted) setState(() => _restoreLoading = false);
     }
@@ -248,14 +254,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   String _proPriceDisplay() {
-    final amount = _subscription?.amount;
-    if (amount != null && amount > 0) {
-      return '${formatVnd(amount)} VND';
-    }
-    final store =
-        _studioPackage?.storeProduct.priceString ??
-        _enterprisePackage?.storeProduct.priceString;
-    if (store != null && store.isNotEmpty) return store;
+    final priceString = switch (_activePlanTier) {
+      SubscriptionPlanTier.studio =>
+        _studioPackage?.storeProduct.priceString,
+      SubscriptionPlanTier.enterprise =>
+        _enterprisePackage?.storeProduct.priceString,
+      SubscriptionPlanTier.solo => null,
+    };
+    if (priceString != null && priceString.isNotEmpty) return priceString;
     return '—';
   }
 
@@ -278,10 +284,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             context,
             title: locale.t('subscription.title'),
           ),
-          body: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-                  onRefresh: _load,
+          body: RefreshIndicator(
+                  onRefresh: () => _load(isRefresh: true),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
@@ -325,6 +329,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             priceLabel:
                                 _studioPackage?.storeProduct.priceString ??
                                 locale.t('subscription.studioFallbackPrice'),
+                            isPriceLoading: _pricesLoading,
                             features: subscriptionPlanFeatureLabels(
                               locale,
                               SubscriptionPlanTier.studio,
@@ -333,7 +338,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               'subscription.subscribeToStudioBtn',
                             ),
                             isLoading: _checkoutLoading == 'studio',
-                            onSubscribe: () => _handleSelectPlan('studio'),
+                            onSubscribe: _pricesLoading
+                                ? null
+                                : () => _handleSelectPlan('studio'),
                           ),
                           const SizedBox(height: 20),
                           _PlanCard(
@@ -352,6 +359,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 locale.t(
                                   'subscription.enterpriseFallbackPrice',
                                 ),
+                            isPriceLoading: _pricesLoading,
                             features: subscriptionPlanFeatureLabels(
                               locale,
                               SubscriptionPlanTier.enterprise,
@@ -360,7 +368,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               'subscription.subscribeToEnterpriseBtn',
                             ),
                             isLoading: _checkoutLoading == 'enterprise',
-                            onSubscribe: () => _handleSelectPlan('enterprise'),
+                            onSubscribe: _pricesLoading
+                                ? null
+                                : () => _handleSelectPlan('enterprise'),
                           ),
 
                           const SizedBox(height: 12),
@@ -378,6 +388,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         ] else ...[
                           _ProStatusCard(
                             priceLabel: _proPriceDisplay(),
+                            isPriceLoading: _pricesLoading,
                             periodLabel: locale.t('subscription.perOneMonth'),
                             nextPaymentDate:
                                 _nextPaymentDateLabel(context) ?? '—',
@@ -436,11 +447,61 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 }
 
+class _PriceSkeleton extends StatefulWidget {
+  const _PriceSkeleton({this.width = 140, this.height = 32});
+
+  final double width;
+  final double height;
+
+  @override
+  State<_PriceSkeleton> createState() => _PriceSkeletonState();
+}
+
+class _PriceSkeletonState extends State<_PriceSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: AppColors.textTertiary.withValues(
+              alpha: 0.12 + _controller.value * 0.12,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _ProStatusCard extends StatelessWidget {
   final String planTitle;
   final String tagline;
   final String activeLabel;
   final String priceLabel;
+  final bool isPriceLoading;
   final String periodLabel;
   final String nextPaymentLabel;
   final String nextPaymentDate;
@@ -450,6 +511,7 @@ class _ProStatusCard extends StatelessWidget {
     required this.tagline,
     required this.activeLabel,
     required this.priceLabel,
+    this.isPriceLoading = false,
     required this.periodLabel,
     required this.nextPaymentLabel,
     required this.nextPaymentDate,
@@ -524,15 +586,18 @@ class _ProStatusCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        priceLabel,
-                        style: TextStyle(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary500,
-                          letterSpacing: -0.3,
+                      if (isPriceLoading)
+                        const _PriceSkeleton(width: 120, height: 28)
+                      else
+                        Text(
+                          priceLabel,
+                          style: TextStyle(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary500,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
                       Text(
                         periodLabel,
                         style: TextStyle(
@@ -579,6 +644,27 @@ class _ProStatusCard extends StatelessWidget {
   }
 }
 
+class _PlanFeatureBullet extends StatelessWidget {
+  const _PlanFeatureBullet({this.size = 8});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: size * 0.65),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(
+          color: AppColors.primary500,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
 class _ProWhatsIncludedCard extends StatelessWidget {
   final String title;
   final List<String> features;
@@ -618,12 +704,8 @@ class _ProWhatsIncludedCard extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Image.asset(
-                                'assets/icons/icon-fire.png',
-                                width: 20,
-                                height: 20,
-                              ),
-                              const SizedBox(width: 6),
+                              const _PlanFeatureBullet(),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   f,
@@ -661,11 +743,7 @@ class _PlanFeatureRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(
-            'assets/icons/icon-fire.png',
-            width: 22,
-            height: 22,
-          ),
+          const _PlanFeatureBullet(size: 9),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -694,6 +772,7 @@ class _PlanCard extends StatelessWidget {
   final String? subscribeLabel;
   final VoidCallback? onSubscribe;
   final bool isLoading;
+  final bool isPriceLoading;
 
   const _PlanCard({
     required this.title,
@@ -706,6 +785,7 @@ class _PlanCard extends StatelessWidget {
     this.subscribeLabel,
     this.onSubscribe,
     this.isLoading = false,
+    this.isPriceLoading = false,
   });
 
   @override
@@ -789,15 +869,21 @@ class _PlanCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Text(
-            priceLabel,
-            style: TextStyle(
-              fontSize: 26.sp,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.5,
+          if (isPriceLoading)
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: _PriceSkeleton(width: 160, height: 34),
+            )
+          else
+            Text(
+              priceLabel,
+              style: TextStyle(
+                fontSize: 26.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
           if (showPricePeriod) ...[
             const SizedBox(height: 4),
             Text(
@@ -819,7 +905,8 @@ class _PlanCard extends StatelessWidget {
               width: double.infinity,
               height: AuthFormStyles.buttonHeight,
               child: FilledButton(
-                onPressed: isLoading ? null : onSubscribe,
+                onPressed:
+                    isLoading || isPriceLoading ? null : onSubscribe,
                 style: AuthFormStyles.primaryButtonStyle(),
                 child: isLoading
                     ? const SizedBox(

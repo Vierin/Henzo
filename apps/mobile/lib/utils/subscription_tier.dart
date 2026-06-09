@@ -11,6 +11,12 @@ bool subscriptionTypeIsPaid(String? type) {
       t == 'PRO';
 }
 
+/// Paid plan from API row only (RevenueCat syncs into this row on purchase).
+bool subscriptionIsActivePaid({String? type, String? status}) {
+  return subscriptionTypeIsPaid(type) &&
+      (status ?? '').toUpperCase() == 'ACTIVE';
+}
+
 String subscriptionPlanLabelKey(String? type) {
   final t = (type ?? 'SOLO').toUpperCase();
   switch (t) {

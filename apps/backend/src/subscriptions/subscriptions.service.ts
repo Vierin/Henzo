@@ -152,7 +152,6 @@ export class SubscriptionsService {
       status: 'ACTIVE',
       startDate: startAt,
       updatedAt: new Date(),
-      ...(amount != null ? { amount } : {}),
     };
     // `currentPeriodEnd` exists in schema/migration; cast keeps TS green
     // until local Prisma client is regenerated on Windows.
@@ -180,7 +179,6 @@ export class SubscriptionsService {
     type: string;
     status: string;
     startDate: Date;
-    amount: number;
     currentPeriodEnd?: Date | null;
   }) {
     return {
@@ -189,7 +187,6 @@ export class SubscriptionsService {
       type: sub.type,
       status: sub.status,
       startDate: sub.startDate.toISOString(),
-      amount: sub.amount,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
     };
   }
