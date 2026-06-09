@@ -4,30 +4,17 @@ import 'package:flutter/material.dart';
 import 'common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
-import '../constants/colors.dart';import '../l10n/locale_provider.dart';
+import '../constants/colors.dart';
+import '../l10n/locale_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Same month abbreviations as [CalendarScreen] header.
-const _kEnMon = [
-  'JAN',
-  'FEB',
-  'MAR',
-  'APR',
-  'MAY',
-  'JUN',
-  'JUL',
-  'AUG',
-  'SEP',
-  'OCT',
-  'NOV',
-  'DEC',
-];
-
-const _kDow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-
 const int _kGridCrossCount = 7;
+const int _kGridRowCount = 6;
 const double _kGridCrossSpacing = 4;
-const double _kGridMainSpacing = 8;
+const double _kGridMainSpacing = 6;
+const double _kDowRowHeight = 16;
+const double _kDowToGridGap = 12;
+const double _kCalendarBodyExtraHeight = 10;
 const double _kActionButtonRadius = 12;
 const double _kActionButtonMinHeight = 48;
 
@@ -43,19 +30,25 @@ List<DateTime?> _monthCells(DateTime monthDate) {
   });
 }
 
-String _monthYearLabel(DateTime monthFirst) =>
-    '${_kEnMon[monthFirst.month - 1]} ${monthFirst.year}';
+String _monthYearLabel(DateTime monthFirst, LocaleProvider loc) {
+  final months = loc.tList('calendar.months');
+  if (months.length >= monthFirst.month) {
+    return '${months[monthFirst.month - 1].toUpperCase()} ${monthFirst.year}';
+  }
+  return '${monthFirst.year}';
+}
+
+List<String> _weekdayLabels(LocaleProvider loc) => [
+  loc.t('addTraining.weekdayMon'),
+  loc.t('addTraining.weekdayTue'),
+  loc.t('addTraining.weekdayWed'),
+  loc.t('addTraining.weekdayThu'),
+  loc.t('addTraining.weekdayFri'),
+  loc.t('addTraining.weekdaySat'),
+  loc.t('addTraining.weekdaySun'),
+];
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-bool _monthIntersectsRange(
-  DateTime monthFirst,
-  DateTime firstDate,
-  DateTime lastDate,
-) {
-  final monthEnd = DateTime(monthFirst.year, monthFirst.month + 1, 0);
-  return !monthEnd.isBefore(firstDate) && !monthFirst.isAfter(lastDate);
-}
 
 DateTime _firstMonthInRange(DateTime firstDate) =>
     DateTime(firstDate.year, firstDate.month, 1);
@@ -75,6 +68,19 @@ DateTime _pageToMonth(DateTime rangeFirstMonth, int page) =>
 int _monthToPage(DateTime rangeFirstMonth, DateTime monthFirst) =>
     (monthFirst.year - rangeFirstMonth.year) * 12 +
     (monthFirst.month - rangeFirstMonth.month);
+
+double _gridTileSize(double gridWidth) =>
+    (gridWidth - (_kGridCrossCount - 1) * _kGridCrossSpacing) /
+    _kGridCrossCount;
+
+double _gridHeight(double tileSize) =>
+    _kGridRowCount * tileSize + (_kGridRowCount - 1) * _kGridMainSpacing;
+
+double _calendarBodyHeight(double gridWidth) =>
+    _kDowRowHeight +
+    _kDowToGridGap +
+    _gridHeight(_gridTileSize(gridWidth)) +
+    _kCalendarBodyExtraHeight;
 
 /// Month grid matching Schedule expanded calendar; header row: ◀ month ▶.
 /// Horizontal swipe on the grid changes the month.
@@ -122,64 +128,45 @@ class _ScheduleStyleDatePickerSheetState
     extends State<_ScheduleStyleDatePickerSheet> {
   late DateTime _rangeFirstMonth;
   late int _monthPageCount;
-  late DateTime _monthFirst;
-  late DateTime _selected;
   late PageController _pageController;
-  /// Last page reported by [PageView.onPageChanged] (settled index).
-  late int _settledPickerPage;
+  late final ValueNotifier<int> _pageIndexNotifier;
+  late final ValueNotifier<DateTime> _selectedNotifier;
   var _pickerPageAnimating = false;
 
   @override
   void initState() {
     super.initState();
-    _selected = widget.initialSelected;
+    _selectedNotifier = ValueNotifier(widget.initialSelected);
     _rangeFirstMonth = _firstMonthInRange(widget.firstDate);
     _monthPageCount = _countMonthPages(widget.firstDate, widget.lastDate);
-    _monthFirst = DateTime(_selected.year, _selected.month, 1);
-    if (!_monthIntersectsRange(
-      _monthFirst,
-      widget.firstDate,
-      widget.lastDate,
-    )) {
-      _monthFirst = _rangeFirstMonth;
-    }
-    var page = _monthToPage(_rangeFirstMonth, _monthFirst);
+    var monthFirst = DateTime(
+      widget.initialSelected.year,
+      widget.initialSelected.month,
+      1,
+    );
+    var page = _monthToPage(_rangeFirstMonth, monthFirst);
     if (page < 0) page = 0;
     if (page >= _monthPageCount) page = _monthPageCount - 1;
-    _monthFirst = _pageToMonth(_rangeFirstMonth, page);
-    _settledPickerPage = page;
+    _pageIndexNotifier = ValueNotifier(page);
     _pageController = PageController(initialPage: page);
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _pageIndexNotifier.dispose();
+    _selectedNotifier.dispose();
     super.dispose();
   }
 
-  bool _sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
   bool _inRange(DateTime d) =>
       !d.isBefore(widget.firstDate) && !d.isAfter(widget.lastDate);
-
-  bool get _canPrevMonth => _settledPickerPage > 0;
-
-  bool get _canNextMonth => _settledPickerPage < _monthPageCount - 1;
-
-  int _readPickerPageForArrows() {
-    if (!_pageController.hasClients) return _settledPickerPage;
-    final p = _pageController.page;
-    if (p == null) return _settledPickerPage;
-    return p.round().clamp(0, _monthPageCount - 1);
-  }
 
   Future<void> _animatePickerToPage(int page) async {
     if (page < 0 || page >= _monthPageCount) return;
     if (_pickerPageAnimating) return;
     if (!_pageController.hasClients) return;
-    final cur = _readPickerPageForArrows();
-    if (cur == page) return;
+    if (_pageIndexNotifier.value == page) return;
     _pickerPageAnimating = true;
     try {
       await _pageController.animateToPage(
@@ -195,126 +182,30 @@ class _ScheduleStyleDatePickerSheetState
   }
 
   void _prevMonth() {
-    if (!_canPrevMonth || _pickerPageAnimating) return;
-    final cur = _readPickerPageForArrows();
+    if (_pickerPageAnimating) return;
+    final cur = _pageIndexNotifier.value;
     if (cur <= 0) return;
     unawaited(_animatePickerToPage(cur - 1));
   }
 
   void _nextMonth() {
-    if (!_canNextMonth || _pickerPageAnimating) return;
-    final cur = _readPickerPageForArrows();
+    if (_pickerPageAnimating) return;
+    final cur = _pageIndexNotifier.value;
     if (cur >= _monthPageCount - 1) return;
     unawaited(_animatePickerToPage(cur + 1));
   }
 
-  double _calendarBodyHeight(double innerWidth) {
-    const dowRow = 18.0;
-    const gap = 12.0;
-    final tile =
-        (innerWidth - (_kGridCrossCount - 1) * _kGridCrossSpacing) /
-        _kGridCrossCount;
-    const rows = 6;
-    final gridH = rows * tile + (rows - 1) * _kGridMainSpacing;
-    return dowRow + gap + gridH;
-  }
-
-  Widget _buildDayCell(DateTime day) {
-    final inRange = _inRange(day);
-    final selected = _sameDay(day, _selected);
-    final today = _sameDay(day, DateTime.now());
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: inRange ? () => setState(() => _selected = day) : null,
-          child: Opacity(
-            opacity: inRange ? 1 : 0.28,
-            child: Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected
-                    ? AppColors.primary500
-                    : (today
-                          ? AppColors.primary100
-                          : AppColors.backgroundTertiary),
-                border: Border.all(
-                  color: selected
-                      ? AppColors.primary500
-                      : AppColors.borderPrimary.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Text(
-                '${day.day}',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w500,
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMonthPage(DateTime monthFirst) {
-    final cells = _monthCells(monthFirst);
-    return Column(
-      children: [
-        Row(
-          children: List.generate(
-            _kGridCrossCount,
-            (i) => Expanded(
-              child: Center(
-                child: Text(
-                  _kDow[i],
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: -0.3,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: cells.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: _kGridCrossCount,
-            mainAxisSpacing: _kGridMainSpacing,
-            crossAxisSpacing: _kGridCrossSpacing,
-            childAspectRatio: 1.0,
-          ),
-          itemBuilder: (_, index) {
-            final day = cells[index];
-            if (day == null) return const SizedBox.shrink();
-            return _buildDayCell(day);
-          },
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final loc = context.watch<LocaleProvider>();
+    final weekdayLabels = _weekdayLabels(loc);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Material(
       color: AppColors.backgroundSecondary,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
+        padding: EdgeInsets.fromLTRB(16, 6, 16, 16 + bottomInset),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -329,47 +220,56 @@ class _ScheduleStyleDatePickerSheetState
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: (_canPrevMonth && !_pickerPageAnimating)
-                      ? _prevMonth
-                      : null,
-                  icon: const Icon(Icons.chevron_left_rounded),
-                  color: AppColors.textSecondary,
-                ),
-                Expanded(
-                  child: Text(
-                    _monthYearLabel(_monthFirst),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                      color: AppColors.textPrimary,
+            const SizedBox(height: 2),
+            ValueListenableBuilder<int>(
+              valueListenable: _pageIndexNotifier,
+              builder: (context, pageIndex, _) {
+                final monthFirst = _pageToMonth(_rangeFirstMonth, pageIndex);
+                final canPrev = pageIndex > 0;
+                final canNext = pageIndex < _monthPageCount - 1;
+                return Row(
+                  children: [
+                    IconButton(
+                      onPressed: (canPrev && !_pickerPageAnimating)
+                          ? _prevMonth
+                          : null,
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      color: AppColors.textSecondary,
                     ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: (_canNextMonth && !_pickerPageAnimating)
-                      ? _nextMonth
-                      : null,
-                  icon: const Icon(Icons.chevron_right_rounded),
-                  color: AppColors.textSecondary,
-                ),
-              ],
+                    Expanded(
+                      child: Text(
+                        _monthYearLabel(monthFirst, loc),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: (canNext && !_pickerPageAnimating)
+                          ? _nextMonth
+                          : null,
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
-                final innerW = constraints.maxWidth - 24;
-                final bodyH = _calendarBodyHeight(innerW);
+                final gridWidth = constraints.maxWidth - 24;
+                final tileSize = _gridTileSize(gridWidth);
+                final bodyH = _calendarBodyHeight(gridWidth);
                 return Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 0),
                   decoration: BoxDecoration(
                     color: AppColors.backgroundPrimary,
                     borderRadius: BorderRadius.circular(14),
@@ -378,16 +278,20 @@ class _ScheduleStyleDatePickerSheetState
                     height: bodyH,
                     child: PageView.builder(
                       controller: _pageController,
-                      onPageChanged: (i) {
-                        setState(() {
-                          _settledPickerPage = i;
-                          _monthFirst = _pageToMonth(_rangeFirstMonth, i);
-                        });
-                      },
+                      onPageChanged: (i) => _pageIndexNotifier.value = i,
                       itemCount: _monthPageCount,
                       itemBuilder: (_, page) {
                         final month = _pageToMonth(_rangeFirstMonth, page);
-                        return _buildMonthPage(month);
+                        return RepaintBoundary(
+                          child: _PickerMonthPage(
+                            monthFirst: month,
+                            tileSize: tileSize,
+                            weekdayLabels: weekdayLabels,
+                            selectedListenable: _selectedNotifier,
+                            firstDate: widget.firstDate,
+                            lastDate: widget.lastDate,
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -395,54 +299,184 @@ class _ScheduleStyleDatePickerSheetState
               },
             ),
             const SizedBox(height: 16),
-            Consumer<LocaleProvider>(
-              builder: (context, loc, _) {
+            Builder(
+              builder: (context) {
                 final actionShape = RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(_kActionButtonRadius),
                 );
-                return Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(
-                            0,
-                            _kActionButtonMinHeight,
+                return ValueListenableBuilder<DateTime>(
+                  valueListenable: _selectedNotifier,
+                  builder: (context, selected, _) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(
+                                0,
+                                _kActionButtonMinHeight,
+                              ),
+                              side: const BorderSide(
+                                color: AppColors.borderPrimary,
+                              ),
+                              shape: actionShape,
+                            ),
+                            child: Text(loc.t('common.cancel')),
                           ),
-                          side: const BorderSide(
-                            color: AppColors.borderPrimary,
-                          ),
-                          shape: actionShape,
                         ),
-                        child: Text(loc.t('common.cancel')),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _inRange(_selected)
-                            ? () => Navigator.of(context).pop(_selected)
-                            : null,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(
-                            0,
-                            _kActionButtonMinHeight,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: _inRange(selected)
+                                ? () => Navigator.of(context).pop(selected)
+                                : null,
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(
+                                0,
+                                _kActionButtonMinHeight,
+                              ),
+                              backgroundColor: AppColors.primary500,
+                              foregroundColor: Colors.white,
+                              shape: actionShape,
+                            ),
+                            child: Text(loc.t('common.done')),
                           ),
-                          backgroundColor: AppColors.primary500,
-                          foregroundColor: Colors.white,
-                          shape: actionShape,
                         ),
-                        child: Text(loc.t('common.done')),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 );
               },
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PickerMonthPage extends StatelessWidget {
+  const _PickerMonthPage({
+    required this.monthFirst,
+    required this.tileSize,
+    required this.weekdayLabels,
+    required this.selectedListenable,
+    required this.firstDate,
+    required this.lastDate,
+  });
+
+  final DateTime monthFirst;
+  final double tileSize;
+  final List<String> weekdayLabels;
+  final ValueNotifier<DateTime> selectedListenable;
+  final DateTime firstDate;
+  final DateTime lastDate;
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  bool _inRange(DateTime d) => !d.isBefore(firstDate) && !d.isAfter(lastDate);
+
+  Widget _buildDayCell(DateTime day, DateTime selected) {
+    final inRange = _inRange(day);
+    final isSelected = _sameDay(day, selected);
+    final today = _sameDay(day, DateTime.now());
+    final circleSize = tileSize * 0.82;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: inRange ? () => selectedListenable.value = day : null,
+          child: Opacity(
+            opacity: inRange ? 1 : 0.28,
+            child: Container(
+              width: circleSize,
+              height: circleSize,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? AppColors.primary500
+                    : (today
+                          ? AppColors.primary100
+                          : AppColors.backgroundTertiary),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary500
+                      : AppColors.borderPrimary.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cells = _monthCells(monthFirst);
+    return Column(
+      children: [
+        SizedBox(
+          height: _kDowRowHeight,
+          child: Row(
+            children: List.generate(
+              _kGridCrossCount,
+              (i) => Expanded(
+                child: Center(
+                  child: Text(
+                    weekdayLabels[i],
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.3,
+                      height: 1,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: _kDowToGridGap),
+        SizedBox(
+          height: _gridHeight(tileSize),
+          child: ValueListenableBuilder<DateTime>(
+            valueListenable: selectedListenable,
+            builder: (context, selected, _) {
+              return GridView.builder(
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cells.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: _kGridCrossCount,
+                  mainAxisSpacing: _kGridMainSpacing,
+                  crossAxisSpacing: _kGridCrossSpacing,
+                  childAspectRatio: 1,
+                ),
+                itemBuilder: (_, index) {
+                  final day = cells[index];
+                  if (day == null) return const SizedBox.shrink();
+                  return _buildDayCell(day, selected);
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

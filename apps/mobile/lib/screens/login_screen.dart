@@ -238,11 +238,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 64),
+                  const SizedBox(height: 75),
                   Center(
                     child: Image.asset(
                       'assets/logo.png',
-                      height: 62,
+                      height: 58,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => Text(
                         'Henzo',
@@ -254,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 48),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,

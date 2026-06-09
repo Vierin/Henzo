@@ -40,6 +40,13 @@ const Color _kFormAccentPurple = Color(0xFF6C5CE7);
 
 const Color _kRegHintMuted = Color(0x993F3F3F);
 
+TextStyle _regHintTextStyle() => TextStyle(
+  color: _kRegHintMuted,
+  fontSize: 16.sp,
+  fontWeight: FontWeight.w500,
+  letterSpacing: -0.3,
+);
+
 String _formatThousandsDots(int value) {
   final raw = value.abs().toString();
   final chars = raw.split('').reversed.toList();
@@ -266,11 +273,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
     return InputDecoration(
       hintText: hintText,
-      hintStyle: TextStyle(
-        color: _kRegHintMuted,
-        fontSize: 16.sp,
-        fontWeight: FontWeight.w500,
-      ),
+      hintStyle: _regHintTextStyle(),
       prefixIcon: prefixIcon == null
           ? null
           : Padding(
@@ -351,11 +354,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   onChanged: (_) => setState(() => _step1DurationError = false),
                   decoration: InputDecoration(
                     hintText: '60',
-                    hintStyle: TextStyle(
-                      color: _kRegHintMuted,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    hintStyle: _regHintTextStyle(),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -398,8 +397,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       text.toUpperCase(),
       style: TextStyle(
         fontSize: 13.sp,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
+        fontWeight: FontWeight.w500,
+        letterSpacing: -0.2,
         color: AppColors.textPrimary,
       ),
     ),
@@ -440,9 +439,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   }
 
   Widget _step2BackLeading() {
-    return HenzoHeaderBackButton(
-      onPressed: () => setState(() => _step = 1),
-    );
+    return HenzoHeaderBackButton(onPressed: () => setState(() => _step = 1));
   }
 
   bool _validateStep1() {
@@ -468,7 +465,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       SnackBar(
-        content: Text(context.read<LocaleProvider>().t('addTraining.checkErrors')),
+        content: Text(
+          context.read<LocaleProvider>().t('addTraining.checkErrors'),
+        ),
       ),
     );
     return false;
@@ -539,7 +538,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               ListTile(
                 title: Text(name),
                 trailing: _selectedLanguage == code
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary500)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: AppColors.primary500,
+                      )
                     : null,
                 onTap: () => Navigator.of(ctx).pop(code),
               ),
@@ -605,11 +607,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
   }
 
-  DateTime get _sessionDayOnly => DateTime(
-        _sessionDate.year,
-        _sessionDate.month,
-        _sessionDate.day,
-      );
+  DateTime get _sessionDayOnly =>
+      DateTime(_sessionDate.year, _sessionDate.month, _sessionDate.day);
 
   DateTime get _recurringEndDayOnly {
     var end = DateTime(
@@ -720,27 +719,86 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
   static const double _kStep2FieldRadius = 12;
 
+  TextStyle get _step2InputTextStyle => TextStyle(
+    fontSize: 15.sp,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+  );
+
+  TextStyle get _step2ScheduleTimeTextStyle => TextStyle(
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+  );
+
+  TextStyle get _step2HintTextStyle => TextStyle(
+    fontSize: 15.sp,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textSecondary,
+    letterSpacing: -0.3,
+  );
+
+  Widget _step2CalendarIcon({
+    double width = 13,
+    Color color = AppColors.textSecondary,
+  }) {
+    return SvgPicture.asset(
+      'assets/icons/icon-calendar.svg',
+      width: width,
+      height: width * 12 / 13,
+      fit: BoxFit.contain,
+      excludeFromSemantics: true,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
+  }
+
+  Widget _step2CalendarIconBox({Color color = AppColors.textSecondary}) {
+    return SizedBox(
+      width: 16,
+      height: 16,
+      child: _step2CalendarIcon(color: color),
+    );
+  }
+
+  Widget _step2DateField({
+    required String value,
+    required VoidCallback onTap,
+    Color iconColor = AppColors.textSecondary,
+  }) {
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+          child: Row(
+            children: [
+              Expanded(child: Text(value, style: _step2InputTextStyle)),
+              _step2CalendarIconBox(color: iconColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   InputDecoration _step2FieldDecoration({Widget? suffixIcon}) {
     final r = BorderRadius.circular(_kStep2FieldRadius);
+    const noneSide = BorderSide.none;
+    const focusSide = BorderSide(color: AppColors.primary500, width: 1.2);
     return InputDecoration(
+      hintStyle: _step2HintTextStyle,
       filled: true,
       fillColor: AppColors.backgroundPrimary,
       suffixIcon: suffixIcon,
       suffixIconConstraints: suffixIcon == null
           ? null
-          : const BoxConstraints(minWidth: 44, minHeight: 44),
-      border: OutlineInputBorder(
-        borderRadius: r,
-        borderSide: const BorderSide(color: AppColors.borderPrimary),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: r,
-        borderSide: const BorderSide(color: AppColors.borderPrimary),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: r,
-        borderSide: const BorderSide(color: AppColors.primary500, width: 1.6),
-      ),
+          : const BoxConstraints(minWidth: 36, minHeight: 44),
+      border: OutlineInputBorder(borderRadius: r, borderSide: noneSide),
+      enabledBorder: OutlineInputBorder(borderRadius: r, borderSide: noneSide),
+      focusedBorder: OutlineInputBorder(borderRadius: r, borderSide: focusSide),
       contentPadding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
     );
   }
@@ -790,10 +848,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                 ? AppColors.primary500
                 : AppColors.backgroundPrimary,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
-              width: 1,
-            ),
           ),
           child: Center(
             child: Text(
@@ -823,7 +877,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(_kStep2FieldRadius),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -841,22 +895,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        value,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                      Text(value, style: _step2ScheduleTimeTextStyle),
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  size: 18,
-                  color: AppColors.textTertiary,
-                ),
+                _step2CalendarIconBox(color: AppColors.textTertiary),
               ],
             ),
           ),
@@ -886,7 +929,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   loc.t('addTraining.step2.oneTraining').toUpperCase(),
                   style: TextStyle(
                     fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0.35,
                     color: AppColors.textPrimary,
                   ),
@@ -924,7 +967,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                       loc.t('addTraining.step2.repeatedTraining').toUpperCase(),
                       style: TextStyle(
                         fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.35,
                         color: AppColors.textPrimary,
                       ),
@@ -951,26 +994,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (!_isRecurring) {
       w.addAll([
         _stepFormLabel(loc.t('addTraining.step2.date')),
-        InkWell(
+        _step2DateField(
+          value: _formatYMMMd(_sessionDate, loc),
           onTap: _pickSessionDateOnStep2,
-          borderRadius: BorderRadius.circular(_kStep2FieldRadius),
-          child: InputDecorator(
-            decoration: _step2FieldDecoration(
-              suffixIcon: const Icon(
-                Icons.calendar_today_outlined,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            child: Text(
-              _formatYMMMd(_sessionDate, loc),
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
         ),
         const SizedBox(height: 18),
         _stepFormLabel(loc.t('addTraining.step2.time')),
@@ -993,14 +1019,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                 size: 18,
               ),
             ),
-            child: Text(
-              _timeToHm(_sessionTime),
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            child: Text(_timeToHm(_sessionTime), style: _step2InputTextStyle),
           ),
         ),
         const SizedBox(height: 28),
@@ -1012,7 +1031,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary500,
               foregroundColor: AppColors.textInverse,
-              shape: const StadiumBorder(),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             child: _saving
                 ? const SizedBox(
@@ -1139,6 +1160,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         borderRadius: BorderRadius.circular(10),
                         child: InputDecorator(
                           decoration: InputDecoration(
+                            hintStyle: _step2HintTextStyle.copyWith(
+                              fontSize: 14.sp,
+                            ),
                             filled: true,
                             fillColor: AppColors.backgroundPrimary,
                             border: OutlineInputBorder(
@@ -1157,7 +1181,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(
                                 color: AppColors.primary500,
-                                width: 1.4,
+                                width: 1.2,
                               ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
@@ -1172,11 +1196,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                           child: Text(
                             _timeToHm(time),
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
+                            style: _step2ScheduleTimeTextStyle,
                           ),
                         ),
                       ),
@@ -1261,7 +1281,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                         )
                       : Text(
-                          loc.t('common.save'),
+                          loc.t('common.add'),
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                 ),
@@ -1446,14 +1466,20 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (token == null || token.isEmpty || studioId == null) return;
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(context.read<LocaleProvider>().t('addTraining.enterName'))),
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('addTraining.enterName'),
+          ),
+        ),
       );
       return;
     }
     if (duration <= 0 || capacity <= 0 || price <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
-          content: Text(context.read<LocaleProvider>().t('addTraining.invalidValues')),
+          content: Text(
+            context.read<LocaleProvider>().t('addTraining.invalidValues'),
+          ),
         ),
       );
       return;
@@ -1464,7 +1490,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (_isRecurring) {
       if (recurringDays.isEmpty) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(context.read<LocaleProvider>().t('addTraining.selectDays'))),
+          SnackBar(
+            content: Text(
+              context.read<LocaleProvider>().t('addTraining.selectDays'),
+            ),
+          ),
         );
         return;
       }
@@ -1531,17 +1561,17 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(context.read<LocaleProvider>().t('common.errorGeneric'))),
+          SnackBar(
+            content: Text(
+              context.read<LocaleProvider>().t('common.errorGeneric'),
+            ),
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       if (isSessionPlanLimitError(e)) {
-        await showSessionPlanLimitDialog(
-          context,
-          error: e,
-          offerUpgrade: true,
-        );
+        await showSessionPlanLimitDialog(context, error: e, offerUpgrade: true);
       } else {
         showApiError(context, e);
       }
@@ -1608,7 +1638,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 setState(() => _step1NameError = false),
                             decoration: _regInputDecoration(
                               invalid: _step1NameError,
-                              hintText: context.read<LocaleProvider>().t('addTraining.nameExample'),
+                              hintText: context.read<LocaleProvider>().t(
+                                'addTraining.nameExample',
+                              ),
                             ),
                           )
                         else
@@ -1645,7 +1677,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                         setState(() => _step1NameError = false),
                                     decoration: _regInputDecoration(
                                       invalid: _step1NameError,
-                                      hintText: context.read<LocaleProvider>().t('addTraining.nameExample'),
+                                      hintText: context
+                                          .read<LocaleProvider>()
+                                          .t('addTraining.nameExample'),
                                     ),
                                   );
                                 },
@@ -1696,7 +1730,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         if (_existing.isEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
-                            context.read<LocaleProvider>().t('addTraining.noExistingTrainings'),
+                            context.read<LocaleProvider>().t(
+                              'addTraining.noExistingTrainings',
+                            ),
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: AppColors.textSecondary,
@@ -1709,7 +1745,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _stepFormLabel(locale.t('addTraining.category')),
+                                _stepFormLabel(
+                                  locale.t('addTraining.category'),
+                                ),
                                 InkWell(
                                   borderRadius: BorderRadius.circular(999),
                                   onTap: _categories.isEmpty
@@ -1731,6 +1769,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                       style: TextStyle(
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.w400,
+                                        letterSpacing: -0.3,
                                         color: _selectedCategoryId == null
                                             ? AppColors.textSecondary
                                             : AppColors.textPrimary,
@@ -1780,10 +1819,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                             child: SvgPicture.asset(
                                               'assets/icons/icon-pin.svg',
                                               width: 15,
-                                              height: 21,
+                                              height: 18,
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: 14),
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment:
@@ -1792,7 +1831,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                                 Text(
                                                   displayName,
                                                   style: TextStyle(
-                                                    fontSize: 19.sp,
+                                                    fontSize: 16.sp,
                                                     fontWeight: FontWeight.w700,
                                                     color:
                                                         AppColors.textPrimary,
@@ -1815,7 +1854,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                                   Padding(
                                                     padding:
                                                         const EdgeInsets.only(
-                                                          top: 4,
+                                                          top: 0,
                                                         ),
                                                     child: Text(
                                                       loc.t(
@@ -1904,11 +1943,14 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                     keyboardType: TextInputType.number,
                                     textInputAction: TextInputAction.next,
                                     inputFormatters: [_VndThousandsFormatter()],
-                                    onChanged: (_) =>
-                                        setState(() => _step1PriceError = false),
+                                    onChanged: (_) => setState(
+                                      () => _step1PriceError = false,
+                                    ),
                                     decoration: _regInputDecoration(
                                       invalid: _step1PriceError,
-                                      hintText: context.read<LocaleProvider>().t('addTraining.enterPrice'),
+                                      hintText: context
+                                          .read<LocaleProvider>()
+                                          .t('addTraining.enterPrice'),
                                     ),
                                   ),
                                 ],
@@ -1958,7 +2000,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           maxLines: 5,
                           decoration: _regInputDecoration(
                             invalid: false,
-                            hintText: context.read<LocaleProvider>().t('addTraining.descriptionOptional'),
+                            hintText: context.read<LocaleProvider>().t(
+                              'addTraining.descriptionOptional',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 22),
@@ -1973,7 +2017,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                             },
                             style: AuthFormStyles.primaryButtonStyle(),
                             child: Text(
-                              context.read<LocaleProvider>().t('addTraining.nextStep'),
+                              context.read<LocaleProvider>().t(
+                                'addTraining.nextStep',
+                              ),
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16.sp,

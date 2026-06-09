@@ -38,7 +38,7 @@ class HenzoEmptyState extends StatelessWidget {
               width: iconSize,
               height: iconSize,
               colorFilter: ColorFilter.mode(
-                iconColor ?? AppColors.neutral300,
+                iconColor ?? AppColors.textSecondary,
                 BlendMode.srcIn,
               ),
             )
@@ -46,7 +46,7 @@ class HenzoEmptyState extends StatelessWidget {
             Icon(
               icon,
               size: iconSize,
-              color: iconColor ?? AppColors.neutral300,
+              color: iconColor ?? AppColors.textSecondary,
             ),
           const SizedBox(height: 16),
           Text(

@@ -1047,9 +1047,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         addLabel: locale.t(
                                           'profileForm.addStudioLogo',
                                         ),
-                                        changeLabel: locale.t(
-                                          'profileForm.changeStudioLogo',
-                                        ),
                                         onTap: _pickStudioLogo,
                                         onRemove: _logoUrl != null
                                             ? _removeStudioLogo
@@ -1435,7 +1432,6 @@ class _StudioLogoTile extends StatelessWidget {
     required this.logoUrl,
     required this.loading,
     required this.addLabel,
-    required this.changeLabel,
     required this.onTap,
     this.onRemove,
   });
@@ -1445,14 +1441,12 @@ class _StudioLogoTile extends StatelessWidget {
   final String? logoUrl;
   final bool loading;
   final String addLabel;
-  final String changeLabel;
   final VoidCallback onTap;
   final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
     final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
-    final actionLabel = hasLogo ? changeLabel : addLabel;
 
     return Column(
       children: [
@@ -1549,15 +1543,17 @@ class _StudioLogoTile extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          actionLabel,
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary500,
+        if (!hasLogo) ...[
+          const SizedBox(height: 8),
+          Text(
+            addLabel,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary500,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
