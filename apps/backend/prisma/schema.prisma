@@ -173,7 +173,6 @@ model Subscription {
   type              SubscriptionType   @default(SOLO)
   status           SubscriptionStatus  @default(ACTIVE)
   startDate         DateTime
-  amount            Float
   /// End of the current paid period (from Stripe), when known.
   currentPeriodEnd  DateTime?
   createdAt         DateTime           @default(now())

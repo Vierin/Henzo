@@ -89,11 +89,6 @@ function SubscriptionsContent() {
               render: (r) => String(r.status ?? ''),
             },
             {
-              key: 'amount',
-              header: 'Amount',
-              render: (r) => String(r.amount ?? '—'),
-            },
-            {
               key: 'end',
               header: 'Period end',
               render: (r) => {

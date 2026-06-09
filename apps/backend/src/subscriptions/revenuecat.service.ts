@@ -197,7 +197,6 @@ export class RevenueCatService {
       create: {
         studioId: studio.id,
         startDate: now,
-        amount: 0,
         ...subscriptionData,
       },
       update: subscriptionData,
@@ -217,7 +216,6 @@ export class RevenueCatService {
       type: updated.type,
       status: updated.status,
       startDate: updated.startDate.toISOString(),
-      amount: updated.amount,
       currentPeriodEnd: updated.currentPeriodEnd?.toISOString() ?? null,
     };
   }

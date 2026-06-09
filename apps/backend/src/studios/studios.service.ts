@@ -1337,7 +1337,6 @@ export class StudiosService {
             type: 'SOLO',
             status: 'ACTIVE',
             startDate: now,
-            amount: 0.0,
             updatedAt: now,
           },
         });
