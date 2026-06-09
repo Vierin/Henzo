@@ -22,29 +22,27 @@ export class NotificationsService {
     language: string = 'en',
   ): Promise<void> {
     try {
-      // Deactivate old tokens for this user on the same platform
+      // Deactivate other tokens for this user on the same platform.
       await this.prisma.pushToken.updateMany({
         where: {
           userId,
           platform,
           isActive: true,
+          NOT: { token },
         },
         data: {
           isActive: false,
         },
       });
 
-      // Check if token already exists
-      const existingToken = await this.prisma.pushToken.findUnique({
-        where: { token },
+      const existingToken = await this.prisma.pushToken.findFirst({
+        where: { userId, token },
       });
 
       if (existingToken) {
-        // Update existing token
         await this.prisma.pushToken.update({
-          where: { token },
+          where: { id: existingToken.id },
           data: {
-            userId,
             platform,
             language,
             isActive: true,
@@ -52,7 +50,6 @@ export class NotificationsService {
           },
         });
       } else {
-        // Create new token
         await this.prisma.pushToken.create({
           data: {
             userId,
@@ -432,8 +429,21 @@ export class NotificationsService {
     startsAt: Date;
   }): Promise<void> {
     try {
+      console.log(
+        `📤 Preparing class booking push for studio ${params.studioId}`,
+      );
       const tokens = await this.getPushTokensByStudioOwner(params.studioId);
+      console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length === 0) {
+        console.warn(
+          '⚠️ No push tokens for studio owner — open owner app on device to register',
+        );
+        return;
+      }
+      if (!this.firebaseAdmin.isInitialized()) {
+        console.warn(
+          '⚠️ Firebase Admin not initialized — class booking push skipped',
+        );
         return;
       }
       const tokensByLanguage = new Map<
