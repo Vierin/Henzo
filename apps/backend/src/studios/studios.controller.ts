@@ -864,6 +864,7 @@ export class StudiosController {
           await this.notificationsService.sendGroupClassBookingNotification({
             studioId: session.studioId,
             sessionId: session.id,
+            enrollmentId,
             trainingName: session.Training?.name || 'class',
             startsAt: session.startsAt,
             clientName:

@@ -120,6 +120,84 @@ export class NotificationsService {
     }
   }
 
+  async createInAppNotification(params: {
+    userId: string;
+    type: string;
+    title: string;
+    body: string;
+    data?: Record<string, string>;
+  }): Promise<string> {
+    const row = await this.prisma.inAppNotification.create({
+      data: {
+        userId: params.userId,
+        type: params.type,
+        title: params.title,
+        body: params.body,
+        data: params.data ?? {},
+      },
+      select: { id: true },
+    });
+    return row.id;
+  }
+
+  async listInAppNotifications(
+    userId: string,
+    limit = 100,
+  ): Promise<
+    Array<{
+      id: string;
+      type: string;
+      title: string;
+      body: string;
+      data: Record<string, string>;
+      read: boolean;
+      createdAt: Date;
+    }>
+  > {
+    const rows = await this.prisma.inAppNotification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      title: row.title,
+      body: row.body,
+      data: this.normalizeNotificationData(row.data),
+      read: row.read,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async markInAppNotificationsRead(
+    userId: string,
+    ids?: string[],
+  ): Promise<void> {
+    await this.prisma.inAppNotification.updateMany({
+      where: {
+        userId,
+        ...(ids && ids.length > 0 ? { id: { in: ids } } : {}),
+        read: false,
+      },
+      data: { read: true },
+    });
+  }
+
+  private normalizeNotificationData(value: unknown): Record<string, string> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return {};
+    }
+    return Object.entries(value as Record<string, unknown>).reduce(
+      (acc, [key, val]) => {
+        if (val == null) return acc;
+        acc[key] = String(val);
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+  }
+
   async getPushTokensByStudioOwner(
     studioId: string,
   ): Promise<Array<{ token: string; language: string }>> {
@@ -424,28 +502,71 @@ export class NotificationsService {
   async sendGroupClassBookingNotification(params: {
     studioId: string;
     sessionId: string;
+    enrollmentId?: string;
     clientName: string;
     trainingName: string;
     startsAt: Date;
   }): Promise<void> {
     try {
       console.log(
-        `📤 Preparing class booking push for studio ${params.studioId}`,
+        `📤 Preparing class booking notification for studio ${params.studioId}`,
       );
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: params.studioId },
+        select: { ownerId: true },
+      });
+      if (!studio?.ownerId) {
+        console.warn(
+          '⚠️ Studio owner not found for class booking notification',
+        );
+        return;
+      }
+
       const tokens = await this.getPushTokensByStudioOwner(params.studioId);
+      const ownerLanguage = tokens[0]?.language || 'en';
+      const title = getNotificationText(ownerLanguage, 'classBookingTitle');
+      const body = formatNotificationTemplate(
+        getNotificationText(ownerLanguage, 'classBookingBody'),
+        {
+          client: params.clientName,
+          class: params.trainingName || 'class',
+        },
+      );
+      const pushData: Record<string, string> = {
+        type: 'NEW_CLASS_BOOKING',
+        sessionId: params.sessionId,
+        studioId: params.studioId,
+        trainingName: params.trainingName,
+        startsAt: params.startsAt.toISOString(),
+        clientName: params.clientName,
+      };
+      if (params.enrollmentId) {
+        pushData.enrollmentId = params.enrollmentId;
+      }
+
+      const notificationId = await this.createInAppNotification({
+        userId: studio.ownerId,
+        type: 'NEW_CLASS_BOOKING',
+        title,
+        body,
+        data: pushData,
+      });
+      pushData.notificationId = notificationId;
+
       console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length === 0) {
         console.warn(
-          '⚠️ No push tokens for studio owner — open owner app on device to register',
+          '⚠️ No push tokens for studio owner — in-app notification saved only',
         );
         return;
       }
       if (!this.firebaseAdmin.isInitialized()) {
         console.warn(
-          '⚠️ Firebase Admin not initialized — class booking push skipped',
+          '⚠️ Firebase Admin not initialized — in-app notification saved, push skipped',
         );
         return;
       }
+
       const tokensByLanguage = new Map<
         string,
         Array<{ token: string; language: string }>
@@ -458,8 +579,11 @@ export class NotificationsService {
         tokensByLanguage.get(lang)!.push(tokenObj);
       });
       for (const [language, languageTokens] of tokensByLanguage.entries()) {
-        const title = getNotificationText(language, 'classBookingTitle');
-        const body = formatNotificationTemplate(
+        const localizedTitle = getNotificationText(
+          language,
+          'classBookingTitle',
+        );
+        const localizedBody = formatNotificationTemplate(
           getNotificationText(language, 'classBookingBody'),
           {
             client: params.clientName,
@@ -468,16 +592,9 @@ export class NotificationsService {
         );
         await this.sendPushNotification(
           languageTokens,
-          title,
-          body,
-          {
-            type: 'NEW_CLASS_BOOKING',
-            sessionId: params.sessionId,
-            studioId: params.studioId,
-            trainingName: params.trainingName,
-            startsAt: params.startsAt.toISOString(),
-            clientName: params.clientName,
-          },
+          localizedTitle,
+          localizedBody,
+          pushData,
           undefined,
           'henzo_default',
         );

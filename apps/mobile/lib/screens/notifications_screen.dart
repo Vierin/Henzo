@@ -48,8 +48,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     _filter = widget.initialFilter;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationsStore>().markAllRead();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final token = context.read<AuthService>().accessToken;
+      final store = context.read<NotificationsStore>();
+      await store.syncFromServer(token);
+      if (!mounted) return;
+      await store.markAllRead(accessToken: token);
     });
   }
 
@@ -112,7 +116,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       body: RefreshIndicator(
         color: AppColors.primary500,
-        onRefresh: () => store.load(),
+        onRefresh: () async {
+          final token = context.read<AuthService>().accessToken;
+          await store.syncFromServer(token);
+        },
         child: LayoutBuilder(
           builder: (context, constraints) {
             return ListView(

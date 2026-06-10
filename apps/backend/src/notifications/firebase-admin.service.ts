@@ -227,6 +227,10 @@ export class FirebaseAdminService implements OnModuleInit {
         },
       },
       apns: {
+        headers: {
+          'apns-push-type': 'alert',
+          'apns-priority': '10',
+        },
         payload: {
           aps: {
             sound: 'default',
@@ -287,6 +291,10 @@ export class FirebaseAdminService implements OnModuleInit {
         },
       },
       apns: {
+        headers: {
+          'apns-push-type': 'alert',
+          'apns-priority': '10',
+        },
         payload: {
           aps: {
             sound: 'default',

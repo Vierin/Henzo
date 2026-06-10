@@ -37,6 +37,9 @@ class PushNotificationService {
   static void Function(String title, String body, Map<String, String> data)?
   onNotificationReceived;
 
+  static String? _pendingAccessToken;
+  static String? _pendingLanguage;
+
   /// Initialize: request permission, get token, set up message handlers.
   /// [onNotificationReceived] is called for each received message so the app can show them in the notifications screen.
   static Future<void> initialize({
@@ -94,6 +97,17 @@ class PushNotificationService {
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+        _log('onTokenRefresh: ${token.length} chars');
+        final accessToken = _pendingAccessToken;
+        final language = _pendingLanguage;
+        if (accessToken != null &&
+            accessToken.isNotEmpty &&
+            language != null &&
+            language.isNotEmpty) {
+          registerToken(accessToken: accessToken, language: language);
+        }
+      });
       final initial = await _messaging.getInitialMessage().timeout(
         const Duration(seconds: 5),
         onTimeout: () => null,
@@ -154,11 +168,21 @@ class PushNotificationService {
     WorkoutService.sendToWatch(workoutType: workoutType);
   }
 
+  /// Keep credentials for [onTokenRefresh] re-registration.
+  static void configureTokenRefresh({
+    required String accessToken,
+    required String language,
+  }) {
+    _pendingAccessToken = accessToken;
+    _pendingLanguage = language;
+  }
+
   /// Register FCM token with backend. Call after login and when language changes.
   static Future<void> registerToken({
     required String accessToken,
     required String language,
   }) async {
+    configureTokenRefresh(accessToken: accessToken, language: language);
     _log('registerToken start');
     try {
       final token = await _messaging.getToken();

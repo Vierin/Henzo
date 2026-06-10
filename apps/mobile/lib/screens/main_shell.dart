@@ -9,6 +9,7 @@ import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/studio_cache.dart';
+import '../../services/notifications_store.dart';
 import '../../services/push_notification_service.dart';
 import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
@@ -97,10 +98,12 @@ class MainShellState extends State<MainShell> {
     final locale = context.read<LocaleProvider>();
     await PushNotificationService.requestNotificationPermission();
     if (mounted) {
-      PushNotificationService.registerToken(
+      await PushNotificationService.registerToken(
         accessToken: token,
         language: locale.localeCode,
       );
+      if (!mounted) return;
+      await context.read<NotificationsStore>().syncFromServer(token);
     }
   }
 
