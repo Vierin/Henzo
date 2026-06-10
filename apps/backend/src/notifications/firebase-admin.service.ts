@@ -233,6 +233,10 @@ export class FirebaseAdminService implements OnModuleInit {
         },
         payload: {
           aps: {
+            alert: {
+              title: notification.title,
+              body: notification.body,
+            },
             sound: 'default',
             badge: 1,
           },
@@ -297,6 +301,10 @@ export class FirebaseAdminService implements OnModuleInit {
         },
         payload: {
           aps: {
+            alert: {
+              title: notification.title,
+              body: notification.body,
+            },
             sound: 'default',
             badge: 1,
             category:

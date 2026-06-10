@@ -15,6 +15,14 @@ export class NotificationsService {
     private readonly adminEventLog: AdminEventLogService,
   ) {}
 
+  async deactivatePushTokens(tokens: string[]): Promise<void> {
+    if (tokens.length === 0) return;
+    await this.prisma.pushToken.updateMany({
+      where: { token: { in: tokens } },
+      data: { isActive: false },
+    });
+  }
+
   async savePushToken(
     userId: string,
     token: string,
@@ -283,12 +291,24 @@ export class NotificationsService {
       );
       if (response.failureCount > 0) {
         const errors: string[] = [];
+        const deadTokens: string[] = [];
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
             console.error(`❌ Token ${index} failed:`, resp.error);
             errors.push(resp.error?.message ?? 'unknown');
+            const code = resp.error?.code ?? '';
+            if (
+              code.includes('registration-token-not-registered') ||
+              code.includes('invalid-registration-token')
+            ) {
+              const failedToken = tokenObjects[index]?.token;
+              if (failedToken) deadTokens.push(failedToken);
+            }
           }
         });
+        if (deadTokens.length > 0) {
+          await this.deactivatePushTokens(deadTokens);
+        }
         await this.adminEventLog.log({
           type: 'push_failed',
           severity: 'warn',

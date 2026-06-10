@@ -177,6 +177,20 @@ class PushNotificationService {
     _pendingLanguage = language;
   }
 
+  /// iOS: FCM token is unavailable until APNs registration completes.
+  static Future<void> _waitForApnsToken({int maxAttempts = 20}) async {
+    if (!Platform.isIOS) return;
+    for (var i = 0; i < maxAttempts; i++) {
+      final apns = await _messaging.getAPNSToken();
+      if (apns != null && apns.isNotEmpty) {
+        _log('APNS token ready (${apns.length} chars)');
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    _log('APNS token not ready after $maxAttempts attempts');
+  }
+
   /// Register FCM token with backend. Call after login and when language changes.
   static Future<void> registerToken({
     required String accessToken,
@@ -185,7 +199,28 @@ class PushNotificationService {
     configureTokenRefresh(accessToken: accessToken, language: language);
     _log('registerToken start');
     try {
-      final token = await _messaging.getToken();
+      if (Platform.isIOS) {
+        final settings = await _messaging.getNotificationSettings();
+        _log(
+          'iOS auth status: ${settings.authorizationStatus}, '
+          'alert=${settings.alert}, sound=${settings.sound}',
+        );
+        if (settings.authorizationStatus == AuthorizationStatus.denied) {
+          _log('registerToken: notifications denied on iOS');
+          return;
+        }
+        await _waitForApnsToken();
+      }
+
+      String? token;
+      for (var attempt = 0; attempt < 5; attempt++) {
+        token = await _messaging.getToken();
+        if (token != null && token.isNotEmpty) break;
+        if (Platform.isIOS) {
+          await _waitForApnsToken(maxAttempts: 5);
+          await Future.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+        }
+      }
       if (token == null || token.isEmpty) {
         _log('registerToken: no token from FCM');
         return;

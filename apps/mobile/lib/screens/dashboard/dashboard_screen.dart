@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -107,6 +109,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
         return;
       }
+
+      unawaited(context.read<NotificationsStore>().syncFromServer(token));
 
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);

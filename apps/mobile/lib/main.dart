@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,6 +43,11 @@ import 'services/revenuecat_service.dart';
 import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
 import 'utils/owner_image_picker.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
 
 Future<void> main() async {
   runZonedGuarded<Future<void>>(
@@ -86,6 +92,9 @@ Future<void> main() async {
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
+        );
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
         );
         firebaseReady = true;
         await PushNotificationService.initialize(
