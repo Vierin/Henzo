@@ -896,20 +896,49 @@ export class NotificationsService {
     rating: number;
   }): Promise<void> {
     try {
-      const tokens = await this.getPushTokensByStudioOwner(params.studioId);
-      if (!tokens || tokens.length === 0) return;
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: params.studioId },
+        select: { ownerId: true },
+      });
+      if (!studio?.ownerId) return;
+
+      const tokens = await this.getPushTokensByUserId(studio.ownerId);
+      const lang = tokens[0]?.language || 'en';
+      const title = getNotificationText(lang, 'newReviewTitle' as any);
+      const body = formatNotificationTemplate(
+        getNotificationText(lang, 'newReviewBody' as any),
+        {
+          client: params.clientName,
+          rating: String(params.rating),
+          studio: params.studioName,
+        },
+      );
+      const pushData = { type: 'NEW_REVIEW', studioId: params.studioId };
+
+      const notificationId = await this.createInAppNotification({
+        userId: studio.ownerId,
+        type: 'NEW_REVIEW',
+        title,
+        body,
+        data: pushData,
+      });
+
+      if (tokens.length === 0 || !this.firebaseAdmin.isInitialized()) return;
 
       const languageGroups = new Map<string, typeof tokens>();
       for (const t of tokens) {
-        const lang = t.language || 'en';
-        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
-        languageGroups.get(lang)!.push(t);
+        const tLang = t.language || 'en';
+        if (!languageGroups.has(tLang)) languageGroups.set(tLang, []);
+        languageGroups.get(tLang)!.push(t);
       }
 
-      for (const [lang, langTokens] of languageGroups) {
-        const title = getNotificationText(lang, 'newReviewTitle' as any);
-        const body = formatNotificationTemplate(
-          getNotificationText(lang, 'newReviewBody' as any),
+      for (const [tLang, langTokens] of languageGroups) {
+        const localizedTitle = getNotificationText(
+          tLang,
+          'newReviewTitle' as any,
+        );
+        const localizedBody = formatNotificationTemplate(
+          getNotificationText(tLang, 'newReviewBody' as any),
           {
             client: params.clientName,
             rating: String(params.rating),
@@ -918,9 +947,9 @@ export class NotificationsService {
         );
         await this.sendPushNotification(
           langTokens,
-          title,
-          body,
-          { type: 'NEW_REVIEW', studioId: params.studioId },
+          localizedTitle,
+          localizedBody,
+          { ...pushData, notificationId },
           undefined,
           'henzo_default',
         );
