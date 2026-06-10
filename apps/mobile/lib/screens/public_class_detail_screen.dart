@@ -55,7 +55,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   Map<String, dynamic>? _studio;
   Map<String, dynamic>? _session;
   bool _booking = false;
+  bool _canceling = false;
   bool _isBookedByMe = false;
+  String? _enrollmentId;
   bool _isOnWaitlist = false;
   bool _waitlistLoading = false;
 
@@ -109,6 +111,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         }
       }
       var isBookedByMe = false;
+      String? enrollmentId;
+      var isOnWaitlist = false;
       final token = context.read<AuthService>().accessToken;
       if (token != null &&
           token.isNotEmpty &&
@@ -121,8 +125,11 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           );
           if (enr is Map) {
             isBookedByMe = enr['enrolled'] == true;
-            if (!isBookedByMe) {
-              _isOnWaitlist = enr['waitlisted'] == true;
+            if (isBookedByMe) {
+              final rawId = (enr['enrollmentId'] ?? '').toString().trim();
+              enrollmentId = rawId.isNotEmpty ? rawId : null;
+            } else {
+              isOnWaitlist = enr['waitlisted'] == true;
             }
           }
         } catch (_) {}
@@ -132,6 +139,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         _studio = studioMap;
         _session = found;
         _isBookedByMe = isBookedByMe;
+        _enrollmentId = enrollmentId;
+        _isOnWaitlist = isOnWaitlist;
         _loading = false;
         if (found == null) {
           _error = context.read<LocaleProvider>().t('publicClassDetail.notFound');
@@ -219,6 +228,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       final locale = context.read<LocaleProvider>();
       if (isBookingAlreadyBookedError(e)) {
         setState(() => _isBookedByMe = true);
+        await _load();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(locale.t('clientClassDetail.alreadyBooked'))),
         );
@@ -255,6 +265,71 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
     } finally {
       if (mounted) setState(() => _waitlistLoading = false);
+    }
+  }
+
+  bool _canCancelBooking() {
+    if (!_isBookedByMe) return false;
+    final enrollmentId = _enrollmentId;
+    if (enrollmentId == null || enrollmentId.isEmpty) return false;
+    final session = _session;
+    if (session == null) return false;
+    return !ClientScheduleStore.sessionHasEnded(session, DateTime.now());
+  }
+
+  Future<void> _confirmCancelBooking() async {
+    final locale = context.read<LocaleProvider>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('clientActivity.cancelConfirmTitle')),
+        content: Text(locale.t('clientActivity.cancelConfirmBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(locale.t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error500),
+            child: Text(locale.t('clientActivity.cancelConfirmAction')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _cancelBooking();
+  }
+
+  Future<void> _cancelBooking() async {
+    final token = context.read<AuthService>().accessToken;
+    final enrollmentId = _enrollmentId;
+    final locale = context.read<LocaleProvider>();
+    if (token == null ||
+        token.isEmpty ||
+        enrollmentId == null ||
+        enrollmentId.isEmpty ||
+        _canceling) {
+      return;
+    }
+    setState(() => _canceling = true);
+    try {
+      await ApiClient.put(
+        '/fitness/client/enrollments/$enrollmentId/cancel',
+        token,
+      );
+      ClientScheduleStore.invalidate();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('client.bookingCancelled'))),
+      );
+      await _load();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('client.cancelBookingFailed'))),
+      );
+    } finally {
+      if (mounted) setState(() => _canceling = false);
     }
   }
 
@@ -342,8 +417,11 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                   );
                 },
                 onBook: _book,
+                onCancelBooking: _confirmCancelBooking,
                 booking: _booking,
+                canceling: _canceling,
                 isBookedByMe: _isBookedByMe,
+                canCancelBooking: _canCancelBooking(),
                 isOnWaitlist: _isOnWaitlist,
                 waitlistLoading: _waitlistLoading,
                 onJoinWaitlist: _joinWaitlist,
@@ -483,8 +561,11 @@ class _ClassDetailBody extends StatelessWidget {
     required this.onOpenStudio,
     required this.onShare,
     required this.onBook,
+    required this.onCancelBooking,
     required this.booking,
+    required this.canceling,
     required this.isBookedByMe,
+    required this.canCancelBooking,
     required this.isOnWaitlist,
     required this.waitlistLoading,
     required this.onJoinWaitlist,
@@ -501,8 +582,11 @@ class _ClassDetailBody extends StatelessWidget {
   final VoidCallback onOpenStudio;
   final VoidCallback onShare;
   final VoidCallback onBook;
+  final VoidCallback onCancelBooking;
   final bool booking;
+  final bool canceling;
   final bool isBookedByMe;
+  final bool canCancelBooking;
   final bool isOnWaitlist;
   final bool waitlistLoading;
   final VoidCallback onJoinWaitlist;
@@ -736,8 +820,11 @@ class _ClassDetailBody extends StatelessWidget {
           _BookBar(
             startsAt: startsAt,
             onBook: onBook,
+            onCancelBooking: onCancelBooking,
             booking: booking,
+            canceling: canceling,
             isBookedByMe: isBookedByMe,
+            canCancelBooking: canCancelBooking,
             canBook: !isBookedByMe && (cap == 0 || booked < cap),
             isOnWaitlist: isOnWaitlist,
             waitlistLoading: waitlistLoading,
@@ -1285,8 +1372,11 @@ class _BookBar extends StatelessWidget {
   const _BookBar({
     required this.startsAt,
     required this.onBook,
+    required this.onCancelBooking,
     required this.booking,
+    required this.canceling,
     required this.isBookedByMe,
+    required this.canCancelBooking,
     required this.canBook,
     required this.isOnWaitlist,
     required this.waitlistLoading,
@@ -1296,8 +1386,11 @@ class _BookBar extends StatelessWidget {
 
   final DateTime startsAt;
   final VoidCallback onBook;
+  final VoidCallback onCancelBooking;
   final bool booking;
+  final bool canceling;
   final bool isBookedByMe;
+  final bool canCancelBooking;
   final bool canBook;
   final bool isOnWaitlist;
   final bool waitlistLoading;
@@ -1319,7 +1412,55 @@ class _BookBar extends StatelessWidget {
         12 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: const BoxDecoration(color: AppColors.backgroundSecondary),
-      child: classFull && !started
+      child: isBookedByMe
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  locale.t('clientClassDetail.youAreBooked'),
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: canCancelBooking && !canceling
+                      ? onCancelBooking
+                      : null,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error500,
+                    disabledForegroundColor: AppColors.error500.withValues(
+                      alpha: 0.45,
+                    ),
+                    side: const BorderSide(color: AppColors.error500),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: canceling
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.error500,
+                          ),
+                        )
+                      : Text(
+                          locale.t('clientActivity.cancel'),
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ],
+            )
+          : classFull && !started
           ? _WaitlistButton(
               isOnWaitlist: isOnWaitlist,
               loading: waitlistLoading,
@@ -1353,8 +1494,6 @@ class _BookBar extends StatelessWidget {
                   : Text(
                       started
                           ? locale.t('clientClassDetail.classStarted')
-                          : isBookedByMe
-                          ? locale.t('clientClassDetail.youAreBooked')
                           : locale.t('clientClassDetail.bookClass'),
                       style: TextStyle(
                         fontSize: 16.sp,
