@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,7 +52,8 @@ class PublicClassDetailScreen extends StatefulWidget {
 }
 
 class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
-  bool _loading = true;
+  bool _loadingCore = true;
+  bool _enrollmentLoading = false;
   String? _error;
   Map<String, dynamic>? _studio;
   Map<String, dynamic>? _session;
@@ -70,7 +73,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   Future<void> _load() async {
     if (!mounted) return;
     setState(() {
-      _loading = true;
+      _loadingCore = true;
+      _enrollmentLoading = false;
       _error = null;
     });
     try {
@@ -81,17 +85,20 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
       final from = day.toUtc().toIso8601String();
       final to = day.add(const Duration(days: 1)).toUtc().toIso8601String();
-      final rawStudio = await ApiClient.get(
-        '/studios/${widget.studioId}',
-        null,
-      );
-      final rawSchedule = await ApiClient.get(
-        '/studios/${widget.studioId}/schedule?from='
-        '${Uri.encodeComponent(from)}&to='
-        '${Uri.encodeComponent(to)}&limit=200',
-        null,
-      );
+      final results = await Future.wait<dynamic>([
+        ApiClient.get('/studios/${widget.studioId}', null),
+        ApiClient.get(
+          '/studios/${widget.studioId}/schedule?from='
+          '${Uri.encodeComponent(from)}&to='
+          '${Uri.encodeComponent(to)}&limit=200',
+          null,
+        ),
+      ]);
       if (!mounted) return;
+
+      final rawStudio = results[0];
+      final rawSchedule = results[1];
+
       Map<String, dynamic>? studioMap;
       if (rawStudio is Map<String, dynamic>) {
         studioMap = rawStudio;
@@ -110,49 +117,68 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           break;
         }
       }
-      var isBookedByMe = false;
-      String? enrollmentId;
-      var isOnWaitlist = false;
+
       final token = context.read<AuthService>().accessToken;
-      if (token != null &&
+      final shouldLoadEnrollment =
+          token != null &&
           token.isNotEmpty &&
           found != null &&
-          widget.sessionId.isNotEmpty) {
-        try {
-          final enr = await ApiClient.get(
-            '/studios/sessions/${widget.sessionId}/my-enrollment',
-            token,
-          );
-          if (enr is Map) {
-            isBookedByMe = enr['enrolled'] == true;
-            if (isBookedByMe) {
-              final rawId = (enr['enrollmentId'] ?? '').toString().trim();
-              enrollmentId = rawId.isNotEmpty ? rawId : null;
-            } else {
-              isOnWaitlist = enr['waitlisted'] == true;
-            }
-          }
-        } catch (_) {}
-      }
-      if (!mounted) return;
+          widget.sessionId.isNotEmpty;
+
       setState(() {
         _studio = studioMap;
         _session = found;
-        _isBookedByMe = isBookedByMe;
-        _enrollmentId = enrollmentId;
-        _isOnWaitlist = isOnWaitlist;
-        _loading = false;
+        _loadingCore = false;
+        _enrollmentLoading = shouldLoadEnrollment;
+        _isBookedByMe = false;
+        _enrollmentId = null;
+        _isOnWaitlist = false;
         if (found == null) {
           _error = context.read<LocaleProvider>().t('publicClassDetail.notFound');
         }
       });
+
+      if (shouldLoadEnrollment) {
+        unawaited(_loadEnrollment(token));
+      }
     } catch (e) {
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
       setState(() {
-        _loading = false;
+        _loadingCore = false;
+        _enrollmentLoading = false;
         _error = loadErrorMessage(locale, e);
       });
+    }
+  }
+
+  Future<void> _loadEnrollment(String token) async {
+    try {
+      final enr = await ApiClient.get(
+        '/studios/sessions/${widget.sessionId}/my-enrollment',
+        token,
+      );
+      if (!mounted) return;
+      var isBookedByMe = false;
+      String? enrollmentId;
+      var isOnWaitlist = false;
+      if (enr is Map) {
+        isBookedByMe = enr['enrolled'] == true;
+        if (isBookedByMe) {
+          final rawId = (enr['enrollmentId'] ?? '').toString().trim();
+          enrollmentId = rawId.isNotEmpty ? rawId : null;
+        } else {
+          isOnWaitlist = enr['waitlisted'] == true;
+        }
+      }
+      setState(() {
+        _isBookedByMe = isBookedByMe;
+        _enrollmentId = enrollmentId;
+        _isOnWaitlist = isOnWaitlist;
+        _enrollmentLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _enrollmentLoading = false);
     }
   }
 
@@ -353,6 +379,31 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     }
   }
 
+  void _shareLoadedSession(Map<String, dynamic> session) {
+    final trainingMap = session['training'] is Map
+        ? Map<String, dynamic>.from(session['training'] as Map)
+        : <String, dynamic>{};
+    final startsAt = parseApiDateTime(session['startsAt']);
+    final trainer = session['trainer'] is Map
+        ? Map<String, dynamic>.from(session['trainer'] as Map)
+        : <String, dynamic>{};
+    final owner = _studio?['owner'] is Map
+        ? Map<String, dynamic>.from(_studio!['owner'] as Map)
+        : <String, dynamic>{};
+    final instructor = (trainer['name'] ?? '').toString().trim().isNotEmpty
+        ? (trainer['name'] ?? '').toString().trim()
+        : (owner['name'] ?? '').toString().trim();
+    final address = (_studio?['address'] ?? '').toString().trim();
+    _shareClass(
+      classTitle: (trainingMap['name'] ??
+              context.read<LocaleProvider>().t('common.class'))
+          .toString(),
+      trainerName: instructor.isNotEmpty ? instructor : null,
+      startsAt: startsAt,
+      addressLine: address,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = _session;
@@ -367,10 +418,13 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
+        child: _loadingCore
+            ? _ClassDetailLoadingView(
+                hintStartsAt: widget.sessionStartsAtHint,
+                distanceKm: widget.distanceKm,
+              )
             : session == null
-            ? LoadErrorView(
+            ? _ClassDetailErrorView(
                 message: _error ??
                     context.read<LocaleProvider>().t(
                       'publicClassDetail.notFound',
@@ -393,29 +447,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                     ),
                   );
                 },
-                onShare: () {
-                  final training = trainingMap;
-                  final startsAt = parseApiDateTime(session['startsAt']);
-                  final trainer = session['trainer'] is Map
-                      ? Map<String, dynamic>.from(session['trainer'] as Map)
-                      : <String, dynamic>{};
-                  final owner = _studio?['owner'] is Map
-                      ? Map<String, dynamic>.from(_studio!['owner'] as Map)
-                      : <String, dynamic>{};
-                  final instructor =
-                      (trainer['name'] ?? '').toString().trim().isNotEmpty
-                      ? (trainer['name'] ?? '').toString().trim()
-                      : (owner['name'] ?? '').toString().trim();
-                  final address = (_studio?['address'] ?? '').toString().trim();
-                  _shareClass(
-                    classTitle: (training['name'] ??
-                            context.read<LocaleProvider>().t('common.class'))
-                        .toString(),
-                    trainerName: instructor.isNotEmpty ? instructor : null,
-                    startsAt: startsAt,
-                    addressLine: address,
-                  );
-                },
+                onShare: () => _shareLoadedSession(session),
                 onBook: _book,
                 onCancelBooking: _confirmCancelBooking,
                 booking: _booking,
@@ -424,6 +456,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                 canCancelBooking: _canCancelBooking(),
                 isOnWaitlist: _isOnWaitlist,
                 waitlistLoading: _waitlistLoading,
+                enrollmentLoading: _enrollmentLoading,
                 onJoinWaitlist: _joinWaitlist,
                 onLeaveWaitlist: _leaveWaitlist,
               ),
@@ -568,6 +601,7 @@ class _ClassDetailBody extends StatelessWidget {
     required this.canCancelBooking,
     required this.isOnWaitlist,
     required this.waitlistLoading,
+    required this.enrollmentLoading,
     required this.onJoinWaitlist,
     required this.onLeaveWaitlist,
   });
@@ -589,6 +623,7 @@ class _ClassDetailBody extends StatelessWidget {
   final bool canCancelBooking;
   final bool isOnWaitlist;
   final bool waitlistLoading;
+  final bool enrollmentLoading;
   final VoidCallback onJoinWaitlist;
   final VoidCallback onLeaveWaitlist;
 
@@ -677,71 +712,7 @@ class _ClassDetailBody extends StatelessWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            kScreenPaddingHorizontal,
-            4,
-            kScreenPaddingHorizontal,
-            16,
-          ),
-          child: SizedBox(
-            height: 40,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Row(
-                  children: [
-                    HenzoHeaderBackButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const Spacer(),
-                    FilledButton.icon(
-                      onPressed: onShare,
-                      icon: SvgPicture.asset(
-                        'assets/icons/icon-share.svg',
-                        width: 16,
-                        height: 12,
-                        fit: BoxFit.contain,
-                        excludeFromSemantics: true,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      label: Text(tr('common.share')),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary500,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        textStyle: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  tr('common.class'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        _ClassDetailTopBar(onShare: onShare),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
@@ -828,10 +799,319 @@ class _ClassDetailBody extends StatelessWidget {
             canBook: !isBookedByMe && (cap == 0 || booked < cap),
             isOnWaitlist: isOnWaitlist,
             waitlistLoading: waitlistLoading,
+            enrollmentLoading: enrollmentLoading,
             onJoinWaitlist: onJoinWaitlist,
             onLeaveWaitlist: onLeaveWaitlist,
           ),
       ],
+    );
+  }
+}
+
+class _ClassDetailTopBar extends StatelessWidget {
+  const _ClassDetailTopBar({this.onShare});
+
+  final VoidCallback? onShare;
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = context.watch<LocaleProvider>().t;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        kScreenPaddingHorizontal,
+        4,
+        kScreenPaddingHorizontal,
+        16,
+      ),
+      child: SizedBox(
+        height: 40,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
+              children: [
+                HenzoHeaderBackButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: onShare,
+                  icon: SvgPicture.asset(
+                    'assets/icons/icon-share.svg',
+                    width: 16,
+                    height: 12,
+                    fit: BoxFit.contain,
+                    excludeFromSemantics: true,
+                    colorFilter: ColorFilter.mode(
+                      onShare == null ? Colors.white54 : Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  label: Text(tr('common.share')),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: onShare == null
+                        ? AppColors.primary500.withValues(alpha: 0.45)
+                        : AppColors.primary500,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    textStyle: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              tr('common.class'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShimmerBox extends StatefulWidget {
+  const _ShimmerBox({
+    required this.height,
+    this.width,
+    this.borderRadius = 8,
+  });
+
+  final double? width;
+  final double height;
+  final double borderRadius;
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: AppColors.textTertiary.withValues(
+              alpha: 0.1 + _controller.value * 0.1,
+            ),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ClassDetailLoadingView extends StatelessWidget {
+  const _ClassDetailLoadingView({
+    required this.hintStartsAt,
+    this.distanceKm,
+  });
+
+  final DateTime hintStartsAt;
+  final double? distanceKm;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+    final dateLabel = formatCalendarWeekdayDayMonthUpper(
+      hintStartsAt,
+      locale.localeCode,
+    );
+    final distanceLabel = distanceKm != null
+        ? formatDistanceKmLabel(distanceKm)
+        : null;
+
+    return Column(
+      children: [
+        const _ClassDetailTopBar(),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              kScreenPaddingHorizontal,
+              0,
+              kScreenPaddingHorizontal,
+              120,
+            ),
+            children: [
+              const _ShimmerBox(
+                height: 88,
+                borderRadius: 14,
+              ),
+              const SizedBox(height: 15),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundPrimary,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const _ShimmerBox(
+                          width: 96,
+                          height: 34,
+                          borderRadius: 999,
+                        ),
+                        const SizedBox(width: 17),
+                        Expanded(
+                          child: Text(
+                            dateLabel,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const _ShimmerBox(height: 28, borderRadius: 6),
+                    const SizedBox(height: 10),
+                    const _ShimmerBox(
+                      width: 220,
+                      height: 28,
+                      borderRadius: 6,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: _ShimmerBox(height: 40, borderRadius: 10),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: _ShimmerBox(height: 40, borderRadius: 10),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const _ShimmerBox(height: 52, borderRadius: 10),
+                    if (distanceLabel != null && distanceLabel.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        distanceLabel,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundPrimary,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _ShimmerBox(width: 140, height: 14, borderRadius: 4),
+                    const SizedBox(height: 12),
+                    const _ShimmerBox(height: 10, borderRadius: 4),
+                    const SizedBox(height: 8),
+                    const _ShimmerBox(
+                      width: 180,
+                      height: 10,
+                      borderRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const _BookBarSkeleton(),
+      ],
+    );
+  }
+}
+
+class _ClassDetailErrorView extends StatelessWidget {
+  const _ClassDetailErrorView({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _ClassDetailTopBar(),
+        Expanded(
+          child: LoadErrorView(message: message, onRetry: onRetry),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookBarSkeleton extends StatelessWidget {
+  const _BookBarSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        kScreenPaddingHorizontal,
+        12,
+        kScreenPaddingHorizontal,
+        12 + MediaQuery.paddingOf(context).bottom,
+      ),
+      color: AppColors.backgroundSecondary,
+      child: const _ShimmerBox(height: 52, borderRadius: 14),
     );
   }
 }
@@ -1380,6 +1660,7 @@ class _BookBar extends StatelessWidget {
     required this.canBook,
     required this.isOnWaitlist,
     required this.waitlistLoading,
+    required this.enrollmentLoading,
     required this.onJoinWaitlist,
     required this.onLeaveWaitlist,
   });
@@ -1394,6 +1675,7 @@ class _BookBar extends StatelessWidget {
   final bool canBook;
   final bool isOnWaitlist;
   final bool waitlistLoading;
+  final bool enrollmentLoading;
   final VoidCallback onJoinWaitlist;
   final VoidCallback onLeaveWaitlist;
 
@@ -1402,6 +1684,7 @@ class _BookBar extends StatelessWidget {
     final locale = context.watch<LocaleProvider>();
     final started = startsAt.isBefore(DateTime.now());
     final classFull = !canBook && !isBookedByMe;
+    final actionLoading = booking || enrollmentLoading;
 
     return Container(
       width: double.infinity,
@@ -1469,7 +1752,7 @@ class _BookBar extends StatelessWidget {
               locale: locale,
             )
           : FilledButton(
-              onPressed: (!canBook || started || booking) ? null : onBook,
+              onPressed: (!canBook || started || actionLoading) ? null : onBook,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary500,
                 disabledBackgroundColor: AppColors.primary500.withValues(
@@ -1482,7 +1765,7 @@ class _BookBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: booking
+              child: actionLoading
                   ? const SizedBox(
                       width: 22,
                       height: 22,

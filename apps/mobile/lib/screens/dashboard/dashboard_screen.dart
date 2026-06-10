@@ -60,7 +60,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _sessionsLoadError;
   bool _isPublishing = false;
   bool _dataLoaded = false;
+  bool _loadingData = false;
   SubscriptionRefreshNotifier? _subRefresh;
+  StudioCache? _studioCache;
 
   @override
   void initState() {
@@ -70,6 +72,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!widget.trainerMode) {
         _subRefresh = context.read<SubscriptionRefreshNotifier>();
         _subRefresh!.addListener(_onSubscriptionRefresh);
+        _studioCache = context.read<StudioCache>();
+        _studioCache!.addListener(_onStudioCacheChanged);
       }
       _loadData();
     });
@@ -79,23 +83,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) _loadData();
   }
 
+  void _onStudioCacheChanged() {
+    if (!mounted || widget.trainerMode) return;
+    _loadData();
+  }
+
   @override
   void dispose() {
     _subRefresh?.removeListener(_onSubscriptionRefresh);
+    _studioCache?.removeListener(_onStudioCacheChanged);
     super.dispose();
   }
 
   Future<void> _loadData() async {
-    if (!mounted) return;
-    final auth = context.read<AuthService>();
-    final token = auth.accessToken;
-    if (token == null || token.isEmpty) {
-      if (mounted) {
-        setState(() => _studio = null);
-      }
-      return;
-    }
+    if (!mounted || _loadingData) return;
+    _loadingData = true;
     try {
+      final auth = context.read<AuthService>();
+      final token = auth.accessToken;
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          setState(() => _studio = null);
+        }
+        return;
+      }
+
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 8));
@@ -237,6 +249,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           showApiError(context, e);
         }
       }
+    } finally {
+      _loadingData = false;
     }
   }
 
@@ -280,7 +294,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (_) => SettingsScreen(initialFocusTarget: focusTarget),
       ),
     );
-    if (mounted) await _loadData();
+    if (mounted) {
+      context.read<StudioCache>().invalidate();
+      await _loadData();
+    }
   }
 
   Future<void> _previewPublicPage() async {
@@ -305,11 +322,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _studioDetailsCompleted(Studio? studio) {
     if (studio == null) return false;
     final name = studio.name?.trim();
+    if (name == null || name.isEmpty) return false;
+
     final address = studio.address?.trim();
-    return name != null &&
-        name.isNotEmpty &&
-        address != null &&
-        address.isNotEmpty;
+    if (address != null && address.isNotEmpty) return true;
+
+    final locale = context.read<LocaleProvider>();
+    final primary = TrainingLocationItem.defaultFromSalon(
+      studio,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
+    return primary.address.trim().isNotEmpty;
   }
 
   StudioStatus _studioStatus(Studio? studio, StudioOnboardingChecklist? c) {
@@ -496,7 +519,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _formatDateHeader(loc.localeCode),
               style: TextStyle(
                 fontSize: 14.sp,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 1.1,
                 color: AppColors.textPrimary,
               ),
@@ -593,7 +616,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             loc.t('dashboard.helloGreeting'),
             style: TextStyle(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
               height: 1.1,
               color: AppColors.textPrimary,
             ),

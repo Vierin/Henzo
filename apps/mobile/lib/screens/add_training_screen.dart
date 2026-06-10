@@ -22,6 +22,7 @@ import '../services/services_api_service.dart';
 import '../services/trainers_api_service.dart';
 import '../utils/owner_paid_plan.dart';
 import '../utils/plan_limit_dialogs.dart';
+import '../utils/recurring_session_occurrences.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
@@ -642,40 +643,15 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return raw.substring(0, 1).toUpperCase() + raw.substring(1);
   }
 
-  List<DateTime> _buildRecurringPreview() {
-    if (!_isRecurring || _recurringDays.isEmpty) return [];
-    final start = DateTime(
-      _sessionDate.year,
-      _sessionDate.month,
-      _sessionDate.day,
+  int _plannedRecurringSessionCount() {
+    if (!_isRecurring || _recurringDays.isEmpty) return 0;
+    return countPlannedRecurringSessions(
+      studio: _studio,
+      startsFromDate: _sessionDayOnly,
+      endsOnDate: _recurringEndDayOnly,
+      daysOfWeek: _recurringDays.toList(),
+      weeksCount: _weeksCountForRecurringApi(),
     );
-    var endDay = DateTime(
-      _recurringEndDate.year,
-      _recurringEndDate.month,
-      _recurringEndDate.day,
-    );
-    final cap = _recurringRangeCap();
-    if (endDay.isAfter(cap)) endDay = cap;
-    if (endDay.isBefore(start)) endDay = start;
-    final sortedDays = _recurringDays.toList()..sort();
-    final dates = <DateTime>[];
-    for (var i = 0; ; i++) {
-      final day = start.add(Duration(days: i));
-      if (day.isAfter(endDay)) break;
-      final weekday = _weekdayFromDate(day);
-      if (!sortedDays.contains(weekday)) continue;
-      final t = _recurringDayTimes[weekday] ?? _sessionTime;
-      final candidate = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        t.hour,
-        t.minute,
-      );
-      dates.add(candidate);
-    }
-    dates.sort((a, b) => a.compareTo(b));
-    return dates;
   }
 
   Future<void> _pickSessionDateOnStep2() async {
@@ -1218,7 +1194,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         }),
         Builder(
           builder: (ctx) {
-            final n = _buildRecurringPreview().length;
+            final n = _plannedRecurringSessionCount();
             return Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
