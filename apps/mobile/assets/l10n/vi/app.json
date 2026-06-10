@@ -785,7 +785,10 @@
     "justNow": "vừa xong",
     "minsAgo": "{n} phút trước",
     "hoursAgo": "{n} giờ trước",
-    "daysAgo": "{n} ngày trước"
+    "daysAgo": "{n} ngày trước",
+    "sectionToday": "HÔM NAY",
+    "sectionYesterday": "HÔM QUA",
+    "sectionEarlier": "TRƯỚC ĐÓ"
   },
   "settings": {
     "languageEn": "English",

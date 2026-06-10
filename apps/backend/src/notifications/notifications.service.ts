@@ -364,6 +364,12 @@ export class NotificationsService {
       console.log(
         `📤 Preparing to send booking notification for studio: ${studioId} (informational)`,
       );
+
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: studioId },
+        select: { ownerId: true, timezone: true },
+      });
+
       const tokens = await this.getPushTokensByStudioOwner(studioId);
 
       console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
@@ -372,6 +378,31 @@ export class NotificationsService {
           `📱 Tokens:`,
           tokens.map((t) => t.token.substring(0, 30) + '...'),
         );
+      }
+
+      const ownerLanguage = tokens[0]?.language || 'en';
+      const inAppTitle = getNotificationText(ownerLanguage, 'newBookingConfirmed');
+      const verbText = getNotificationText(ownerLanguage, 'booked');
+      const inAppBody = `${clientName} ${verbText} ${serviceName}`;
+      const pushData: Record<string, string> = {
+        type: 'NEW_BOOKING',
+        bookingId,
+        studioId,
+        clientName,
+        serviceName,
+        dateTime: dateTime.toISOString(),
+      };
+
+      // Save to in-app inbox so it appears in the notifications screen with time/date
+      if (studio?.ownerId) {
+        const notificationId = await this.createInAppNotification({
+          userId: studio.ownerId,
+          type: 'NEW_BOOKING',
+          title: inAppTitle,
+          body: inAppBody,
+          data: pushData,
+        });
+        pushData.notificationId = notificationId;
       }
 
       if (tokens.length === 0) {
@@ -392,6 +423,8 @@ export class NotificationsService {
         tokensByLanguage.get(lang)!.push(tokenObj);
       });
 
+      const studioTz = studio?.timezone ?? 'Asia/Ho_Chi_Minh';
+
       // Send notification for each language group
       for (const [language, languageTokens] of tokensByLanguage.entries()) {
         const locale =
@@ -401,11 +434,12 @@ export class NotificationsService {
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
+          timeZone: studioTz,
         });
 
         const title = getNotificationText(language, 'newBookingConfirmed');
         const verbText = getNotificationText(language, 'booked');
-        const body = `${verbText} ${serviceName}`;
+        const body = `${clientName} ${verbText} ${serviceName}`;
 
         console.log(`📤 Sending booking notification (${language}):`, {
           title,
@@ -418,12 +452,7 @@ export class NotificationsService {
           title,
           body,
           {
-            type: 'NEW_BOOKING',
-            bookingId,
-            studioId,
-            clientName,
-            serviceName,
-            dateTime: dateTime.toISOString(),
+            ...pushData,
             formattedDate: formattedDateStr,
           },
           undefined,
@@ -449,7 +478,14 @@ export class NotificationsService {
       console.log(
         `📤 Preparing to send booking cancellation notification for studio: ${studioId}`,
       );
-      const tokens = await this.getPushTokensByStudioOwner(studioId);
+      const [tokens, studioForTz] = await Promise.all([
+        this.getPushTokensByStudioOwner(studioId),
+        this.prisma.studio.findUnique({
+          where: { id: studioId },
+          select: { timezone: true },
+        }),
+      ]);
+      const cancellationTz = studioForTz?.timezone ?? 'Asia/Ho_Chi_Minh';
 
       console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length > 0) {
@@ -490,6 +526,7 @@ export class NotificationsService {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: cancellationTz,
           },
         );
 
@@ -734,7 +771,7 @@ export class NotificationsService {
             startsAt: true,
             status: true,
             Training: { select: { name: true } },
-            Studio: { select: { name: true } },
+            Studio: { select: { name: true, timezone: true } },
           },
         });
 
@@ -746,9 +783,10 @@ export class NotificationsService {
         }
 
         const lang = tokens[0]?.language || 'en';
+        const sessionTz = session.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
         const timeStr = session.startsAt.toLocaleTimeString(
           lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
-          { hour: '2-digit', minute: '2-digit', hour12: false },
+          { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: sessionTz },
         );
         const titleKey =
           reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
@@ -799,18 +837,26 @@ export class NotificationsService {
     try {
       await this.clearPreClassRemindersForSession(sessionId);
 
-      const enrollments = await this.prisma.sessionEnrollment.findMany({
-        where: { sessionId, status: 'ACTIVE' },
-        select: { userId: true },
-      });
+      const [enrollments, cancelledSession] = await Promise.all([
+        this.prisma.sessionEnrollment.findMany({
+          where: { sessionId, status: 'ACTIVE' },
+          select: { userId: true },
+        }),
+        this.prisma.trainingSession.findUnique({
+          where: { id: sessionId },
+          select: { Studio: { select: { timezone: true } } },
+        }),
+      ]);
       if (enrollments.length === 0) return;
 
+      const cancelledTz = cancelledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
+        timeZone: cancelledTz,
       });
 
       for (const { userId } of enrollments) {
@@ -849,10 +895,16 @@ export class NotificationsService {
     sessionInfo: { className: string; studioName: string; newStartsAt: Date },
   ): Promise<void> {
     try {
-      const enrollments = await this.prisma.sessionEnrollment.findMany({
-        where: { sessionId, status: 'ACTIVE' },
-        select: { id: true, userId: true },
-      });
+      const [enrollments, rescheduledSession] = await Promise.all([
+        this.prisma.sessionEnrollment.findMany({
+          where: { sessionId, status: 'ACTIVE' },
+          select: { id: true, userId: true },
+        }),
+        this.prisma.trainingSession.findUnique({
+          where: { id: sessionId },
+          select: { Studio: { select: { timezone: true } } },
+        }),
+      ]);
       if (enrollments.length === 0) return;
 
       for (const enrollment of enrollments) {
@@ -869,12 +921,14 @@ export class NotificationsService {
         }
       }
 
+      const rescheduledTz = rescheduledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.newStartsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
+        timeZone: rescheduledTz,
       });
 
       for (const enrollment of enrollments) {

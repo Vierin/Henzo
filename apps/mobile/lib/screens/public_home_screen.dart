@@ -551,54 +551,59 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               ),
             ),
           ),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.backgroundPrimary,
-              shape: BoxShape.circle,
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SvgPicture.asset(
-                  'assets/icons/icon-bell.svg',
-                  width: 18,
-                  height: 22,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.primary500,
-                    BlendMode.srcIn,
+          child: hasUnread
+              ? Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary500,
+                    borderRadius: BorderRadius.circular(19),
                   ),
-                ),
-                if (hasUnread)
-                  Positioned(
-                    right: 10,
-                    top: 9,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 16),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary500,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        count > 9 ? '9+' : '$count',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.2,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/icon-bell.svg',
+                        width: 18,
+                        height: 22,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
                         ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        count > 99 ? '99+' : '$count',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    color: AppColors.backgroundPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icons/icon-bell.svg',
+                      width: 18,
+                      height: 22,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.primary500,
+                        BlendMode.srcIn,
                       ),
                     ),
                   ),
-              ],
-            ),
-          ),
+                ),
         );
       },
     );

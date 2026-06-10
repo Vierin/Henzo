@@ -785,7 +785,10 @@
     "justNow": "только что",
     "minsAgo": "{n} мин. назад",
     "hoursAgo": "{n} ч. назад",
-    "daysAgo": "{n} дн. назад"
+    "daysAgo": "{n} дн. назад",
+    "sectionToday": "СЕГОДНЯ",
+    "sectionYesterday": "ВЧЕРА",
+    "sectionEarlier": "ПРЕДЫДУЩИЕ"
   },
   "settings": {
     "languageEn": "English",

@@ -148,16 +148,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                   )
                 else
-                  ...[
-                    for (var i = 0; i < filteredItems.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 10),
-                      _NotificationCard(
-                        notification: filteredItems[i],
-                        locale: locale,
-                        isClient: _isClient,
-                      ),
-                    ],
-                  ],
+                  ..._buildGroupedList(filteredItems, locale),
               ],
             );
           },
@@ -178,6 +169,48 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
         return _notificationKind(n, false) == _NotificationKind.review;
     }
+  }
+
+  List<Widget> _buildGroupedList(
+    List<AppNotification> items,
+    LocaleProvider locale,
+  ) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final yesterdayStart = todayStart.subtract(const Duration(days: 1));
+
+    _DateBucket bucket(AppNotification n) {
+      if (!n.createdAt.isBefore(todayStart)) return _DateBucket.today;
+      if (!n.createdAt.isBefore(yesterdayStart)) return _DateBucket.yesterday;
+      return _DateBucket.earlier;
+    }
+
+    final result = <Widget>[];
+    _DateBucket? lastBucket;
+
+    for (var i = 0; i < items.length; i++) {
+      final b = bucket(items[i]);
+      if (b != lastBucket) {
+        if (result.isNotEmpty) result.add(const SizedBox(height: 20));
+        result.add(_SectionHeader(
+          label: switch (b) {
+            _DateBucket.today => locale.t('notifications.sectionToday'),
+            _DateBucket.yesterday => locale.t('notifications.sectionYesterday'),
+            _DateBucket.earlier => locale.t('notifications.sectionEarlier'),
+          },
+        ));
+        result.add(const SizedBox(height: 10));
+        lastBucket = b;
+      } else {
+        result.add(const SizedBox(height: 10));
+      }
+      result.add(_NotificationCard(
+        notification: items[i],
+        locale: locale,
+        isClient: _isClient,
+      ));
+    }
+    return result;
   }
 }
 
@@ -245,6 +278,29 @@ _NotificationKind _notificationKind(AppNotification n, bool forClient) {
     return _NotificationKind.system;
   }
   return _NotificationKind.system;
+}
+
+enum _DateBucket { today, yesterday, earlier }
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13.sp,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: AppColors.textTertiary,
+        ),
+      ),
+    );
+  }
 }
 
 class _NotificationTheme {
@@ -455,7 +511,6 @@ class _NotificationCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.backgroundPrimary,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderPrimary),
         ),
         child: Material(
           color: Colors.transparent,
@@ -715,25 +770,12 @@ class _NotificationCard extends StatelessWidget {
 
   String _relativeTime(DateTime date, LocaleProvider locale) {
     final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inMinutes < 1) return locale.t('notifications.justNow');
-    if (diff.inMinutes < 60) {
-      return locale
-          .t('notifications.minsAgo')
-          .replaceAll('{n}', '${diff.inMinutes}');
+    final yesterdayStart = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+    if (!date.isBefore(yesterdayStart)) {
+      return DateFormat('HH:mm').format(date);
     }
-    if (diff.inHours < 24) {
-      return locale
-          .t('notifications.hoursAgo')
-          .replaceAll('{n}', '${diff.inHours}');
-    }
-    if (diff.inDays < 7) {
-      return locale
-          .t('notifications.daysAgo')
-          .replaceAll('{n}', '${diff.inDays}');
-    }
-    final tag = locale.languageTag.replaceAll('-', '_');
-    return DateFormat('d MMM yyyy', tag).format(date);
+    return DateFormat('dd.MM.yy HH:mm').format(date);
   }
 }
 
@@ -901,31 +943,12 @@ class _TypeIconCircle extends StatelessWidget {
 class _NotificationCardArrow extends StatelessWidget {
   const _NotificationCardArrow();
 
-  static const double _d = 30;
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: _d,
-      height: _d,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primary500, width: 1),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            'assets/icons/icon-arrow.svg',
-            width: 14,
-            height: 7,
-            fit: BoxFit.contain,
-            colorFilter: const ColorFilter.mode(
-              AppColors.primary500,
-              BlendMode.srcIn,
-            ),
-          ),
-        ),
-      ),
+    return const Icon(
+      Icons.chevron_right_rounded,
+      size: 22,
+      color: AppColors.primary500,
     );
   }
 }

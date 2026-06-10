@@ -785,7 +785,10 @@
     "justNow": "just now",
     "minsAgo": "{n} mins ago",
     "hoursAgo": "{n} hours ago",
-    "daysAgo": "{n} days ago"
+    "daysAgo": "{n} days ago",
+    "sectionToday": "TODAY",
+    "sectionYesterday": "YESTERDAY",
+    "sectionEarlier": "EARLIER"
   },
   "settings": {
     "languageEn": "English",

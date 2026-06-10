@@ -8,7 +8,7 @@ import 'notifications_api_service.dart';
 
 const String _keyList = 'henzo_notifications_list';
 
-/// Keys safe to persist locally for deep-link routing only.
+/// Keys safe to persist locally for deep-link routing and display.
 const _allowedPushDataKeys = <String>{
   'type',
   'screen',
@@ -17,6 +17,12 @@ const _allowedPushDataKeys = <String>{
   'enrollmentId',
   'trainingId',
   'notificationId',
+  'bookingId',
+  'dateTime',
+  'startsAt',
+  'clientName',
+  'serviceName',
+  'trainingName',
 };
 
 Map<String, String> _sanitizePushData(Map<String, String> data) {

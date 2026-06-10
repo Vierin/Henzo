@@ -52,12 +52,12 @@ const int _kExploreDefaultTimeEndMin = 1320;
 TextStyle _browseFilterResetTextStyle() => const TextStyle(
       fontSize: 16,
       color: AppColors.textPrimary,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
 
 TextStyle _browseFilterApplyTextStyle() => const TextStyle(
       fontSize: 16,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
       color: AppColors.textInverse,
     );
 
