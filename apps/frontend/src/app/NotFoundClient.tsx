@@ -43,7 +43,7 @@ export default function NotFoundClient() {
 
   return (
     <>
-      <PublicHeader />
+      <PublicHeader hideGetApp />
       <div className="min-h-screen bg-[#fff7f6] flex items-center justify-center px-4">
         <div className="text-center max-w-md mx-auto">
           {/* Title */}
@@ -52,7 +52,7 @@ export default function NotFoundClient() {
           </h1>
 
           {/* Subtitle */}
-          <h2 className="text-2xl font-semibold text-[#ff5b5b] mb-4">
+          <h2 className="text-2xl font-semibold text-[#E86D4F] mb-4">
             {t('public.notFound.subtitle')}
           </h2>
 
@@ -64,7 +64,7 @@ export default function NotFoundClient() {
           {/* Single Button */}
           <Link
             href={withLocale('/', locale as 'en' | 'ru' | 'vi')}
-            className="inline-block bg-[#ff5b5b] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors duration-200"
+            className="inline-block bg-[#E86D4F] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#d85e42] transition-colors duration-200"
           >
             {t('public.notFound.returnHome')}
           </Link>

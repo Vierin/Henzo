@@ -110,7 +110,7 @@ export default function Footer() {
               </nav>
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <a
-                  href="https://facebook.com"
+                  href="https://www.facebook.com/profile.php?id=61581892591997"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Facebook"
@@ -119,7 +119,7 @@ export default function Footer() {
                   <FacebookIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
                 </a>
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/henzo.app/"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram"

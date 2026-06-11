@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { LegalPageHeader } from '@/components/legal/LegalPageHeader';
 import {
   PrivacyHealthDataSection,
   PrivacyMobileAppSection,
@@ -22,10 +23,12 @@ export default async function PrivacyPolicy({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
+  const { locale: raw } = await params;
+  const locale = resolveLocale(raw);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-wix-madefor-display text-[#3F3F3F]">
+      <LegalPageHeader locale={locale} />
       <main className="max-w-7xl mx-auto px-6 py-12" role="main">
         <article className="prose prose-lg max-w-7xl mx-auto">
           {/* Header */}

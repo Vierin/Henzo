@@ -18,9 +18,15 @@ import {
 
 function PublicHeaderContent({
   embedded = false,
+  sectionNavHref,
+  hideGetApp = false,
 }: {
   /** Sits inside a card: no full-width sticky bar. */
   embedded?: boolean;
+  /** Base path for #benefits / #pricing / #how-it-works nav (e.g. homepage). */
+  sectionNavHref?: string;
+  /** Hide the primary "Get app" CTA (e.g. on 404). */
+  hideGetApp?: boolean;
 }) {
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
@@ -83,10 +89,10 @@ function PublicHeaderContent({
     };
   }, [embedded]);
 
-  const getAppLabel = String(t('homepage.studio.header.getApp'));
   const navBenefits = String(t('homepage.studio.header.navBenefits'));
   const navPricing = String(t('homepage.studio.header.navPricing'));
   const navHowItWorks = String(t('homepage.studio.header.navHowItWorks'));
+  const sectionNavBase = sectionNavHref ?? pathname.split('#')[0];
 
   const shellClass = embedded
     ? 'relative z-40 bg-transparent'
@@ -119,19 +125,19 @@ function PublicHeaderContent({
               aria-label="Landing"
             >
               <a
-                href={`${pathname.split('#')[0]}#benefits`}
+                href={`${sectionNavBase}#benefits`}
                 className="whitespace-nowrap transition hover:text-[#E86D4F]"
               >
                 {navBenefits}
               </a>
               <a
-                href={`${pathname.split('#')[0]}#pricing`}
+                href={`${sectionNavBase}#pricing`}
                 className="whitespace-nowrap transition hover:text-[#E86D4F]"
               >
                 {navPricing}
               </a>
               <a
-                href={`${pathname.split('#')[0]}#how-it-works`}
+                href={`${sectionNavBase}#how-it-works`}
                 className="whitespace-nowrap transition hover:text-[#E86D4F]"
               >
                 {navHowItWorks}
@@ -221,12 +227,14 @@ function PublicHeaderContent({
           >
             <GooglePlayIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
           </a>
-          <a
-            href={`${pathname.split('#')[0]}#get-app`}
-            className="inline-flex items-center rounded-full bg-[#E86D4F] px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_28px_rgba(232,109,79,0.28)] transition hover:bg-[#d85e42] sm:px-4 sm:py-2.5 sm:text-sm"
-          >
-            {getAppLabel}
-          </a>
+          {!hideGetApp && (
+            <a
+              href={`${pathname.split('#')[0]}#get-app`}
+              className="inline-flex items-center rounded-full bg-[#E86D4F] px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_28px_rgba(232,109,79,0.28)] transition hover:bg-[#d85e42] sm:px-4 sm:py-2.5 sm:text-sm"
+            >
+              {String(t('homepage.studio.header.getApp'))}
+            </a>
+          )}
         </div>
       </div>
     </header>
@@ -235,8 +243,12 @@ function PublicHeaderContent({
 
 export default function PublicHeader({
   embedded = false,
+  sectionNavHref,
+  hideGetApp = false,
 }: {
   embedded?: boolean;
+  sectionNavHref?: string;
+  hideGetApp?: boolean;
 }) {
   return (
     <Suspense
@@ -263,7 +275,11 @@ export default function PublicHeader({
         </header>
       }
     >
-      <PublicHeaderContent embedded={embedded} />
+      <PublicHeaderContent
+        embedded={embedded}
+        sectionNavHref={sectionNavHref}
+        hideGetApp={hideGetApp}
+      />
     </Suspense>
   );
 }

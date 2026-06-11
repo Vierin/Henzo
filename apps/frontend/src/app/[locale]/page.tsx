@@ -25,7 +25,7 @@ export default async function HomePage() {
         <PublicHeader embedded />
       </header>
 
-      <main className="w-full">
+      <main className="w-full overflow-x-clip">
         <LandingHeroSection />
         <LandingPhoneShowcaseSection />
         <LandingStatement />
