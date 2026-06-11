@@ -908,6 +908,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       trainingDurationMinutes: c.durationMin,
       trainingDisplayColorHex: c.displayColorHex,
       trainingPrice: c.price,
+      trainingLanguage: c.language,
       trainerName: c.trainerName.trim(),
       trainerId: null,
       locationId: null,

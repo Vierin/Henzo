@@ -388,6 +388,7 @@ export class FitnessSessionsService {
             name: true,
             price: true,
             duration: true,
+            language: true,
             trainingCategoryId: true,
             displayColor: true,
             trainingCategory: {
@@ -447,6 +448,7 @@ export class FitnessSessionsService {
               ? Number(s.Training.price)
               : null,
           duration: s.Training?.duration ?? null,
+          language: s.Training?.language ?? null,
           trainingCategory: s.Training?.trainingCategory
             ? {
                 nameEn: s.Training.trainingCategory.name_en,

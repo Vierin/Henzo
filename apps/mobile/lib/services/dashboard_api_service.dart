@@ -44,6 +44,9 @@ class OwnerTrainingSession {
   final int? trainingDurationMinutes;
   final String? trainingDisplayColorHex;
 
+  /// Training language code (`en`, `ru`, `vi`, …).
+  final String? trainingLanguage;
+
   /// Localized category names from API (Training.trainingCategory).
   final String? trainingCategoryNameEn;
   final String? trainingCategoryNameRu;
@@ -70,6 +73,7 @@ class OwnerTrainingSession {
     this.trainingPrice,
     this.trainingDurationMinutes,
     this.trainingDisplayColorHex,
+    this.trainingLanguage,
     this.trainingCategoryNameEn,
     this.trainingCategoryNameRu,
     this.trainingCategoryNameVn,
@@ -126,6 +130,11 @@ class OwnerTrainingSession {
       trainingDisplayColorHex: training is Map<String, dynamic>
           ? training['displayColor']?.toString()
           : null,
+      trainingLanguage: training is Map<String, dynamic>
+          ? (training['language'] as String?)?.trim().isNotEmpty == true
+              ? (training['language'] as String).trim()
+              : null
+          : null,
       trainingCategoryNameEn: catEn,
       trainingCategoryNameRu: catRu,
       trainingCategoryNameVn: catVn,
@@ -159,6 +168,7 @@ class OwnerTrainingSession {
       'trainingDurationMinutes': trainingDurationMinutes,
     if (trainingDisplayColorHex != null)
       'trainingDisplayColorHex': trainingDisplayColorHex,
+    if (trainingLanguage != null) 'trainingLanguage': trainingLanguage,
     if (trainingCategoryNameEn != null)
       'trainingCategoryNameEn': trainingCategoryNameEn,
     if (trainingCategoryNameRu != null)
@@ -186,6 +196,7 @@ class OwnerTrainingSession {
       trainingPrice: _parseOptionalDouble(m['trainingPrice']),
       trainingDurationMinutes: _parseOptionalInt(m['trainingDurationMinutes']),
       trainingDisplayColorHex: m['trainingDisplayColorHex']?.toString(),
+      trainingLanguage: m['trainingLanguage']?.toString(),
       trainingCategoryNameEn: m['trainingCategoryNameEn']?.toString(),
       trainingCategoryNameRu: m['trainingCategoryNameRu']?.toString(),
       trainingCategoryNameVn: m['trainingCategoryNameVn']?.toString(),
@@ -210,6 +221,7 @@ class OwnerTrainingSession {
     double? trainingPrice,
     int? trainingDurationMinutes,
     String? trainingDisplayColorHex,
+    String? trainingLanguage,
     String? trainingCategoryNameEn,
     String? trainingCategoryNameRu,
     String? trainingCategoryNameVn,
@@ -229,6 +241,7 @@ class OwnerTrainingSession {
             trainingDurationMinutes ?? this.trainingDurationMinutes,
         trainingDisplayColorHex:
             trainingDisplayColorHex ?? this.trainingDisplayColorHex,
+        trainingLanguage: trainingLanguage ?? this.trainingLanguage,
         trainingCategoryNameEn:
             trainingCategoryNameEn ?? this.trainingCategoryNameEn,
         trainingCategoryNameRu:

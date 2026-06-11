@@ -5,7 +5,11 @@ import '../../constants/colors.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
+import '../../utils/training_language_label.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+const Color _scheduleMetaIconColor = Color(0xFF4D39A8);
+const double _metaRowGap = 8;
 
 String ownerDailyScheduleTrainerLabel(
   OwnerTrainingSession session,
@@ -31,12 +35,13 @@ Widget _scheduleTrainerIcon({bool large = false}) {
   return Padding(
     padding: const EdgeInsets.only(top: 1),
     child: SvgPicture.asset(
-      large
-          ? 'assets/icons/icon-profile-large.svg'
-          : 'assets/icons/icon-profile.svg',
+      'assets/icons/icon-profile-full.svg',
       width: large ? 14 : 11,
       height: large ? 14 : 13,
-      colorFilter: const ColorFilter.mode(Color(0xFF4D39A8), BlendMode.srcIn),
+      colorFilter: const ColorFilter.mode(
+        _scheduleMetaIconColor,
+        BlendMode.srcIn,
+      ),
     ),
   );
 }
@@ -49,7 +54,7 @@ String? scheduleTrainerLineOrNull(
   return isPlaceholderScheduleTrainerName(label) ? null : label;
 }
 
-/// Trainer on [trainerLine] only; subtitle holds location (pin) or studio.
+/// [trainerLine] row first; [subtitleLabel] holds location (pin) or studio.
 ({
   String subtitleLabel,
   bool showLocationPin,
@@ -121,7 +126,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   final String subtitleLabel;
   final bool showLocationPin;
 
-  /// Shown under [subtitleLabel] when [showLocationPin] (location row).
+  /// Shown above [subtitleLabel] when set.
   final String? trainerLine;
 
   /// When set, right column shows [bookActionLabel] instead of capacity/fill.
@@ -189,6 +194,13 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     }
 
     final trainerRowText = trainerLine?.trim() ?? '';
+    final languageCode = s.trainingLanguage?.trim();
+    final hasLanguage = languageCode != null && languageCode.isNotEmpty;
+    final metaTextStyle = TextStyle(
+      fontSize: 14.sp,
+      fontWeight: FontWeight.w400,
+      color: AppColors.textPrimary,
+    );
     final priceText = trailingPriceLabel?.trim() ?? '';
     final priceColor = trailingPriceColor ?? accent;
     final hasBookAction = isBooked || onBookAgain != null || bookActionLoading;
@@ -296,8 +308,46 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         ],
                       ],
                     ),
+                    if (hasLanguage) ...[
+                      const SizedBox(height: _metaRowGap),
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/icon-globe.svg',
+                            width: 12,
+                            height: 12,
+                            colorFilter: const ColorFilter.mode(
+                              _scheduleMetaIconColor,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            trainingLanguageLabel(languageCode),
+                            style: metaTextStyle,
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (trainerRowText.isNotEmpty) ...[
+                      const SizedBox(height: _metaRowGap),
+                      Row(
+                        children: [
+                          _scheduleTrainerIcon(large: useLargeTrainerIcon),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              trainerRowText,
+                              style: metaTextStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (subtitleLabel.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: _metaRowGap),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -308,32 +358,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               subtitleLabel,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (trainerRowText.isNotEmpty) ...[
-                      if (subtitleLabel.isNotEmpty) const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          _scheduleTrainerIcon(large: useLargeTrainerIcon),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              trainerRowText,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textPrimary,
-                              ),
+                              style: metaTextStyle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

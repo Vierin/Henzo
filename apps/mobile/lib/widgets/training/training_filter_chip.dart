@@ -32,11 +32,6 @@ class TrainingFilterChip extends StatelessWidget {
                 ? AppColors.primary500
                 : AppColors.backgroundPrimary,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected
-                  ? AppColors.primary500
-                  : AppColors.borderPrimary,
-            ),
           ),
           child: Text(
             label,
