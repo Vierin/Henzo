@@ -34,6 +34,7 @@ import '../../widgets/client/browse_day_pill.dart';
 import '../../widgets/client/browse_collapsing_header.dart';
 import '../../widgets/client/browse_studio_list_card.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
+import '../../widgets/client/browse_results_skeleton.dart';
 import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/language_selector_modal.dart';
 import '../../widgets/training/training_category_color_chip.dart';
@@ -48,17 +49,43 @@ const int _kBrowseMaxMonthSpan = 2;
 const RangeValues _kExploreDefaultTimeRange = RangeValues(300, 1320);
 const int _kExploreDefaultTimeStartMin = 300;
 const int _kExploreDefaultTimeEndMin = 1320;
+const double _kBrowseFilterLineHeight = 1.2;
 
 TextStyle _browseFilterResetTextStyle() => const TextStyle(
       fontSize: 16,
       color: AppColors.textPrimary,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
+      height: _kBrowseFilterLineHeight,
     );
 
 TextStyle _browseFilterApplyTextStyle() => const TextStyle(
       fontSize: 16,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
       color: AppColors.textInverse,
+      height: _kBrowseFilterLineHeight,
+    );
+
+TextStyle _browseFilterChoiceTextStyle({
+  required bool selected,
+  double? fontSize,
+}) =>
+    TextStyle(
+      color: selected ? AppColors.primary500 : AppColors.textPrimary,
+      fontWeight: FontWeight.w400,
+      fontSize: fontSize,
+      height: _kBrowseFilterLineHeight,
+    );
+
+TextStyle _browseFilterSectionTitleTextStyle({Color? color}) => TextStyle(
+      color: color ?? AppColors.textPrimary,
+      fontWeight: FontWeight.w700,
+      height: _kBrowseFilterLineHeight,
+    );
+
+TextStyle _browseFilterSubtitleTextStyle({double? fontSize}) => TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: fontSize,
+      height: _kBrowseFilterLineHeight,
     );
 
 ButtonStyle _browseFilterResetButtonStyle() => TextButton.styleFrom(
@@ -92,6 +119,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
   bool _loading = true;
   String? _loadError;
+
+  bool get _isBrowseResultsLoading => _loading && _studios.isEmpty;
   final ValueNotifier<bool> _browseShowClasses = ValueNotifier<bool>(true);
   late final AnimationController _browseModeController;
   bool _isMonthExpanded = false;
@@ -1071,6 +1100,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
               fontSize: 30.sp / 1.6,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
+              height: _kBrowseFilterLineHeight,
             ),
           ),
         ),
@@ -1379,6 +1409,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                     'clientHome.filterAllTypes',
                                   ),
                                   selected: tempSelection < 0,
+                                  fontWeight: FontWeight.w400,
+                                  lineHeight: _kBrowseFilterLineHeight,
                                   onTap: () =>
                                       setModalState(() => tempSelection = -1),
                                 ),
@@ -1387,6 +1419,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                                     category: cat,
                                     label: cat.label(localeCode),
                                     selected: tempSelection == cat.id,
+                                    fontWeight: FontWeight.w400,
+                                    lineHeight: _kBrowseFilterLineHeight,
                                     onTap: () => setModalState(
                                       () => tempSelection = cat.id,
                                     ),
@@ -1471,12 +1505,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: _browseFilterChoiceTextStyle(
+                  selected: selected,
                   fontSize: 12.sp,
-                  color: selected
-                      ? AppColors.primary500
-                      : AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -1645,12 +1676,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     const SizedBox(height: 8),
                     Text(
                       label,
-                      style: TextStyle(
-                        color: selected
-                            ? AppColors.primary500
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: _browseFilterChoiceTextStyle(selected: selected),
                     ),
                   ],
                 ),
@@ -1687,10 +1713,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         context.read<LocaleProvider>().t(
                           'clientHome.activitiesByTimePeriod',
                         ),
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: _browseFilterSectionTitleTextStyle(),
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -1726,19 +1749,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                         context.read<LocaleProvider>().t(
                           'clientHome.activitiesByStartTime',
                         ),
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: _browseFilterSectionTitleTextStyle(),
                       ),
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
                           '${formatMinutesSliderLabel(tempRange.start)} - ${formatMinutesSliderLabel(tempRange.end)}',
-                          style: TextStyle(
+                          style: _browseFilterSectionTitleTextStyle(
                             color: AppColors.primary500,
-                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1876,11 +1895,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       children: [
                         Text(
                           title,
-                          style: TextStyle(
-                            color: selected
-                                ? AppColors.primary500
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                          style: _browseFilterChoiceTextStyle(
+                            selected: selected,
                             fontSize: 15.sp,
                           ),
                         ),
@@ -1888,8 +1904,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
+                            style: _browseFilterSubtitleTextStyle(
                               fontSize: 13.sp,
                             ),
                           ),
@@ -2049,11 +2064,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       children: [
                         Text(
                           title,
-                          style: TextStyle(
-                            color: selected
-                                ? AppColors.primary500
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                          style: _browseFilterChoiceTextStyle(
+                            selected: selected,
                             fontSize: 15.sp,
                           ),
                         ),
@@ -2061,8 +2073,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
+                            style: _browseFilterSubtitleTextStyle(
                               fontSize: 13.sp,
                             ),
                           ),
@@ -2202,10 +2213,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               text,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+              style: _browseFilterSectionTitleTextStyle(),
             ),
           );
         }
@@ -2242,19 +2250,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                       children: [
                         Text(
                           title,
-                          style: TextStyle(
-                            color: selected
-                                ? AppColors.primary500
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                          style: _browseFilterChoiceTextStyle(
+                            selected: selected,
                           ),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
+                            style: _browseFilterSubtitleTextStyle(
                               fontSize: 12.sp,
                             ),
                           ),
@@ -2313,12 +2317,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     const SizedBox(height: 8),
                     Text(
                       label,
-                      style: TextStyle(
-                        color: selected
-                            ? AppColors.primary500
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: _browseFilterChoiceTextStyle(selected: selected),
                     ),
                   ],
                 ),
@@ -2540,9 +2539,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           alignment: Alignment.centerRight,
                           child: Text(
                             '${formatMinutesSliderLabel(tempRange.start)} - ${formatMinutesSliderLabel(tempRange.end)}',
-                            style: TextStyle(
+                            style: _browseFilterSectionTitleTextStyle(
                               color: AppColors.primary500,
-                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -3091,6 +3089,35 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     required ClientFavoritesStore favStore,
     required LocaleProvider locale,
   }) {
+    if (_loadError != null && _studios.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: LoadErrorView(
+            message: _loadError!,
+            onRetry: _loadExplore,
+            compact: true,
+          ),
+        ),
+      ];
+    }
+
+    if (_isBrowseResultsLoading) {
+      final itemCount = showClasses ? 5 : 4;
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
+          sliver: SliverList.separated(
+            itemCount: itemCount,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (_, _) => showClasses
+                ? const BrowseClassCardSkeleton()
+                : const BrowseStudioCardSkeleton(),
+          ),
+        ),
+      ];
+    }
+
     if (showClasses) {
       if (_derivedDayClasses.isEmpty) {
         return [
@@ -3308,111 +3335,105 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _loadError != null
-            ? LoadErrorView(message: _loadError!, onRetry: _loadExplore)
-            : ValueListenableBuilder<bool>(
-                valueListenable: _browseShowClasses,
-                builder: (context, showClasses, _) {
-                  final headerExpandedHeight = _browseHeaderExpandedHeight(
-                    context,
-                  );
-                  return CustomScrollView(
-                    controller: _browseScrollController,
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: _openLocationPicker,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/icon-pin.svg',
-                                  width: 12,
-                                  height: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.sizeOf(context).width - 120,
-                                  ),
-                                  child: Text(
-                                    locationLabel,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      letterSpacing: 0.4,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  size: 18,
-                                  color: _browseLocationBlue,
-                                ),
-                              ],
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _browseShowClasses,
+          builder: (context, showClasses, _) {
+            final headerExpandedHeight = _browseHeaderExpandedHeight(context);
+            return CustomScrollView(
+              controller: _browseScrollController,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: _openLocationPicker,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/icon-pin.svg',
+                            width: 12,
+                            height: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.sizeOf(context).width - 120,
+                            ),
+                            child: Text(
+                              locationLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                letterSpacing: 0.4,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 18,
+                            color: _browseLocationBlue,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            locale.t('clientShell.browse'),
+                            style: TextStyle(
+                              fontSize: 28.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.5,
+                              height: 1.1,
                             ),
                           ),
                         ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  locale.t('clientShell.browse'),
-                                  style: TextStyle(
-                                    fontSize: 28.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                    letterSpacing: -0.5,
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ),
-                              _browseTodayButton(),
-                              const SizedBox(width: 8),
-                              _browseExpandButton(),
-                            ],
-                          ),
+                        _browseTodayButton(),
+                        const SizedBox(width: 8),
+                        _browseExpandButton(),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: BrowseCollapsingHeaderDelegate(
+                    expandedHeight: headerExpandedHeight,
+                    collapsedHeight: _kBrowseCollapsedHeaderHeight,
+                    backgroundColor: AppColors.backgroundSecondary,
+                    rebuildToken: _browseHeaderRebuildToken,
+                    builder: (context, collapseT) =>
+                        _buildBrowseCollapsingHeaderContent(
+                          context,
+                          locale,
+                          collapseT,
                         ),
-                      ),
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: BrowseCollapsingHeaderDelegate(
-                          expandedHeight: headerExpandedHeight,
-                          collapsedHeight: _kBrowseCollapsedHeaderHeight,
-                          backgroundColor: AppColors.backgroundSecondary,
-                          rebuildToken: _browseHeaderRebuildToken,
-                          builder: (context, collapseT) =>
-                              _buildBrowseCollapsingHeaderContent(
-                                context,
-                                locale,
-                                collapseT,
-                              ),
-                        ),
-                      ),
-                      ..._buildBrowseResultSlivers(
-                        showClasses: showClasses,
-                        locationStore: locationStore,
-                        favStore: favStore,
-                        locale: locale,
-                      ),
-                    ],
-                  );
-                },
-              ),
+                  ),
+                ),
+                ..._buildBrowseResultSlivers(
+                  showClasses: showClasses,
+                  locationStore: locationStore,
+                  favStore: favStore,
+                  locale: locale,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -3507,7 +3528,7 @@ class _BrowseCompactFilterButton extends StatelessWidget {
                   color: count > 0
                       ? AppColors.primary500
                       : AppColors.textSecondary,
-                  height: 1.1,
+                  height: _kBrowseFilterLineHeight,
                 ),
               ),
             ],

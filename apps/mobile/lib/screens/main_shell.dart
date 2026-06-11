@@ -232,13 +232,12 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    if (_studioLoading) {
+      return const Scaffold(body: WorkspaceLoadingView());
+    }
+
     return Scaffold(
-      body: Stack(
-        children: [
-          IndexedStack(index: _currentIndex, children: _shellBodyTabs),
-          if (_studioLoading) const _StudioLoadingCurtain(),
-        ],
-      ),
+      body: IndexedStack(index: _currentIndex, children: _shellBodyTabs),
       bottomNavigationBar: ColoredBox(
         color: AppColors.backgroundSecondary,
         child: SafeArea(
@@ -393,16 +392,6 @@ class _NavItem extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Занавес при загрузке данных салона: логотип и подпись.
-class _StudioLoadingCurtain extends StatelessWidget {
-  const _StudioLoadingCurtain();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Positioned.fill(child: WorkspaceLoadingView());
   }
 }
 

@@ -44,6 +44,7 @@ class ClientExploreFilterChip extends StatelessWidget {
                 fontSize: 13.sp,
                 color: isActive ? AppColors.primary500 : AppColors.textPrimary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                height: 1.2,
               ),
             ),
             if (badgeCount != null && badgeCount! > 0) ...[
@@ -60,6 +61,7 @@ class ClientExploreFilterChip extends StatelessWidget {
                     color: Colors.white,
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w700,
+                    height: 1.2,
                   ),
                 ),
               ),

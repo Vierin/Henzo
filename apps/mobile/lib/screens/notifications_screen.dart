@@ -57,8 +57,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
-  bool get _isClient =>
-      widget.audience == NotificationsScreenAudience.client;
+  bool get _isClient => widget.audience == NotificationsScreenAudience.client;
 
   List<AppNotification> _visibleItems(List<AppNotification> all) {
     var list = all;
@@ -82,16 +81,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .length;
     final secondaryCount = _isClient
         ? items
-            .where(
-              (n) =>
-                  !_isBookingFilterKind(_notificationKind(n, _isClient)),
-            )
-            .length
+              .where(
+                (n) => !_isBookingFilterKind(_notificationKind(n, _isClient)),
+              )
+              .length
         : items
-            .where(
-              (n) => _notificationKind(n, false) == _NotificationKind.review,
-            )
-            .length;
+              .where(
+                (n) => _notificationKind(n, false) == _NotificationKind.review,
+              )
+              .length;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
@@ -99,9 +97,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: HenzoHeaderBackButton(
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: HenzoHeaderBackButton(onPressed: () => Navigator.pop(context)),
         leadingWidth: 56,
         title: Text(
           locale.t('notifications.title'),
@@ -192,23 +188,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final b = bucket(items[i]);
       if (b != lastBucket) {
         if (result.isNotEmpty) result.add(const SizedBox(height: 20));
-        result.add(_SectionHeader(
-          label: switch (b) {
-            _DateBucket.today => locale.t('notifications.sectionToday'),
-            _DateBucket.yesterday => locale.t('notifications.sectionYesterday'),
-            _DateBucket.earlier => locale.t('notifications.sectionEarlier'),
-          },
-        ));
+        result.add(
+          _SectionHeader(
+            label: switch (b) {
+              _DateBucket.today => locale.t('notifications.sectionToday'),
+              _DateBucket.yesterday => locale.t(
+                'notifications.sectionYesterday',
+              ),
+              _DateBucket.earlier => locale.t('notifications.sectionEarlier'),
+            },
+          ),
+        );
         result.add(const SizedBox(height: 10));
         lastBucket = b;
       } else {
         result.add(const SizedBox(height: 10));
       }
-      result.add(_NotificationCard(
-        notification: items[i],
-        locale: locale,
-        isClient: _isClient,
-      ));
+      result.add(
+        _NotificationCard(
+          notification: items[i],
+          locale: locale,
+          isClient: _isClient,
+        ),
+      );
     }
     return result;
   }
@@ -296,7 +298,7 @@ class _SectionHeader extends StatelessWidget {
           fontSize: 13.sp,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
-          color: AppColors.textTertiary,
+          color: AppColors.textPrimary,
         ),
       ),
     );
@@ -426,7 +428,9 @@ class _FilterPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         child: Ink(
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary500 : AppColors.backgroundPrimary,
+            color: selected
+                ? AppColors.primary500
+                : AppColors.backgroundPrimary,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Container(
@@ -468,6 +472,24 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
+const _kNotificationCardRadius = 16.0;
+
+class _NotificationDeleteAction extends StatelessWidget {
+  const _NotificationDeleteAction({required this.onPressed});
+
+  final void Function(BuildContext context) onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSlidableAction(
+      onPressed: onPressed,
+      backgroundColor: AppColors.error500,
+      padding: EdgeInsets.zero,
+      child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
+    );
+  }
+}
+
 class _NotificationCard extends StatelessWidget {
   const _NotificationCard({
     required this.notification,
@@ -488,76 +510,53 @@ class _NotificationCard extends StatelessWidget {
         ? _bookingSessionParts(notification, locale)
         : null;
 
-    return Slidable(
-      key: ValueKey(notification.id),
-      endActionPane: ActionPane(
-        motion: const DrawerMotion(),
-        extentRatio: 0.16,
-        children: [
-          CustomSlidableAction(
-            onPressed: (_) =>
-                context.read<NotificationsStore>().deleteById(notification.id),
-            backgroundColor: AppColors.error500,
-            padding: EdgeInsets.zero,
-            child: const Icon(
-              Icons.delete_outline,
-              color: Colors.white,
-              size: 22,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_kNotificationCardRadius),
+      child: Slidable(
+        key: ValueKey(notification.id),
+        endActionPane: ActionPane(
+          motion: const BehindMotion(),
+          extentRatio: 0.18,
+          children: [
+            _NotificationDeleteAction(
+              onPressed: (_) =>
+                  context.read<NotificationsStore>().deleteById(notification.id),
             ),
-          ),
-        ],
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.backgroundPrimary,
-          borderRadius: BorderRadius.circular(16),
+          ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () =>
-                _onNotificationTap(context, notification, kind, isClient),
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
+        child: ColoredBox(
+          color: AppColors.backgroundPrimary,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () =>
+                  _onNotificationTap(context, notification, kind, isClient),
+              child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _TypeIconCircle(
-                    accent: theme.accent,
-                    icon: theme.icon,
-                    svgAsset: theme.svgAsset,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '• ${locale.t(theme.typeLabelKey)}',
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                                color: theme.accent,
-                              ),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TypeIconCircle(
+                      accent: theme.accent,
+                      icon: theme.icon,
+                      svgAsset: theme.svgAsset,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '• ${locale.t(theme.typeLabelKey)}',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                              color: theme.accent,
                             ),
-                            const Spacer(),
-                            Text(
-                              timeStr,
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
+                          ),
+                          const SizedBox(height: 6),
                         Text.rich(
                           TextSpan(
                             style: TextStyle(
@@ -580,7 +579,7 @@ class _NotificationCard extends StatelessWidget {
                               const Icon(
                                 Icons.schedule_outlined,
                                 size: 14,
-                                color: AppColors.textTertiary,
+                                color: AppColors.textPrimary,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -588,14 +587,20 @@ class _NotificationCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                               const SizedBox(width: 14),
-                              const Icon(
-                                Icons.calendar_today_outlined,
-                                size: 13,
-                                color: AppColors.textTertiary,
+                              SvgPicture.asset(
+                                'assets/icons/icon-calendar.svg',
+                                width: 12,
+                                height: 12,
+                                fit: BoxFit.contain,
+                                excludeFromSemantics: true,
+                                colorFilter: const ColorFilter.mode(
+                                  AppColors.textPrimary,
+                                  BlendMode.srcIn,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -603,22 +608,41 @@ class _NotificationCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ],
                           ),
                         ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                        const Expanded(
+                          child: Center(
+                            child: _NotificationCardArrow(),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const _NotificationCardArrow(),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -631,7 +655,9 @@ class _NotificationCard extends StatelessWidget {
     const bold = TextStyle(fontWeight: FontWeight.w700);
     const normal = TextStyle(fontWeight: FontWeight.w400);
 
-    final leadName = isClient ? _clientLeadName(n) : n.data['clientName']?.trim();
+    final leadName = isClient
+        ? _clientLeadName(n)
+        : n.data['clientName']?.trim();
     final serviceName = _serviceOrClassName(n);
     final body = n.body.trim();
 
@@ -645,10 +671,7 @@ class _NotificationCard extends StatelessWidget {
       if (isClient) {
         return [
           TextSpan(text: leadName, style: bold),
-          TextSpan(
-            text: body.isNotEmpty ? ' $body' : '',
-            style: normal,
-          ),
+          TextSpan(text: body.isNotEmpty ? ' $body' : '', style: normal),
         ];
       }
       return switch (kind) {
@@ -661,10 +684,7 @@ class _NotificationCard extends StatelessWidget {
         ],
         _NotificationKind.booking => [
           TextSpan(text: leadName, style: bold),
-          TextSpan(
-            text: _bookedMessageSuffix(n, serviceName),
-            style: normal,
-          ),
+          TextSpan(text: _bookedMessageSuffix(n, serviceName), style: normal),
         ],
         _NotificationKind.review => [
           TextSpan(text: leadName, style: bold),
@@ -726,8 +746,7 @@ class _NotificationCard extends StatelessWidget {
     AppNotification n,
     LocaleProvider locale,
   ) {
-    final raw =
-        n.data['dateTime']?.trim() ?? n.data['startsAt']?.trim();
+    final raw = n.data['dateTime']?.trim() ?? n.data['startsAt']?.trim();
     if (raw != null && raw.isNotEmpty) {
       try {
         final dt = DateTime.parse(raw).toLocal();
@@ -742,10 +761,7 @@ class _NotificationCard extends StatelessWidget {
     return null;
   }
 
-  _BookingSessionParts _formatSessionParts(
-    DateTime dt,
-    LocaleProvider locale,
-  ) {
+  _BookingSessionParts _formatSessionParts(DateTime dt, LocaleProvider locale) {
     final tag = locale.languageTag.replaceAll('-', '_');
     return _BookingSessionParts(
       time: DateFormat('HH:mm', tag).format(dt),
@@ -770,8 +786,11 @@ class _NotificationCard extends StatelessWidget {
 
   String _relativeTime(DateTime date, LocaleProvider locale) {
     final now = DateTime.now();
-    final yesterdayStart = DateTime(now.year, now.month, now.day)
-        .subtract(const Duration(days: 1));
+    final yesterdayStart = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 1));
     if (!date.isBefore(yesterdayStart)) {
       return DateFormat('HH:mm').format(date);
     }
@@ -866,7 +885,8 @@ Future<void> _openBookingSessionDetail(
     if (nameHint != null && nameHint.isNotEmpty) {
       final hint = nameHint.toLowerCase();
       for (final s in sessions) {
-        final sameDay = s.startsAt.year == anchor.year &&
+        final sameDay =
+            s.startsAt.year == anchor.year &&
             s.startsAt.month == anchor.month &&
             s.startsAt.day == anchor.day;
         if (sameDay && s.trainingName.toLowerCase() == hint) {
@@ -879,9 +899,9 @@ Future<void> _openBookingSessionDetail(
 
   if (!context.mounted) return;
   if (match == null) {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('Session not found')),
-    );
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(const SnackBar(content: Text('Session not found')));
     return;
   }
 
@@ -908,11 +928,7 @@ Future<void> _openBookingSessionDetail(
 }
 
 class _TypeIconCircle extends StatelessWidget {
-  const _TypeIconCircle({
-    required this.accent,
-    this.icon,
-    this.svgAsset,
-  });
+  const _TypeIconCircle({required this.accent, this.icon, this.svgAsset});
 
   final Color accent;
   final IconData? icon;

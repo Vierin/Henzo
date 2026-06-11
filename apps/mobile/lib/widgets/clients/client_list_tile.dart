@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -96,41 +95,13 @@ class ClientListTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                const _ClientCardArrowButton(),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 22,
+                  color: AppColors.primary500,
+                ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ClientCardArrowButton extends StatelessWidget {
-  const _ClientCardArrowButton();
-
-  static const double _d = 30;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: _d,
-      height: _d,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primary500, width: 1),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            'assets/icons/icon-arrow.svg',
-            width: 14,
-            height: 7,
-            fit: BoxFit.contain,
-            colorFilter: const ColorFilter.mode(
-              AppColors.primary500,
-              BlendMode.srcIn,
             ),
           ),
         ),
