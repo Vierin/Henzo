@@ -16,8 +16,8 @@ function phoneMotion(isMobile: boolean) {
   const h = window.innerHeight;
   if (isMobile) {
     return {
-      startY: Math.round(h * -0.08),
-      endY: Math.round(h * 0.2),
+      startY: Math.round(h * -0.2),
+      endY: Math.round(h * 0.6),
     };
   }
   return {
