@@ -169,30 +169,43 @@
 			"storeGooglePlay": "Google Play",
 			"plans": [
 				{
-					"name": "Freemium",
-					"subtitle": "Khởi đầu dễ dàng",
+					"name": "Solo",
+					"subtitle": "Dành cho huấn luyện viên độc lập",
 					"price": "0",
-					"priceSub": "Hoàn hảo để bắt đầu",
+					"priceSub": "",
 					"features": [
-						"6 buổi tập mỗi tuần",
+						"12 lớp mỗi tháng",
+						"1 huấn luyện viên",
 						"Không giới hạn khách hàng",
-						"Quản lý booking và khách hàng",
-						"Trang đặt lịch online",
-						"Nhắc lịch tự động cho khách",
-						"1 tài khoản huấn luyện viên"
+						"Đặt lịch trực tuyến",
+						"Hồ sơ studio",
+						"Thông báo đẩy"
 					]
 				},
 				{
-					"name": "Pro",
-					"subtitle": "Tăng trưởng mạnh mẽ",
-					"price": "395.000",
-					"priceSub": "/mỗi tháng",
+					"name": "Studio",
+					"subtitle": "Dành cho studio đang phát triển",
+					"price": "599.000",
+					"priceSub": "/ mỗi tháng",
 					"features": [
-						"Không giới hạn buổi tập đang hoạt động",
-						"Không giới hạn tài khoản huấn luyện viên",
-						"Nhắc lịch tự động / giảm no-show",
-						"Danh sách chờ cho lớp học",
+						"100 lớp/tháng",
+						"Tối đa 4 huấn luyện viên",
+						"Danh sách chờ",
+						"Nhắc nhở tự động (Email & Push)",
+						"Phân tích cơ bản (90 ngày)"
+					]
+				},
+				{
+					"name": "Enterprise",
+					"subtitle": "Dành cho doanh nghiệp lớn",
+					"price": "1.999.000",
+					"priceSub": "/ mỗi tháng",
+					"features": [
+						"Không giới hạn lớp học",
+						"Không giới hạn HLV",
+						"Nhiều địa điểm",
 						"Phân tích nâng cao",
+						"Phân quyền nhóm",
 						"Hỗ trợ ưu tiên"
 					]
 				}
@@ -252,7 +265,7 @@
 			"navHowItWorks": "Cách hoạt động",
 			"ctaTitle": "Bắt đầu kinh doanh ngay hôm nay.",
 			"copyright": "Copyright © Henzo app. Đã đăng ký bản quyền. 2026",
-			"email": "hello.henzo@gmail.com"
+			"email": "hello@henzo.app"
 		}
 	}
 }
