@@ -26,6 +26,7 @@ import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
 import '../../widgets/settings/studio_photo_crop_sheet.dart';
+import '../../widgets/settings/studio_profile_skeleton.dart';
 import '../../widgets/settings/studio_social_link.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'public_studio_detail_screen.dart';
@@ -103,18 +104,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _studioLoading = false);
       return;
     }
+    final cache = context.read<StudioCache>();
+    final cachedStudio = cache.studio;
+    if (cachedStudio != null) {
+      setState(() {
+        _studio = cachedStudio;
+        _studioLoading = false;
+      });
+      _fillSalonFromData();
+      _scheduleInitialFocus();
+    }
     try {
-      final studio = await context.read<StudioCache>().getStudio(token);
+      final studio = await cache.getStudio(token);
       if (!mounted) return;
       setState(() {
         _studio = studio;
         _studioLoading = false;
       });
-      _fillSalonFromData();
-      _scheduleInitialFocus();
+      if (studio != null) {
+        _fillSalonFromData();
+        _scheduleInitialFocus();
+      }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _studioLoading = false);
+      if (_studio == null) {
+        setState(() => _studioLoading = false);
+      }
       _scheduleInitialFocus();
     }
   }
@@ -1007,15 +1022,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   16,
                 ),
                 children: [
-                  // Секции салона в одной форме
                   _studioLoading
-                      ? _ProfileSection(
-                          title: locale.t('profileForm.studioLogo'),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        )
+                      ? const StudioProfileSkeleton()
                       : Form(
                           key: _salonFormKey,
                           child: Column(

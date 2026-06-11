@@ -452,21 +452,21 @@ class _OwnerHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasPhoto = avatarUrl != null && avatarUrl!.isNotEmpty;
+    final locale = context.read<LocaleProvider>();
 
-    return Material(
-      color: AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(_radius),
-      clipBehavior: Clip.none,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(_radius),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: AppColors.backgroundPrimary,
+          borderRadius: BorderRadius.circular(_radius),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(_radius),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   CircleAvatar(
                     radius: _avatarRadius,
@@ -484,101 +484,73 @@ class _OwnerHeroCard extends StatelessWidget {
                             ),
                           ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 25),
                   Expanded(
-                    child: Stack(
-                      clipBehavior: Clip.none,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(right: 72),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    subtitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (showUsageLimits) ...[
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _UsageStat(
-                                      svgAsset:
-                                          'assets/icons/icon-calendar.svg',
-                                      label: context.read<LocaleProvider>().t(
-                                        'settings.usage.classesThisMonth',
-                                      ),
-                                      used: monthlySessionsCount,
-                                      limit: monthlySessionsLimit,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _UsageStat(
-                                      svgAsset: 'assets/icons/icon-people.svg',
-                                      label: context.read<LocaleProvider>().t(
-                                        'settings.usage.trainers',
-                                      ),
-                                      used: staffCount,
-                                      limit: staffLimit,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: _PlanTierBadge(
-                            label: planLabel,
-                            isPaid: isProPlan,
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
                           ),
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _PlanTierBadge(label: planLabel, isPaid: isProPlan),
                       ],
                     ),
                   ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                    size: 22,
+                  ),
                 ],
               ),
-              const Positioned(
-                right: 0,
-                top: 28,
-                child: Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textSecondary,
-                  size: 22,
+            ),
+          ),
+        ),
+        if (showUsageLimits) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _UsageLimitCard(
+                  svgAsset: 'assets/icons/icon-calendar.svg',
+                  label: locale.t('settings.usage.classesThisMonth'),
+                  used: monthlySessionsCount,
+                  limit: monthlySessionsLimit,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _UsageLimitCard(
+                  svgAsset: 'assets/icons/icon-people.svg',
+                  label: locale.t('settings.usage.trainers'),
+                  used: staffCount,
+                  limit: staffLimit,
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        ],
+      ],
     );
   }
 }
@@ -589,8 +561,7 @@ class _PlanTierBadge extends StatelessWidget {
   final String label;
   final bool isPaid;
 
-  static const Color _activeBadgeBg = Color(0xFFE8F5E9);
-  static const Color _activeBadgeFg = Color(0xFF2E7D32);
+  static const Color _badgeBg = Color(0xFFC2F600);
 
   @override
   Widget build(BuildContext context) {
@@ -600,13 +571,13 @@ class _PlanTierBadge extends StatelessWidget {
         vertical: isPaid ? 5 : 4,
       ),
       decoration: BoxDecoration(
-        color: isPaid ? _activeBadgeBg : AppColors.primary100,
+        color: _badgeBg.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: isPaid ? _activeBadgeFg : AppColors.primary700,
+          color: AppColors.textPrimary,
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,
           height: 1.1,
@@ -616,8 +587,8 @@ class _PlanTierBadge extends StatelessWidget {
   }
 }
 
-class _UsageStat extends StatelessWidget {
-  const _UsageStat({
+class _UsageLimitCard extends StatelessWidget {
+  const _UsageLimitCard({
     required this.svgAsset,
     required this.label,
     required this.used,
@@ -629,57 +600,88 @@ class _UsageStat extends StatelessWidget {
   final int used;
   final int limit;
 
-  static const double _iconSize = 16;
+  static const double _iconSize = 14;
+  static const double _radius = 12;
+  static const double _progressWidth = 52;
 
   @override
   Widget build(BuildContext context) {
-    final isAtLimit = used >= limit;
-    final accent = isAtLimit ? AppColors.error500 : AppColors.primary500;
-    final circleBg = isAtLimit ? AppColors.error50 : AppColors.primary100;
+    final progress = limit > 0 ? (used / limit).clamp(0.0, 1.0) : 0.0;
 
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(color: circleBg, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: SvgPicture.asset(
-            svgAsset,
-            width: _iconSize,
-            height: _iconSize,
-            colorFilter: ColorFilter.mode(accent, BlendMode.srcIn),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$used/$limit',
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                  color: accent,
-                  height: 1.1,
-                ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.primary500,
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Row(
+          children: [
+            SvgPicture.asset(
+              svgAsset,
+              width: _iconSize,
+              height: _iconSize,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
               ),
-              Text(
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
                 label,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12.sp,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.1,
                 ),
               ),
-            ],
-          ),
+            ),
+            SizedBox(
+              width: _progressWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    '$used/$limit',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: SizedBox(
+                      width: _progressWidth,
+                      height: 3,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ColoredBox(
+                            color: Colors.white.withValues(alpha: 0.35),
+                          ),
+                          FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progress,
+                            child: const ColoredBox(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
