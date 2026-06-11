@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -21,6 +20,7 @@ import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
 import '../widgets/client/browse_day_pill.dart';
 import '../widgets/schedule/calendar_day_pill.dart';
+import '../widgets/schedule/schedule_calendar_header.dart';
 import '../widgets/schedule/schedule_day_empty_card.dart';
 import 'public_class_detail_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -546,64 +546,17 @@ class _PublicStudioScheduleScreenState
     );
   }
 
-  static const _expandButtonLabelWidth = 72.0;
   static const _dayStripBlockHeight = 78.0; // 4 gap + Browse strip (~74)
 
-  Widget _scheduleExpandButton() {
-    final label = _isMonthExpanded ? 'Collapse' : 'Expand';
-    return Material(
-      color: AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: () {
-          final wasExpanded = _isMonthExpanded;
-          setState(() => _isMonthExpanded = !_isMonthExpanded);
-          if (wasExpanded) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              _syncStripPagerToSelectedDay();
-            });
-          }
-        },
-        borderRadius: BorderRadius.circular(999),
-        child: SizedBox(
-          height: 30,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  'assets/icons/icon-calendar.svg',
-                  width: 13,
-                  height: 12,
-                  fit: BoxFit.contain,
-                  excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                SizedBox(
-                  width: _expandButtonLabelWidth,
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      height: 1.1,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  void _toggleScheduleMonthExpanded() {
+    final wasExpanded = _isMonthExpanded;
+    setState(() => _isMonthExpanded = !_isMonthExpanded);
+    if (wasExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncStripPagerToSelectedDay();
+      });
+    }
   }
 
   Widget _buildCalendarHeader({required bool showMonthLabel}) {
@@ -621,7 +574,13 @@ class _PublicStudioScheduleScreenState
               const Spacer(),
               _scheduleTodayButton(),
               const SizedBox(width: 8),
-              _scheduleExpandButton(),
+              ScheduleCalendarExpandButton(
+                isExpanded: _isMonthExpanded,
+                expandLabel: context.read<LocaleProvider>().t('common.expand'),
+                collapseLabel:
+                    context.read<LocaleProvider>().t('common.collapse'),
+                onTap: _toggleScheduleMonthExpanded,
+              ),
             ],
           ),
           const SizedBox(height: 8),

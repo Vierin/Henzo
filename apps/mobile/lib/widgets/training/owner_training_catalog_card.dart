@@ -9,6 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const Color _catalogMetaIconColor = Color(0xFF4D39A8);
 const double _metaRowGap = 5;
+const double _metaRowGapAfterLanguage = _metaRowGap - 2;
 
 Widget _catalogTrainerIcon() {
   return Padding(
@@ -63,8 +64,8 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
           children: [
             SvgPicture.asset(
               'assets/icons/icon-globe.svg',
-              width: 12,
-              height: 12,
+              width: 13,
+              height: 13,
               colorFilter: const ColorFilter.mode(
                 _catalogMetaIconColor,
                 BlendMode.srcIn,
@@ -163,7 +164,7 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 17.sp,
                           fontWeight: FontWeight.w700,
-                          height: 1,
+                          height: 1.2,
                           letterSpacing: -0.3,
                           color: AppColors.textPrimary,
                         ),
@@ -171,7 +172,11 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       for (var i = 0; i < metaRows.length; i++) ...[
-                        const SizedBox(height: _metaRowGap),
+                        SizedBox(
+                          height: i == 1 && hasLanguage && trainer.isNotEmpty
+                              ? _metaRowGapAfterLanguage
+                              : _metaRowGap,
+                        ),
                         metaRows[i],
                       ],
                     ],

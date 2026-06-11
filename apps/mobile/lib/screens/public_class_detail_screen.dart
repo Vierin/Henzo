@@ -1702,7 +1702,7 @@ class _BookBar extends StatelessWidget {
                 Text(
                   locale.t('clientClassDetail.youAreBooked'),
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize: 15.sp,
                     color: AppColors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
