@@ -3164,7 +3164,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     ? formatVnd(c.price!)
                     : null,
                 trailingPriceColor: AppColors.textPrimary,
-                bookActionLabel: locale.t('clientClassDetail.bookClass'),
+                bookActionLabel: locale.t('booking.book'),
                 onBookAgain: () => _openExploreClassDetail(c),
                 onTap: () => _openExploreClassDetail(c),
               );

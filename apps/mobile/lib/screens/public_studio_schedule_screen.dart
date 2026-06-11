@@ -892,7 +892,9 @@ class _PublicStudioScheduleScreenState
                                   ? formatVnd(price)
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
-                              bookActionLabel: 'Book',
+                              bookActionLabel: context
+                                  .read<LocaleProvider>()
+                                  .t('booking.book'),
                               onBookAgain: alreadyBooked
                                   ? null
                                   : () => _openClassDetail(raw),
