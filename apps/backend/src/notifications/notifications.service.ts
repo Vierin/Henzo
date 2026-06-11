@@ -381,7 +381,10 @@ export class NotificationsService {
       }
 
       const ownerLanguage = tokens[0]?.language || 'en';
-      const inAppTitle = getNotificationText(ownerLanguage, 'newBookingConfirmed');
+      const inAppTitle = getNotificationText(
+        ownerLanguage,
+        'newBookingConfirmed',
+      );
       const verbText = getNotificationText(ownerLanguage, 'booked');
       const inAppBody = `${clientName} ${verbText} ${serviceName}`;
       const pushData: Record<string, string> = {
@@ -786,7 +789,12 @@ export class NotificationsService {
         const sessionTz = session.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
         const timeStr = session.startsAt.toLocaleTimeString(
           lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
-          { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: sessionTz },
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: sessionTz,
+          },
         );
         const titleKey =
           reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
@@ -849,7 +857,8 @@ export class NotificationsService {
       ]);
       if (enrollments.length === 0) return;
 
-      const cancelledTz = cancelledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
+      const cancelledTz =
+        cancelledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',
@@ -921,7 +930,8 @@ export class NotificationsService {
         }
       }
 
-      const rescheduledTz = rescheduledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
+      const rescheduledTz =
+        rescheduledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.newStartsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',

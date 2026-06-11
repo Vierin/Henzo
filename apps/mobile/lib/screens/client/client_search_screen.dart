@@ -1168,6 +1168,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     _browseShowClasses.value,
   );
 
+  double _snapBrowseHeaderHeight(BuildContext context, double value) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    return (value * dpr).round() / dpr;
+  }
+
   double _browseHeaderExpandedHeight(BuildContext context) {
     const chrome = 15.0 + 44.0 + 10.0 + 48.0 + 10.0 + 38.0 + 8.0;
     final screenW = MediaQuery.sizeOf(context).width;
@@ -1175,11 +1180,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
       final innerW = screenW - 48;
       final tile = (innerW - 24) / 7;
       final gridH = 6 * tile + 5 * 8;
-      return 12 + 16 + 12 + 16 + 12 + gridH + 16 + chrome;
+      return _snapBrowseHeaderHeight(
+        context,
+        12 + 16 + 12 + 16 + 12 + gridH + 16 + chrome,
+      );
     }
     final stripW = screenW - 24;
     final stripH = _browsePillWidth(stripW) * 3 / 2;
-    return 13 + 8 + 8 + stripH + chrome;
+    return _snapBrowseHeaderHeight(context, 13 + 8 + 8 + stripH + chrome);
   }
 
   String _browseCompactDateLabel(LocaleProvider locale) =>
@@ -3059,25 +3067,25 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     LocaleProvider locale,
     double t,
   ) {
-    final expandedHeight = _browseHeaderExpandedHeight(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      fit: StackFit.expand,
       children: [
         ClipRect(
           child: Align(
             alignment: Alignment.topCenter,
             heightFactor: (1 - t).clamp(0.0, 1.0),
-            child: SizedBox(
-              height: expandedHeight,
-              child: _buildBrowseExpandedChrome(context, locale),
-            ),
+            child: _buildBrowseExpandedChrome(context, locale),
           ),
         ),
-        SizedBox(
-          height: _kBrowseCollapsedHeaderHeight * t,
+        Align(
+          alignment: Alignment.bottomCenter,
           child: Opacity(
             opacity: t.clamp(0.0, 1.0),
-            child: _buildBrowseCompactStickyBar(locale),
+            child: SizedBox(
+              height: _kBrowseCollapsedHeaderHeight,
+              child: _buildBrowseCompactStickyBar(locale),
+            ),
           ),
         ),
       ],
@@ -3156,7 +3164,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                     ? formatVnd(c.price!)
                     : null,
                 trailingPriceColor: AppColors.textPrimary,
-                bookActionLabel: locale.t('clientClassDetail.bookClass'),
+                bookActionLabel: locale.t('booking.book'),
                 onBookAgain: () => _openExploreClassDetail(c),
                 onTap: () => _openExploreClassDetail(c),
               );

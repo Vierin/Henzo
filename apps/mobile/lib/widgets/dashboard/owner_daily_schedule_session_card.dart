@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const Color _scheduleMetaIconColor = Color(0xFF4D39A8);
 const double _metaRowGap = 8;
+const double _metaRowGapAfterLanguage = _metaRowGap - 2;
 
 String ownerDailyScheduleTrainerLabel(
   OwnerTrainingSession session,
@@ -285,7 +286,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 17.sp,
                               fontWeight: FontWeight.w700,
-                              height: 1,
+                              height: 1.2,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
                             ),
@@ -314,8 +315,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         children: [
                           SvgPicture.asset(
                             'assets/icons/icon-globe.svg',
-                            width: 12,
-                            height: 12,
+                            width: 13,
+                            height: 13,
                             colorFilter: const ColorFilter.mode(
                               _scheduleMetaIconColor,
                               BlendMode.srcIn,
@@ -330,7 +331,11 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       ),
                     ],
                     if (trainerRowText.isNotEmpty) ...[
-                      const SizedBox(height: _metaRowGap),
+                      SizedBox(
+                        height: hasLanguage
+                            ? _metaRowGapAfterLanguage
+                            : _metaRowGap,
+                      ),
                       Row(
                         children: [
                           _scheduleTrainerIcon(large: useLargeTrainerIcon),

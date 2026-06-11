@@ -686,6 +686,11 @@ class CalendarScreenState extends State<CalendarScreen> {
                         letterSpacing: -0.8,
                         color: AppColors.textPrimary,
                       ),
+                      todayLabel: context.read<LocaleProvider>().t('common.today'),
+                      expandLabel:
+                          context.read<LocaleProvider>().t('common.expand'),
+                      collapseLabel:
+                          context.read<LocaleProvider>().t('common.collapse'),
                       onToday: _goToScheduleToday,
                       isMonthExpanded: _isMonthExpanded,
                       onToggleMonthExpanded: _toggleMonthExpanded,

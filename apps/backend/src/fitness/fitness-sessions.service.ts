@@ -49,6 +49,7 @@ const clientScheduleEnrollmentSelect =
             duration: true,
             price: true,
             displayColor: true,
+            language: true,
             trainingCategoryId: true,
             trainingCategory: {
               select: { chip_bg_hex: true },
@@ -1460,6 +1461,7 @@ export class FitnessSessionsService {
               name: e.TrainingSession.Training.name,
               duration: e.TrainingSession.Training.duration,
               price: e.TrainingSession.Training.price,
+              language: e.TrainingSession.Training.language ?? null,
               displayColor: computeTrainingDisplayColor({
                 trainingId: e.TrainingSession.Training.id,
                 trainingName: e.TrainingSession.Training.name,

@@ -74,6 +74,7 @@ class ClientProfileUserRow extends StatelessWidget {
     required this.location,
     this.avatarUrl,
     this.roleLabel,
+    this.onTap,
   });
 
   final String name;
@@ -81,20 +82,24 @@ class ClientProfileUserRow extends StatelessWidget {
   final String? location;
   final String? avatarUrl;
   final String? roleLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final initial = name.isNotEmpty ? name.characters.first.toUpperCase() : '?';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
           CircleAvatar(
             radius: 32,
             backgroundColor: AppColors.brandAccent.withValues(alpha: 0.15),
@@ -184,7 +189,17 @@ class ClientProfileUserRow extends StatelessWidget {
               ],
             ),
           ),
+          if (onTap != null) ...[
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: AppColors.textSecondary,
+            ),
+          ],
         ],
+          ),
+        ),
       ),
     );
   }

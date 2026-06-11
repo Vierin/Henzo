@@ -22,6 +22,11 @@ class BrowseCollapsingHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get minExtent => collapsedHeight;
 
+  double _snapToDevicePixels(BuildContext context, double value) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    return (value * dpr).round() / dpr;
+  }
+
   @override
   Widget build(
     BuildContext context,
@@ -30,9 +35,16 @@ class BrowseCollapsingHeaderDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final range = (maxExtent - minExtent).clamp(0.001, double.infinity);
     final t = (shrinkOffset / range).clamp(0.0, 1.0);
-    return ColoredBox(
-      color: backgroundColor,
-      child: builder(context, t),
+    final extent = _snapToDevicePixels(
+      context,
+      (maxExtent - shrinkOffset).clamp(minExtent, maxExtent),
+    );
+    return SizedBox(
+      height: extent,
+      child: ColoredBox(
+        color: backgroundColor,
+        child: builder(context, t),
+      ),
     );
   }
 

@@ -23,6 +23,7 @@ import 'client_shell_scope.dart';
 import '../../widgets/client/client_section_header.dart';
 import '../../widgets/public/top_studio_card.dart';
 import '../public_studio_detail_screen.dart';
+import 'client_edit_profile_screen.dart';
 import 'client_profile_settings_screen.dart';
 
 class ClientProfileScreen extends StatefulWidget {
@@ -363,6 +364,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   email: email,
                   location: location,
                   avatarUrl: user?.avatarUrl,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ClientEditProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 ClientProfileStatsCard(items: stats),

@@ -62,6 +62,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   static const _carouselBottomPadding = 24.0;
   static const _searchAreaThresholdKm = 2.0;
   static const _clientLocationZoom = 14.0;
+  static const _studioFocusZoom = 15.0;
   static const _userMarkerWidth = 20.0;
   static const _userMarkerHeight = 20.0;
 
@@ -100,6 +101,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   void initState() {
     super.initState();
     _mapEventSubscription = _mapController.mapEventStream.listen(_onMapEvent);
+    _carouselController.addListener(_syncMapToCarouselPage);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_bootstrapMap());
     });
@@ -142,6 +144,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   @override
   void dispose() {
+    _carouselController.removeListener(_syncMapToCarouselPage);
     _mapEventSubscription?.cancel();
     _locationStore?.removeListener(_onSharedLocationChanged);
     _mapController.dispose();
@@ -611,12 +614,39 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     await _loadStudios(searchLat: lat, searchLon: lon);
   }
 
-  void _focusStudioOnMap(int index) {
+  LatLng _lerpLatLng(LatLng from, LatLng to, double t) {
+    return LatLng(
+      from.latitude + (to.latitude - from.latitude) * t,
+      from.longitude + (to.longitude - from.longitude) * t,
+    );
+  }
+
+  LatLng? _studioLatLng(ExploreStudioItem studio) {
+    if (studio.lat == null || studio.lng == null) return null;
+    return LatLng(studio.lat!, studio.lng!);
+  }
+
+  /// Map center follows carousel scroll position between adjacent studios.
+  void _syncMapToCarouselPage() {
+    if (!_carouselController.hasClients || _filteredStudios.isEmpty) return;
+    final page = _carouselController.page;
+    if (page == null) return;
+
     final studios = _filteredStudios;
-    if (index < 0 || index >= studios.length) return;
-    final s = studios[index];
-    if (s.lat == null || s.lng == null) return;
-    _mapController.move(LatLng(s.lat!, s.lng!), 15);
+    final maxIndex = studios.length - 1;
+    final clampedPage = page.clamp(0.0, maxIndex.toDouble());
+    final lower = clampedPage.floor();
+    final upper = clampedPage.ceil();
+    final t = clampedPage - lower;
+
+    final from = _studioLatLng(studios[lower]);
+    if (from == null) return;
+    final to = lower == upper ? from : _studioLatLng(studios[upper]);
+    if (to == null) return;
+
+    final center = lower == upper ? from : _lerpLatLng(from, to, t);
+    final zoom = _mapController.camera.zoom;
+    _mapController.move(center, zoom);
   }
 
   void _onCarouselPageChanged(int index) {
@@ -624,7 +654,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       _selectedStudioIndex = index;
       _showCarouselCard = _isStudioInMapViewport(index);
     });
-    _focusStudioOnMap(index);
+    final zoom = _mapController.camera.zoom;
+    if (zoom < _studioFocusZoom) {
+      _mapController.move(_mapController.camera.center, _studioFocusZoom);
+    }
     if (index < _studios.length) {
       unawaited(_ensureStudioClassesLoaded(_studios[index]));
     }
@@ -892,11 +925,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                                 _selectedStudioIndex = i;
                                 _showCarouselCard = _isStudioInMapViewport(i);
                               });
-                              _focusStudioOnMap(i);
                               _carouselController.animateToPage(
                                 i,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
+                                duration: const Duration(milliseconds: 420),
+                                curve: Curves.easeInOutCubic,
                               );
                               unawaited(
                                 _ensureStudioClassesLoaded(_filteredStudios[i]),
