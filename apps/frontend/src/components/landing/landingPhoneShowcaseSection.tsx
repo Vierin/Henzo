@@ -7,6 +7,25 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
+const PHONE_SCRUB_LAG = 0.85;
+
+function phoneMotion(isMobile: boolean) {
+  if (typeof window === 'undefined') {
+    return { startY: 0, endY: 0 };
+  }
+  const h = window.innerHeight;
+  if (isMobile) {
+    return {
+      startY: Math.round(h * -0.2),
+      endY: Math.round(h * 0.6),
+    };
+  }
+  return {
+    startY: Math.round(h * -0.05),
+    endY: Math.round(h * 0.5),
+  };
+}
+
 export function LandingPhoneShowcaseSection() {
   const t = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
@@ -32,6 +51,7 @@ export function LandingPhoneShowcaseSection() {
 
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
+
     const isWebKit =
       typeof navigator !== 'undefined' &&
       /Safari/i.test(navigator.userAgent) &&
@@ -44,16 +64,9 @@ export function LandingPhoneShowcaseSection() {
     }
 
     const ctx = gsap.context(() => {
-      // Pin target must not use transform will-change (breaks fixed pin).
-      gsap.set(phone, {
-        x: 0,
-        xPercent: 0,
-        force3D: true,
-      });
       gsap.set(phoneFrame, {
-        willChange: 'transform, opacity',
-        backfaceVisibility: 'hidden',
-        transformPerspective: 1000,
+        scale: 1,
+        y: 0,
         transformOrigin: 'center center',
         force3D: true,
       });
@@ -128,82 +141,48 @@ export function LandingPhoneShowcaseSection() {
       makeCardLoop(card1, 0);
       makeCardLoop(card2, 2);
 
-      // ScrollTrigger.create({
-      // 	trigger: phone,
-      // 	start: 'center center',
-      // 	endTrigger: section,
-      // 	end: 'bottom bottom',
-      // 	pin: phone,
-      // 	markers: false,
-      // 	pinSpacing: false,
-      // 	anticipatePin: 1,
-      // });
+      const phoneScrollTrigger = {
+        trigger: section,
+        start: 'top 55%',
+        end: 'bottom bottom',
+        scrub: PHONE_SCRUB_LAG,
+        invalidateOnRefresh: true,
+      };
 
       const mm = gsap.matchMedia();
 
       mm.add('(min-width: 768px)', () => {
-        ScrollTrigger.create({
-          trigger: phone,
-          start: 'center center',
-          endTrigger: section,
-          end: 'bottom bottom',
-          pin: phone,
-          pinSpacing: false,
-          pinnedContainer: section,
-          pinType: 'transform',
-          anticipatePin: 2,
-          invalidateOnRefresh: true,
-        });
-
-        gsap.to(phoneFrame, {
-          scale: 0.9,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: phone,
-            start: 'center center',
-            endTrigger: section,
-            end: 'bottom bottom',
-            scrub: true,
-            invalidateOnRefresh: true,
-            fastScrollEnd: true,
+        gsap.fromTo(
+          phoneFrame,
+          {
+            scale: 1,
+            y: () => phoneMotion(false).startY,
           },
-        });
+          {
+            scale: 0.9,
+            y: () => phoneMotion(false).endY,
+            ease: 'none',
+            scrollTrigger: phoneScrollTrigger,
+          },
+        );
       });
 
       mm.add('(max-width: 767px)', () => {
-        gsap.set(phoneFrame, {
-          clearProps: 'transform',
-          transformOrigin: 'center center',
-          force3D: true,
-        });
-        ScrollTrigger.create({
-          trigger: phone,
-          start: 'center center',
-          endTrigger: section,
-          end: 'bottom bottom',
-          pin: phone,
-          pinSpacing: false,
-          pinnedContainer: section,
-          pinType: 'transform',
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        });
-
-        gsap.to(phoneFrame, {
-          scale: 0.8,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: phone,
-            start: 'center center',
-            endTrigger: section,
-            end: 'bottom bottom',
-            scrub: true,
-            invalidateOnRefresh: true,
+        gsap.fromTo(
+          phoneFrame,
+          {
+            scale: 1,
+            y: () => phoneMotion(true).startY,
           },
-        });
+          {
+            scale: 0.8,
+            y: () => phoneMotion(true).endY,
+            ease: 'none',
+            scrollTrigger: phoneScrollTrigger,
+          },
+        );
       });
 
-      // Кружки: появление
       gsap.fromTo(
         circlesEl,
         isWebKit
@@ -218,14 +197,14 @@ export function LandingPhoneShowcaseSection() {
           force3D: !isWebKit,
           scrollTrigger: {
             trigger: section,
-            markers: false,
             start: 'center 70%',
             end: 'bottom 70%',
-            scrub: 0.6,
+            scrub: 1,
             invalidateOnRefresh: true,
           },
         },
       );
+
       return () => {
         mm.revert();
       };
@@ -255,23 +234,25 @@ export function LandingPhoneShowcaseSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative z-[12] -mt-[65svh]  sm:-mt-[55svh] h-[170svh] flex flex-col items-center overflow-hidden pointer-events-none"
+      className="relative z-[12] -mt-[65svh] sm:-mt-[55svh] h-[170svh] pointer-events-none"
       aria-label="App preview"
     >
-      <div className="pointer-events-none absolute inset-x-0 bottom-[5%] sm:bottom-[-25%] left-1/2 -translate-x-1/2 z-0 w-[200vw] sm:w-full">
-        <img
-          ref={circlesRef}
-          src="/images/circles.webp"
-          alt=""
-          aria-hidden="true"
-          className="h-auto w-full origin-center"
-          draggable={false}
-        />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute inset-x-0 bottom-[5%] left-1/2 z-0 w-[200vw] -translate-x-1/2 sm:bottom-[-25%] sm:w-full">
+          <img
+            ref={circlesRef}
+            src="/images/circles.webp"
+            alt=""
+            aria-hidden="true"
+            className="h-auto w-full origin-center"
+            draggable={false}
+          />
+        </div>
       </div>
-      <div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-start px-4 pb-3 pt-0 sm:px-6">
+      <div className="relative z-10 mx-auto h-full w-full max-w-6xl px-4 sm:px-6">
         <div
           ref={card1Ref}
-          className="pointer-events-none absolute left-[max(1rem,2vw)] sm:top-[5%] top-[2%] z-20 hidden w-[min(350px,50vw)] lg:block"
+          className="pointer-events-none absolute left-[max(1rem,2vw)] top-[1%] z-20 hidden w-[min(350px,50vw)] sm:top-[5%] lg:block"
         >
           <LandingEntryNotificationCard
             title={entryTitle}
@@ -283,7 +264,7 @@ export function LandingPhoneShowcaseSection() {
         </div>
         <div
           ref={card2Ref}
-          className="pointer-events-none absolute left-[max(3rem,4vw)] top-[25%] z-20 hidden w-[min(350px,50vw)] lg:block"
+          className="pointer-events-none absolute left-[max(2rem,3vw)] top-[15%] z-20 hidden w-[min(350px,50vw)] lg:block"
         >
           <LandingEntryNotificationCard
             title={entryTitle2}
@@ -293,8 +274,11 @@ export function LandingPhoneShowcaseSection() {
             iconAlt="Review icon"
           />
         </div>
-        <div ref={phoneRef}>
-          <div ref={phoneFrameRef} className="will-change-transform">
+        <div
+          ref={phoneRef}
+          className="sticky top-0 z-10 flex h-[100svh] w-full items-center justify-center"
+        >
+          <div ref={phoneFrameRef} className="origin-center">
             <StudioPhoneFrame />
           </div>
         </div>

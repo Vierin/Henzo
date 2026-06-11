@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 
-const APP_STORE_URL = 'https://apps.apple.com/app/henzo/id6738666750';
+const APP_STORE_URL = 'https://apps.apple.com/us/app/henzo/id6773753029';
 const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.henzo.app';
 

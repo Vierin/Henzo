@@ -53,7 +53,7 @@ export function LandingPricingSection() {
   return (
     <section
       id="pricing"
-      className="bg-[#F9F4F0] sm:min-h-[max(100svh,1000px)] pt-[15rem] px-6 pb-16 sm:pt-8 md:px-10 md:pb-20 md:pt-10"
+      className="bg-[#F9F4F0] sm:min-h-[max(100svh,1000px)] pt-[15rem] px-6 pb-16 sm:pt-20 md:px-10 md:pb-20 md:pt-28 lg:pt-36"
     >
       <div className="mx-auto max-w-7xl">
         <h2 className="text-center text-[#33363F]">
@@ -69,19 +69,19 @@ export function LandingPricingSection() {
           </span>
         </h2>
 
-        <div className="mt-15 grid gap-7 md:grid-cols-2 md:gap-12 max-w-5xl mx-auto">
+        <div className="mt-15 grid gap-7 md:grid-cols-2 lg:grid-cols-3 md:gap-8 lg:gap-6 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <div
               key={plan.name}
               className="rounded-[1.4rem] bg-gradient-to-b from-[#F15942] to-[#FCF3EC] p-[1px]"
             >
               <article
-                className={`rounded-[calc(1.4rem-1px)] p-5 pb-11 ${
+                className={`flex h-full flex-col rounded-[calc(1.4rem-1px)] p-5 pb-11 ${
                   index === 0 ? 'bg-[#fdf8f4]' : 'bg-white'
                 }`}
               >
                 <div className="flex items-start gap-6 flex align-center">
-                  <div className="aspect-square w-[4rem] rounded-2xl bg-[#F15942]" />
+                  <div className="aspect-square w-[4rem] shrink-0 rounded-2xl bg-[#F15942]" />
                   <div className="font-medium">
                     <h3 className="flex items-center gap-2 text-[1.5rem] leading-tight text-[#3F3F3F]">
                       {plan.name}
@@ -105,18 +105,20 @@ export function LandingPricingSection() {
                 <div className="my-5 sm:my-10 border-t border-[#3F3F3F]" />
 
                 <div className="">
-                  <p className="text-[3rem] sm:text-[4.4rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
+                  <p className="text-[2.4rem] sm:text-[3.2rem] lg:text-[2.8rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
                     {plan.price}{' '}
-                    <span className="text-[1.8rem] sm:text-[2.5rem] text-[#3F3F3F]">
+                    <span className="text-[1.4rem] sm:text-[1.8rem] lg:text-[1.6rem] text-[#3F3F3F]">
                       VND
                     </span>
                   </p>
-                  <p className="mt-3 text-[1rem] text-[#3F3F3F]">
-                    {plan.priceSub}
-                  </p>
+                  {plan.priceSub ? (
+                    <p className="mt-3 text-[1rem] text-[#3F3F3F]">
+                      {plan.priceSub}
+                    </p>
+                  ) : null}
                 </div>
 
-                <ul className="mt-5 sm:mt-13 space-y-4">
+                <ul className="mt-5 sm:mt-13 flex-1 space-y-4">
                   {plan.features.map((feature) => (
                     <li
                       key={`${plan.name}-${feature}`}

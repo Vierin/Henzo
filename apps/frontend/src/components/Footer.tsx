@@ -22,17 +22,6 @@ function FacebookIconFilled({ className }: { className?: string }) {
   );
 }
 
-function LinkedinIconFilled({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path
-        fill="currentColor"
-        d="M20.447 20.452h-3.554V14.89c0-1.327-.026-3.035-1.85-3.035-1.85 0-2.134 1.445-2.134 2.939v5.658H9.354V9h3.414v1.561h.049c.476-.9 1.637-1.85 3.369-1.85 3.602 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.063 2.063 0 1 1 0-4.126 2.063 2.063 0 0 1 0 4.126zM7.119 20.452H3.556V9h3.563v11.452z"
-      />
-    </svg>
-  );
-}
-
 function InstagramIconFilled({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
@@ -121,7 +110,7 @@ export default function Footer() {
               </nav>
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <a
-                  href="https://facebook.com"
+                  href="https://www.facebook.com/profile.php?id=61581892591997"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Facebook"
@@ -130,16 +119,7 @@ export default function Footer() {
                   <FacebookIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
                 </a>
                 <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="LinkedIn"
-                  className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
-                >
-                  <LinkedinIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
-                </a>
-                <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/henzo.app/"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram"
@@ -148,10 +128,10 @@ export default function Footer() {
                   <InstagramIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
                 </a>
                 <a
-                  href="mailto:hello.henzo@gmail.com"
+                  href="mailto:hello@henzo.app"
                   className="ml-2 text-[1.06rem] font-medium text-[#3F3F3F] transition hover:text-[#E86D4F]"
                 >
-                  hello.henzo@gmail.com
+                  hello@henzo.app
                 </a>
               </div>
             </div>

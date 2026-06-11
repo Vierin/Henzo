@@ -366,7 +366,7 @@ class _TermsText extends StatelessWidget {
               ..onTap = () =>
                   openLegalWebPage(context, locale, '/privacy-policy'),
           ),
-          TextSpan(text: ' ${locale.t('auth.termsAnd')} '),
+          TextSpan(text: '\n${locale.t('auth.termsAnd')} '),
           TextSpan(
             text: locale.t('auth.termsOfService'),
             style: const TextStyle(

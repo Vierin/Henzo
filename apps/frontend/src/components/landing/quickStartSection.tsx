@@ -247,7 +247,7 @@ export function QuickStartSection() {
     <section
       ref={sectionRef}
       id="how-it-works"
-      className="bg-[#F9F4F0] px-5 py-6 sm:py-12 pb-16"
+      className="bg-[#F9F4F0] px-5 py-6 sm:py-12 pb-24 sm:pb-32 md:pb-40"
       aria-labelledby="quick-start-heading"
     >
       <div className="mx-auto max-w-5xl">
