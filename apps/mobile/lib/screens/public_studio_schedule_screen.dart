@@ -727,7 +727,10 @@ class _PublicStudioScheduleScreenState
       trainingDurationMinutes: durationMin,
 
       trainingDisplayColorHex: training['displayColor']?.toString(),
-
+      trainingLanguage: (training['language'] as String?)?.trim().isNotEmpty ==
+              true
+          ? (training['language'] as String).trim()
+          : null,
       trainerName: (trainer['name'] ?? '').toString().trim(),
 
       trainerId: trainer['id']?.toString(),

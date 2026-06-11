@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import FirebaseCore
+import UserNotifications
 import WatchConnectivity
 
 @main
@@ -19,7 +20,14 @@ import WatchConnectivity
     FirebaseApp.configure()
     setupWatchConnectivity()
     GeneratedPluginRegistrant.register(with: self)
+
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self
+    }
+
     let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    application.registerForRemoteNotifications()
+
     if let messenger = registrar(forPlugin: "HenzoWatchPlugin")?.messenger() {
       setupWatchChannel(messenger: messenger)
     }

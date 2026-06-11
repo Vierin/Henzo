@@ -9,6 +9,7 @@ import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/studio_cache.dart';
+import '../../services/notifications_store.dart';
 import '../../services/push_notification_service.dart';
 import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
@@ -30,7 +31,7 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => MainShellState();
 }
 
-class MainShellState extends State<MainShell> {
+class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   /// Bottom bar: 0 Home, 1 Schedule, 2 Clients, 3 Settings.
   static const int scheduleTabIndex = 1;
 
@@ -50,6 +51,7 @@ class MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _shellBodyTabs = <Widget>[
       _buildHomeNavigator(),
       CalendarScreen(key: _scheduleCalendarKey),
@@ -60,6 +62,27 @@ class MainShellState extends State<MainShell> {
       await _restoreShellTabIfNeeded();
       if (mounted) await _loadStudio();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    final locale = context.read<LocaleProvider>();
+    unawaited(
+      PushNotificationService.registerToken(
+        accessToken: token,
+        language: locale.localeCode,
+      ),
+    );
+    unawaited(context.read<NotificationsStore>().syncFromServer(token));
   }
 
   Future<void> _restoreShellTabIfNeeded() async {
@@ -97,10 +120,12 @@ class MainShellState extends State<MainShell> {
     final locale = context.read<LocaleProvider>();
     await PushNotificationService.requestNotificationPermission();
     if (mounted) {
-      PushNotificationService.registerToken(
+      await PushNotificationService.registerToken(
         accessToken: token,
         language: locale.localeCode,
       );
+      if (!mounted) return;
+      await context.read<NotificationsStore>().syncFromServer(token);
     }
   }
 
@@ -207,13 +232,12 @@ class MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (_studioLoading) {
+      return const Scaffold(body: WorkspaceLoadingView());
+    }
+
     return Scaffold(
-      body: Stack(
-        children: [
-          IndexedStack(index: _currentIndex, children: _shellBodyTabs),
-          if (_studioLoading) const _StudioLoadingCurtain(),
-        ],
-      ),
+      body: IndexedStack(index: _currentIndex, children: _shellBodyTabs),
       bottomNavigationBar: ColoredBox(
         color: AppColors.backgroundSecondary,
         child: SafeArea(
@@ -368,16 +392,6 @@ class _NavItem extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Занавес при загрузке данных салона: логотип и подпись.
-class _StudioLoadingCurtain extends StatelessWidget {
-  const _StudioLoadingCurtain();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Positioned.fill(child: WorkspaceLoadingView());
   }
 }
 

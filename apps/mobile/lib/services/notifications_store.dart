@@ -4,10 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_notification.dart';
+import 'notifications_api_service.dart';
 
 const String _keyList = 'henzo_notifications_list';
 
-/// Keys safe to persist locally for deep-link routing only.
+/// Keys safe to persist locally for deep-link routing and display.
 const _allowedPushDataKeys = <String>{
   'type',
   'screen',
@@ -15,6 +16,13 @@ const _allowedPushDataKeys = <String>{
   'sessionId',
   'enrollmentId',
   'trainingId',
+  'notificationId',
+  'bookingId',
+  'dateTime',
+  'startsAt',
+  'clientName',
+  'serviceName',
+  'trainingName',
 };
 
 Map<String, String> _sanitizePushData(Map<String, String> data) {
@@ -62,7 +70,24 @@ class NotificationsStore extends ChangeNotifier {
 
   void addFromPush(String title, String body, Map<String, String> data) {
     if (title.isEmpty && body.isEmpty) return;
-    final id = '${DateTime.now().millisecondsSinceEpoch}_${data.hashCode}';
+    final sanitized = _sanitizePushData(data);
+    final serverId = sanitized['notificationId']?.trim();
+    if (serverId != null && serverId.isNotEmpty) {
+      final existingIdx = _items.indexWhere((e) => e.id == serverId);
+      if (existingIdx >= 0) {
+        _items[existingIdx] = _items[existingIdx].copyWith(
+          title: title,
+          body: body,
+          data: sanitized,
+        );
+        _save();
+        notifyListeners();
+        return;
+      }
+    }
+    final id = serverId?.isNotEmpty == true
+        ? serverId!
+        : '${DateTime.now().millisecondsSinceEpoch}_${data.hashCode}';
     _items.insert(
       0,
       AppNotification(
@@ -70,7 +95,7 @@ class NotificationsStore extends ChangeNotifier {
         title: title,
         body: body,
         createdAt: DateTime.now(),
-        data: _sanitizePushData(data),
+        data: sanitized,
         read: false,
       ),
     );
@@ -78,7 +103,46 @@ class NotificationsStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> markAllRead() async {
+  Future<void> syncFromServer(String? accessToken) async {
+    if (accessToken == null || accessToken.isEmpty) return;
+    try {
+      final remote = await NotificationsApiService.fetchInbox(accessToken);
+      final merged = <String, AppNotification>{};
+      for (final item in remote) {
+        if (item.id.isEmpty) continue;
+        merged[item.id] = item;
+      }
+      for (final local in _items) {
+        if (merged.containsKey(local.id)) continue;
+        if (_isDuplicateOfRemote(local, remote)) continue;
+        merged[local.id] = local;
+      }
+      _items = merged.values.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      await _save();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  bool _isDuplicateOfRemote(
+    AppNotification local,
+    List<AppNotification> remote,
+  ) {
+    final localType = local.data['type'];
+    final localSession = local.data['sessionId'];
+    if (localType == null || localSession == null) return false;
+    return remote.any((remoteItem) {
+      if (remoteItem.data['type'] != localType) return false;
+      if (remoteItem.data['sessionId'] != localSession) return false;
+      return remoteItem.createdAt
+              .difference(local.createdAt)
+              .abs()
+              .inMinutes <
+          10;
+    });
+  }
+
+  Future<void> markAllRead({String? accessToken}) async {
     bool changed = false;
     for (var i = 0; i < _items.length; i++) {
       if (!_items[i].read) {
@@ -89,6 +153,11 @@ class NotificationsStore extends ChangeNotifier {
     if (changed) {
       await _save();
       notifyListeners();
+    }
+    if (accessToken != null && accessToken.isNotEmpty) {
+      try {
+        await NotificationsApiService.markRead(accessToken);
+      } catch (_) {}
     }
   }
 

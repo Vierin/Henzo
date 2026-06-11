@@ -860,16 +860,15 @@ export class StudiosController {
       }
 
       try {
-        if (session.Studio?.ownerId) {
-          await this.notificationsService.sendGroupClassBookingNotification({
-            studioId: session.studioId,
-            sessionId: session.id,
-            trainingName: session.Training?.name || 'class',
-            startsAt: session.startsAt,
-            clientName:
-              currentUser.user.name || currentUser.user.email || 'Client',
-          });
-        }
+        await this.notificationsService.sendGroupClassBookingNotification({
+          studioId: session.studioId,
+          sessionId: session.id,
+          enrollmentId,
+          trainingName: session.Training?.name || 'class',
+          startsAt: session.startsAt,
+          clientName:
+            currentUser.user.name || currentUser.user.email || 'Client',
+        });
       } catch (pushError) {
         console.error('⚠️ Failed to send class booking push:', pushError);
       }

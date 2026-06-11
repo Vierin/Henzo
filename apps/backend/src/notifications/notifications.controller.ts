@@ -1,10 +1,13 @@
 import {
   Controller,
   Post,
+  Get,
+  Patch,
   Body,
   Headers,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { AuthService } from '../auth/auth.service';
@@ -15,6 +18,52 @@ export class NotificationsController {
     private readonly notificationsService: NotificationsService,
     private readonly authService: AuthService,
   ) {}
+
+  @Get('inbox')
+  async listInbox(
+    @Headers('authorization') authHeader: string,
+    @Query('limit') limit?: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const parsedLimit = Math.min(
+        Math.max(parseInt(limit || '100', 10) || 100, 1),
+        200,
+      );
+      const items = await this.notificationsService.listInAppNotifications(
+        currentUser.user.id,
+        parsedLimit,
+      );
+      return { success: true, items };
+    } catch (error) {
+      console.error('❌ Failed to list inbox notifications:', error);
+      throw new HttpException(
+        error.message || 'Failed to list notifications',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Patch('inbox/read')
+  async markInboxRead(
+    @Body() data: { ids?: string[] },
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      await this.notificationsService.markInAppNotificationsRead(
+        currentUser.user.id,
+        data?.ids,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Failed to mark inbox notifications read:', error);
+      throw new HttpException(
+        error.message || 'Failed to mark notifications read',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
 
   @Post('push-token')
   async savePushToken(

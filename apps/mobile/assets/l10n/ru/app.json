@@ -759,10 +759,10 @@
     "deleteFailed": "Не удалось удалить тренировку",
     "categoryRequestMessage": "Если нет нужной категории — сообщите нам, и мы добавим её.",
     "editTraining": "Редактировать тренировку",
-    "editAllFuture": "Применить изменения ко всем будущим тренировкам",
-    "applyFromToday": "Применить с сегодняшнего дня",
-    "changeStartDate": "Дата начала изменений",
-    "scheduleUpdateResult": "Создано: {created}, пропущено: {skipped}",
+    "editAllFuture": "Изменить время тренировок",
+    "applyFromToday": "С сегодняшнего дня",
+    "changeStartDate": "Действует с даты",
+    "scheduleUpdateResult": "Создано занятий: {created}, пропущено: {skipped}",
     "scheduleUpdateFailed": "Не удалось обновить расписание",
     "updateDefaultsFailed": "Не удалось обновить вместимость или адрес"
   },
@@ -785,7 +785,10 @@
     "justNow": "только что",
     "minsAgo": "{n} мин. назад",
     "hoursAgo": "{n} ч. назад",
-    "daysAgo": "{n} дн. назад"
+    "daysAgo": "{n} дн. назад",
+    "sectionToday": "СЕГОДНЯ",
+    "sectionYesterday": "ВЧЕРА",
+    "sectionEarlier": "ПРЕДЫДУЩИЕ"
   },
   "settings": {
     "languageEn": "English",
@@ -1031,6 +1034,7 @@
     "pickCategory": "Выберите категорию",
     "categoryOtherChip": "+ Другое",
     "addressSectionLabel": "Адрес",
+    "locationSectionLabel": "Локация",
     "locationSheetTitle": "Выберите локацию",
     "defaultLocationBadge": "По умолчанию",
     "addNewLocation": "Добавить новую локацию",

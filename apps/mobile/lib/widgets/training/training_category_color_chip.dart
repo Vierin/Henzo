@@ -12,12 +12,16 @@ class TrainingCategoryColorChip extends StatelessWidget {
     required this.onTap,
     this.category,
     this.selected = false,
+    this.fontWeight = FontWeight.w600,
+    this.lineHeight = 1.1,
   });
 
   final TrainingCategoryOption? category;
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final FontWeight fontWeight;
+  final double lineHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +60,10 @@ class TrainingCategoryColorChip extends StatelessWidget {
             label,
             style: TextStyle(
               color: fg,
-              fontWeight: FontWeight.w600,
+              fontWeight: fontWeight,
               letterSpacing: -0.3,
               fontSize: 13.sp,
-              height: 1.1,
+              height: lineHeight,
             ),
           ),
         ),

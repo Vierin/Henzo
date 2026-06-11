@@ -170,13 +170,13 @@ class _OwnerEditTrainingSessionScreenState
   }
 
   Widget _formLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 10, left: 12),
+    padding: const EdgeInsets.only(bottom: 10),
     child: Text(
       text.toUpperCase(),
       style: TextStyle(
         fontSize: 13.sp,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
+        fontWeight: FontWeight.w500,
+        letterSpacing: -0.2,
         color: AppColors.textPrimary,
       ),
     ),
@@ -331,7 +331,7 @@ class _OwnerEditTrainingSessionScreenState
         onTap: canEdit ? () => _openLocationPicker(locale) : null,
         borderRadius: BorderRadius.circular(_kFieldRadius),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -340,10 +340,10 @@ class _OwnerEditTrainingSessionScreenState
                 child: SvgPicture.asset(
                   'assets/icons/icon-pin.svg',
                   width: 15,
-                  height: 21,
+                  height: 18,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +351,7 @@ class _OwnerEditTrainingSessionScreenState
                     Text(
                       displayName,
                       style: TextStyle(
-                        fontSize: 15.sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -361,18 +361,21 @@ class _OwnerEditTrainingSessionScreenState
                       Text(
                         address,
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: 14.sp,
                           height: 1.25,
+                          fontWeight: FontWeight.w400,
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ] else if (!_loadingTrainers) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        locale.t('addTraining.noAddress'),
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: AppColors.textTertiary,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 0),
+                        child: Text(
+                          locale.t('addTraining.noAddress'),
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppColors.textTertiary,
+                          ),
                         ),
                       ),
                     ],
@@ -380,10 +383,13 @@ class _OwnerEditTrainingSessionScreenState
                 ),
               ),
               if (canEdit)
-                const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textSecondary,
-                  size: 22,
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Icon(
+                    CupertinoIcons.chevron_forward,
+                    color: AppColors.textSecondary,
+                    size: 18,
+                  ),
                 ),
             ],
           ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -60,7 +62,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _sessionsLoadError;
   bool _isPublishing = false;
   bool _dataLoaded = false;
+  bool _loadingData = false;
   SubscriptionRefreshNotifier? _subRefresh;
+  StudioCache? _studioCache;
 
   @override
   void initState() {
@@ -70,6 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!widget.trainerMode) {
         _subRefresh = context.read<SubscriptionRefreshNotifier>();
         _subRefresh!.addListener(_onSubscriptionRefresh);
+        _studioCache = context.read<StudioCache>();
+        _studioCache!.addListener(_onStudioCacheChanged);
       }
       _loadData();
     });
@@ -79,23 +85,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) _loadData();
   }
 
+  void _onStudioCacheChanged() {
+    if (!mounted || widget.trainerMode) return;
+    _loadData();
+  }
+
   @override
   void dispose() {
     _subRefresh?.removeListener(_onSubscriptionRefresh);
+    _studioCache?.removeListener(_onStudioCacheChanged);
     super.dispose();
   }
 
   Future<void> _loadData() async {
-    if (!mounted) return;
-    final auth = context.read<AuthService>();
-    final token = auth.accessToken;
-    if (token == null || token.isEmpty) {
-      if (mounted) {
-        setState(() => _studio = null);
-      }
-      return;
-    }
+    if (!mounted || _loadingData) return;
+    _loadingData = true;
     try {
+      final auth = context.read<AuthService>();
+      final token = auth.accessToken;
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          setState(() => _studio = null);
+        }
+        return;
+      }
+
+      unawaited(context.read<NotificationsStore>().syncFromServer(token));
+
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 8));
@@ -237,6 +253,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           showApiError(context, e);
         }
       }
+    } finally {
+      _loadingData = false;
     }
   }
 
@@ -280,7 +298,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (_) => SettingsScreen(initialFocusTarget: focusTarget),
       ),
     );
-    if (mounted) await _loadData();
+    if (mounted) {
+      context.read<StudioCache>().invalidate();
+      await _loadData();
+    }
   }
 
   Future<void> _previewPublicPage() async {
@@ -305,11 +326,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _studioDetailsCompleted(Studio? studio) {
     if (studio == null) return false;
     final name = studio.name?.trim();
+    if (name == null || name.isEmpty) return false;
+
     final address = studio.address?.trim();
-    return name != null &&
-        name.isNotEmpty &&
-        address != null &&
-        address.isNotEmpty;
+    if (address != null && address.isNotEmpty) return true;
+
+    final locale = context.read<LocaleProvider>();
+    final primary = TrainingLocationItem.defaultFromSalon(
+      studio,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
+    return primary.address.trim().isNotEmpty;
   }
 
   StudioStatus _studioStatus(Studio? studio, StudioOnboardingChecklist? c) {
@@ -496,7 +523,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _formatDateHeader(loc.localeCode),
               style: TextStyle(
                 fontSize: 14.sp,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 1.1,
                 color: AppColors.textPrimary,
               ),
@@ -514,58 +541,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     builder: (_) => const NotificationsScreen(),
                   ),
                 ),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: AppColors.backgroundPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 2),
-                        child: SvgPicture.asset(
-                          'assets/icons/icon-bell.svg',
-                          width: 22,
-                          height: 22,
-                          colorFilter: const ColorFilter.mode(
-                            AppColors.textPrimary,
-                            BlendMode.srcIn,
+                child: hasUnread
+                    ? Container(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary500,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/icon-bell.svg',
+                              width: 22,
+                              height: 22,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              count > 99 ? '99+' : '$count',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                height: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: AppColors.backgroundPrimary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/icon-bell.svg',
+                            width: 22,
+                            height: 22,
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.textPrimary,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       ),
-                      if (hasUnread)
-                        Positioned(
-                          right: 8,
-                          top: 7,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
-                            ),
-                            constraints: const BoxConstraints(minWidth: 16),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary500,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              count > 9 ? '9+' : '$count',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
               );
             },
           ),
@@ -593,7 +621,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             loc.t('dashboard.helloGreeting'),
             style: TextStyle(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
               height: 1.1,
               color: AppColors.textPrimary,
             ),

@@ -645,7 +645,7 @@ class _ProStatusCard extends StatelessWidget {
 }
 
 class _PlanFeatureBullet extends StatelessWidget {
-  const _PlanFeatureBullet({this.size = 8});
+  const _PlanFeatureBullet({this.size = 6});
 
   final double size;
 
@@ -743,7 +743,7 @@ class _PlanFeatureRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _PlanFeatureBullet(size: 9),
+          const _PlanFeatureBullet(size: 7),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

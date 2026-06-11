@@ -37,6 +37,9 @@ class PushNotificationService {
   static void Function(String title, String body, Map<String, String> data)?
   onNotificationReceived;
 
+  static String? _pendingAccessToken;
+  static String? _pendingLanguage;
+
   /// Initialize: request permission, get token, set up message handlers.
   /// [onNotificationReceived] is called for each received message so the app can show them in the notifications screen.
   static Future<void> initialize({
@@ -94,6 +97,17 @@ class PushNotificationService {
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+        _log('onTokenRefresh: ${token.length} chars');
+        final accessToken = _pendingAccessToken;
+        final language = _pendingLanguage;
+        if (accessToken != null &&
+            accessToken.isNotEmpty &&
+            language != null &&
+            language.isNotEmpty) {
+          registerToken(accessToken: accessToken, language: language);
+        }
+      });
       final initial = await _messaging.getInitialMessage().timeout(
         const Duration(seconds: 5),
         onTimeout: () => null,
@@ -154,14 +168,59 @@ class PushNotificationService {
     WorkoutService.sendToWatch(workoutType: workoutType);
   }
 
+  /// Keep credentials for [onTokenRefresh] re-registration.
+  static void configureTokenRefresh({
+    required String accessToken,
+    required String language,
+  }) {
+    _pendingAccessToken = accessToken;
+    _pendingLanguage = language;
+  }
+
+  /// iOS: FCM token is unavailable until APNs registration completes.
+  static Future<void> _waitForApnsToken({int maxAttempts = 20}) async {
+    if (!Platform.isIOS) return;
+    for (var i = 0; i < maxAttempts; i++) {
+      final apns = await _messaging.getAPNSToken();
+      if (apns != null && apns.isNotEmpty) {
+        _log('APNS token ready (${apns.length} chars)');
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    _log('APNS token not ready after $maxAttempts attempts');
+  }
+
   /// Register FCM token with backend. Call after login and when language changes.
   static Future<void> registerToken({
     required String accessToken,
     required String language,
   }) async {
+    configureTokenRefresh(accessToken: accessToken, language: language);
     _log('registerToken start');
     try {
-      final token = await _messaging.getToken();
+      if (Platform.isIOS) {
+        final settings = await _messaging.getNotificationSettings();
+        _log(
+          'iOS auth status: ${settings.authorizationStatus}, '
+          'alert=${settings.alert}, sound=${settings.sound}',
+        );
+        if (settings.authorizationStatus == AuthorizationStatus.denied) {
+          _log('registerToken: notifications denied on iOS');
+          return;
+        }
+        await _waitForApnsToken();
+      }
+
+      String? token;
+      for (var attempt = 0; attempt < 5; attempt++) {
+        token = await _messaging.getToken();
+        if (token != null && token.isNotEmpty) break;
+        if (Platform.isIOS) {
+          await _waitForApnsToken(maxAttempts: 5);
+          await Future.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+        }
+      }
       if (token == null || token.isEmpty) {
         _log('registerToken: no token from FCM');
         return;

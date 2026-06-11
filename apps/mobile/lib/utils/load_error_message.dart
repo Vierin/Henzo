@@ -25,6 +25,7 @@ String loadErrorMessage(LocaleProvider locale, Object e) {
   if (e is ApiException) {
     return e.message;
   }
+  if (e is String && e.isNotEmpty) return e;
   return locale.t('common.loadFailed');
 }
 

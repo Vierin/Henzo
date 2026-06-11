@@ -15,6 +15,14 @@ export class NotificationsService {
     private readonly adminEventLog: AdminEventLogService,
   ) {}
 
+  async deactivatePushTokens(tokens: string[]): Promise<void> {
+    if (tokens.length === 0) return;
+    await this.prisma.pushToken.updateMany({
+      where: { token: { in: tokens } },
+      data: { isActive: false },
+    });
+  }
+
   async savePushToken(
     userId: string,
     token: string,
@@ -120,6 +128,84 @@ export class NotificationsService {
     }
   }
 
+  async createInAppNotification(params: {
+    userId: string;
+    type: string;
+    title: string;
+    body: string;
+    data?: Record<string, string>;
+  }): Promise<string> {
+    const row = await this.prisma.inAppNotification.create({
+      data: {
+        userId: params.userId,
+        type: params.type,
+        title: params.title,
+        body: params.body,
+        data: params.data ?? {},
+      },
+      select: { id: true },
+    });
+    return row.id;
+  }
+
+  async listInAppNotifications(
+    userId: string,
+    limit = 100,
+  ): Promise<
+    Array<{
+      id: string;
+      type: string;
+      title: string;
+      body: string;
+      data: Record<string, string>;
+      read: boolean;
+      createdAt: Date;
+    }>
+  > {
+    const rows = await this.prisma.inAppNotification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      title: row.title,
+      body: row.body,
+      data: this.normalizeNotificationData(row.data),
+      read: row.read,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async markInAppNotificationsRead(
+    userId: string,
+    ids?: string[],
+  ): Promise<void> {
+    await this.prisma.inAppNotification.updateMany({
+      where: {
+        userId,
+        ...(ids && ids.length > 0 ? { id: { in: ids } } : {}),
+        read: false,
+      },
+      data: { read: true },
+    });
+  }
+
+  private normalizeNotificationData(value: unknown): Record<string, string> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return {};
+    }
+    return Object.entries(value as Record<string, unknown>).reduce(
+      (acc, [key, val]) => {
+        if (val == null) return acc;
+        acc[key] = String(val);
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+  }
+
   async getPushTokensByStudioOwner(
     studioId: string,
   ): Promise<Array<{ token: string; language: string }>> {
@@ -205,12 +291,24 @@ export class NotificationsService {
       );
       if (response.failureCount > 0) {
         const errors: string[] = [];
+        const deadTokens: string[] = [];
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
             console.error(`❌ Token ${index} failed:`, resp.error);
             errors.push(resp.error?.message ?? 'unknown');
+            const code = resp.error?.code ?? '';
+            if (
+              code.includes('registration-token-not-registered') ||
+              code.includes('invalid-registration-token')
+            ) {
+              const failedToken = tokenObjects[index]?.token;
+              if (failedToken) deadTokens.push(failedToken);
+            }
           }
         });
+        if (deadTokens.length > 0) {
+          await this.deactivatePushTokens(deadTokens);
+        }
         await this.adminEventLog.log({
           type: 'push_failed',
           severity: 'warn',
@@ -266,6 +364,12 @@ export class NotificationsService {
       console.log(
         `📤 Preparing to send booking notification for studio: ${studioId} (informational)`,
       );
+
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: studioId },
+        select: { ownerId: true, timezone: true },
+      });
+
       const tokens = await this.getPushTokensByStudioOwner(studioId);
 
       console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
@@ -274,6 +378,31 @@ export class NotificationsService {
           `📱 Tokens:`,
           tokens.map((t) => t.token.substring(0, 30) + '...'),
         );
+      }
+
+      const ownerLanguage = tokens[0]?.language || 'en';
+      const inAppTitle = getNotificationText(ownerLanguage, 'newBookingConfirmed');
+      const verbText = getNotificationText(ownerLanguage, 'booked');
+      const inAppBody = `${clientName} ${verbText} ${serviceName}`;
+      const pushData: Record<string, string> = {
+        type: 'NEW_BOOKING',
+        bookingId,
+        studioId,
+        clientName,
+        serviceName,
+        dateTime: dateTime.toISOString(),
+      };
+
+      // Save to in-app inbox so it appears in the notifications screen with time/date
+      if (studio?.ownerId) {
+        const notificationId = await this.createInAppNotification({
+          userId: studio.ownerId,
+          type: 'NEW_BOOKING',
+          title: inAppTitle,
+          body: inAppBody,
+          data: pushData,
+        });
+        pushData.notificationId = notificationId;
       }
 
       if (tokens.length === 0) {
@@ -294,6 +423,8 @@ export class NotificationsService {
         tokensByLanguage.get(lang)!.push(tokenObj);
       });
 
+      const studioTz = studio?.timezone ?? 'Asia/Ho_Chi_Minh';
+
       // Send notification for each language group
       for (const [language, languageTokens] of tokensByLanguage.entries()) {
         const locale =
@@ -303,11 +434,12 @@ export class NotificationsService {
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
+          timeZone: studioTz,
         });
 
         const title = getNotificationText(language, 'newBookingConfirmed');
         const verbText = getNotificationText(language, 'booked');
-        const body = `${verbText} ${serviceName}`;
+        const body = `${clientName} ${verbText} ${serviceName}`;
 
         console.log(`📤 Sending booking notification (${language}):`, {
           title,
@@ -320,12 +452,7 @@ export class NotificationsService {
           title,
           body,
           {
-            type: 'NEW_BOOKING',
-            bookingId,
-            studioId,
-            clientName,
-            serviceName,
-            dateTime: dateTime.toISOString(),
+            ...pushData,
             formattedDate: formattedDateStr,
           },
           undefined,
@@ -351,7 +478,14 @@ export class NotificationsService {
       console.log(
         `📤 Preparing to send booking cancellation notification for studio: ${studioId}`,
       );
-      const tokens = await this.getPushTokensByStudioOwner(studioId);
+      const [tokens, studioForTz] = await Promise.all([
+        this.getPushTokensByStudioOwner(studioId),
+        this.prisma.studio.findUnique({
+          where: { id: studioId },
+          select: { timezone: true },
+        }),
+      ]);
+      const cancellationTz = studioForTz?.timezone ?? 'Asia/Ho_Chi_Minh';
 
       console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length > 0) {
@@ -392,6 +526,7 @@ export class NotificationsService {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: cancellationTz,
           },
         );
 
@@ -424,28 +559,71 @@ export class NotificationsService {
   async sendGroupClassBookingNotification(params: {
     studioId: string;
     sessionId: string;
+    enrollmentId?: string;
     clientName: string;
     trainingName: string;
     startsAt: Date;
   }): Promise<void> {
     try {
       console.log(
-        `📤 Preparing class booking push for studio ${params.studioId}`,
+        `📤 Preparing class booking notification for studio ${params.studioId}`,
       );
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: params.studioId },
+        select: { ownerId: true },
+      });
+      if (!studio?.ownerId) {
+        console.warn(
+          '⚠️ Studio owner not found for class booking notification',
+        );
+        return;
+      }
+
       const tokens = await this.getPushTokensByStudioOwner(params.studioId);
+      const ownerLanguage = tokens[0]?.language || 'en';
+      const title = getNotificationText(ownerLanguage, 'classBookingTitle');
+      const body = formatNotificationTemplate(
+        getNotificationText(ownerLanguage, 'classBookingBody'),
+        {
+          client: params.clientName,
+          class: params.trainingName || 'class',
+        },
+      );
+      const pushData: Record<string, string> = {
+        type: 'NEW_CLASS_BOOKING',
+        sessionId: params.sessionId,
+        studioId: params.studioId,
+        trainingName: params.trainingName,
+        startsAt: params.startsAt.toISOString(),
+        clientName: params.clientName,
+      };
+      if (params.enrollmentId) {
+        pushData.enrollmentId = params.enrollmentId;
+      }
+
+      const notificationId = await this.createInAppNotification({
+        userId: studio.ownerId,
+        type: 'NEW_CLASS_BOOKING',
+        title,
+        body,
+        data: pushData,
+      });
+      pushData.notificationId = notificationId;
+
       console.log(`📱 Found ${tokens.length} push token(s) for studio owner`);
       if (tokens.length === 0) {
         console.warn(
-          '⚠️ No push tokens for studio owner — open owner app on device to register',
+          '⚠️ No push tokens for studio owner — in-app notification saved only',
         );
         return;
       }
       if (!this.firebaseAdmin.isInitialized()) {
         console.warn(
-          '⚠️ Firebase Admin not initialized — class booking push skipped',
+          '⚠️ Firebase Admin not initialized — in-app notification saved, push skipped',
         );
         return;
       }
+
       const tokensByLanguage = new Map<
         string,
         Array<{ token: string; language: string }>
@@ -458,8 +636,11 @@ export class NotificationsService {
         tokensByLanguage.get(lang)!.push(tokenObj);
       });
       for (const [language, languageTokens] of tokensByLanguage.entries()) {
-        const title = getNotificationText(language, 'classBookingTitle');
-        const body = formatNotificationTemplate(
+        const localizedTitle = getNotificationText(
+          language,
+          'classBookingTitle',
+        );
+        const localizedBody = formatNotificationTemplate(
           getNotificationText(language, 'classBookingBody'),
           {
             client: params.clientName,
@@ -468,16 +649,9 @@ export class NotificationsService {
         );
         await this.sendPushNotification(
           languageTokens,
-          title,
-          body,
-          {
-            type: 'NEW_CLASS_BOOKING',
-            sessionId: params.sessionId,
-            studioId: params.studioId,
-            trainingName: params.trainingName,
-            startsAt: params.startsAt.toISOString(),
-            clientName: params.clientName,
-          },
+          localizedTitle,
+          localizedBody,
+          pushData,
           undefined,
           'henzo_default',
         );
@@ -597,7 +771,7 @@ export class NotificationsService {
             startsAt: true,
             status: true,
             Training: { select: { name: true } },
-            Studio: { select: { name: true } },
+            Studio: { select: { name: true, timezone: true } },
           },
         });
 
@@ -609,9 +783,10 @@ export class NotificationsService {
         }
 
         const lang = tokens[0]?.language || 'en';
+        const sessionTz = session.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
         const timeStr = session.startsAt.toLocaleTimeString(
           lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
-          { hour: '2-digit', minute: '2-digit', hour12: false },
+          { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: sessionTz },
         );
         const titleKey =
           reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
@@ -662,18 +837,26 @@ export class NotificationsService {
     try {
       await this.clearPreClassRemindersForSession(sessionId);
 
-      const enrollments = await this.prisma.sessionEnrollment.findMany({
-        where: { sessionId, status: 'ACTIVE' },
-        select: { userId: true },
-      });
+      const [enrollments, cancelledSession] = await Promise.all([
+        this.prisma.sessionEnrollment.findMany({
+          where: { sessionId, status: 'ACTIVE' },
+          select: { userId: true },
+        }),
+        this.prisma.trainingSession.findUnique({
+          where: { id: sessionId },
+          select: { Studio: { select: { timezone: true } } },
+        }),
+      ]);
       if (enrollments.length === 0) return;
 
+      const cancelledTz = cancelledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
+        timeZone: cancelledTz,
       });
 
       for (const { userId } of enrollments) {
@@ -712,10 +895,16 @@ export class NotificationsService {
     sessionInfo: { className: string; studioName: string; newStartsAt: Date },
   ): Promise<void> {
     try {
-      const enrollments = await this.prisma.sessionEnrollment.findMany({
-        where: { sessionId, status: 'ACTIVE' },
-        select: { id: true, userId: true },
-      });
+      const [enrollments, rescheduledSession] = await Promise.all([
+        this.prisma.sessionEnrollment.findMany({
+          where: { sessionId, status: 'ACTIVE' },
+          select: { id: true, userId: true },
+        }),
+        this.prisma.trainingSession.findUnique({
+          where: { id: sessionId },
+          select: { Studio: { select: { timezone: true } } },
+        }),
+      ]);
       if (enrollments.length === 0) return;
 
       for (const enrollment of enrollments) {
@@ -732,12 +921,14 @@ export class NotificationsService {
         }
       }
 
+      const rescheduledTz = rescheduledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.newStartsAt.toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
+        timeZone: rescheduledTz,
       });
 
       for (const enrollment of enrollments) {
@@ -779,20 +970,49 @@ export class NotificationsService {
     rating: number;
   }): Promise<void> {
     try {
-      const tokens = await this.getPushTokensByStudioOwner(params.studioId);
-      if (!tokens || tokens.length === 0) return;
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: params.studioId },
+        select: { ownerId: true },
+      });
+      if (!studio?.ownerId) return;
+
+      const tokens = await this.getPushTokensByUserId(studio.ownerId);
+      const lang = tokens[0]?.language || 'en';
+      const title = getNotificationText(lang, 'newReviewTitle' as any);
+      const body = formatNotificationTemplate(
+        getNotificationText(lang, 'newReviewBody' as any),
+        {
+          client: params.clientName,
+          rating: String(params.rating),
+          studio: params.studioName,
+        },
+      );
+      const pushData = { type: 'NEW_REVIEW', studioId: params.studioId };
+
+      const notificationId = await this.createInAppNotification({
+        userId: studio.ownerId,
+        type: 'NEW_REVIEW',
+        title,
+        body,
+        data: pushData,
+      });
+
+      if (tokens.length === 0 || !this.firebaseAdmin.isInitialized()) return;
 
       const languageGroups = new Map<string, typeof tokens>();
       for (const t of tokens) {
-        const lang = t.language || 'en';
-        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
-        languageGroups.get(lang)!.push(t);
+        const tLang = t.language || 'en';
+        if (!languageGroups.has(tLang)) languageGroups.set(tLang, []);
+        languageGroups.get(tLang)!.push(t);
       }
 
-      for (const [lang, langTokens] of languageGroups) {
-        const title = getNotificationText(lang, 'newReviewTitle' as any);
-        const body = formatNotificationTemplate(
-          getNotificationText(lang, 'newReviewBody' as any),
+      for (const [tLang, langTokens] of languageGroups) {
+        const localizedTitle = getNotificationText(
+          tLang,
+          'newReviewTitle' as any,
+        );
+        const localizedBody = formatNotificationTemplate(
+          getNotificationText(tLang, 'newReviewBody' as any),
           {
             client: params.clientName,
             rating: String(params.rating),
@@ -801,9 +1021,9 @@ export class NotificationsService {
         );
         await this.sendPushNotification(
           langTokens,
-          title,
-          body,
-          { type: 'NEW_REVIEW', studioId: params.studioId },
+          localizedTitle,
+          localizedBody,
+          { ...pushData, notificationId },
           undefined,
           'henzo_default',
         );

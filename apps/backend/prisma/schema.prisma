@@ -235,6 +235,7 @@ model User {
   favoriteStudios  String[]     @default([])
   Booking          SessionBooking[]
   pushTokens       PushToken[]
+  inAppNotifications InAppNotification[]
   Review           Review[]
   Studio           Studio[]
   SessionEnrollment   SessionEnrollment[]
@@ -287,6 +288,21 @@ model PushToken {
   @@index([userId])
   @@index([token])
   @@index([isActive])
+}
+
+model InAppNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  data      Json     @default("{}")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, read])
 }
 
 model TrainingCategory {

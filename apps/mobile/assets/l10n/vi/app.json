@@ -759,10 +759,10 @@
     "deleteFailed": "Không thể xóa buổi tập",
     "categoryRequestMessage": "Nếu không thấy danh mục phù hợp, hãy cho chúng tôi biết.",
     "editTraining": "Chỉnh sửa buổi tập",
-    "editAllFuture": "Áp dụng thay đổi cho tất cả buổi tập tương lai",
-    "applyFromToday": "Áp dụng từ hôm nay",
-    "changeStartDate": "Ngày bắt đầu thay đổi",
-    "scheduleUpdateResult": "Đã tạo: {created}, bỏ qua: {skipped}",
+    "editAllFuture": "Thay đổi giờ tập",
+    "applyFromToday": "Từ hôm nay",
+    "changeStartDate": "Áp dụng từ ngày",
+    "scheduleUpdateResult": "Đã tạo buổi: {created}, bỏ qua: {skipped}",
     "scheduleUpdateFailed": "Không thể cập nhật lịch",
     "updateDefaultsFailed": "Không thể cập nhật sức chứa hoặc địa điểm"
   },
@@ -785,7 +785,10 @@
     "justNow": "vừa xong",
     "minsAgo": "{n} phút trước",
     "hoursAgo": "{n} giờ trước",
-    "daysAgo": "{n} ngày trước"
+    "daysAgo": "{n} ngày trước",
+    "sectionToday": "HÔM NAY",
+    "sectionYesterday": "HÔM QUA",
+    "sectionEarlier": "TRƯỚC ĐÓ"
   },
   "settings": {
     "languageEn": "English",
@@ -1031,6 +1034,7 @@
     "pickCategory": "Chọn danh mục",
     "categoryOtherChip": "+ Khác",
     "addressSectionLabel": "Địa chỉ",
+    "locationSectionLabel": "Địa điểm",
     "locationSheetTitle": "Chọn địa điểm",
     "defaultLocationBadge": "Mặc định",
     "addNewLocation": "Thêm địa điểm mới",

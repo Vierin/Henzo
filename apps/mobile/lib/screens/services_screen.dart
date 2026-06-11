@@ -834,7 +834,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
 
   Widget _editFormLabel(String text, {Widget? trailing}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10, left: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -843,8 +843,8 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
               text.toUpperCase(),
               style: TextStyle(
                 fontSize: 13.sp,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -955,22 +955,20 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
     }
   }
 
-  static const _kLanguageOptions = [
-    ('en', 'English'),
-    ('ru', 'Русский'),
-    ('vi', 'Tiếng Việt'),
+  List<(String, String)> _languageOptions(LocaleProvider locale) => [
+    ('en', locale.t('settings.languageEn')),
+    ('ru', locale.t('settings.languageRu')),
+    ('vi', locale.t('settings.languageVi')),
   ];
 
-  String _languageLabel() {
-    return _kLanguageOptions
-        .firstWhere(
-          (l) => l.$1 == _selectedLanguage,
-          orElse: () => (_selectedLanguage, _selectedLanguage),
-        )
-        .$2;
+  String _languageLabel(LocaleProvider locale) {
+    for (final (code, name) in _languageOptions(locale)) {
+      if (code == _selectedLanguage) return name;
+    }
+    return _selectedLanguage;
   }
 
-  Future<void> _openLanguagePicker() async {
+  Future<void> _openLanguagePicker(LocaleProvider locale) async {
     final selected = await showModalBottomSheet<String>(
       context: context,
       useRootNavigator: true,
@@ -979,7 +977,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            for (final (code, name) in _kLanguageOptions)
+            for (final (code, name) in _languageOptions(locale))
               ListTile(
                 title: Text(name),
                 trailing: _selectedLanguage == code
@@ -1512,7 +1510,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _editFormLabel(loc.t('addTraining.addressSectionLabel')),
+                    _editFormLabel(loc.t('addTraining.locationSectionLabel')),
                     Material(
                       color: AppColors.backgroundPrimary,
                       borderRadius: BorderRadius.circular(12),
@@ -1533,10 +1531,10 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                 child: SvgPicture.asset(
                                   'assets/icons/icon-pin.svg',
                                   width: 15,
-                                  height: 21,
+                                  height: 18,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment:
@@ -1545,7 +1543,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                     Text(
                                       displayName,
                                       style: TextStyle(
-                                        fontSize: 19.sp,
+                                        fontSize: 16.sp,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.textPrimary,
                                       ),
@@ -1556,11 +1554,22 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                                         address,
                                         style: TextStyle(
                                           fontSize: 14.sp,
-                                          height: 1.35,
+                                          height: 1.25,
+                                          fontWeight: FontWeight.w400,
                                           color: AppColors.textSecondary,
                                         ),
                                       ),
-                                    ],
+                                    ] else
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 0),
+                                        child: Text(
+                                          loc.t('addTraining.noAddress'),
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            color: AppColors.textTertiary,
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -1645,7 +1654,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                       _editFormLabel(locale.t('addTraining.language')),
                       InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: _openLanguagePicker,
+                        onTap: () => _openLanguagePicker(locale),
                         child: InputDecorator(
                           decoration: _editRegInputDecoration(
                             suffix: const Icon(
@@ -1655,7 +1664,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                             ),
                           ),
                           child: Text(
-                            _languageLabel(),
+                            _languageLabel(locale),
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w400,
@@ -1863,7 +1872,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                         ),
                       )
                     : Text(
-                        locale.t('common.update'),
+                        locale.t('common.save'),
                         style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 16.sp,
@@ -1914,9 +1923,6 @@ Future<OwnerSessionTrainingEditResult?> openEditTrainingFromOwnerSession(
   final categories = await ServicesApiService.getTrainingCategories(token);
   if (!context.mounted) return null;
 
-  final locale = context.read<LocaleProvider>();
-  final title = locale.t('ownerSession.editScopeFollowing');
-
   final updated = await Navigator.of(context).push<ServiceItem?>(
     MaterialPageRoute<ServiceItem?>(
       builder: (ctx) => EditTrainingScreen(
@@ -1926,7 +1932,6 @@ Future<OwnerSessionTrainingEditResult?> openEditTrainingFromOwnerSession(
         categories: categories,
         onShowCategoryInfo: () {},
         scheduleEffectiveFrom: session.startsAt,
-        title: title,
       ),
     ),
   );
