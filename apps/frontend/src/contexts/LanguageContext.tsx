@@ -217,6 +217,8 @@ export function LanguageProvider({
     publicModules.push('public/contact');
   } else if (pathNoLocale.startsWith('/about')) {
     publicModules.push('public/about');
+  } else if (pathNoLocale.startsWith('/blog')) {
+    publicModules.push('public/blog');
   } else if (
     pathNoLocale.startsWith('/login') ||
     pathNoLocale.startsWith('/forgot-password') ||

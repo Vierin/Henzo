@@ -2088,6 +2088,31 @@ export class StudiosService {
     }
   }
 
+  /** Active studios with slugs for sitemap generation. */
+  async findPublicSlugsForSitemap(): Promise<
+    Array<{ slug: string; updatedAt: string }>
+  > {
+    const studios = await this.prisma.studio.findMany({
+      where: {
+        status: 'ACTIVE',
+        slug: { not: null },
+      },
+      select: {
+        slug: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 5000,
+    });
+
+    return studios
+      .filter((s): s is { slug: string; updatedAt: Date } => Boolean(s.slug))
+      .map((s) => ({
+        slug: s.slug,
+        updatedAt: s.updatedAt.toISOString(),
+      }));
+  }
+
   /** Same payload shape as findBySlug but without owner linkage, trainer/reviewer PII, or private reminder settings. */
   async findPublicBySlug(slug: string) {
     const full = await this.findBySlug(slug);

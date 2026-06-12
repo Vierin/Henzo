@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import Script from 'next/script';
 import { Suspense } from 'react';
 import { Instrument_Serif, Geist, Geist_Mono } from 'next/font/google';
@@ -58,18 +59,25 @@ export const metadata: Metadata = {
       },
     ],
   },
-  verification: {
-    google: 'your-google-verification-code',
-  },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const locale = headersList.get('x-locale') || 'en';
+
   return (
-    <html lang="vi">
+    <html lang={locale}>
       <head>
         <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
         <link rel="manifest" href="/site.webmanifest" />

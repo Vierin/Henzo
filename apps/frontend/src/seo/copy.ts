@@ -1,7 +1,13 @@
 import type { Locale } from '@/i18n/routing';
 
 /** Static public routes with locale-prefixed URLs (`/en/...`, `/ru/...`, `/vi/...`). */
-export type PublicPageId = 'home' | 'about' | 'contact' | 'terms' | 'privacy';
+export type PublicPageId =
+  | 'home'
+  | 'about'
+  | 'contact'
+  | 'terms'
+  | 'privacy'
+  | 'blog';
 
 export type PageSeoCopy = {
   title: string;
@@ -16,6 +22,7 @@ export const PAGE_PATHS: Record<PublicPageId, string> = {
   contact: '/contact',
   terms: '/terms-of-service',
   privacy: '/privacy-policy',
+  blog: '/blog',
 };
 
 export const PAGE_OG_IMAGES: Record<PublicPageId, string> = {
@@ -24,6 +31,7 @@ export const PAGE_OG_IMAGES: Record<PublicPageId, string> = {
   contact: '/og-contact.jpg',
   terms: '/og-terms.jpg',
   privacy: '/og-privacy.jpg',
+  blog: '/og-image.jpg',
 };
 
 export const PUBLIC_PAGE_COPY: Record<
@@ -117,6 +125,30 @@ export const PUBLIC_PAGE_COPY: Record<
       title: 'Chinh sach bao mat',
       description:
         'Cach Henzo Fitness thu thap, su dung va bao ve du lieu ca nhan.',
+    },
+  },
+  blog: {
+    en: {
+      title: 'Henzo Blog - Tips for fitness studio owners',
+      description:
+        'Practical guides on scheduling, retention, and growing your fitness studio with Henzo.',
+      keywords: ['fitness studio tips', 'studio management blog', 'Henzo blog'],
+    },
+    ru: {
+      title: 'Блог Henzo - советы для владельцев фитнес-студий',
+      description:
+        'Практические материалы о расписании, удержании клиентов и росте фитнес-студии с Henzo.',
+      keywords: [
+        'советы фитнес студия',
+        'блог управление студией',
+        'Henzo блог',
+      ],
+    },
+    vi: {
+      title: 'Blog Henzo - Meo cho chu studio fitness',
+      description:
+        'Huong dan thuc te ve lich hoc, giu chan khach va phat trien studio fitness voi Henzo.',
+      keywords: ['meo studio fitness', 'blog quan ly studio', 'Henzo blog'],
     },
   },
 };
