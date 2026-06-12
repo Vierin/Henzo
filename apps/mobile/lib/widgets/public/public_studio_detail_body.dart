@@ -8,11 +8,14 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/cache/training_categories_cache.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../utils/class_session_link.dart';
 import '../../utils/formatters.dart';
 import '../../utils/share_utils.dart';
+import '../../utils/studio_share_link.dart';
 import '../../utils/studio_photo_urls.dart';
 import '../../utils/studio_description.dart';
 import '../../utils/studio_public_contacts.dart';
@@ -182,7 +185,29 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   }
 
   Future<void> _shareStudio(String name) async {
-    await Share.share('Check out $name on Henzo', sharePositionOrigin: shareOrigin(context));
+    final locale = context.read<LocaleProvider>();
+    final auth = context.read<AuthService>();
+    final id = (widget.studio['id'] ?? '').toString();
+    final slug = (widget.studio['slug'] as String?)?.trim();
+    if (id.isEmpty) return;
+
+    final inviterName = resolveShareInviterName(
+      userName: auth.user?.name,
+      userEmail: auth.user?.email,
+      tr: locale.t,
+    );
+    final link = studioShareUrl(id: id, slug: slug);
+    final message = buildStudioShareMessage(
+      tr: locale.t,
+      inviterName: inviterName,
+      studioName: name,
+      link: link,
+    );
+    await Share.share(
+      message,
+      subject: name,
+      sharePositionOrigin: shareOrigin(context),
+    );
   }
 
   void _copyAddress(BuildContext context, String address, String copiedMsg) {

@@ -11,8 +11,8 @@ import '../l10n/locale_provider.dart';
 import '../models/studio.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_cache.dart';
-import '../config/app_config.dart';
 import '../utils/share_utils.dart';
+import '../utils/studio_share_link.dart';
 
 class StudioQrCodeScreen extends StatefulWidget {
   const StudioQrCodeScreen({super.key});
@@ -47,13 +47,8 @@ class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
       'henzo://studio/${studio.id}';
 
   /// HTTPS ссылка для кнопки Share (работает и как Universal Link).
-  String _studioShareUrl(Studio studio) {
-    final base = AppConfig.webUrl;
-    if (studio.slug != null && studio.slug!.isNotEmpty) {
-      return '$base/studio/${studio.slug}';
-    }
-    return '$base/studio/${studio.id}';
-  }
+  String _studioShareUrl(Studio studio) =>
+      studioShareUrl(id: studio.id, slug: studio.slug);
 
   @override
   Widget build(BuildContext context) {

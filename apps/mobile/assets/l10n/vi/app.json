@@ -276,6 +276,7 @@
     "failedToUpdateFavorites": "Không thể cập nhật yêu thích"
   },
   "clientStudioDetail": {
+    "shareInvite": "{name} mời bạn xem {studio} trên Henzo",
     "share": "Chia sẻ",
     "addressCopied": "Đã sao chép địa chỉ",
     "readMore": "Xem thêm",

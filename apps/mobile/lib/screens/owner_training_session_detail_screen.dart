@@ -10,7 +10,9 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
+import '../utils/class_session_link.dart';
 import '../utils/color_hex.dart';
 import '../utils/google_maps_link.dart';
 import '../utils/share_utils.dart';
@@ -200,7 +202,32 @@ class _OwnerTrainingSessionDetailScreenState
       );
     final locationBlock = formatShareLocationBlock(address: widget.venueName);
     if (locationBlock.isNotEmpty) buf.writeln(locationBlock);
-    await Share.share(buf.toString().trim(), sharePositionOrigin: shareOrigin(context));
+
+    final token = context.read<AuthService>().accessToken;
+    final studioCache = context.read<StudioCache>();
+    final origin = shareOrigin(context);
+    final studioId = token != null
+        ? (await studioCache.getStudio(token))?.id
+        : null;
+    if (studioId != null &&
+        studioId.isNotEmpty &&
+        s.sessionId.isNotEmpty) {
+      final link = ClassSessionLink(
+        studioId: studioId,
+        sessionId: s.sessionId,
+        startsAt: s.startsAt,
+      );
+      buf
+        ..writeln()
+        ..writeln('🔗 ${locale.t('clientClassDetail.shareJoinMe')}')
+        ..writeln(link.toShareUri().toString());
+    }
+
+    await Share.share(
+      buf.toString().trim(),
+      subject: s.trainingName,
+      sharePositionOrigin: origin,
+    );
   }
 
   void _onAttendanceToggle(OwnerSessionEnrollment e, bool attended) {

@@ -8,6 +8,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { StudioAppOpenButton } from '@/components/public/studioAppOpenBar';
 import type { Locale } from '@/i18n/routing';
 import type { PublicStudioPayload } from './types';
 
@@ -97,8 +98,14 @@ export default function StudioPublicClient({ locale, studio }: Props) {
     el.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const shareSlug = studio.slug?.trim() || studio.id;
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/studio/${encodeURIComponent(shareSlug)}`
+      : '';
+
   const onShare = async () => {
-    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const url = shareUrl;
     try {
       if (navigator.share) {
         await navigator.share({ title: studio.name, url });
@@ -342,6 +349,7 @@ export default function StudioPublicClient({ locale, studio }: Props) {
 
       {/* Sticky CTAs */}
       <div className="fixed bottom-0 left-0 right-0 z-20 flex gap-2 border-t border-gray-200 bg-white/95 px-3 py-3 backdrop-blur-md">
+        <StudioAppOpenButton slug={shareSlug} />
         <button
           type="button"
           onClick={() => scrollTo(scheduleRef)}

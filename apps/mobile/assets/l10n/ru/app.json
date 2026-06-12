@@ -276,6 +276,7 @@
     "failedToUpdateFavorites": "Не удалось обновить избранное"
   },
   "clientStudioDetail": {
+    "shareInvite": "{name} приглашает вас посмотреть {studio} в Henzo",
     "share": "Поделиться",
     "addressCopied": "Адрес скопирован",
     "readMore": "Показать ещё",

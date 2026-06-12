@@ -40,9 +40,10 @@ class ClassSessionLink {
 
   static ClassSessionLink? tryParse(Uri uri) {
     final isAppScheme = uri.scheme == scheme && uri.host == host;
+    final normalizedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
     final isWebClass = uri.scheme == 'https' &&
         (uri.host == 'henzo.app' || uri.host.endsWith('.henzo.app')) &&
-        uri.path.replaceAll(RegExp(r'/+$'), '') == '/class';
+        (normalizedPath == '/class' || normalizedPath.endsWith('/class'));
     if (!isAppScheme && !isWebClass) return null;
     return _fromQuery(uri.queryParameters);
   }

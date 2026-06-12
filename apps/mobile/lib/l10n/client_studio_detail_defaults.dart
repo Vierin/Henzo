@@ -1,6 +1,7 @@
 /// Fallback copy when bundled app.json is stale (e.g. after hot reload).
 const Map<String, Map<String, String>> clientStudioDetailDefaults = {
   'en': {
+    'shareInvite': '{name} invites you to check out {studio} on Henzo',
     'share': 'Share',
     'addressCopied': 'Address copied',
     'readMore': 'Show more',
@@ -17,6 +18,7 @@ const Map<String, Map<String, String>> clientStudioDetailDefaults = {
     'upcomingClassesTitle': 'Upcoming classes',
   },
   'ru': {
+    'shareInvite': '{name} приглашает вас посмотреть {studio} в Henzo',
     'share': 'Поделиться',
     'addressCopied': 'Адрес скопирован',
     'readMore': 'Показать ещё',
@@ -33,6 +35,7 @@ const Map<String, Map<String, String>> clientStudioDetailDefaults = {
     'upcomingClassesTitle': 'Ближайшие занятия',
   },
   'vi': {
+    'shareInvite': '{name} mời bạn xem {studio} trên Henzo',
     'share': 'Chia sẻ',
     'addressCopied': 'Đã sao chép địa chỉ',
     'readMore': 'Xem thêm',

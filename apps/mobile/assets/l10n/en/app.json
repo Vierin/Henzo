@@ -276,6 +276,7 @@
     "failedToUpdateFavorites": "Failed to update favorites"
   },
   "clientStudioDetail": {
+    "shareInvite": "{name} invites you to check out {studio} on Henzo",
     "share": "Share",
     "addressCopied": "Address copied",
     "readMore": "Show more",
