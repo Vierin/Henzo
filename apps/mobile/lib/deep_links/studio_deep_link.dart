@@ -52,14 +52,16 @@ class _StudioDeepLinkScopeState extends State<StudioDeepLinkScope> {
       final parts = uri.pathSegments.where((s) => s.isNotEmpty).toList();
       return parts.isNotEmpty ? parts.first : null;
     }
-    // https://henzo.app/studio/<slug-or-id>  OR  https://www.henzo.app/studio/<id>
+    // https://henzo.app/studio/<slug-or-id>
+    // https://www.henzo.app/en/studio/<slug-or-id>
     if (uri.scheme == 'https' &&
         (uri.host == 'henzo.app' ||
             uri.host == 'www.henzo.app' ||
             uri.host.endsWith('.henzo.app'))) {
       final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-      if (segments.length >= 2 && segments[0] == 'studio') {
-        return segments[1];
+      final studioIdx = segments.indexOf('studio');
+      if (studioIdx >= 0 && studioIdx + 1 < segments.length) {
+        return segments[studioIdx + 1];
       }
     }
     return null;

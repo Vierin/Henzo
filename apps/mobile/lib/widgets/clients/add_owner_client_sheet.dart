@@ -1015,7 +1015,6 @@ class _SheetChrome extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderPrimary),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),

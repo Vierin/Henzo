@@ -49,6 +49,8 @@ export default function Footer() {
       : locale === 'vi'
         ? 'Cách hoạt động'
         : 'How it works';
+  const navBlog = locale === 'ru' ? 'Блог' : locale === 'vi' ? 'Blog' : 'Blog';
+  const blogPath = withLocale('/blog', (locale as 'en' | 'ru' | 'vi') || 'en');
   const ctaTitle =
     locale === 'ru'
       ? 'Запустите свой бизнес уже сегодня.'
@@ -106,6 +108,12 @@ export default function Footer() {
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navHowItWorks}
+                </Link>
+                <Link
+                  href={blogPath}
+                  className="transition hover:text-[#E86D4F]"
+                >
+                  {navBlog}
                 </Link>
               </nav>
               <div className="mt-8 flex flex-wrap items-center gap-4">

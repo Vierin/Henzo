@@ -85,6 +85,9 @@ class _ContactCircle extends StatelessWidget {
       StudioPublicContactKind.telegram => StudioSocialPlatform.telegram,
       StudioPublicContactKind.youtube => StudioSocialPlatform.youtube,
       StudioPublicContactKind.whatsApp => StudioSocialPlatform.whatsApp,
+      StudioPublicContactKind.facebook => StudioSocialPlatform.facebook,
+      StudioPublicContactKind.tiktok => StudioSocialPlatform.tiktok,
+      StudioPublicContactKind.website => StudioSocialPlatform.website,
       _ => null,
     };
   }

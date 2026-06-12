@@ -53,9 +53,11 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
       });
     }
     try {
-      final raw = await ApiClient.get('/studios/${widget.studioId}', null);
+      final raw = await _fetchStudio(widget.studioId);
       if (!mounted) return;
-      if (raw is Map<String, dynamic>) {
+      if (raw != null) {
+        final cacheKey = (raw['id'] ?? widget.studioId).toString();
+        StudioPublicDetailCache.put(cacheKey, raw);
         StudioPublicDetailCache.put(widget.studioId, raw);
         setState(() {
           _studio = raw;
@@ -64,7 +66,9 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
         });
       } else {
         setState(() {
-          if (_studio == null) _error = context.read<LocaleProvider>().t('common.invalidResponse');
+          if (_studio == null) {
+            _error = context.read<LocaleProvider>().t('common.invalidResponse');
+          }
           _isLoading = false;
         });
       }
@@ -79,6 +83,20 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<Map<String, dynamic>?> _fetchStudio(String key) async {
+    Object? lastError;
+    for (final path in ['/studios/$key', '/studios/by-slug/$key']) {
+      try {
+        final raw = await ApiClient.get(path, null);
+        if (raw is Map<String, dynamic>) return raw;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (lastError != null) throw lastError;
+    return null;
   }
 
   Future<void> _toggleFavorite() async {

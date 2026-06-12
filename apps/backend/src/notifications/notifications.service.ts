@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { formatInTimeZone } from 'date-fns-tz';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseAdminService } from './firebase-admin.service';
@@ -9,6 +10,11 @@ import {
 
 @Injectable()
 export class NotificationsService {
+  /** Cron runs every 15 min — allow slack around the target offset. */
+  private static readonly REMINDER_1H_MIN_MS = 40 * 60 * 1000;
+  private static readonly REMINDER_1H_MAX_MS = 75 * 60 * 1000;
+  private static readonly REMINDER_24H_MIN_MS = 23 * 60 * 60 * 1000;
+  private static readonly REMINDER_24H_MAX_MS = (24 * 60 + 30) * 60 * 1000;
   constructor(
     private prisma: PrismaService,
     private firebaseAdmin: FirebaseAdminService,
@@ -190,6 +196,45 @@ export class NotificationsService {
       },
       data: { read: true },
     });
+  }
+
+  private isWithinPreClassReminderWindow(
+    type: string,
+    msUntilStart: number,
+  ): boolean {
+    if (type === '24h') {
+      return (
+        msUntilStart >= NotificationsService.REMINDER_24H_MIN_MS &&
+        msUntilStart <= NotificationsService.REMINDER_24H_MAX_MS
+      );
+    }
+    return (
+      msUntilStart >= NotificationsService.REMINDER_1H_MIN_MS &&
+      msUntilStart <= NotificationsService.REMINDER_1H_MAX_MS
+    );
+  }
+
+  private formatSessionLocalTime(startsAt: Date, timezone: string): string {
+    return formatInTimeZone(startsAt, timezone, 'HH:mm');
+  }
+
+  private clientSessionPushData(params: {
+    type: string;
+    sessionId: string;
+    studioId: string;
+    startsAt: Date;
+    trainingName?: string;
+    studioName?: string;
+  }): Record<string, string> {
+    const data: Record<string, string> = {
+      type: params.type,
+      sessionId: params.sessionId,
+      studioId: params.studioId,
+      startsAt: params.startsAt.toISOString(),
+    };
+    if (params.trainingName) data.trainingName = params.trainingName;
+    if (params.studioName) data.studioName = params.studioName;
+    return data;
   }
 
   private normalizeNotificationData(value: unknown): Record<string, string> {
@@ -763,14 +808,10 @@ export class NotificationsService {
           continue;
         }
 
-        const tokens = await this.getPushTokensByUserId(reminder.userId);
-        if (tokens.length === 0) {
-          continue;
-        }
-
         const session = await this.prisma.trainingSession.findUnique({
           where: { id: reminder.sessionId },
           select: {
+            studioId: true,
             startsAt: true,
             status: true,
             Training: { select: { name: true } },
@@ -785,16 +826,35 @@ export class NotificationsService {
           continue;
         }
 
+        const msUntilStart = session.startsAt.getTime() - now.getTime();
+        if (msUntilStart <= 0) {
+          await this.prisma.scheduledPushReminder.delete({
+            where: { id: reminder.id },
+          });
+          continue;
+        }
+
+        if (!this.isWithinPreClassReminderWindow(reminder.type, msUntilStart)) {
+          console.log(
+            `[Notifications] Dropping stale ${reminder.type} reminder ${reminder.id} ` +
+              `(${Math.round(msUntilStart / 60000)} min until class)`,
+          );
+          await this.prisma.scheduledPushReminder.delete({
+            where: { id: reminder.id },
+          });
+          continue;
+        }
+
+        const tokens = await this.getPushTokensByUserId(reminder.userId);
+        if (tokens.length === 0) {
+          continue;
+        }
+
         const lang = tokens[0]?.language || 'en';
         const sessionTz = session.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
-        const timeStr = session.startsAt.toLocaleTimeString(
-          lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-US',
-          {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: sessionTz,
-          },
+        const timeStr = this.formatSessionLocalTime(
+          session.startsAt,
+          sessionTz,
         );
         const titleKey =
           reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
@@ -811,14 +871,38 @@ export class NotificationsService {
           },
         );
 
+        const pushData = this.clientSessionPushData({
+          type: 'PRE_CLASS_REMINDER',
+          sessionId: reminder.sessionId,
+          studioId: session.studioId,
+          startsAt: session.startsAt,
+          trainingName: session.Training?.name || 'class',
+          studioName: session.Studio?.name || 'studio',
+        });
+
         await this.sendPushNotification(
           tokens,
           title,
           body,
-          { type: 'PRE_CLASS_REMINDER', sessionId: reminder.sessionId },
+          pushData,
           undefined,
           'henzo_default',
         );
+
+        try {
+          await this.createInAppNotification({
+            userId: reminder.userId,
+            type: 'PRE_CLASS_REMINDER',
+            title,
+            body,
+            data: pushData,
+          });
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save pre-class in-app notification:',
+            inAppErr,
+          );
+        }
 
         await this.prisma.scheduledPushReminder.update({
           where: { id: reminder.id },
@@ -852,7 +936,11 @@ export class NotificationsService {
         }),
         this.prisma.trainingSession.findUnique({
           where: { id: sessionId },
-          select: { Studio: { select: { timezone: true } } },
+          select: {
+            studioId: true,
+            Studio: { select: { timezone: true, name: true } },
+            Training: { select: { name: true } },
+          },
         }),
       ]);
       if (enrollments.length === 0) return;
@@ -882,14 +970,39 @@ export class NotificationsService {
             date: dateStr,
           },
         );
+        const pushData = this.clientSessionPushData({
+          type: 'SESSION_CANCELLED',
+          sessionId,
+          studioId: cancelledSession?.studioId ?? '',
+          startsAt: sessionInfo.startsAt,
+          trainingName:
+            cancelledSession?.Training?.name || sessionInfo.className,
+          studioName: cancelledSession?.Studio?.name || sessionInfo.studioName,
+        });
+
         await this.sendPushNotification(
           tokens,
           title,
           body,
-          { type: 'SESSION_CANCELLED', sessionId },
+          pushData,
           undefined,
           'henzo_default',
         );
+
+        try {
+          await this.createInAppNotification({
+            userId,
+            type: 'SESSION_CANCELLED',
+            title,
+            body,
+            data: pushData,
+          });
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save cancellation in-app notification:',
+            inAppErr,
+          );
+        }
       }
     } catch (err) {
       console.error('[Notifications] notifySessionCancelled failed:', err);
@@ -911,7 +1024,11 @@ export class NotificationsService {
         }),
         this.prisma.trainingSession.findUnique({
           where: { id: sessionId },
-          select: { Studio: { select: { timezone: true } } },
+          select: {
+            studioId: true,
+            Studio: { select: { timezone: true, name: true } },
+            Training: { select: { name: true } },
+          },
         }),
       ]);
       if (enrollments.length === 0) return;
@@ -958,14 +1075,40 @@ export class NotificationsService {
             date: dateStr,
           },
         );
+        const pushData = this.clientSessionPushData({
+          type: 'SESSION_RESCHEDULED',
+          sessionId,
+          studioId: rescheduledSession?.studioId ?? '',
+          startsAt: sessionInfo.newStartsAt,
+          trainingName:
+            rescheduledSession?.Training?.name || sessionInfo.className,
+          studioName:
+            rescheduledSession?.Studio?.name || sessionInfo.studioName,
+        });
+
         await this.sendPushNotification(
           tokens,
           title,
           body,
-          { type: 'SESSION_RESCHEDULED', sessionId },
+          pushData,
           undefined,
           'henzo_default',
         );
+
+        try {
+          await this.createInAppNotification({
+            userId: enrollment.userId,
+            type: 'SESSION_RESCHEDULED',
+            title,
+            body,
+            data: pushData,
+          });
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save reschedule in-app notification:',
+            inAppErr,
+          );
+        }
       }
     } catch (err) {
       console.error('[Notifications] notifySessionRescheduled failed:', err);
@@ -1046,7 +1189,13 @@ export class NotificationsService {
   /** Push notification to user when promoted from waitlist to enrolled. */
   async sendWaitlistPromotionPush(
     userId: string,
-    sessionInfo: { sessionId: string; className: string; studioName: string },
+    sessionInfo: {
+      sessionId: string;
+      studioId: string;
+      className: string;
+      studioName: string;
+      startsAt?: Date;
+    },
   ): Promise<void> {
     try {
       const tokens = await this.getPushTokensByUserId(userId);
@@ -1065,14 +1214,38 @@ export class NotificationsService {
           getNotificationText(lang, 'waitlistPromotedBody' as any),
           { class: sessionInfo.className, studio: sessionInfo.studioName },
         );
+        const pushData = this.clientSessionPushData({
+          type: 'WAITLIST_PROMOTED',
+          sessionId: sessionInfo.sessionId,
+          studioId: sessionInfo.studioId,
+          startsAt: sessionInfo.startsAt ?? new Date(),
+          trainingName: sessionInfo.className,
+          studioName: sessionInfo.studioName,
+        });
+
         await this.sendPushNotification(
           langTokens,
           title,
           body,
-          { type: 'WAITLIST_PROMOTED', sessionId: sessionInfo.sessionId },
+          pushData,
           undefined,
           'henzo_default',
         );
+
+        try {
+          await this.createInAppNotification({
+            userId,
+            type: 'WAITLIST_PROMOTED',
+            title,
+            body,
+            data: pushData,
+          });
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save waitlist in-app notification:',
+            inAppErr,
+          );
+        }
       }
     } catch (err) {
       console.error('[Notifications] Failed to send waitlist push:', err);

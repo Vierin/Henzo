@@ -28,7 +28,7 @@ class BrowseDayPill extends StatelessWidget {
         ? AppColors.primary500
         : today
         ? AppColors.primary100
-        : AppColors.backgroundPrimary;
+        : Colors.transparent;
 
     Widget pill = AspectRatio(
       aspectRatio: 2 / 3,

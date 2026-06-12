@@ -17,6 +17,7 @@ import '../main.dart';
 import 'common/sheet_action_button_style.dart';
 import '../l10n/locale_provider.dart';
 import '../services/mapbox_api_service.dart';
+import '../utils/text_content_validation.dart';
 import 'map/henzo_map_layers.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -543,6 +544,24 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
       );
       return;
     }
+    if (name.length > StudioTextLimits.locationNameMax) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            locale
+                .t('addressPicker.locationNameTooLong')
+                .replaceAll('{max}', '${StudioTextLimits.locationNameMax}'),
+          ),
+        ),
+      );
+      return;
+    }
+    if (textContainsEmbeddedLink(name)) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('profileForm.linksNotAllowed'))),
+      );
+      return;
+    }
     if (_lat != null && _lon != null && _address.trim().isNotEmpty) {
       Navigator.of(context).pop(
         AddressPickerSelection(
@@ -648,6 +667,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                 TextField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.sentences,
+                  maxLength: StudioTextLimits.locationNameMax,
+                  inputFormatters: const [NoEmbeddedLinkTextInputFormatter()],
                   onChanged: (_) => setState(() {}),
                   decoration: _fieldDecoration(
                     hint: t('addressPicker.locationNameHint'),

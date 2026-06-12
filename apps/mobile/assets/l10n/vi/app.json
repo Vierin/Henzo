@@ -58,6 +58,8 @@
     "class": "Lớp",
     "default": "Mặc định",
     "reviewsCount": "{count} đánh giá",
+    "distanceKmShort": "{value} km",
+    "distanceMSshort": "{value} m",
     "signInToUploadPhoto": "Đăng nhập lại để tải ảnh"
   },
   "nav": {
@@ -156,6 +158,7 @@
     "searchHint": "Studio, lớp, huấn luyện viên...",
     "topPicksTitle": "Gợi ý gần bạn",
     "topPicksSubtitle": "Trong 3 km · đánh giá cao",
+    "upcomingWorkoutTodayLabel": "HÔM NAY",
     "popularTodayTitle": "Phổ biến hôm nay",
     "seeAll": "Xem tất cả",
     "classesSectionTitle": "Lớp học",
@@ -234,7 +237,9 @@
     "cancelConfirmBody": "Bạn có chắc muốn hủy đặt chỗ này không?",
     "cancelConfirmAction": "Có, hủy",
     "studioUnavailable": "Studio không khả dụng",
-    "thankYouForReview": "Cảm ơn đánh giá của bạn!"
+    "thankYouForReview": "Cảm ơn đánh giá của bạn!",
+    "reviewCommentTooLong": "Bình luận tối đa {max} ký tự",
+    "leaveReview": "Để lại đánh giá"
   },
   "clientFavorites": {
     "emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -271,6 +276,7 @@
     "failedToUpdateFavorites": "Không thể cập nhật yêu thích"
   },
   "clientStudioDetail": {
+    "shareInvite": "{name} mời bạn xem {studio} trên Henzo",
     "share": "Chia sẻ",
     "addressCopied": "Đã sao chép địa chỉ",
     "readMore": "Xem thêm",
@@ -283,7 +289,8 @@
     "reviewsDaysAgo": "{count} ngày trước",
     "reviewsHoursAgo": "{count} giờ trước",
     "reviewsJustNow": "Vừa xong",
-    "reviewsOnCount": "trên {count} đánh giá"
+    "reviewsOnCount": "trên {count} đánh giá",
+    "upcomingClassesTitle": "Lớp sắp tới"
   },
   "clientClassDetail": {
     "descriptionSectionLabel": "MÔ TẢ",
@@ -348,6 +355,12 @@
     "accountExistsUseGoogle": "Email này đã đăng ký bằng Google. Hãy tiếp tục với Google để đăng nhập.",
     "accountExistsUseApple": "Email này đã đăng ký bằng Apple. Hãy tiếp tục với Apple để đăng nhập.",
     "accountExistsUseOauth": "Email này đã đăng ký bằng mạng xã hội. Hãy dùng Google hoặc Apple để đăng nhập.",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng.",
+    "verificationCodeNotRequested": "Mã xác minh chưa được yêu cầu.",
+    "verificationCodeExpired": "Mã xác minh đã hết hạn.",
+    "tooManyAttempts": "Quá nhiều lần thử. Hãy yêu cầu mã mới.",
+    "invalidVerificationCode": "Mã xác minh không đúng.",
+    "invalidRegistrationPayload": "Vui lòng kiểm tra biểu mẫu và thử lại.",
     "generic": "Đã xảy ra lỗi",
     "loadFailed": "Tải thất bại"
   },
@@ -1005,6 +1018,8 @@
     "optimizing": "Đang tối ưu...",
     "uploading": "Đang tải...",
     "photoTooLarge": "Ảnh vượt quá 3 MB",
+    "descriptionTooLong": "Mô tả tối đa {max} ký tự",
+    "linksNotAllowed": "Không được nhập liên kết vào trường này",
     "oversizedPhotosSkipped": "{count} ảnh vượt 3 MB không được thêm",
     "uploadsFailed": "{count} ảnh không tải được"
   },
@@ -1016,6 +1031,7 @@
     "locationNameLabel": "Tên địa điểm",
     "locationNameHint": "VD: Studio chính",
     "nameRequired": "Nhập tên địa điểm",
+    "locationNameTooLong": "Tên địa điểm tối đa {max} ký tự",
     "enterNameFirstHint": "Nhập tên địa điểm trước khi tìm địa chỉ",
     "enableMapHint": "Nhập địa chỉ để dùng bản đồ",
     "searchHint": "Tìm theo địa chỉ",

@@ -11,9 +11,11 @@ import '../models/studio.dart';
 import '../services/auth_service.dart';
 import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/studio_cache.dart';
+import '../services/client_schedule_store.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/notifications_store.dart';
 import '../utils/color_hex.dart';
+import '../utils/formatters.dart';
 import '../widgets/client/client_panel_empty_state.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../utils/show_api_error.dart';
@@ -245,11 +247,24 @@ bool _isBookingFilterKind(_NotificationKind kind) =>
     kind == _NotificationKind.booking ||
     kind == _NotificationKind.bookingCancelled;
 
+bool _isClientSessionNotification(AppNotification n) {
+  final type = (n.data['type'] ?? n.data['eventType'] ?? '').toUpperCase();
+  return type == 'PRE_CLASS_REMINDER' ||
+      type == 'WAITLIST_PROMOTED' ||
+      type == 'SESSION_CANCELLED' ||
+      type == 'SESSION_RESCHEDULED' ||
+      (n.data['sessionId']?.trim().isNotEmpty ?? false);
+}
+
 _NotificationKind _notificationKind(AppNotification n, bool forClient) {
   final type = (n.data['type'] ?? n.data['eventType'] ?? '').toLowerCase();
   final text = '${n.title} ${n.body}'.toLowerCase();
 
-  if (forClient && _isReminder(n)) {
+  if (forClient &&
+      (_isReminder(n) || _isClientSessionNotification(n))) {
+    if (type.contains('cancel')) {
+      return _NotificationKind.bookingCancelled;
+    }
     return _NotificationKind.booking;
   }
 
@@ -805,31 +820,110 @@ class _BookingSessionParts {
   final String date;
 }
 
+class _ClientBookingRoute {
+  const _ClientBookingRoute({
+    required this.studioId,
+    required this.sessionId,
+    required this.startsAt,
+  });
+
+  final String studioId;
+  final String sessionId;
+  final DateTime startsAt;
+}
+
+DateTime? _parseNotificationStartsAt(Map<String, String> data) {
+  final raw = data['dateTime']?.trim() ?? data['startsAt']?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  return DateTime.tryParse(raw)?.toLocal();
+}
+
+_ClientBookingRoute? _routeFromScheduleItem(Map<String, dynamic> item) {
+  final sessionId = (item['sessionId'] ?? '').toString().trim();
+  if (sessionId.isEmpty) return null;
+
+  final studio = item['studio'] is Map
+      ? Map<String, dynamic>.from(item['studio'] as Map)
+      : <String, dynamic>{};
+  final studioId = (studio['id'] ?? item['studioId'] ?? '').toString().trim();
+  if (studioId.isEmpty) return null;
+
+  final startsAt = parseApiDateTime(item['startsAt']) ?? DateTime.now();
+  return _ClientBookingRoute(
+    studioId: studioId,
+    sessionId: sessionId,
+    startsAt: startsAt,
+  );
+}
+
+Future<_ClientBookingRoute?> _resolveClientBookingRoute(
+  BuildContext context,
+  AppNotification notification,
+) async {
+  final data = notification.data;
+  var sessionId = data['sessionId']?.trim() ?? '';
+  var studioId = data['studioId']?.trim() ?? '';
+  var startsAt = _parseNotificationStartsAt(data);
+
+  final token = context.read<AuthService>().accessToken;
+  final enrollmentId = data['enrollmentId']?.trim();
+
+  if (token != null &&
+      token.isNotEmpty &&
+      (sessionId.isEmpty || studioId.isEmpty)) {
+    try {
+      final items = await ClientScheduleStore.loadFullSchedule(token);
+      for (final item in items) {
+        if (enrollmentId != null &&
+            enrollmentId.isNotEmpty &&
+            (item['enrollmentId'] ?? '').toString() == enrollmentId) {
+          final route = _routeFromScheduleItem(item);
+          if (route != null) return route;
+        }
+        if (sessionId.isNotEmpty &&
+            (item['sessionId'] ?? '').toString() == sessionId) {
+          final route = _routeFromScheduleItem(item);
+          if (route != null) {
+            studioId = studioId.isEmpty ? route.studioId : studioId;
+            startsAt ??= route.startsAt;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (sessionId.isEmpty || studioId.isEmpty) return null;
+  return _ClientBookingRoute(
+    studioId: studioId,
+    sessionId: sessionId,
+    startsAt: startsAt ?? DateTime.now(),
+  );
+}
+
 Future<void> _openClientBookingDetail(
   BuildContext context,
   AppNotification notification,
 ) async {
-  final sessionId = notification.data['sessionId']?.trim() ?? '';
-  final studioId =
-      notification.data['studioId']?.trim() ??
-      notification.data['studioId']?.trim() ??
-      '';
-  if (sessionId.isEmpty || studioId.isEmpty) return;
-
-  final dateRaw =
-      notification.data['dateTime']?.trim() ??
-      notification.data['startsAt']?.trim();
-  final startsAt = dateRaw != null && dateRaw.isNotEmpty
-      ? DateTime.tryParse(dateRaw)?.toLocal()
-      : null;
-
+  final route = await _resolveClientBookingRoute(context, notification);
   if (!context.mounted) return;
+  if (route == null) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(
+          context.read<LocaleProvider>().t('publicClassDetail.notFound'),
+        ),
+      ),
+    );
+    return;
+  }
+
   await Navigator.of(context).push<void>(
     MaterialPageRoute<void>(
       builder: (_) => PublicClassDetailScreen(
-        studioId: studioId,
-        sessionId: sessionId,
-        sessionStartsAtHint: startsAt ?? DateTime.now(),
+        studioId: route.studioId,
+        sessionId: route.sessionId,
+        sessionStartsAtHint: route.startsAt,
       ),
     ),
   );

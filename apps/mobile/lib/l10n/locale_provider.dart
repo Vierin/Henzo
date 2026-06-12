@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_locales.dart';
+import 'client_studio_detail_defaults.dart';
 /// Loads and caches translations from assets/l10n/{locale}/app.json.
 /// Use t('key') or t('section.key') for nested keys. Returns key if missing.
 class LocaleProvider extends ChangeNotifier {
@@ -55,12 +56,14 @@ class LocaleProvider extends ChangeNotifier {
       final primaryPath = 'assets/l10n/$_localeCode/app.json';
       final primaryData = await rootBundle.loadString(primaryPath);
       _strings = _decodeRootObject(primaryData);
+      mergeClientStudioDetailDefaults(_strings, _localeCode);
 
       if (_localeCode == 'en') {
         _englishStrings = _strings;
       } else {
         final enData = await rootBundle.loadString('assets/l10n/en/app.json');
         _englishStrings = _decodeRootObject(enData);
+        mergeClientStudioDetailDefaults(_englishStrings, 'en');
       }
       _loaded = true;
     } catch (e) {

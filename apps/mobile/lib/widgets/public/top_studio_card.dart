@@ -5,6 +5,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../models/public_studio_preview.dart';
 import '../../models/training_category_option.dart';
+import '../../l10n/locale_provider.dart';
 import '../../services/client_location_store.dart';
 import '../../utils/formatters.dart';
 import 'cached_salon_network_image.dart';
@@ -32,6 +33,7 @@ class TopStudioCard extends StatelessWidget {
 
   String? _distanceLabel(BuildContext context) {
     final loc = context.watch<ClientLocationStore>();
+    final locale = context.watch<LocaleProvider>();
     final km = resolveStudioDistanceKm(
       apiDistanceKm: studio.distanceKm,
       clientLat: loc.lat,
@@ -39,7 +41,10 @@ class TopStudioCard extends StatelessWidget {
       studioLat: studio.lat,
       studioLng: studio.lng,
     );
-    final label = formatBrowseStudioDistanceLabel(km);
+    final label = formatBrowseStudioDistanceLabel(
+      km,
+      kmTemplate: locale.t('common.distanceKmShort'),
+    );
     return label.isEmpty ? null : label;
   }
 

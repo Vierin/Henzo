@@ -6,9 +6,8 @@ import '../../services/api_client.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/load_error_message.dart';
+import '../../utils/text_content_validation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-const _maxCommentLength = 500;
 
 /// Extra space above the keyboard so the submit button stays visible.
 const double _keyboardBottomExtra = 10;
@@ -84,8 +83,18 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
   }
 
   Future<void> _submit() async {
+    final locale = context.read<LocaleProvider>();
     if (_rating < 1) {
       setState(() => _error = 'Please select a rating');
+      return;
+    }
+    final comment = _commentController.text.trim();
+    if (comment.length > ClientTextLimits.reviewCommentMax) {
+      setState(
+        () => _error = locale
+            .t('clientActivity.reviewCommentTooLong')
+            .replaceAll('{max}', '${ClientTextLimits.reviewCommentMax}'),
+      );
       return;
     }
     final token = context.read<AuthService>().accessToken;
@@ -100,8 +109,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
         token,
         body: {
           'rating': _rating,
-          if (_commentController.text.trim().isNotEmpty)
-            'comment': _commentController.text.trim(),
+          if (comment.isNotEmpty) 'comment': comment,
           if (widget.enrollmentId != null &&
               widget.enrollmentId!.isNotEmpty)
             'enrollmentId': widget.enrollmentId,
@@ -204,7 +212,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
                     enabled: !_submitting,
                     maxLines: 5,
                     minLines: 5,
-                    maxLength: _maxCommentLength,
+                    maxLength: ClientTextLimits.reviewCommentMax,
                     buildCounter: (
                       _, {
                       required currentLength,
@@ -236,7 +244,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
                     right: 12,
                     bottom: 10,
                     child: Text(
-                      '$commentLen/$_maxCommentLength',
+                      '$commentLen/${ClientTextLimits.reviewCommentMax}',
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: AppColors.textTertiary,

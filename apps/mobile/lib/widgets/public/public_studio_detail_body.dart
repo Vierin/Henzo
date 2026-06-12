@@ -7,9 +7,15 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
+import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/cache/training_categories_cache.dart';
+import '../../services/dashboard_api_service.dart';
+import '../../utils/class_session_link.dart';
+import '../../utils/formatters.dart';
 import '../../utils/share_utils.dart';
+import '../../utils/studio_share_link.dart';
 import '../../utils/studio_photo_urls.dart';
 import '../../utils/studio_description.dart';
 import '../../utils/studio_public_contacts.dart';
@@ -17,7 +23,9 @@ import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/public/cached_salon_network_image.dart';
 import '../../widgets/public/studio_contact_row.dart';
 import '../../widgets/public/studio_review_card.dart';
+import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../screens/client_studio_reviews_screen.dart';
+import '../../screens/public_class_detail_screen.dart';
 import '../../screens/public_studio_schedule_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -54,18 +62,23 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   List<int> _cachedCategoryIds = [];
   List<Map<String, dynamic>> _cachedReviews = [];
   double _cachedAvgRating = 0;
+  List<Map<String, dynamic>> _upcomingSessions = const [];
 
   @override
   void initState() {
     super.initState();
     _recomputeDerived();
     _loadCategories();
+    _loadUpcomingSessions();
   }
 
   @override
   void didUpdateWidget(PublicStudioDetailBody old) {
     super.didUpdateWidget(old);
-    if (old.studio != widget.studio) _recomputeDerived();
+    if (old.studio != widget.studio) {
+      _recomputeDerived();
+      _loadUpcomingSessions();
+    }
   }
 
   void _recomputeDerived() {
@@ -172,7 +185,29 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   }
 
   Future<void> _shareStudio(String name) async {
-    await Share.share('Check out $name on Henzo', sharePositionOrigin: shareOrigin(context));
+    final locale = context.read<LocaleProvider>();
+    final auth = context.read<AuthService>();
+    final id = (widget.studio['id'] ?? '').toString();
+    final slug = (widget.studio['slug'] as String?)?.trim();
+    if (id.isEmpty) return;
+
+    final inviterName = resolveShareInviterName(
+      userName: auth.user?.name,
+      userEmail: auth.user?.email,
+      tr: locale.t,
+    );
+    final link = studioShareUrl(id: id, slug: slug);
+    final message = buildStudioShareMessage(
+      tr: locale.t,
+      inviterName: inviterName,
+      studioName: name,
+      link: link,
+    );
+    await Share.share(
+      message,
+      subject: name,
+      sharePositionOrigin: shareOrigin(context),
+    );
   }
 
   void _copyAddress(BuildContext context, String address, String copiedMsg) {
@@ -182,9 +217,112 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     ).showSnackBar(SnackBar(content: Text(copiedMsg)));
   }
 
-  String _compactRatingLabel(double avgRating, int count) {
-    final rating = avgRating.toStringAsFixed(1).replaceAll('.', ',');
-    return '$rating ($count)';
+  Future<void> _loadUpcomingSessions() async {
+    final studioId = (widget.studio['id'] ?? '').toString();
+    if (studioId.isEmpty) return;
+    try {
+      final now = DateTime.now();
+      final maxDay = now.add(Duration(days: _extractBookingPeriodDays()));
+      final fromQuery = Uri.encodeComponent(now.toUtc().toIso8601String());
+      final toQuery = Uri.encodeComponent(
+        endOfLocalDay(maxDay).toUtc().toIso8601String(),
+      );
+      final raw = await ApiClient.get(
+        '/studios/$studioId/schedule?from=$fromQuery&to=$toQuery&limit=50',
+        null,
+      );
+      final list = raw is List
+          ? raw
+          : (raw is Map<String, dynamic> && raw['data'] is List
+                ? raw['data'] as List
+                : <dynamic>[]);
+      final upcoming = <Map<String, dynamic>>[];
+      for (final item in list) {
+        if (item is! Map) continue;
+        final map = Map<String, dynamic>.from(item);
+        if (!_isUpcomingActiveSession(map, now)) continue;
+        upcoming.add(map);
+      }
+      upcoming.sort((a, b) {
+        final aa =
+            parseApiDateTime(a['startsAt']) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bb =
+            parseApiDateTime(b['startsAt']) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return aa.compareTo(bb);
+      });
+      if (!mounted) return;
+      setState(() => _upcomingSessions = upcoming.take(3).toList());
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _upcomingSessions = const []);
+    }
+  }
+
+  bool _isUpcomingActiveSession(Map<String, dynamic> map, DateTime now) {
+    final status = (map['status'] ?? 'ACTIVE').toString().toUpperCase();
+    if (status != 'ACTIVE') return false;
+    final startsAt = parseApiDateTime(map['startsAt']);
+    if (startsAt == null) return false;
+    return !startsAt.isBefore(now);
+  }
+
+  OwnerTrainingSession? _mapOwnerSession(Map<String, dynamic> item) {
+    final training = item['training'] is Map
+        ? Map<String, dynamic>.from(item['training'] as Map)
+        : <String, dynamic>{};
+    final startsAt = parseApiDateTime(item['startsAt']);
+    if (startsAt == null) return null;
+
+    final durationMin = (training['duration'] as num?)?.toInt() ?? 60;
+    final endsAt =
+        parseApiDateTime(item['endsAt']) ??
+        startsAt.add(Duration(minutes: durationMin));
+
+    final trainer = item['trainer'] is Map
+        ? Map<String, dynamic>.from(item['trainer'] as Map)
+        : <String, dynamic>{};
+
+    return OwnerTrainingSession(
+      sessionId: (item['id'] ?? item['sessionId'] ?? '').toString(),
+      trainingId: (training['id'] ?? '').toString(),
+      startsAt: startsAt,
+      endsAt: endsAt,
+      status: (item['status'] ?? 'ACTIVE').toString(),
+      capacity: (item['capacity'] as num?)?.toInt() ?? 0,
+      enrolledCount: (item['bookedCount'] as num?)?.toInt() ?? 0,
+      attendedCount: (item['bookedCount'] as num?)?.toInt() ?? 0,
+      trainingName: (training['name'] ?? 'Class').toString(),
+      trainingPrice: (training['price'] as num?)?.toDouble(),
+      trainingDurationMinutes: durationMin,
+      trainingDisplayColorHex: training['displayColor']?.toString(),
+      trainingLanguage: (training['language'] as String?)?.trim().isNotEmpty ==
+              true
+          ? (training['language'] as String).trim()
+          : null,
+      trainerName: (trainer['name'] ?? '').toString().trim(),
+      trainerId: trainer['id']?.toString(),
+      locationId: item['locationId']?.toString(),
+      locationName: item['locationName']?.toString(),
+    );
+  }
+
+  void _openClassDetail(Map<String, dynamic> raw) {
+    final studioId = (widget.studio['id'] ?? '').toString();
+    final sessionId = (raw['id'] ?? raw['sessionId'] ?? '').toString();
+    final startsAt = parseApiDateTime(raw['startsAt']);
+    if (studioId.isEmpty || sessionId.isEmpty || startsAt == null) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicClassDetailScreen(
+          studioId: studioId,
+          sessionId: sessionId,
+          sessionStartsAtHint: startsAt,
+        ),
+      ),
+    );
   }
 
   void _openSchedule() {
@@ -232,9 +370,6 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final reviews = _cachedReviews;
     final avgRating = _cachedAvgRating;
     final reviewCount = reviews.length;
-    final compactRating = avgRating > 0
-        ? _compactRatingLabel(avgRating, reviewCount)
-        : null;
     final categoryIds = _cachedCategoryIds;
     final contacts = studioPublicContactsFromMap(studio);
     final topInset = MediaQuery.paddingOf(context).top;
@@ -273,7 +408,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                             ),
                           ),
                         ),
-                        if (compactRating != null) ...[
+                        if (avgRating > 0) ...[
                           const SizedBox(width: 10),
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -284,13 +419,9 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                 color: Color(0xFFFFB800),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                compactRating,
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
-                                ),
+                              StudioCompactRatingText(
+                                avgRating: avgRating,
+                                reviewCount: reviewCount,
                               ),
                             ],
                           ),
@@ -535,6 +666,93 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                         readMoreLabel: t('readMore'),
                         readLessLabel: t('readLess'),
                       ),
+                    ],
+                    if (_upcomingSessions.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              t('upcomingClassesTitle').toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.4,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: _openSchedule,
+                            borderRadius: BorderRadius.circular(6),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  reviewsSeeMore.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary500,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: AppColors.primary500,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ...List.generate(_upcomingSessions.length, (index) {
+                          final raw = _upcomingSessions[index];
+                          final session = _mapOwnerSession(raw);
+                          if (session == null) {
+                            return const SizedBox.shrink();
+                          }
+                          final loc = session.locationName?.trim() ?? '';
+                          final studioLabel = name.trim().isNotEmpty
+                              ? name.trim()
+                              : 'Studio';
+                          final subtitle =
+                              loc.isNotEmpty ? loc : studioLabel;
+                          final trainerLine = scheduleTrainerLineOrNull(
+                            session,
+                            null,
+                          );
+                          final price = session.trainingPrice;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              top: index == 0 ? 0 : 8,
+                            ),
+                            child: OwnerDailyScheduleSessionCard(
+                              session: session,
+                              subtitleLabel: subtitle,
+                              showLocationPin: loc.isNotEmpty,
+                              trainerLine: trainerLine,
+                              showSubtitleLeadingIcon: subtitle.isNotEmpty,
+                              dimPastSessions: false,
+                              secondaryTimeLabel: formatPassCardDayMonth(
+                                session.startsAt,
+                                locale.languageTag,
+                              ),
+                              trailingPriceLabel: price != null
+                                  ? formatVnd(price)
+                                  : null,
+                              trailingPriceColor: AppColors.textPrimary,
+                              bookActionLabel: locale.t('booking.book'),
+                              onBookAgain: () => _openClassDetail(raw),
+                              onTap: () => _openClassDetail(raw),
+                            ),
+                          );
+                        }),
                     ],
                   ]),
                 ),
@@ -878,16 +1096,25 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chipBg = outlined ? AppColors.backgroundPrimary : bg;
+    final chipFg = outlined ? AppColors.textPrimary : fg;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
+        color: chipBg,
         borderRadius: BorderRadius.circular(999),
-        border: outlined ? Border.all(color: AppColors.primary300) : null,
+        border: outlined
+            ? Border.all(color: AppColors.primary300, width: 1)
+            : null,
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w600,
+          color: chipFg,
+        ),
       ),
     );
   }

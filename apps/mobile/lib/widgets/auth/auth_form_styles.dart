@@ -5,6 +5,7 @@ import '../../constants/colors.dart';
 /// Field and primary-button geometry shared with [AddTrainingScreen] step 1.
 abstract final class AuthFormStyles {
   static const double fieldBorderRadius = 12;
+  static const double fieldHeight = 68;
   static const double buttonHeight = 60;
   static const double buttonBorderRadius = 14;
   static const double socialButtonBorderRadius = 14;
@@ -53,7 +54,7 @@ abstract final class AuthFormStyles {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: AppColors.backgroundPrimary,
-      constraints: const BoxConstraints.tightFor(height: 68),
+      constraints: const BoxConstraints.tightFor(height: fieldHeight),
       contentPadding: EdgeInsets.only(
         top: 20,
         bottom: 20,

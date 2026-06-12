@@ -122,6 +122,62 @@ List<String> extractStudioCategoryLabels(
   );
 }
 
+/// Training category ids offered by a studio (nearby / favorites payload).
+Set<int> extractStudioTrainingCategoryIds(Map<String, dynamic> data) {
+  final ids = <int>{};
+
+  void addId(dynamic raw) {
+    int? id;
+    if (raw is num) {
+      id = raw.toInt();
+    } else if (raw is String && RegExp(r'^\d+$').hasMatch(raw.trim())) {
+      id = int.parse(raw.trim());
+    }
+    if (id != null) ids.add(id);
+  }
+
+  for (final field in ['trainingCategoryIds', 'categoryIds', 'categories']) {
+    final raw = data[field];
+    if (raw is! List) continue;
+    for (final e in raw) {
+      if (e is num || (e is String && RegExp(r'^\d+$').hasMatch(e.trim()))) {
+        addId(e);
+      }
+    }
+  }
+
+  for (final listKey in ['Training', 'training', 'services', 'Service']) {
+    final raw = data[listKey];
+    if (raw is! List) continue;
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      addId(m['trainingCategoryId'] ?? m['training_category_id']);
+      final tc = m['trainingCategory'] ?? m['training_category'];
+      if (tc is Map) {
+        addId(tc['id']);
+      }
+    }
+  }
+
+  return ids;
+}
+
+int? sessionTrainingCategoryId(Map<String, dynamic> session) {
+  final training = session['training'];
+  if (training is Map) {
+    final m = Map<String, dynamic>.from(training);
+    final raw = m['trainingCategoryId'] ?? m['training_category_id'];
+    if (raw is num) return raw.toInt();
+  }
+  final tc = session['trainingCategory'] ?? session['training_category'];
+  if (tc is Map) {
+    final raw = tc['id'];
+    if (raw is num) return raw.toInt();
+  }
+  return null;
+}
+
 PublicStudioPreview parsePublicStudioPreviewFromNearby(
   Map<String, dynamic> data, {
   String localeCode = 'en',

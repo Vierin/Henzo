@@ -11,6 +11,7 @@ const scriptClass =
   'font-shadows-into-light-two text-[2.5rem] leading-none text-[#D9534F]';
 
 const BASE = 'homepage.studio.quickStart';
+const MOBILE_STEP_SCROLL_PX = 460;
 
 type Step = { label: string; text: string };
 
@@ -169,7 +170,7 @@ export function QuickStartSection() {
         ScrollTrigger.create({
           trigger: mobilePin,
           start: 'top top',
-          end: `+=${Math.max(980, steps.length * 380)}`,
+          end: `+=${Math.max(1100, steps.length * MOBILE_STEP_SCROLL_PX)}`,
           pin: mobilePin,
           pinSpacing: true,
           scrub: 1,

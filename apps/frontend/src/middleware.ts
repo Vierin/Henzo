@@ -5,7 +5,13 @@ import {
   extractLocaleFromPath,
   isLocale,
   stripLocaleFromPath,
+  type Locale,
 } from './i18n/routing';
+
+function withLocaleHeader(response: NextResponse, locale: Locale) {
+  response.headers.set('x-locale', locale);
+  return response;
+}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -50,7 +56,7 @@ export async function middleware(req: NextRequest) {
     // Sync cookie with URL locale on visits that already include locale
     const cookieLocale = req.cookies.get('locale')?.value;
     if (cookieLocale !== urlLocale) {
-      const resWithCookie = NextResponse.next();
+      const resWithCookie = withLocaleHeader(NextResponse.next(), urlLocale);
       resWithCookie.cookies.set('locale', urlLocale, {
         path: '/',
         httpOnly: false,
@@ -117,7 +123,8 @@ export async function middleware(req: NextRequest) {
 
   // Web is landing-only now: no auth gating in middleware.
   // Allow routing to continue and let Next.js handle missing pages (404).
-  return res;
+  const activeLocale = (urlLocale ?? defaultLocale) as Locale;
+  return withLocaleHeader(res, activeLocale);
 }
 
 export const config = {

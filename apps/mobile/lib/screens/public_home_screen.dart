@@ -49,14 +49,12 @@ class PublicHomeScreen extends StatefulWidget {
     this.onOpenBrowseStudios,
     this.onOpenBrowseClasses,
     this.onCategorySelected,
-    this.onOpenBookings,
   });
 
   final VoidCallback? onOpenMap;
   final VoidCallback? onOpenBrowseStudios;
   final VoidCallback? onOpenBrowseClasses;
   final void Function(int categoryId)? onCategorySelected;
-  final VoidCallback? onOpenBookings;
 
   @override
   State<PublicHomeScreen> createState() => _PublicHomeScreenState();
@@ -77,6 +75,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   bool _loadingTodayClasses = false;
   List<TrainingCategoryOption> _trainingCategories = const [];
   bool _loadingCategories = true;
+  List<Map<String, dynamic>> _nearbyStudioMaps = const [];
+  List<Map<String, dynamic>> _todaySessionsForCategoryCounts = const [];
+  Map<int, int> _homeCategoryCounts = const {};
+  String? _studiosPreviewLocale;
 
   @override
   void initState() {
@@ -141,16 +143,16 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         ClientNearbyCache.put(path, raw);
       }
       final list = extractStudiosListFromNearby(raw);
-      final mapped = <PublicStudioPreview>[];
+      final studioMaps = <Map<String, dynamic>>[];
       for (final item in list) {
         if (item is! Map) continue;
-        final data = Map<String, dynamic>.from(item);
-        mapped.add(parsePublicStudioPreviewFromNearby(data));
+        studioMaps.add(Map<String, dynamic>.from(item));
       }
       if (!mounted) return;
       setState(() {
-        _allStudios = mapped;
-        _rebuildFilteredStudios();
+        _nearbyStudioMaps = studioMaps;
+        _remapStudiosFromNearbyMaps();
+        _rebuildHomeCategoryCounts();
         _isLoadingStudios = false;
         _studiosLoadError = null;
       });
@@ -326,6 +328,25 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
   List<PublicStudioPreview> _filteredStudios = const [];
 
+  void _remapStudiosFromNearbyMaps() {
+    if (_nearbyStudioMaps.isEmpty) {
+      _allStudios = const [];
+      _filteredStudios = const [];
+      return;
+    }
+    final localeCode = context.read<LocaleProvider>().localeCode;
+    _allStudios = [
+      for (final data in _nearbyStudioMaps)
+        parsePublicStudioPreviewFromNearby(
+          data,
+          localeCode: localeCode,
+          categoryOptions: _trainingCategories,
+        ),
+    ];
+    _studiosPreviewLocale = localeCode;
+    _rebuildFilteredStudios();
+  }
+
   void _rebuildFilteredStudios() {
     final query = _searchController.text.trim().toLowerCase();
     _filteredStudios = query.isEmpty
@@ -441,7 +462,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       if (mounted) {
         setState(() {
           _todayClasses = const [];
+          _todaySessionsForCategoryCounts = const [];
           _loadingTodayClasses = false;
+          _rebuildHomeCategoryCounts();
         });
       }
       return;
@@ -496,9 +519,44 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
     if (!mounted) return;
     setState(() {
+      _todaySessionsForCategoryCounts = merged;
       _todayClasses = merged.take(_kPopularTodayMaxCards).toList();
       _loadingTodayClasses = false;
+      _rebuildHomeCategoryCounts();
     });
+  }
+
+  void _rebuildHomeCategoryCounts() {
+    final counts = <int, int>{};
+    for (final map in _nearbyStudioMaps) {
+      for (final id in extractStudioTrainingCategoryIds(map)) {
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    for (final session in _todaySessionsForCategoryCounts) {
+      final id = sessionTrainingCategoryId(session);
+      if (id != null) {
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    _homeCategoryCounts = counts;
+  }
+
+  List<TrainingCategoryOption> get _visibleHomeCategories {
+    final ranked = <({TrainingCategoryOption cat, int count})>[];
+    for (final cat in _trainingCategories) {
+      final count = _homeCategoryCounts[cat.id] ?? 0;
+      if (count > 0) ranked.add((cat: cat, count: count));
+    }
+    ranked.sort((a, b) {
+      if (a.cat.isOtherCategory != b.cat.isOtherCategory) {
+        return a.cat.isOtherCategory ? 1 : -1;
+      }
+      final byCount = b.count.compareTo(a.count);
+      if (byCount != 0) return byCount;
+      return a.cat.nameEn.compareTo(b.cat.nameEn);
+    });
+    return ranked.map((e) => e.cat).toList();
   }
 
   Future<void> _loadCategoriesFromCache() async {
@@ -510,6 +568,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       setState(() {
         _trainingCategories = cats;
         _loadingCategories = false;
+        if (_nearbyStudioMaps.isNotEmpty) {
+          _remapStudiosFromNearbyMaps();
+        }
       });
     } catch (_) {
       if (mounted) setState(() => _loadingCategories = false);
@@ -686,6 +747,15 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    if (_nearbyStudioMaps.isNotEmpty &&
+        _studiosPreviewLocale != locale.localeCode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final code = context.read<LocaleProvider>().localeCode;
+        if (_studiosPreviewLocale == code) return;
+        setState(_remapStudiosFromNearbyMaps);
+      });
+    }
     final favStore = context.watch<ClientFavoritesStore>();
     // select only the fields that actually affect the UI — avoids rebuilds
     // when unrelated auth state (token refresh, etc.) changes.
@@ -847,7 +917,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               SliverToBoxAdapter(
                 child: SizedBox(
                   height: 50,
-                  child: _loadingCategories
+                  child: (_loadingCategories || _isLoadingStudios)
                       ? const Center(
                           child: SizedBox(
                             width: 22,
@@ -855,15 +925,15 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         )
-                      : _trainingCategories.isEmpty
+                      : _visibleHomeCategories.isEmpty
                       ? const SizedBox.shrink()
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
                           padding: screenPaddingH(top: 12),
-                          itemCount: _trainingCategories.length,
+                          itemCount: _visibleHomeCategories.length,
                           separatorBuilder: (_, _) => const SizedBox(width: 8),
                           itemBuilder: (_, index) {
-                            final cat = _trainingCategories[index];
+                            final cat = _visibleHomeCategories[index];
                             return ClientHomeCategoryChip(
                               category: cat,
                               label: cat.label(locale.localeCode),
@@ -919,6 +989,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                             return TopStudioCard(
                               homeLayout: true,
                               studio: studio,
+                              categoryOptions: _trainingCategories,
                               isFavorite: favStore.isFavorite(studio.id),
                               isFavoriteLoading: _favoriteLoadingIds.contains(
                                 studio.id,
@@ -982,6 +1053,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   Widget _buildUpcomingCard(Map<String, dynamic> item) {
+    final locale = context.read<LocaleProvider>();
     final training = item['training'] is Map
         ? Map<String, dynamic>.from(item['training'] as Map)
         : <String, dynamic>{};
@@ -994,12 +1066,27 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final startsAt = parseApiDateTime(item['startsAt']);
     if (startsAt == null) return const SizedBox.shrink();
 
+    final studioId = (studio['id'] ?? '').toString();
+    final sessionId = (item['sessionId'] ?? '').toString();
+
     return ClientHomeUpcomingCard(
       startsAt: startsAt,
-      className: (training['name'] ?? 'Class').toString(),
-      studioName: (studio['name'] ?? 'Studio').toString(),
+      className: (training['name'] ?? locale.t('common.class')).toString(),
+      studioName: (studio['name'] ?? locale.t('common.studio')).toString(),
       trainerName: trainer.isEmpty ? null : trainer,
-      onTap: widget.onOpenBookings,
+      onTap: studioId.isEmpty || sessionId.isEmpty
+          ? null
+          : () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PublicClassDetailScreen(
+                    studioId: studioId,
+                    sessionId: sessionId,
+                    sessionStartsAtHint: startsAt,
+                  ),
+                ),
+              );
+            },
     );
   }
 

@@ -616,6 +616,21 @@ export class StudiosController {
   }
 
   @Public()
+  @Get('public/slugs')
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=7200')
+  async getPublicStudioSlugs() {
+    try {
+      return await this.studiosService.findPublicSlugsForSitemap();
+    } catch (error) {
+      console.error('❌ Error getting public Studio slugs:', error);
+      throw new HttpException(
+        'Failed to get Studio slugs',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Public()
   @Get('public/by-slug/:slug')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getPublicStudioBySlug(@Param('slug') slug: string) {

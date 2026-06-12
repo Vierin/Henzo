@@ -12,6 +12,7 @@ import '../../utils/auth_ui_result.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/auth/apple_sign_in_button.dart';
 import '../../widgets/auth/auth_form_styles.dart';
+import '../../widgets/auth/auth_form_text_field.dart';
 import '../../widgets/legal/legal_agreement_footer.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 
@@ -112,12 +113,7 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
       });
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   void _startResendCountdown() {
@@ -156,12 +152,7 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
       await _finishTrainerRegistration(locale);
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   Future<void> _resendCode() async {
@@ -181,12 +172,7 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
       _startResendCountdown();
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   Future<void> _submitGoogle() async {
@@ -279,13 +265,15 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
               ),
             ),
           if (studio.isNotEmpty) const SizedBox(height: 20),
-          TextFormField(
+          AuthFormTextField(
             controller: _fullNameController,
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.fullName'),
               prefixIcon: Icons.person_outline_rounded,
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -296,13 +284,15 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
             },
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
+          AuthFormTextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.email'),
               prefixIcon: Icons.email_rounded,
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -314,23 +304,26 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
             },
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
+          AuthFormTextField(
             controller: _phoneController,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.phone'),
               prefixIcon: Icons.phone_rounded,
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
+          AuthFormTextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.password'),
               prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
@@ -345,6 +338,7 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
                   color: AuthFormStyles.hintMuted,
                 ),
               ),
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {

@@ -71,11 +71,19 @@ String? resolveStudioBrandImageUrl(Map<String, dynamic>? studio) {
   return null;
 }
 
-/// Client UI: `1,8 km` or `450 m`.
-String? formatDistanceKmLabel(double? km) {
+/// Client UI: `1,8 km` or `450 m` (templates use `{value}` placeholder).
+String? formatDistanceKmLabel(
+  double? km, {
+  String kmTemplate = '{value} km',
+  String mTemplate = '{value} m',
+}) {
   if (km == null) return null;
-  if (km < 1) return '${(km * 1000).round()} m';
-  return '${km.toStringAsFixed(1).replaceAll('.', ',')} km';
+  if (km < 1) {
+    final meters = (km * 1000).round();
+    return mTemplate.replaceAll('{value}', '$meters');
+  }
+  final text = km.toStringAsFixed(1).replaceAll('.', ',');
+  return kmTemplate.replaceAll('{value}', text);
 }
 
 /// Browse studio cards: API `distance` when present, else Haversine from client.
@@ -99,10 +107,13 @@ double? resolveStudioDistanceKm({
 }
 
 /// Browse studio list: `1,23 km` (always km, 2 decimals, comma separator).
-String formatBrowseStudioDistanceLabel(double? km) {
+String formatBrowseStudioDistanceLabel(
+  double? km, {
+  String kmTemplate = '{value} km',
+}) {
   if (km == null) return '';
   final text = km.toStringAsFixed(2).replaceAll('.', ',');
-  return '$text km';
+  return kmTemplate.replaceAll('{value}', text);
 }
 
 String formatCompactVndLabel(double? price) {

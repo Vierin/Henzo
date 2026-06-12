@@ -693,8 +693,18 @@ class AuthService extends ChangeNotifier {
         if (hintKey != null) {
           return (success: false, errorL10nKey: hintKey, errorRaw: null);
         }
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.invalidCredentials,
+          errorRaw: null,
+        );
       }
-      return (success: false, errorL10nKey: null, errorRaw: msg);
+      final mapped = AuthErrorKeys.mapRawToL10nKey(msg);
+      return (
+        success: false,
+        errorL10nKey: mapped,
+        errorRaw: mapped == null ? msg : null,
+      );
     }
   }
 
@@ -747,10 +757,12 @@ class AuthService extends ChangeNotifier {
           msg = err['message'] as String;
         }
       } catch (_) {}
+      final l10nKey =
+          _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg);
       return (
         success: false,
-        errorL10nKey: _authConflictL10nKey(msg),
-        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+        errorL10nKey: l10nKey,
+        errorRaw: l10nKey == null ? msg : null,
       );
     } catch (e) {
       return (
@@ -809,8 +821,13 @@ class AuthService extends ChangeNotifier {
       } catch (_) {}
       return (
         success: false,
-        errorL10nKey: _authConflictL10nKey(msg),
-        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+        errorL10nKey:
+            _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg),
+        errorRaw:
+            (_authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg)) ==
+                    null
+                ? msg
+                : null,
       );
     } catch (e) {
       return (
@@ -855,8 +872,13 @@ class AuthService extends ChangeNotifier {
       } catch (_) {}
       return (
         success: false,
-        errorL10nKey: _authConflictL10nKey(msg),
-        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+        errorL10nKey:
+            _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg),
+        errorRaw:
+            (_authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg)) ==
+                    null
+                ? msg
+                : null,
       );
     } catch (e) {
       return (
@@ -915,8 +937,13 @@ class AuthService extends ChangeNotifier {
       } catch (_) {}
       return (
         success: false,
-        errorL10nKey: _authConflictL10nKey(msg),
-        errorRaw: _authConflictL10nKey(msg) == null ? msg : null,
+        errorL10nKey:
+            _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg),
+        errorRaw:
+            (_authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg)) ==
+                    null
+                ? msg
+                : null,
       );
     } catch (e) {
       return (

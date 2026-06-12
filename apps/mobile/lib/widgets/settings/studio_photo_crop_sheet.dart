@@ -76,6 +76,7 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
   var _saveStep = _CropSaveStep.idle;
   Uint8List? _heroBytes;
   Size? _imageSize;
+  var _imageSizeReady = false;
 
   double _aspectRatioFor(_StudioPhotoCropFormat format) => switch (format) {
         _StudioPhotoCropFormat.studioPage => kStudioCoverPhotoAspectRatio,
@@ -85,14 +86,33 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
   @override
   void initState() {
     super.initState();
-    _imageSize = _parseImageSize(widget.imageBytes);
-    _seedSavedAreasFromInitialCrops();
+    _resolveImageSize();
   }
 
-  Size? _parseImageSize(Uint8List bytes) {
+  Future<void> _resolveImageSize() async {
+    final size = await _decodeImageSize(widget.imageBytes);
+    if (!mounted) return;
+    setState(() {
+      _imageSize = size;
+      _imageSizeReady = true;
+      _seedSavedAreasFromInitialCrops();
+    });
+  }
+
+  Future<Size?> _decodeImageSize(Uint8List bytes) async {
     try {
       final detail = defaultImageParser(bytes);
       return Size(detail.width, detail.height);
+    } catch (_) {}
+
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final size = Size(image.width.toDouble(), image.height.toDouble());
+      image.dispose();
+      codec.dispose();
+      return size;
     } catch (_) {
       return null;
     }
@@ -337,23 +357,28 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: IndexedStack(
-                index: _activeFormat.index,
-                children: [
-                  for (final format in _StudioPhotoCropFormat.values)
-                    _CropEditorPane(
-                      key: ValueKey(format),
-                      format: format,
-                      imageBytes: widget.imageBytes,
-                      controller: _controllers[format]!,
-                      aspectRatio: _aspectRatioFor(format),
-                      screenBg: screenBg,
-                      initialRectBuilder: _initialRectBuilderFor(format),
-                      onMoved: _onCropMoved,
-                      onCropped: _onCropped,
+              child: !_imageSizeReady
+                  ? const Center(child: CircularProgressIndicator())
+                  : IndexedStack(
+                      index: _activeFormat.index,
+                      children: [
+                        for (final format in _StudioPhotoCropFormat.values)
+                          _CropEditorPane(
+                            key: ValueKey(
+                              '${format.name}_'
+                              '${_imageSize?.width}_${_imageSize?.height}',
+                            ),
+                            format: format,
+                            imageBytes: widget.imageBytes,
+                            controller: _controllers[format]!,
+                            aspectRatio: _aspectRatioFor(format),
+                            screenBg: screenBg,
+                            initialRectBuilder: _initialRectBuilderFor(format),
+                            onMoved: _onCropMoved,
+                            onCropped: _onCropped,
+                          ),
+                      ],
                     ),
-                ],
-              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
