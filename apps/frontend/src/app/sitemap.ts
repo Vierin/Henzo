@@ -48,7 +48,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/', changeFrequency: 'daily' as const, priority: 1 },
     { path: '/about', changeFrequency: 'monthly' as const, priority: 0.6 },
     { path: '/contact', changeFrequency: 'monthly' as const, priority: 0.6 },
-    { path: '/blog', changeFrequency: 'weekly' as const, priority: 0.7 },
     {
       path: '/terms-of-service',
       changeFrequency: 'yearly' as const,
@@ -71,6 +70,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   );
 
+  const blogIndexPage = {
+    url: withLocale('/blog', 'en'),
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  };
+
   const studioSlugs = await fetchStudioSlugs();
   const studioPages = studioSlugs.flatMap((studio) =>
     locales.map((locale) => ({
@@ -84,12 +90,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const blogPosts = getBlogSitemapEntries();
   const blogPages = blogPosts.map((post) => ({
-    url: withLocale(`/blog/${post.slug}`, post.locale),
+    url: withLocale(`/blog/${post.slug}`, 'en'),
     lastModified: new Date(post.publishedAt),
     changeFrequency: 'monthly' as const,
     priority: 0.6,
-    alternates: alternatesFor(`/blog/${post.slug}`),
   }));
 
-  return [...staticPages, ...studioPages, ...blogPages];
+  return [...staticPages, blogIndexPage, ...studioPages, ...blogPages];
 }

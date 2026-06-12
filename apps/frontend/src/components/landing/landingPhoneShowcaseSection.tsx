@@ -7,23 +7,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
-const PHONE_SCRUB_LAG = 0.85;
-
 function phoneMotion(isMobile: boolean) {
-  if (typeof window === 'undefined') {
-    return { startY: 0, endY: 0 };
-  }
   const h = window.innerHeight;
-  if (isMobile) {
-    return {
-      startY: Math.round(h * -0.2),
-      endY: Math.round(h * 0.6),
-    };
-  }
-  return {
-    startY: Math.round(h * -0.05),
-    endY: Math.round(h * 0.5),
-  };
+  return isMobile
+    ? { startY: h * -0.18, endY: h * 0.52 }
+    : { startY: h * -0.06, endY: h * 0.42 };
 }
 
 export function LandingPhoneShowcaseSection() {
@@ -65,9 +53,7 @@ export function LandingPhoneShowcaseSection() {
 
     const ctx = gsap.context(() => {
       gsap.set(phoneFrame, {
-        scale: 1,
         y: 0,
-        transformOrigin: 'center center',
         force3D: true,
       });
 
@@ -145,22 +131,20 @@ export function LandingPhoneShowcaseSection() {
         trigger: section,
         start: 'top 55%',
         end: 'bottom bottom',
-        scrub: PHONE_SCRUB_LAG,
+        scrub: true,
+        fastScrollEnd: true,
         invalidateOnRefresh: true,
       };
 
       const mm = gsap.matchMedia();
 
       mm.add('(min-width: 768px)', () => {
+        const { startY, endY } = phoneMotion(false);
         gsap.fromTo(
           phoneFrame,
+          { y: startY },
           {
-            scale: 1,
-            y: () => phoneMotion(false).startY,
-          },
-          {
-            scale: 0.9,
-            y: () => phoneMotion(false).endY,
+            y: endY,
             ease: 'none',
             scrollTrigger: phoneScrollTrigger,
           },
@@ -168,15 +152,12 @@ export function LandingPhoneShowcaseSection() {
       });
 
       mm.add('(max-width: 767px)', () => {
+        const { startY, endY } = phoneMotion(true);
         gsap.fromTo(
           phoneFrame,
+          { y: startY },
           {
-            scale: 1,
-            y: () => phoneMotion(true).startY,
-          },
-          {
-            scale: 0.8,
-            y: () => phoneMotion(true).endY,
+            y: endY,
             ease: 'none',
             scrollTrigger: phoneScrollTrigger,
           },
@@ -185,21 +166,19 @@ export function LandingPhoneShowcaseSection() {
 
       gsap.fromTo(
         circlesEl,
-        isWebKit
-          ? { scale: 0.94, y: 36, autoAlpha: 0 }
-          : { scale: 0.85, rotate: 120, autoAlpha: 0 },
+        { scale: 0.92, y: 24, autoAlpha: 0 },
         {
           scale: 1,
-          rotate: 0,
           y: 0,
           autoAlpha: 1,
           ease: 'none',
-          force3D: !isWebKit,
+          force3D: true,
           scrollTrigger: {
             trigger: section,
             start: 'center 70%',
             end: 'bottom 70%',
-            scrub: 1,
+            scrub: true,
+            fastScrollEnd: true,
             invalidateOnRefresh: true,
           },
         },
@@ -244,7 +223,7 @@ export function LandingPhoneShowcaseSection() {
             src="/images/circles.webp"
             alt=""
             aria-hidden="true"
-            className="h-auto w-full origin-center"
+            className="h-auto w-full origin-center will-change-transform transform-gpu"
             draggable={false}
           />
         </div>
@@ -278,7 +257,10 @@ export function LandingPhoneShowcaseSection() {
           ref={phoneRef}
           className="sticky top-0 z-10 flex h-[100svh] w-full items-center justify-center"
         >
-          <div ref={phoneFrameRef} className="origin-center">
+          <div
+            ref={phoneFrameRef}
+            className="origin-center will-change-transform transform-gpu [backface-visibility:hidden]"
+          >
             <StudioPhoneFrame />
           </div>
         </div>

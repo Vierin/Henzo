@@ -218,7 +218,7 @@ export function LanguageProvider({
   } else if (pathNoLocale.startsWith('/about')) {
     publicModules.push('public/about');
   } else if (pathNoLocale.startsWith('/blog')) {
-    publicModules.push('public/blog');
+    publicModules.push('public/blog', 'public/homepage');
   } else if (
     pathNoLocale.startsWith('/login') ||
     pathNoLocale.startsWith('/forgot-password') ||
