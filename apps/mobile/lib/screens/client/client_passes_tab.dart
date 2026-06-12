@@ -259,6 +259,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
             ),
             dimPastSessions: false,
             onLeaveReview: hasReview ? null : () => _leaveReview(item),
+            leaveReviewLabel: locale.t('clientActivity.leaveReview'),
             leaveReviewSubmitted: hasReview,
             leaveReviewLoading: isReviewing,
             onTap: () => _openStudio(item),

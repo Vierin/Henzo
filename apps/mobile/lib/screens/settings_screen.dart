@@ -573,6 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required Uint8List originalBytes,
     required StudioPhotoCropResult cropResult,
     String? photoId,
+    bool originalAlreadyPrepared = false,
   }) async {
     final id = photoId ?? OwnerPhotoStorageService.newGalleryPhotoId();
     final upload = await OwnerPhotoStorageService.uploadStudioGalleryAsset(
@@ -580,6 +581,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       originalBytes: originalBytes,
       heroBytes: cropResult.heroBytes,
       cardBytes: cropResult.cardBytes,
+      originalAlreadyPrepared: originalAlreadyPrepared,
     );
     if (upload.asset == null) return null;
     return StudioPhotoAsset(
@@ -630,9 +632,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       final sourceBytes = await file.readAsBytes();
       if (!mounted) return;
+      final cropBytes =
+          await OwnerPhotoStorageService.prepareGalleryOriginalBytes(
+        sourceBytes,
+      );
+      if (!mounted) return;
+      if (cropBytes == null) {
+        failedUploadsCount++;
+        continue;
+      }
+
       final cropResult = await showStudioPhotoCropSheet(
         context: context,
-        imageBytes: sourceBytes,
+        imageBytes: cropBytes,
       );
       if (!mounted) return;
       if (cropResult == null) continue;
@@ -643,8 +655,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
       setState(() => _photoProgressText = locale.t('profileForm.uploading'));
       final asset = await _uploadGalleryAsset(
-        originalBytes: sourceBytes,
+        originalBytes: cropBytes,
         cropResult: cropResult,
+        originalAlreadyPrepared: true,
       );
       if (asset == null) {
         failedUploadsCount++;
@@ -739,6 +752,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       originalBytes: sourceBytes,
       cropResult: cropResult,
       photoId: asset.id,
+      originalAlreadyPrepared: true,
     );
 
     if (!mounted) return;

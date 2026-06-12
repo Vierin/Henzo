@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../../constants/colors.dart';
+import '../../../l10n/locale_provider.dart';
 import '../../../constants/layout.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -28,8 +30,9 @@ class ClientHomeUpcomingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
     final local = startsAt.toLocal();
-    const dayLabel = 'TODAY';
+    final dayLabel = locale.t('clientHome.upcomingWorkoutTodayLabel');
     final timeLabel = DateFormat('H:mm').format(local);
 
     return Padding(

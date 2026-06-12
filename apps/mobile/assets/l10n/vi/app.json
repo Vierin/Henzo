@@ -58,6 +58,8 @@
     "class": "Lớp",
     "default": "Mặc định",
     "reviewsCount": "{count} đánh giá",
+    "distanceKmShort": "{value} km",
+    "distanceMSshort": "{value} m",
     "signInToUploadPhoto": "Đăng nhập lại để tải ảnh"
   },
   "nav": {
@@ -156,6 +158,7 @@
     "searchHint": "Studio, lớp, huấn luyện viên...",
     "topPicksTitle": "Gợi ý gần bạn",
     "topPicksSubtitle": "Trong 3 km · đánh giá cao",
+    "upcomingWorkoutTodayLabel": "HÔM NAY",
     "popularTodayTitle": "Phổ biến hôm nay",
     "seeAll": "Xem tất cả",
     "classesSectionTitle": "Lớp học",
@@ -235,7 +238,8 @@
     "cancelConfirmAction": "Có, hủy",
     "studioUnavailable": "Studio không khả dụng",
     "thankYouForReview": "Cảm ơn đánh giá của bạn!",
-    "reviewCommentTooLong": "Bình luận tối đa {max} ký tự"
+    "reviewCommentTooLong": "Bình luận tối đa {max} ký tự",
+    "leaveReview": "Để lại đánh giá"
   },
   "clientFavorites": {
     "emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",

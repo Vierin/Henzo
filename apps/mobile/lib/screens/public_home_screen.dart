@@ -78,6 +78,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   List<Map<String, dynamic>> _nearbyStudioMaps = const [];
   List<Map<String, dynamic>> _todaySessionsForCategoryCounts = const [];
   Map<int, int> _homeCategoryCounts = const {};
+  String? _studiosPreviewLocale;
 
   @override
   void initState() {
@@ -142,20 +143,16 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         ClientNearbyCache.put(path, raw);
       }
       final list = extractStudiosListFromNearby(raw);
-      final mapped = <PublicStudioPreview>[];
       final studioMaps = <Map<String, dynamic>>[];
       for (final item in list) {
         if (item is! Map) continue;
-        final data = Map<String, dynamic>.from(item);
-        studioMaps.add(data);
-        mapped.add(parsePublicStudioPreviewFromNearby(data));
+        studioMaps.add(Map<String, dynamic>.from(item));
       }
       if (!mounted) return;
       setState(() {
-        _allStudios = mapped;
         _nearbyStudioMaps = studioMaps;
+        _remapStudiosFromNearbyMaps();
         _rebuildHomeCategoryCounts();
-        _rebuildFilteredStudios();
         _isLoadingStudios = false;
         _studiosLoadError = null;
       });
@@ -330,6 +327,25 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   List<PublicStudioPreview> _filteredStudios = const [];
+
+  void _remapStudiosFromNearbyMaps() {
+    if (_nearbyStudioMaps.isEmpty) {
+      _allStudios = const [];
+      _filteredStudios = const [];
+      return;
+    }
+    final localeCode = context.read<LocaleProvider>().localeCode;
+    _allStudios = [
+      for (final data in _nearbyStudioMaps)
+        parsePublicStudioPreviewFromNearby(
+          data,
+          localeCode: localeCode,
+          categoryOptions: _trainingCategories,
+        ),
+    ];
+    _studiosPreviewLocale = localeCode;
+    _rebuildFilteredStudios();
+  }
 
   void _rebuildFilteredStudios() {
     final query = _searchController.text.trim().toLowerCase();
@@ -552,6 +568,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       setState(() {
         _trainingCategories = cats;
         _loadingCategories = false;
+        if (_nearbyStudioMaps.isNotEmpty) {
+          _remapStudiosFromNearbyMaps();
+        }
       });
     } catch (_) {
       if (mounted) setState(() => _loadingCategories = false);
@@ -728,6 +747,15 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    if (_nearbyStudioMaps.isNotEmpty &&
+        _studiosPreviewLocale != locale.localeCode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final code = context.read<LocaleProvider>().localeCode;
+        if (_studiosPreviewLocale == code) return;
+        setState(_remapStudiosFromNearbyMaps);
+      });
+    }
     final favStore = context.watch<ClientFavoritesStore>();
     // select only the fields that actually affect the UI — avoids rebuilds
     // when unrelated auth state (token refresh, etc.) changes.
@@ -961,6 +989,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                             return TopStudioCard(
                               homeLayout: true,
                               studio: studio,
+                              categoryOptions: _trainingCategories,
                               isFavorite: favStore.isFavorite(studio.id),
                               isFavoriteLoading: _favoriteLoadingIds.contains(
                                 studio.id,
@@ -1024,6 +1053,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   Widget _buildUpcomingCard(Map<String, dynamic> item) {
+    final locale = context.read<LocaleProvider>();
     final training = item['training'] is Map
         ? Map<String, dynamic>.from(item['training'] as Map)
         : <String, dynamic>{};
@@ -1041,8 +1071,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
     return ClientHomeUpcomingCard(
       startsAt: startsAt,
-      className: (training['name'] ?? 'Class').toString(),
-      studioName: (studio['name'] ?? 'Studio').toString(),
+      className: (training['name'] ?? locale.t('common.class')).toString(),
+      studioName: (studio['name'] ?? locale.t('common.studio')).toString(),
       trainerName: trainer.isEmpty ? null : trainer,
       onTap: studioId.isEmpty || sessionId.isEmpty
           ? null

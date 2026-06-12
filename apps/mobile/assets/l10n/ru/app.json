@@ -58,6 +58,8 @@
     "class": "Класс",
     "default": "По умолчанию",
     "reviewsCount": "{count} отзывов",
+    "distanceKmShort": "{value} км",
+    "distanceMSshort": "{value} м",
     "signInToUploadPhoto": "Войдите снова, чтобы загрузить фото"
   },
   "nav": {
@@ -156,6 +158,7 @@
     "searchHint": "Студии, занятия, тренеры...",
     "topPicksTitle": "Лучшее рядом",
     "topPicksSubtitle": "В радиусе 3 км · высокий рейтинг",
+    "upcomingWorkoutTodayLabel": "СЕГОДНЯ",
     "popularTodayTitle": "Популярно сегодня",
     "seeAll": "Все",
     "classesSectionTitle": "Занятия",
@@ -235,7 +238,8 @@
     "cancelConfirmAction": "Да, отменить",
     "studioUnavailable": "Студия недоступна",
     "thankYouForReview": "Спасибо за отзыв!",
-    "reviewCommentTooLong": "Комментарий — не более {max} символов"
+    "reviewCommentTooLong": "Комментарий — не более {max} символов",
+    "leaveReview": "Оставить отзыв"
   },
   "clientFavorites": {
     "emptyTitle": "Пора найти ваше любимое место",

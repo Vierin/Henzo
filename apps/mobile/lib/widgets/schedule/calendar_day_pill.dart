@@ -148,7 +148,7 @@ class CalendarDayPill extends StatelessWidget {
           ? AppColors.primary100
           : Colors.transparent;
     } else {
-      unselectedColor = AppColors.backgroundPrimary;
+      unselectedColor = Colors.transparent;
     }
 
     Widget pill = Container(

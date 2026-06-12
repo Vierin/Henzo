@@ -240,22 +240,36 @@ class OwnerPhotoStorageService {
   static String galleryAssetPath(String photoId, String suffix) =>
       ownerStoragePath('gallery/${photoId}_$suffix.webp');
 
+  /// Bytes stored as gallery `original` — crop UI must use these dimensions.
+  static Future<Uint8List?> prepareGalleryOriginalBytes(
+    Uint8List bytes,
+  ) async {
+    return convertBytesToWebp(
+      bytes,
+      maxEdge: galleryOriginalMaxEdge,
+      quality: 86,
+    );
+  }
+
   static Future<({StudioGalleryUpload? asset, String? error})>
       uploadStudioGalleryAsset({
     required String photoId,
     required Uint8List originalBytes,
     required Uint8List heroBytes,
     required Uint8List cardBytes,
+    bool originalAlreadyPrepared = false,
   }) async {
     if (authenticatedOwnerId == null) {
       return (asset: null, error: 'Нет сессии Supabase — войдите снова');
     }
 
-    final original = await convertBytesToWebp(
-      originalBytes,
-      maxEdge: galleryOriginalMaxEdge,
-      quality: 86,
-    );
+    final original = originalAlreadyPrepared
+        ? originalBytes
+        : await convertBytesToWebp(
+            originalBytes,
+            maxEdge: galleryOriginalMaxEdge,
+            quality: 86,
+          );
     final hero = await convertBytesToWebp(
       heroBytes,
       maxEdge: galleryMaxEdge,

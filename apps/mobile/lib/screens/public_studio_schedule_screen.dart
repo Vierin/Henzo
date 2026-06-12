@@ -131,19 +131,21 @@ class _PublicStudioScheduleScreenState
     if (stride <= 0) return;
     final index = (_dayStripScrollController.offset / stride)
         .round()
-        .clamp(0, _bookableDayCount - 1);
+        .clamp(0, _stripDayCount - 1);
     _dayStripHaptics.onScrollIndex(index);
-    final day = _bookableDayAt(index);
+    final day = _stripDayAt(index);
     final normalized = _normalizeDay(day);
     if (_stripPagerDayNotifier.value == normalized) return;
     _stripPagerDayNotifier.value = normalized;
   }
 
-  int get _bookableDayCount =>
-      _maxBookableDay.difference(_minBookableDay).inDays + 1;
+  DateTime get _stripStart =>
+      CalendarDayPill.weekStartMonday(_minBookableDay);
 
-  DateTime _bookableDayAt(int index) =>
-      _minBookableDay.add(Duration(days: index));
+  int get _stripDayCount =>
+      _maxBookableDay.difference(_stripStart).inDays + 1;
+
+  DateTime _stripDayAt(int index) => _stripStart.add(Duration(days: index));
 
   Future<void> _loadSchedule() async {
     if (!mounted) return;
@@ -344,8 +346,10 @@ class _PublicStudioScheduleScreenState
         });
         return;
       }
-      final offset = index.clamp(0, _bookableDayCount - 1) * _dayStride(w);
-      final clampedIndex = index.clamp(0, _bookableDayCount - 1);
+      final raw = index.clamp(0, _stripDayCount - 1) * _dayStride(w);
+      final maxExtent = _dayStripScrollController.position.maxScrollExtent;
+      final offset = raw.clamp(0.0, maxExtent);
+      final clampedIndex = index.clamp(0, _stripDayCount - 1);
       if (animate) {
         _dayStripHaptics.animateScroll(
           _dayStripScrollController,
@@ -375,8 +379,8 @@ class _PublicStudioScheduleScreenState
   int _scheduleStripIndexForWeekStart(DateTime day) =>
       CalendarDayPill.stripIndexForWeekStart(
         day: day,
-        stripStart: _minBookableDay,
-        itemCount: _bookableDayCount,
+        stripStart: _stripStart,
+        itemCount: _stripDayCount,
       );
 
   void _goToToday() {
@@ -518,34 +522,6 @@ class _PublicStudioScheduleScreenState
     );
   }
 
-  Widget _scheduleTodayButton() {
-    return Material(
-      color: AppColors.primary500,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: _goToToday,
-        borderRadius: BorderRadius.circular(999),
-        child: SizedBox(
-          height: 30,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Center(
-              child: Text(
-                'Today',
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  height: 1.1,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   static const _dayStripBlockHeight = 78.0; // 4 gap + Browse strip (~74)
 
   void _toggleScheduleMonthExpanded() {
@@ -572,13 +548,17 @@ class _PublicStudioScheduleScreenState
                 leadingPadding: 0,
               ),
               const Spacer(),
-              _scheduleTodayButton(),
+              ScheduleCalendarTodayButton(
+                onTap: _goToToday,
+                label: context.watch<LocaleProvider>().t('common.today'),
+              ),
               const SizedBox(width: 8),
               ScheduleCalendarExpandButton(
                 isExpanded: _isMonthExpanded,
-                expandLabel: context.read<LocaleProvider>().t('common.expand'),
+                expandLabel:
+                    context.watch<LocaleProvider>().t('common.expand'),
                 collapseLabel:
-                    context.read<LocaleProvider>().t('common.collapse'),
+                    context.watch<LocaleProvider>().t('common.collapse'),
                 onTap: _toggleScheduleMonthExpanded,
               ),
             ],
@@ -742,11 +722,11 @@ class _PublicStudioScheduleScreenState
                 parent: AlwaysScrollableScrollPhysics(),
               ),
               clipBehavior: Clip.none,
-              itemCount: _bookableDayCount,
+              itemCount: _stripDayCount,
               separatorBuilder: (context, index) =>
                   const SizedBox(width: _kDayPillGap),
               itemBuilder: (_, index) {
-                final day = _bookableDayAt(index);
+                final day = _stripDayAt(index);
                 return SizedBox(
                   width: pillWidth,
                   child: ValueListenableBuilder<DateTime>(
@@ -893,7 +873,7 @@ class _PublicStudioScheduleScreenState
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: context
-                                  .read<LocaleProvider>()
+                                  .watch<LocaleProvider>()
                                   .t('booking.book'),
                               onBookAgain: alreadyBooked
                                   ? null

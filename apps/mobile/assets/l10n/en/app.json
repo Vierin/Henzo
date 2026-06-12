@@ -58,6 +58,8 @@
     "class": "Class",
     "default": "Default",
     "reviewsCount": "{count} reviews",
+    "distanceKmShort": "{value} km",
+    "distanceMSshort": "{value} m",
     "signInToUploadPhoto": "Please sign in again to upload photo"
   },
   "nav": {
@@ -156,6 +158,7 @@
     "searchHint": "Studios, classes, teachers...",
     "topPicksTitle": "Top picks near you",
     "topPicksSubtitle": "Within 3 km · highest rated",
+    "upcomingWorkoutTodayLabel": "TODAY",
     "popularTodayTitle": "Popular today",
     "seeAll": "See all",
     "classesSectionTitle": "Classes",
@@ -235,7 +238,8 @@
     "cancelConfirmAction": "Yes, cancel",
     "studioUnavailable": "Studio is unavailable",
     "thankYouForReview": "Thank you for your review!",
-    "reviewCommentTooLong": "Comment must be {max} characters or less"
+    "reviewCommentTooLong": "Comment must be {max} characters or less",
+    "leaveReview": "Leave review"
   },
   "clientFavorites": {
     "emptyTitle": "Time to find your favorite spot",

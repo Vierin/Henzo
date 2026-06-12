@@ -1214,6 +1214,8 @@ export class FitnessSessionsService {
       const session = await this.prisma.trainingSession.findUnique({
         where: { id: sessionId },
         select: {
+          studioId: true,
+          startsAt: true,
           capacity: true,
           bookedCount: true,
           Training: { select: { name: true } },
@@ -1240,8 +1242,10 @@ export class FitnessSessionsService {
 
       await this.notificationsService.sendWaitlistPromotionPush(next.userId, {
         sessionId,
+        studioId: session.studioId,
         className: session.Training?.name || 'class',
         studioName: session.Studio?.name || 'studio',
+        startsAt: session.startsAt,
       });
 
       const enrollment = await this.prisma.sessionEnrollment.findFirst({

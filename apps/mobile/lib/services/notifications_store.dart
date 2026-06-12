@@ -23,6 +23,8 @@ const _allowedPushDataKeys = <String>{
   'clientName',
   'serviceName',
   'trainingName',
+  'studioName',
+  'eventType',
 };
 
 Map<String, String> _sanitizePushData(Map<String, String> data) {

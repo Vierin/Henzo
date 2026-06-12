@@ -647,16 +647,20 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            t('upcomingClassesTitle').toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.4,
-                              color: AppColors.textPrimary,
+                          Expanded(
+                            child: Text(
+                              t('upcomingClassesTitle').toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.4,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           InkWell(
                             onTap: _openSchedule,
                             borderRadius: BorderRadius.circular(6),
@@ -710,6 +714,10 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                               trainerLine: trainerLine,
                               showSubtitleLeadingIcon: subtitle.isNotEmpty,
                               dimPastSessions: false,
+                              secondaryTimeLabel: formatPassCardDayMonth(
+                                session.startsAt,
+                                locale.languageTag,
+                              ),
                               trailingPriceLabel: price != null
                                   ? formatVnd(price)
                                   : null,
