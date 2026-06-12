@@ -193,6 +193,51 @@ class _ReviewStars extends StatelessWidget {
   }
 }
 
+/// `4,8 (12)` — rating [textPrimary], count [3F3F3F @ 40%].
+class StudioCompactRatingText extends StatelessWidget {
+  const StudioCompactRatingText({
+    super.key,
+    required this.avgRating,
+    required this.reviewCount,
+    this.fontWeight = FontWeight.w500,
+  });
+
+  final double avgRating;
+  final int reviewCount;
+  final FontWeight fontWeight;
+
+  static final Color reviewCountColor =
+      AppColors.textPrimary.withValues(alpha: 0.4);
+
+  @override
+  Widget build(BuildContext context) {
+    if (avgRating <= 0) return const SizedBox.shrink();
+    final ratingText = avgRating.toStringAsFixed(1).replaceAll('.', ',');
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: ratingText,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: fontWeight,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          TextSpan(
+            text: ' ($reviewCount)',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: fontWeight,
+              color: reviewCountColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// `REVIEWS` + avg rating + see-more link (above the card).
 class StudioReviewsSectionHeader extends StatelessWidget {
   const StudioReviewsSectionHeader({
@@ -212,10 +257,6 @@ class StudioReviewsSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ratingText = avgRating > 0
-        ? avgRating.toStringAsFixed(1).replaceAll('.', ',')
-        : '—';
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -236,13 +277,9 @@ class StudioReviewsSectionHeader extends StatelessWidget {
             color: Color(0xFFFFB800),
           ),
           const SizedBox(width: 4),
-          Text(
-            '$ratingText ($reviewCount)',
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          StudioCompactRatingText(
+            avgRating: avgRating,
+            reviewCount: reviewCount,
           ),
         ],
         const Spacer(),

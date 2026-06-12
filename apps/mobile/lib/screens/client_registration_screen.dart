@@ -11,6 +11,7 @@ import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/auth/auth_form_text_field.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -231,11 +232,12 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 24),
-          TextFormField(
+          AuthFormTextField(
             controller: _fullNameController,
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: '${locale.t('auth.fullName')} *',
               prefixWidget: SvgPicture.asset(
                 'assets/icons/icon-profile-large.svg',
@@ -246,6 +248,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   BlendMode.srcIn,
                 ),
               ),
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -256,11 +259,12 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             },
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
+          AuthFormTextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: '${locale.t('auth.email')} *',
               prefixWidget: SvgPicture.asset(
                 'assets/icons/icon-mail.svg',
@@ -271,6 +275,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   BlendMode.srcIn,
                 ),
               ),
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
@@ -282,11 +287,12 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             },
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
+          AuthFormTextField(
             controller: _phoneController,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: context.read<LocaleProvider>().t('auth.phone'),
               prefixWidget: SvgPicture.asset(
                 'assets/icons/icon-phone.svg',
@@ -297,16 +303,18 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   BlendMode.srcIn,
                 ),
               ),
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
+          AuthFormTextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
-            decoration: AuthFormStyles.fieldDecoration(
+            decorationBuilder: ({required invalid}) =>
+                AuthFormStyles.fieldDecoration(
               hintText: '${locale.t('auth.password')} *',
               prefixWidget: SvgPicture.asset(
                 'assets/icons/icon-password.svg',
@@ -332,6 +340,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   size: 22,
                 ),
               ),
+              invalid: invalid,
             ),
             style: AuthFormStyles.fieldTextStyle,
             validator: (v) {

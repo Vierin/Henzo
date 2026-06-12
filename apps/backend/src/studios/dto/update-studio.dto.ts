@@ -9,9 +9,12 @@ import {
   IsBoolean,
   Min,
   Max,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
 import { InputJsonValue } from '@prisma/client/runtime/library';
+import { NoEmbeddedLinks } from '../../common/validators/no-embedded-links.validator';
+import { STUDIO_DESCRIPTION_MAX } from '../../lib/text-content';
 
 export class UpdateStudioDto {
   @IsOptional()
@@ -20,6 +23,10 @@ export class UpdateStudioDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(STUDIO_DESCRIPTION_MAX, {
+    message: `Description must be ${STUDIO_DESCRIPTION_MAX} characters or less`,
+  })
+  @NoEmbeddedLinks()
   description?: string;
 
   @IsOptional()

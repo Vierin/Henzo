@@ -16,6 +16,11 @@ import {
   resolveSessionLocationDisplayName,
 } from '../lib/training-locations';
 import { buildPublicTrainerPayload } from '../fitness/trainer-display.util';
+import {
+  assertValidClientReviewComment,
+  assertValidReminderSettingsText,
+  assertValidStudioDescription,
+} from '../lib/text-content';
 
 @Injectable()
 export class StudiosService {
@@ -51,6 +56,47 @@ export class StudiosService {
       (base as Record<string, unknown>)['intervals'] = [24];
     }
     return base;
+  }
+
+  private assertStudioTextContent(input: {
+    description?: string;
+    reminderSettings?: unknown;
+  }): void {
+    if (input.description !== undefined) {
+      assertValidStudioDescription(input.description);
+    }
+    if (input.reminderSettings !== undefined) {
+      assertValidReminderSettingsText(input.reminderSettings);
+    }
+  }
+
+  /** Public studio payloads: only social link extras (telegram, youtube, etc.). */
+  private pickPublicReminderSettings(
+    reminderSettings: unknown,
+  ): { socialLinks: Array<{ platform: string; value: string }> } | undefined {
+    if (!reminderSettings || typeof reminderSettings !== 'object') {
+      return undefined;
+    }
+    const raw = reminderSettings as Record<string, unknown>;
+    const socialLinks = raw.socialLinks;
+    if (!Array.isArray(socialLinks) || socialLinks.length === 0) {
+      return undefined;
+    }
+    const sanitized = socialLinks
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => {
+        const entry = item as Record<string, unknown>;
+        const platform =
+          typeof entry.platform === 'string' ? entry.platform.trim() : '';
+        const value = typeof entry.value === 'string' ? entry.value.trim() : '';
+        if (!platform || !value) return null;
+        return { platform, value };
+      })
+      .filter(
+        (item): item is { platform: string; value: string } => item !== null,
+      );
+    if (sanitized.length === 0) return undefined;
+    return { socialLinks: sanitized };
   }
 
   private isAllowedPhotoValue(photo: string): boolean {
@@ -1228,6 +1274,11 @@ export class StudiosService {
         return existingStudio;
       }
 
+      this.assertStudioTextContent({
+        description: createStudioDto.description,
+        reminderSettings: createStudioDto.reminderSettings,
+      });
+
       const normalizedPhotoGallery =
         createStudioDto.photoGallery !== undefined
           ? this.normalizePhotoGallery(createStudioDto.photoGallery)
@@ -1456,6 +1507,11 @@ export class StudiosService {
       throw new Error('Studio not found');
     }
 
+    this.assertStudioTextContent({
+      description: updateStudioDto.description,
+      reminderSettings: updateStudioDto.reminderSettings,
+    });
+
     const normalizedPhotoGallery =
       updateStudioDto.photoGallery !== undefined
         ? this.normalizePhotoGallery(updateStudioDto.photoGallery)
@@ -1630,6 +1686,7 @@ export class StudiosService {
           description: true,
           address: true,
           phone: true,
+          email: true,
           website: true,
           instagram: true,
           logoUrl: true,
@@ -1708,6 +1765,10 @@ export class StudiosService {
         return null;
       }
 
+      const publicReminderSettings = this.pickPublicReminderSettings(
+        Studio.reminderSettings,
+      );
+
       // Transform Prisma response to frontend format
       const transformedStudio = {
         id: Studio.id,
@@ -1716,8 +1777,12 @@ export class StudiosService {
         address: Studio.address,
         locationName: resolveBrowseStudioLocationName(Studio.reminderSettings),
         phone: Studio.phone,
+        email: Studio.email,
         website: Studio.website,
         instagram: Studio.instagram,
+        ...(publicReminderSettings
+          ? { reminderSettings: publicReminderSettings }
+          : {}),
         logoUrl: Studio.logoUrl,
         photos: Studio.photos,
         workingHours: Studio.workingHours,
@@ -2023,13 +2088,20 @@ export class StudiosService {
     }
   }
 
-  /** Same payload shape as findBySlug but without owner linkage, trainer/reviewer PII, or reminder settings. */
+  /** Same payload shape as findBySlug but without owner linkage, trainer/reviewer PII, or private reminder settings. */
   async findPublicBySlug(slug: string) {
     const full = await this.findBySlug(slug);
     if (!full) return null;
     const studio = full as Record<string, unknown>;
     delete studio.ownerId;
-    delete studio.reminderSettings;
+    const publicReminderSettings = this.pickPublicReminderSettings(
+      studio.reminderSettings,
+    );
+    if (publicReminderSettings) {
+      studio.reminderSettings = publicReminderSettings;
+    } else {
+      delete studio.reminderSettings;
+    }
     const trainers = studio.trainers as
       | Array<Record<string, unknown>>
       | undefined;
@@ -2741,6 +2813,9 @@ export class StudiosService {
     }
 
     const comment = data.comment?.trim();
+    if (comment) {
+      assertValidClientReviewComment(comment);
+    }
     const [review, reviewer] = await Promise.all([
       this.prisma.review.create({
         data: {

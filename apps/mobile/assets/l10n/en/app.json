@@ -234,7 +234,8 @@
     "cancelConfirmBody": "Are you sure you want to cancel this booking?",
     "cancelConfirmAction": "Yes, cancel",
     "studioUnavailable": "Studio is unavailable",
-    "thankYouForReview": "Thank you for your review!"
+    "thankYouForReview": "Thank you for your review!",
+    "reviewCommentTooLong": "Comment must be {max} characters or less"
   },
   "clientFavorites": {
     "emptyTitle": "Time to find your favorite spot",
@@ -283,7 +284,8 @@
     "reviewsDaysAgo": "{count} days ago",
     "reviewsHoursAgo": "{count} h ago",
     "reviewsJustNow": "Just now",
-    "reviewsOnCount": "on {count} reviews"
+    "reviewsOnCount": "on {count} reviews",
+    "upcomingClassesTitle": "Upcoming classes"
   },
   "clientClassDetail": {
     "descriptionSectionLabel": "DESCRIPTION",
@@ -348,6 +350,12 @@
     "accountExistsUseGoogle": "This email is registered with Google. Continue with Google to sign in.",
     "accountExistsUseApple": "This email is registered with Apple. Continue with Apple to sign in.",
     "accountExistsUseOauth": "This email is registered with a social account. Use Google or Apple to sign in.",
+    "invalidCredentials": "Invalid email or password.",
+    "verificationCodeNotRequested": "Verification code was not requested.",
+    "verificationCodeExpired": "Verification code has expired.",
+    "tooManyAttempts": "Too many attempts. Request a new code.",
+    "invalidVerificationCode": "Invalid verification code.",
+    "invalidRegistrationPayload": "Please check the form and try again.",
     "generic": "Something went wrong",
     "loadFailed": "Failed to load"
   },
@@ -1005,6 +1013,8 @@
     "optimizing": "Optimizing...",
     "uploading": "Uploading...",
     "photoTooLarge": "Photo exceeds 3 MB",
+    "descriptionTooLong": "Description must be {max} characters or less",
+    "linksNotAllowed": "Links are not allowed in this field",
     "oversizedPhotosSkipped": "{count} photo(s) over 3 MB were not added",
     "uploadsFailed": "{count} photo(s) failed to upload"
   },
@@ -1016,6 +1026,7 @@
     "locationNameLabel": "Location name",
     "locationNameHint": "e.g. Main studio",
     "nameRequired": "Enter a location name",
+    "locationNameTooLong": "Location name must be {max} characters or less",
     "enterNameFirstHint": "Enter a location name to search for an address",
     "enableMapHint": "Enter an address to use the map",
     "searchHint": "Search by address",

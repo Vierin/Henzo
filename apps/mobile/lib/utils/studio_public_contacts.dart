@@ -9,6 +9,9 @@ enum StudioPublicContactKind {
   telegram,
   youtube,
   whatsApp,
+  website,
+  facebook,
+  tiktok,
 }
 
 class StudioPublicContact {
@@ -47,6 +50,22 @@ List<StudioPublicContact> studioPublicContactsFromMap(
     );
   }
 
+  final website = (studio['website'] ?? '').toString().trim();
+  if (website.isNotEmpty) {
+    final isFacebook = RegExp(
+      r'facebook\.com|fb\.com|fb\.me',
+      caseSensitive: false,
+    ).hasMatch(website);
+    out.add(
+      StudioPublicContact(
+        kind: isFacebook
+            ? StudioPublicContactKind.facebook
+            : StudioPublicContactKind.website,
+        value: website,
+      ),
+    );
+  }
+
   final reminder = studio['reminderSettings'];
   final extras = reminder is Map ? reminder['socialLinks'] : null;
   if (extras is List) {
@@ -62,9 +81,10 @@ List<StudioPublicContact> studioPublicContactsFromMap(
         StudioSocialPlatform.youtube => StudioPublicContactKind.youtube,
         StudioSocialPlatform.whatsApp => StudioPublicContactKind.whatsApp,
         StudioSocialPlatform.instagram => StudioPublicContactKind.instagram,
-        _ => null,
+        StudioSocialPlatform.facebook => StudioPublicContactKind.facebook,
+        StudioSocialPlatform.tiktok => StudioPublicContactKind.tiktok,
+        StudioSocialPlatform.website => StudioPublicContactKind.website,
       };
-      if (kind == null) continue;
       if (out.any((c) => c.kind == kind)) continue;
       out.add(StudioPublicContact(kind: kind, value: value));
     }
@@ -105,6 +125,11 @@ Uri? studioPublicContactUri(StudioPublicContact contact) {
       final digits = raw.replaceAll(RegExp(r'\D'), '');
       if (digits.isEmpty) return null;
       return Uri.parse('https://wa.me/$digits');
+    case StudioPublicContactKind.website:
+    case StudioPublicContactKind.facebook:
+    case StudioPublicContactKind.tiktok:
+      if (raw.contains('://')) return Uri.tryParse(raw);
+      return Uri.parse('https://$raw');
   }
 }
 

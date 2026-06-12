@@ -14,12 +14,13 @@ import '../../models/studio_photo_asset.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/studio_cache.dart';
+import '../../services/cache/studio_public_detail_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/owner_photo_storage_service.dart';
 import '../../utils/default_training_location_swap.dart';
+import '../../utils/text_content_validation.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/owner_image_picker.dart';
-import '../../utils/training_locations_storage.dart';
 import '../../widgets/address_picker_modal.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
@@ -288,20 +289,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return shouldLeave ?? false;
   }
 
-  void _markLocationSnapshotSaved() {
-    const locationPartIndexes = [2, 5, 6, 9, 10];
-    final initial = _initialSnapshot.split('::');
-    final current = _buildSnapshot().split('::');
-    if (initial.length != current.length) {
-      _initialSnapshot = _buildSnapshot();
-      return;
-    }
-    for (final i in locationPartIndexes) {
-      if (i < initial.length) initial[i] = current[i];
-    }
-    _initialSnapshot = initial.join('::');
-  }
-
   Future<void> _handleBackPressed() async {
     final shouldLeave = await _confirmDiscardChanges();
     if (!mounted || !shouldLeave) return;
@@ -374,42 +361,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainStudioName: locale.t('locations.mainStudio'),
         );
         if (swap == null) return;
-        final updatedLocations = [
-          TrainingLocationItem(
-            id: defaultId,
-            name: swap.primaryName,
-            address: swap.address,
-            isDefault: true,
-            latitude: swap.latitude,
-            longitude: swap.longitude,
-          ),
-          ...swap.extraLocations,
-        ];
-        try {
-          final updatedStudio = await persistTrainingLocationDefaultSwap(
-            context,
-            studio,
-            address: swap.address,
-            latitude: swap.latitude,
-            longitude: swap.longitude,
-            defaultLocationName: swap.primaryName,
-            locations: updatedLocations,
-          );
-          if (!mounted) return;
-          setState(() {
-            _studio = updatedStudio ?? studio;
-            _salonAddressController.text = swap.address;
-            _salonLat = swap.latitude;
-            _salonLon = swap.longitude;
-            _locations = TrainingLocationItem.listFromStudio(
-              _studio,
-              mainStudioName: locale.t('locations.mainStudio'),
-            );
-          });
-          _markLocationSnapshotSaved();
-        } catch (e) {
-          if (mounted) showApiError(context, e);
-        }
+        setState(() {
+          _salonAddressController.text = swap.address;
+          _salonLat = swap.latitude;
+          _salonLon = swap.longitude;
+          _locations = [
+            TrainingLocationItem(
+              id: defaultId,
+              name: swap.primaryName,
+              address: swap.address,
+              isDefault: true,
+              latitude: swap.latitude,
+              longitude: swap.longitude,
+            ),
+            ...swap.extraLocations,
+          ];
+        });
       case TrainingLocationAddRequested():
         await _addNewTrainingLocationFromSettings();
     }
@@ -418,8 +385,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<TrainingLocationItem?> _editTrainingLocationFromSettings(
     TrainingLocationItem loc,
   ) async {
-    final studio = _studio;
-
     final selection = await AddressPickerModal.show(
       context,
       initialLocationName: loc.name,
@@ -438,66 +403,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       longitude: selection.lon,
     );
 
-    if (studio == null) {
-      setState(() {
-        _locations = _locations
-            .map((l) => l.id == loc.id ? updated : l)
-            .toList();
-        if (loc.id == 'default' || loc.isDefault) {
-          _salonAddressController.text = updated.address;
-          _salonLat = updated.latitude;
-          _salonLon = updated.longitude;
-        }
-      });
-      return updated;
-    }
-
-    try {
-      final Studio? updatedStudio;
+    setState(() {
+      _locations =
+          _locations.map((l) => l.id == loc.id ? updated : l).toList();
       if (loc.id == 'default' || loc.isDefault) {
-        final updatedLocations = _locations
-            .map((l) => l.id == loc.id ? updated : l)
-            .toList();
-        updatedStudio = await persistTrainingLocationDefaultSwap(
-          context,
-          studio,
-          address: updated.address,
-          latitude: updated.latitude,
-          longitude: updated.longitude,
-          defaultLocationName: updated.name,
-          locations: updatedLocations,
-        );
-        if (!mounted) return null;
-        setState(() {
-          _studio = updatedStudio ?? studio;
-          _salonAddressController.text = updated.address;
-          _salonLat = updated.latitude;
-          _salonLon = updated.longitude;
-          _locations = _locations
-              .map((l) => l.id == loc.id ? updated : l)
-              .toList();
-        });
-      } else {
-        final updatedList = _locations
-            .map((l) => l.id == loc.id ? updated : l)
-            .toList();
-        updatedStudio = await persistExtraTrainingLocations(
-          context,
-          studio,
-          updatedList,
-        );
-        if (!mounted) return null;
-        setState(() {
-          _studio = updatedStudio ?? studio;
-          _locations = updatedList;
-        });
+        _salonAddressController.text = updated.address;
+        _salonLat = updated.latitude;
+        _salonLon = updated.longitude;
       }
-      _markLocationSnapshotSaved();
-      return updated;
-    } catch (e) {
-      if (mounted) showApiError(context, e);
-      return null;
-    }
+    });
+    return updated;
   }
 
   Future<bool> _deleteTrainingLocationFromSettings(
@@ -506,24 +421,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final studio = _studio;
     if (studio == null || loc.id == 'default') return false;
 
-    final updated = _locations.where((l) => l.id != loc.id).toList();
-    try {
-      final updatedStudio = await persistExtraTrainingLocations(
-        context,
-        studio,
-        updated,
-      );
-      if (!mounted) return false;
-      final locale = context.read<LocaleProvider>();
-      setState(() {
-        _studio = updatedStudio ?? studio;
-        _applyLocationsFromStudio(_studio, locale);
-      });
-      return true;
-    } catch (e) {
-      if (mounted) showApiError(context, e);
-      return false;
-    }
+    setState(() {
+      _locations = _locations.where((l) => l.id != loc.id).toList();
+    });
+    return true;
   }
 
   Future<void> _addNewTrainingLocationFromSettings() async {
@@ -548,22 +449,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       latitude: selection.lat,
       longitude: selection.lon,
     );
-    final updatedList = [..._locations, newLoc];
-
-    try {
-      final updatedStudio = await persistExtraTrainingLocations(
-        context,
-        studio,
-        updatedList,
-      );
-      if (!mounted) return;
-      setState(() {
-        _studio = updatedStudio ?? studio;
-        _applyLocationsFromStudio(_studio, locale);
-      });
-    } catch (e) {
-      if (mounted) showApiError(context, e);
-    }
+    setState(() => _locations = [..._locations, newLoc]);
   }
 
   Future<void> _saveSalon() async {
@@ -629,6 +515,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       if (!mounted) return;
       context.read<StudioCache>().invalidate();
+      StudioPublicDetailCache.remove(result.id);
       setState(() {
         _studio = result;
         _salonSaving = false;
@@ -1205,6 +1092,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         maxLines: 4,
                                       ),
                                       maxLines: 4,
+                                      maxLength: StudioTextLimits.descriptionMax,
+                                      inputFormatters: const [
+                                        NoEmbeddedLinkTextInputFormatter(),
+                                      ],
+                                      validator: (value) {
+                                        final text = value?.trim() ?? '';
+                                        if (text.isEmpty) return null;
+                                        if (text.length >
+                                            StudioTextLimits.descriptionMax) {
+                                          return locale
+                                              .t('profileForm.descriptionTooLong')
+                                              .replaceAll(
+                                                '{max}',
+                                                '${StudioTextLimits.descriptionMax}',
+                                              );
+                                        }
+                                        if (textContainsEmbeddedLink(text)) {
+                                          return locale.t(
+                                            'profileForm.linksNotAllowed',
+                                          );
+                                        }
+                                        return null;
+                                      },
                                     ),
                                     const SizedBox(height: 16),
                                     Material(

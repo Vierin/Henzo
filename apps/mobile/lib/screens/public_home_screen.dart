@@ -49,14 +49,12 @@ class PublicHomeScreen extends StatefulWidget {
     this.onOpenBrowseStudios,
     this.onOpenBrowseClasses,
     this.onCategorySelected,
-    this.onOpenBookings,
   });
 
   final VoidCallback? onOpenMap;
   final VoidCallback? onOpenBrowseStudios;
   final VoidCallback? onOpenBrowseClasses;
   final void Function(int categoryId)? onCategorySelected;
-  final VoidCallback? onOpenBookings;
 
   @override
   State<PublicHomeScreen> createState() => _PublicHomeScreenState();
@@ -77,6 +75,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   bool _loadingTodayClasses = false;
   List<TrainingCategoryOption> _trainingCategories = const [];
   bool _loadingCategories = true;
+  List<Map<String, dynamic>> _nearbyStudioMaps = const [];
+  List<Map<String, dynamic>> _todaySessionsForCategoryCounts = const [];
+  Map<int, int> _homeCategoryCounts = const {};
 
   @override
   void initState() {
@@ -142,14 +143,18 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       }
       final list = extractStudiosListFromNearby(raw);
       final mapped = <PublicStudioPreview>[];
+      final studioMaps = <Map<String, dynamic>>[];
       for (final item in list) {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
+        studioMaps.add(data);
         mapped.add(parsePublicStudioPreviewFromNearby(data));
       }
       if (!mounted) return;
       setState(() {
         _allStudios = mapped;
+        _nearbyStudioMaps = studioMaps;
+        _rebuildHomeCategoryCounts();
         _rebuildFilteredStudios();
         _isLoadingStudios = false;
         _studiosLoadError = null;
@@ -441,7 +446,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       if (mounted) {
         setState(() {
           _todayClasses = const [];
+          _todaySessionsForCategoryCounts = const [];
           _loadingTodayClasses = false;
+          _rebuildHomeCategoryCounts();
         });
       }
       return;
@@ -496,9 +503,44 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
     if (!mounted) return;
     setState(() {
+      _todaySessionsForCategoryCounts = merged;
       _todayClasses = merged.take(_kPopularTodayMaxCards).toList();
       _loadingTodayClasses = false;
+      _rebuildHomeCategoryCounts();
     });
+  }
+
+  void _rebuildHomeCategoryCounts() {
+    final counts = <int, int>{};
+    for (final map in _nearbyStudioMaps) {
+      for (final id in extractStudioTrainingCategoryIds(map)) {
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    for (final session in _todaySessionsForCategoryCounts) {
+      final id = sessionTrainingCategoryId(session);
+      if (id != null) {
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    _homeCategoryCounts = counts;
+  }
+
+  List<TrainingCategoryOption> get _visibleHomeCategories {
+    final ranked = <({TrainingCategoryOption cat, int count})>[];
+    for (final cat in _trainingCategories) {
+      final count = _homeCategoryCounts[cat.id] ?? 0;
+      if (count > 0) ranked.add((cat: cat, count: count));
+    }
+    ranked.sort((a, b) {
+      if (a.cat.isOtherCategory != b.cat.isOtherCategory) {
+        return a.cat.isOtherCategory ? 1 : -1;
+      }
+      final byCount = b.count.compareTo(a.count);
+      if (byCount != 0) return byCount;
+      return a.cat.nameEn.compareTo(b.cat.nameEn);
+    });
+    return ranked.map((e) => e.cat).toList();
   }
 
   Future<void> _loadCategoriesFromCache() async {
@@ -847,7 +889,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               SliverToBoxAdapter(
                 child: SizedBox(
                   height: 50,
-                  child: _loadingCategories
+                  child: (_loadingCategories || _isLoadingStudios)
                       ? const Center(
                           child: SizedBox(
                             width: 22,
@@ -855,15 +897,15 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         )
-                      : _trainingCategories.isEmpty
+                      : _visibleHomeCategories.isEmpty
                       ? const SizedBox.shrink()
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
                           padding: screenPaddingH(top: 12),
-                          itemCount: _trainingCategories.length,
+                          itemCount: _visibleHomeCategories.length,
                           separatorBuilder: (_, _) => const SizedBox(width: 8),
                           itemBuilder: (_, index) {
-                            final cat = _trainingCategories[index];
+                            final cat = _visibleHomeCategories[index];
                             return ClientHomeCategoryChip(
                               category: cat,
                               label: cat.label(locale.localeCode),
@@ -994,12 +1036,27 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final startsAt = parseApiDateTime(item['startsAt']);
     if (startsAt == null) return const SizedBox.shrink();
 
+    final studioId = (studio['id'] ?? '').toString();
+    final sessionId = (item['sessionId'] ?? '').toString();
+
     return ClientHomeUpcomingCard(
       startsAt: startsAt,
       className: (training['name'] ?? 'Class').toString(),
       studioName: (studio['name'] ?? 'Studio').toString(),
       trainerName: trainer.isEmpty ? null : trainer,
-      onTap: widget.onOpenBookings,
+      onTap: studioId.isEmpty || sessionId.isEmpty
+          ? null
+          : () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PublicClassDetailScreen(
+                    studioId: studioId,
+                    sessionId: sessionId,
+                    sessionStartsAtHint: startsAt,
+                  ),
+                ),
+              );
+            },
     );
   }
 

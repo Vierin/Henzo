@@ -12,6 +12,7 @@ import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/auth/auth_form_text_field.dart';
 import '../widgets/language_selector_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -138,13 +139,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(color: Colors.grey.shade700, fontSize: 14.sp),
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              AuthFormTextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: locale.t('auth.email'),
-                  border: const OutlineInputBorder(),
+                decorationBuilder: ({required invalid}) =>
+                    AuthFormStyles.fieldDecoration(
+                  hintText: locale.t('auth.email'),
+                  prefixWidget: SvgPicture.asset(
+                    'assets/icons/icon-mail.svg',
+                    width: 13.5,
+                    height: 13.5,
+                    colorFilter: const ColorFilter.mode(
+                      AuthFormStyles.accentIcon,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  invalid: invalid,
                 ),
+                style: AuthFormStyles.fieldTextStyle,
                 validator: (v) {
                   if (v == null || v.isEmpty) {
                     return locale.t('auth.enterEmail');
@@ -256,11 +268,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  TextFormField(
+                  AuthFormTextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    decoration: AuthFormStyles.fieldDecoration(
+                    decorationBuilder: ({required invalid}) =>
+                        AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.email'),
                       prefixWidget: SvgPicture.asset(
                         'assets/icons/icon-mail.svg',
@@ -271,6 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           BlendMode.srcIn,
                         ),
                       ),
+                      invalid: invalid,
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
@@ -284,12 +298,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: AuthFormStyles.fieldGap),
-                  TextFormField(
+                  AuthFormTextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
-                    decoration: AuthFormStyles.fieldDecoration(
+                    decorationBuilder: ({required invalid}) =>
+                        AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.password'),
                       prefixWidget: SvgPicture.asset(
                         'assets/icons/icon-password.svg',
@@ -315,6 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword);
                         },
                       ),
+                      invalid: invalid,
                     ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {

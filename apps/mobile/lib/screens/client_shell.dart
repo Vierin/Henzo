@@ -68,7 +68,6 @@ class _ClientShellState extends State<ClientShell> {
       onOpenBrowseStudios: () => goToExploreTab(showClasses: false),
       onOpenBrowseClasses: () => goToExploreTab(showClasses: true),
       onCategorySelected: (id) => goToExploreTab(categoryId: id),
-      onOpenBookings: () => setState(() => _currentIndex = 2),
     ),
     ClientSearchScreen(key: _exploreScreenKey),
     const ClientBookingsScreen(),

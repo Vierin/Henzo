@@ -137,7 +137,7 @@
     "roleClientWord": "Клиент",
     "roleManagerWord": "Менеджер",
     "roleClientDesc": "Ищи и бронируй занятия рядом.",
-    "roleOwnerDesc": "Управляй студией, расписанием и записями.",
+    "roleOwnerDesc": "Управляй расписанием и записями.",
     "roleAllInOne": "Всё в одном.",
     "termsPrefix": "Продолжая, вы соглашаетесь с нашей ",
     "privacyPolicy": "Политикой конфиденциальности",
@@ -234,7 +234,8 @@
     "cancelConfirmBody": "Вы уверены, что хотите отменить эту запись?",
     "cancelConfirmAction": "Да, отменить",
     "studioUnavailable": "Студия недоступна",
-    "thankYouForReview": "Спасибо за отзыв!"
+    "thankYouForReview": "Спасибо за отзыв!",
+    "reviewCommentTooLong": "Комментарий — не более {max} символов"
   },
   "clientFavorites": {
     "emptyTitle": "Пора найти ваше любимое место",
@@ -283,7 +284,8 @@
     "reviewsDaysAgo": "{count} дн. назад",
     "reviewsHoursAgo": "{count} ч. назад",
     "reviewsJustNow": "Только что",
-    "reviewsOnCount": "на {count} отзывов"
+    "reviewsOnCount": "на {count} отзывов",
+    "upcomingClassesTitle": "Ближайшие занятия"
   },
   "clientClassDetail": {
     "descriptionSectionLabel": "ОПИСАНИЕ",
@@ -348,6 +350,12 @@
     "accountExistsUseGoogle": "Эта почта зарегистрирована через Google. Войдите через Google.",
     "accountExistsUseApple": "Эта почта зарегистрирована через Apple. Войдите через Apple.",
     "accountExistsUseOauth": "Эта почта зарегистрирована через соцсеть. Войдите через Google или Apple.",
+    "invalidCredentials": "Неверный email или пароль.",
+    "verificationCodeNotRequested": "Код подтверждения не запрашивался.",
+    "verificationCodeExpired": "Срок действия кода истёк.",
+    "tooManyAttempts": "Слишком много попыток. Запросите новый код.",
+    "invalidVerificationCode": "Неверный код подтверждения.",
+    "invalidRegistrationPayload": "Проверьте данные формы и попробуйте снова.",
     "generic": "Что-то пошло не так",
     "loadFailed": "Не удалось загрузить"
   },
@@ -1005,6 +1013,8 @@
     "optimizing": "Оптимизация...",
     "uploading": "Загрузка...",
     "photoTooLarge": "Фото больше 3 MB",
+    "descriptionTooLong": "Описание — не более {max} символов",
+    "linksNotAllowed": "Ссылки в этом поле запрещены",
     "oversizedPhotosSkipped": "{count} фото больше 3 MB не добавлены",
     "uploadsFailed": "{count} фото не загрузились"
   },
@@ -1016,6 +1026,7 @@
     "locationNameLabel": "Название локации",
     "locationNameHint": "Например, Основная студия",
     "nameRequired": "Укажите название локации",
+    "locationNameTooLong": "Название локации — не более {max} символов",
     "enterNameFirstHint": "Сначала укажите название локации",
     "enableMapHint": "Введите адрес, чтобы включить карту",
     "searchHint": "Поиск по адресу",
