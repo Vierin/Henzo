@@ -20,6 +20,7 @@ function PublicHeaderContent({
   embedded = false,
   sectionNavHref,
   hideGetApp = false,
+  hideLanguageSwitcher = false,
 }: {
   /** Sits inside a card: no full-width sticky bar. */
   embedded?: boolean;
@@ -27,6 +28,8 @@ function PublicHeaderContent({
   sectionNavHref?: string;
   /** Hide the primary "Get app" CTA (e.g. on 404). */
   hideGetApp?: boolean;
+  /** Hide locale dropdown (e.g. English-only blog). */
+  hideLanguageSwitcher?: boolean;
 }) {
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
@@ -146,17 +149,19 @@ function PublicHeaderContent({
 
             <div className="relative z-10 shrink-0">
               <div className="flex items-center gap-2 sm:gap-3">
-                <LanguageDropdown
-                  dropdownRef={dropdownRef}
-                  isOpen={isLanguageDropdownOpen}
-                  selectedLanguage={selectedLanguage}
-                  languages={languages}
-                  onToggle={() =>
-                    setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
-                  }
-                  onSelect={handleLanguageSelect}
-                  buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
-                />
+                {!hideLanguageSwitcher && (
+                  <LanguageDropdown
+                    dropdownRef={dropdownRef}
+                    isOpen={isLanguageDropdownOpen}
+                    selectedLanguage={selectedLanguage}
+                    languages={languages}
+                    onToggle={() =>
+                      setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+                    }
+                    onSelect={handleLanguageSelect}
+                    buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
+                  />
+                )}
                 <a
                   href={appStoreUrl}
                   target="_blank"
@@ -200,15 +205,19 @@ function PublicHeaderContent({
         </Link>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <LanguageDropdown
-            dropdownRef={dropdownRef}
-            isOpen={isLanguageDropdownOpen}
-            selectedLanguage={selectedLanguage}
-            languages={languages}
-            onToggle={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-            onSelect={handleLanguageSelect}
-            buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2.5 sm:text-sm"
-          />
+          {!hideLanguageSwitcher && (
+            <LanguageDropdown
+              dropdownRef={dropdownRef}
+              isOpen={isLanguageDropdownOpen}
+              selectedLanguage={selectedLanguage}
+              languages={languages}
+              onToggle={() =>
+                setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+              }
+              onSelect={handleLanguageSelect}
+              buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2.5 sm:text-sm"
+            />
+          )}
           <a
             href={appStoreUrl}
             target="_blank"
@@ -245,10 +254,12 @@ export default function PublicHeader({
   embedded = false,
   sectionNavHref,
   hideGetApp = false,
+  hideLanguageSwitcher = false,
 }: {
   embedded?: boolean;
   sectionNavHref?: string;
   hideGetApp?: boolean;
+  hideLanguageSwitcher?: boolean;
 }) {
   return (
     <Suspense
@@ -279,6 +290,7 @@ export default function PublicHeader({
         embedded={embedded}
         sectionNavHref={sectionNavHref}
         hideGetApp={hideGetApp}
+        hideLanguageSwitcher={hideLanguageSwitcher}
       />
     </Suspense>
   );

@@ -69,6 +69,15 @@ export async function middleware(req: NextRequest) {
 
   const pathWithoutLocale = stripLocaleFromPath(pathname);
 
+  // Blog is English-only for now.
+  if (pathWithoutLocale === '/blog' || pathWithoutLocale.startsWith('/blog/')) {
+    if (urlLocale && urlLocale !== 'en') {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = `/en${pathWithoutLocale}`;
+      return NextResponse.redirect(redirectUrl, 308);
+    }
+  }
+
   // Legacy booking URLs used /salon/{slug}; public page lives at /studio/{slug}.
   if (
     pathWithoutLocale === '/salon' ||

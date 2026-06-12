@@ -3,7 +3,10 @@ import 'server-only';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { locales, type Locale } from '@/i18n/routing';
+import type { Locale } from '@/i18n/routing';
+
+/** Blog content is English-only for now. */
+export const BLOG_LOCALE = 'en' as const satisfies Locale;
 
 export type BlogPost = {
   slug: string;
@@ -18,11 +21,10 @@ export type BlogPost = {
 
 export type BlogSitemapEntry = {
   slug: string;
-  locale: Locale;
   publishedAt: string;
 };
 
-const CONTENT_DIR = path.join(process.cwd(), 'src/content/blog');
+const CONTENT_DIR = path.join(process.cwd(), 'src/content/blog', BLOG_LOCALE);
 
 function readingTimeMinutes(text: string): number {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
@@ -65,18 +67,17 @@ function parsePostFile(
   };
 }
 
-export function getAllPosts(locale: Locale): BlogPost[] {
-  const dir = path.join(CONTENT_DIR, locale);
-  if (!fs.existsSync(dir)) {
+export function getAllPosts(): BlogPost[] {
+  if (!fs.existsSync(CONTENT_DIR)) {
     return [];
   }
 
   return fs
-    .readdirSync(dir)
+    .readdirSync(CONTENT_DIR)
     .filter((file) => file.endsWith('.md'))
     .map((file) => {
       const fallbackSlug = file.replace(/\.md$/, '');
-      return parsePostFile(path.join(dir, file), fallbackSlug);
+      return parsePostFile(path.join(CONTENT_DIR, file), fallbackSlug);
     })
     .filter((post): post is BlogPost => post !== null)
     .sort(
@@ -85,38 +86,23 @@ export function getAllPosts(locale: Locale): BlogPost[] {
     );
 }
 
-export function getPostBySlug(locale: Locale, slug: string): BlogPost | null {
-  return getAllPosts(locale).find((post) => post.slug === slug) ?? null;
+export function getPostBySlug(slug: string): BlogPost | null {
+  return getAllPosts().find((post) => post.slug === slug) ?? null;
 }
 
-export function getAllPostParams(): Array<{ locale: Locale; slug: string }> {
-  const params: Array<{ locale: Locale; slug: string }> = [];
-
-  for (const locale of locales) {
-    for (const post of getAllPosts(locale)) {
-      params.push({ locale, slug: post.slug });
-    }
-  }
-
-  return params;
+export function getAllPostParams(): Array<{
+  locale: typeof BLOG_LOCALE;
+  slug: string;
+}> {
+  return getAllPosts().map((post) => ({
+    locale: BLOG_LOCALE,
+    slug: post.slug,
+  }));
 }
 
 export function getBlogSitemapEntries(): BlogSitemapEntry[] {
-  const entries: BlogSitemapEntry[] = [];
-
-  for (const locale of locales) {
-    for (const post of getAllPosts(locale)) {
-      entries.push({
-        slug: post.slug,
-        locale,
-        publishedAt: post.publishedAt,
-      });
-    }
-  }
-
-  return entries;
-}
-
-export function postExistsInLocale(locale: Locale, slug: string): boolean {
-  return getPostBySlug(locale, slug) !== null;
+  return getAllPosts().map((post) => ({
+    slug: post.slug,
+    publishedAt: post.publishedAt,
+  }));
 }
