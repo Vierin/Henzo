@@ -561,22 +561,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               fillColor: AppColors.backgroundPrimary,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.borderPrimary,
-                                ),
+                                borderSide: BorderSide.none,
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.borderPrimary,
-                                ),
+                                borderSide: BorderSide.none,
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primary500,
-                                  width: 1.5,
-                                ),
+                                borderSide: BorderSide.none,
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 14,
@@ -609,23 +602,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (_services.isEmpty)
-                              SvgPicture.asset(
-                                'assets/icons/icon-studio.svg',
-                                width: 64,
-                                height: 64,
-                                colorFilter: const ColorFilter.mode(
-                                  AppColors.textSecondary,
-                                  BlendMode.srcIn,
-                                ),
-                              )
-                            else
-                              Icon(
-                                Icons.search_off_outlined,
-                                size: 64,
-                                color: AppColors.textSecondary,
-                              ),
-                            const SizedBox(height: 16),
                             Text(
                               _services.isEmpty
                                   ? locale.t('servicesScreen.emptyTitle')
@@ -645,6 +621,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                 fontSize: 14.sp,
                                 color: AppColors.textSecondary,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),

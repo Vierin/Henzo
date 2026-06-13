@@ -145,6 +145,15 @@ Future<bool?> showOwnerBookingPeriodSheet(
                         color: AppColors.textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      locale.t('settings.owner.bookingPeriodDescription'),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        height: 1.35,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       locale.t('settings.owner.bookingPeriodHint'),

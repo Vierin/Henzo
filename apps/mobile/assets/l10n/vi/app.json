@@ -846,7 +846,8 @@
       "bookingWindowDays": "{count} ngày",
       "trainingsCount": "{count}",
       "bookingPeriodTitle": "Thời hạn đặt chỗ",
-      "bookingPeriodHint": "Chọn từ 1 đến 60 ngày",
+      "bookingPeriodDescription": "Khách có thể đặt lớp trước tối đa bao nhiêu ngày.",
+      "bookingPeriodHint": "1–60 ngày",
       "bookingPeriodDaysLabel": "Ngày",
       "bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ",
       "bookingLink": "Xem trước salon"

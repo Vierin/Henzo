@@ -744,7 +744,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                 locale.languageTag,
                               ),
                               trailingPriceLabel: price != null
-                                  ? formatVnd(price)
+                                  ? '${formatVnd(price)} ₫'
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: locale.t('booking.book'),

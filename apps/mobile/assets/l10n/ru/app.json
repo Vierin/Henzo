@@ -846,7 +846,8 @@
       "bookingWindowDays": "{count} дн.",
       "trainingsCount": "{count}",
       "bookingPeriodTitle": "Период бронирования",
-      "bookingPeriodHint": "Выберите период от 1 до 60 дней",
+      "bookingPeriodDescription": "На сколько дней вперёд клиенты могут записаться.",
+      "bookingPeriodHint": "От 1 до 60 дней",
       "bookingPeriodDaysLabel": "Дней",
       "bookingPeriodSaved": "Настройки бронирования сохранены",
       "bookingLink": "Предпросмотр салона"

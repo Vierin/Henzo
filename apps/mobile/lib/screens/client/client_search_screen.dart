@@ -2906,22 +2906,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
           fillColor: AppColors.backgroundPrimary,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: AppColors.primary500.withValues(alpha: 0.45),
-            ),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: AppColors.primary500,
-              width: 1.5,
-            ),
+            borderSide: BorderSide.none,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: AppColors.primary500.withValues(alpha: 0.45),
-            ),
+            borderSide: BorderSide.none,
           ),
           contentPadding: const EdgeInsets.symmetric(
             vertical: 12,

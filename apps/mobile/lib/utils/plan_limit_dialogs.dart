@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../widgets/common/henzo_modal.dart';
 import '../screens/subscription_screen.dart';
 import '../services/api_client.dart';
 
@@ -35,7 +36,7 @@ Future<void> showTrainerPlanLimitDialog(
   final locale = context.read<LocaleProvider>();
   final code = error is ApiException ? error.errorCode : null;
   final isStudio = _isStudioLimitCode(code);
-  await showDialog<void>(
+  await showHenzoDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(
@@ -95,7 +96,7 @@ Future<void> showSessionPlanLimitDialog(
   final locale = context.read<LocaleProvider>();
   final code = error is ApiException ? error.errorCode : null;
   final isStudio = _isStudioLimitCode(code);
-  await showDialog<void>(
+  await showHenzoDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(

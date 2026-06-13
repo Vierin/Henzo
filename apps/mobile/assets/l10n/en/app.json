@@ -846,7 +846,8 @@
       "bookingWindowDays": "{count} days",
       "trainingsCount": "{count}",
       "bookingPeriodTitle": "Booking period",
-      "bookingPeriodHint": "Choose a period from 1 to 60 days",
+      "bookingPeriodDescription": "How far ahead clients can book.",
+      "bookingPeriodHint": "1–60 days",
       "bookingPeriodDaysLabel": "Days",
       "bookingPeriodSaved": "Booking settings saved",
       "bookingLink": "Salon preview"
