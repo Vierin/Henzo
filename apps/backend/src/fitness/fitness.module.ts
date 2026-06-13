@@ -25,6 +25,10 @@ import { StudioClientsService } from './studio-clients.service';
     StudioAnalyticsService,
     StudioClientsService,
   ],
-  exports: [FitnessSessionsService, StudioClientsService],
+  exports: [
+    FitnessSessionsService,
+    StudioClientsService,
+    StudioAnalyticsService,
+  ],
 })
 export class FitnessModule {}

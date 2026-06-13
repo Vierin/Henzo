@@ -40,10 +40,12 @@ async function fixAdminRole() {
     const { data, error } = await supabase.auth.admin.updateUserById(
       dbUser.id,
       {
+        app_metadata: {
+          role: dbUser.role,
+        },
         user_metadata: {
           name: dbUser.name,
           phone: dbUser.phone,
-          role: dbUser.role, // Устанавливаем правильную роль
         },
       },
     );
@@ -70,7 +72,7 @@ async function fixAdminRole() {
     console.log('\n📊 Verification:');
     console.log(`   Email: ${user.email}`);
     console.log(
-      `   Role in metadata: ${user.user_metadata?.role || 'Not set'}`,
+      `   Role in app_metadata: ${user.app_metadata?.role || 'Not set'}`,
     );
     console.log(`   Name: ${user.user_metadata?.name || 'Not set'}`);
     console.log(`   Phone: ${user.user_metadata?.phone || 'Not set'}`);

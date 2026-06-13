@@ -289,6 +289,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     _applyExploreDay(today);
   }
 
+  /// Bottom nav Browse: current week from Monday, today selected.
+  void resetToCurrentWeek() {
+    if (!mounted) return;
+    if (_isMonthExpanded) {
+      setState(() => _isMonthExpanded = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _goToToday();
+      });
+      return;
+    }
+    _goToToday();
+  }
+
   bool _isDayInExploreHorizon(DateTime day) {
     final normalized = _calendarDateOnly(day);
     final diff = normalized.difference(_exploreStripStart).inDays;

@@ -295,6 +295,8 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
                                   ) {
                                     _scheduleCalendarKey.currentState
                                         ?.ensureSessionsLoaded();
+                                    _scheduleCalendarKey.currentState
+                                        ?.jumpToToday();
                                   });
                                 },
                               ),

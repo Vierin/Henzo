@@ -175,6 +175,9 @@ model Subscription {
   startDate         DateTime
   /// End of the current paid period (from Stripe), when known.
   currentPeriodEnd  DateTime?
+  manualOverride    Boolean            @default(false)
+  manualOverrideAt  DateTime?
+  manualOverrideBy  String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime
   Studio            Studio             @relation(fields: [studioId], references: [id])

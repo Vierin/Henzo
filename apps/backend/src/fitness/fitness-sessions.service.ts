@@ -162,6 +162,20 @@ export class FitnessSessionsService {
 
     const studio = await this.prisma.studio.findFirst({
       where: { id: dto.studioId, ownerId: currentUser.user.id },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new Error('Studio not found or not owned by user');
+    }
+
+    return this.createRecurringSessionsForStudio(dto);
+  }
+
+  async createRecurringSessionsForStudio(
+    dto: CreateRecurringTrainingSessionsDto,
+  ) {
+    const studio = await this.prisma.studio.findFirst({
+      where: { id: dto.studioId },
       select: {
         id: true,
         name: true,
@@ -170,7 +184,7 @@ export class FitnessSessionsService {
       },
     });
     if (!studio) {
-      throw new Error('Studio not found or not owned by user');
+      throw new Error('Studio not found');
     }
 
     const training = await this.prisma.training.findFirst({

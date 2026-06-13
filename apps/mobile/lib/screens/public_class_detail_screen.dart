@@ -784,7 +784,8 @@ class _ClassDetailBody extends StatelessWidget {
             ],
           ),
         ),
-        if (startsAt != null)
+        if (startsAt != null &&
+            !ClientScheduleStore.sessionHasEnded(session, DateTime.now()))
           _BookBar(
             startsAt: startsAt,
             onBook: onBook,

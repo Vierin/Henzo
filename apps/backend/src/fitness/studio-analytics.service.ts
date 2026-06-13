@@ -53,6 +53,27 @@ export class StudioAnalyticsService {
     fromIso: string | undefined,
     toIso: string | undefined,
   ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader ?? '');
+    if (currentUser.user.role !== 'OWNER') {
+      throw new ForbiddenException('Forbidden');
+    }
+
+    const studio = await this.prisma.studio.findFirst({
+      where: { ownerId: currentUser.user.id },
+      select: { id: true },
+    });
+    if (!studio) {
+      return { success: true, needsSetup: true, data: null };
+    }
+
+    return this.getStudioAnalyticsByStudioId(studio.id, fromIso, toIso);
+  }
+
+  async getStudioAnalyticsByStudioId(
+    studioId: string,
+    fromIso: string | undefined,
+    toIso: string | undefined,
+  ) {
     if (!fromIso || !toIso) {
       throw new BadRequestException(
         'from and to query parameters are required',
@@ -67,22 +88,24 @@ export class StudioAnalyticsService {
       throw new BadRequestException('from must be before or equal to to');
     }
 
-    const currentUser = await this.authService.getCurrentUser(authHeader ?? '');
-    if (currentUser.user.role !== 'OWNER') {
-      throw new ForbiddenException('Forbidden');
-    }
-
     await this.fitnessSessionsService.completePastTrainingSessions();
 
-    const studio = await this.prisma.studio.findFirst({
-      where: { ownerId: currentUser.user.id },
+    const studioExists = await this.prisma.studio.findUnique({
+      where: { id: studioId },
       select: { id: true },
     });
-    if (!studio) {
-      return { success: true, needsSetup: true, data: null };
+    if (!studioExists) {
+      throw new BadRequestException('Studio not found');
     }
 
-    const studioId = studio.id;
+    return this.buildAnalyticsForStudio(studioId, from, to);
+  }
+
+  private async buildAnalyticsForStudio(
+    studioId: string,
+    from: Date,
+    to: Date,
+  ) {
     const bookingWherePeriod = {
       studioId,
       startsAt: { gte: from, lte: to },

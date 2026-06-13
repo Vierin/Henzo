@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_notification.dart';
 import 'notifications_api_service.dart';
+import 'push_notification_service.dart';
 
 const String _keyList = 'henzo_notifications_list';
 
@@ -41,6 +43,11 @@ class NotificationsStore extends ChangeNotifier {
   List<AppNotification> get items => List.unmodifiable(_items);
   int get unreadCount => _items.where((e) => !e.read).length;
 
+  void _emit() {
+    notifyListeners();
+    unawaited(PushNotificationService.syncAppBadge(unreadCount));
+  }
+
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -59,7 +66,7 @@ class NotificationsStore extends ChangeNotifier {
     } catch (_) {
       _items = [];
     }
-    notifyListeners();
+    _emit();
   }
 
   Future<void> _save() async {
@@ -83,7 +90,7 @@ class NotificationsStore extends ChangeNotifier {
           data: sanitized,
         );
         _save();
-        notifyListeners();
+        _emit();
         return;
       }
     }
@@ -102,7 +109,7 @@ class NotificationsStore extends ChangeNotifier {
       ),
     );
     _save();
-    notifyListeners();
+    _emit();
   }
 
   Future<void> syncFromServer(String? accessToken) async {
@@ -122,7 +129,7 @@ class NotificationsStore extends ChangeNotifier {
       _items = merged.values.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       await _save();
-      notifyListeners();
+      _emit();
     } catch (_) {}
   }
 
@@ -154,7 +161,9 @@ class NotificationsStore extends ChangeNotifier {
     }
     if (changed) {
       await _save();
-      notifyListeners();
+      _emit();
+    } else {
+      unawaited(PushNotificationService.syncAppBadge(unreadCount));
     }
     if (accessToken != null && accessToken.isNotEmpty) {
       try {
@@ -168,13 +177,13 @@ class NotificationsStore extends ChangeNotifier {
     if (idx >= 0 && !_items[idx].read) {
       _items[idx] = _items[idx].copyWith(read: true);
       _save();
-      notifyListeners();
+      _emit();
     }
   }
 
   Future<void> clearAll() async {
     _items = [];
-    notifyListeners();
+    _emit();
     await _save();
   }
 
@@ -183,6 +192,6 @@ class NotificationsStore extends ChangeNotifier {
     _items = _items.where((e) => e.id != id).toList();
     if (_items.length == before) return;
     await _save();
-    notifyListeners();
+    _emit();
   }
 }

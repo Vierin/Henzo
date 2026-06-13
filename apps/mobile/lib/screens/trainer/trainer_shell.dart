@@ -119,6 +119,7 @@ class TrainerShellState extends State<TrainerShell> {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 _scheduleCalendarKey.currentState
                                     ?.ensureSessionsLoaded();
+                                _scheduleCalendarKey.currentState?.jumpToToday();
                               });
                             },
                           ),

@@ -522,6 +522,7 @@ class _NotificationCard extends StatelessWidget {
     final kind = _notificationKind(notification, isClient);
     final theme = _NotificationTheme.forKind(kind);
     final timeStr = _relativeTime(notification.createdAt, locale);
+    final isTappable = kind != _NotificationKind.bookingCancelled;
     final session = _isBookingFilterKind(kind)
         ? _bookingSessionParts(notification, locale)
         : null;
@@ -645,11 +646,12 @@ class _NotificationCard extends StatelessWidget {
                             color: AppColors.textTertiary,
                           ),
                         ),
-                        const Expanded(
-                          child: Center(
-                            child: _NotificationCardArrow(),
+                        if (isTappable)
+                          const Expanded(
+                            child: Center(
+                              child: _NotificationCardArrow(),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ],
@@ -685,9 +687,20 @@ class _NotificationCard extends StatelessWidget {
         ];
       }
       if (isClient) {
+        final studio = n.data['studioName']?.trim();
+        final displayBody =
+            studio != null &&
+                studio.isNotEmpty &&
+                leadName == studio &&
+                body.toLowerCase().contains(studio.toLowerCase())
+            ? _bodyWithoutEmbeddedStudio(body, studio)
+            : body;
         return [
           TextSpan(text: leadName, style: bold),
-          TextSpan(text: body.isNotEmpty ? ' $body' : '', style: normal),
+          TextSpan(
+            text: displayBody.isNotEmpty ? ' $displayBody' : '',
+            style: normal,
+          ),
         ];
       }
       return switch (kind) {
@@ -711,6 +724,16 @@ class _NotificationCard extends StatelessWidget {
     }
 
     return [_plainMessageSpan(n)];
+  }
+
+  String _bodyWithoutEmbeddedStudio(String body, String studio) {
+    final escaped = RegExp.escape(studio);
+    return body
+        .replaceFirst(
+          RegExp(r' (?:at|в|tại|in) ' + escaped, caseSensitive: false),
+          '',
+        )
+        .trim();
   }
 
   String? _clientLeadName(AppNotification n) {
@@ -792,6 +815,7 @@ class _NotificationCard extends StatelessWidget {
     bool isClient,
   ) async {
     context.read<NotificationsStore>().markRead(notification.id);
+    if (kind == _NotificationKind.bookingCancelled) return;
     if (kind == _NotificationKind.review) {
       if (!isClient) {
         await _openOwnerReviews(context, notification);

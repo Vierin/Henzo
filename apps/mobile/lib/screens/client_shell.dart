@@ -51,12 +51,19 @@ class _ClientShellState extends State<ClientShell> {
     unawaited(ClientMapScreen.open(context));
   }
 
-  void goToExploreTab({int? categoryId, bool showClasses = true}) {
+  void goToExploreTab({
+    int? categoryId,
+    bool showClasses = true,
+    bool resetWeek = false,
+  }) {
     setState(() => _currentIndex = 1);
     _exploreScreenKey.currentState?.ensureExploreLoaded();
     _exploreScreenKey.currentState?.applyBrowseListMode(
       showClasses: showClasses,
     );
+    if (resetWeek) {
+      _exploreScreenKey.currentState?.resetToCurrentWeek();
+    }
     if (categoryId != null) {
       _exploreScreenKey.currentState?.selectCategory(categoryId);
     }
@@ -147,7 +154,8 @@ class _ClientShellState extends State<ClientShell> {
                               svgAsset: 'assets/icons/icon-search.svg',
                               label: locale.t('clientShell.browse'),
                               isSelected: _currentIndex == 1,
-                              onTap: () => goToExploreTab(showClasses: true),
+                              onTap: () =>
+                                  goToExploreTab(showClasses: true, resetWeek: true),
                             ),
                           ),
                           Expanded(
