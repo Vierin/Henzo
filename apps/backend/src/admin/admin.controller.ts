@@ -18,6 +18,8 @@ import { UpdateServiceDto } from '../trainings/dto/update-service.dto';
 import { CreateRecurringTrainingSessionsDto } from '../fitness/dto/create-recurring-training-sessions.dto';
 import { PatchAdminSubscriptionDto } from './dto/patch-admin-subscription.dto';
 import { CreateAdminTrainerDto } from './dto/create-admin-trainer.dto';
+import { PatchAdminFeedbackDto } from './dto/patch-admin-feedback.dto';
+import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
 
 function parsePage(v?: string): number {
   const n = Number(v ?? '1');
@@ -83,6 +85,20 @@ export class AdminController {
   ) {
     try {
       return { data: await this.adminService.getStudio(authHeader, id) };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('studios/:id/activity')
+  async studioActivity(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.getStudioActivity(authHeader, id),
+      };
     } catch (e) {
       this.handleError(e);
     }
@@ -207,6 +223,27 @@ export class AdminController {
     }
   }
 
+  @Patch('studios/:studioId/trainers/:trainerId')
+  async updateStudioTrainer(
+    @Headers('authorization') authHeader: string,
+    @Param('studioId') studioId: string,
+    @Param('trainerId') trainerId: string,
+    @Body() body: UpdateAdminTrainerDto,
+  ) {
+    try {
+      return {
+        data: await this.adminService.updateStudioTrainer(
+          authHeader,
+          studioId,
+          trainerId,
+          body,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
   @Post('studios/:id/training-sessions/recurring')
   async createStudioRecurringSessions(
     @Headers('authorization') authHeader: string,
@@ -294,6 +331,7 @@ export class AdminController {
     @Headers('authorization') authHeader: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('status') status?: string,
   ) {
     try {
       return {
@@ -301,7 +339,23 @@ export class AdminController {
           authHeader,
           parsePage(page),
           parseLimit(limit),
+          status,
         ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Patch('feedback/:id')
+  async patchFeedback(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() body: PatchAdminFeedbackDto,
+  ) {
+    try {
+      return {
+        data: await this.adminService.patchFeedback(authHeader, id, body),
       };
     } catch (e) {
       this.handleError(e);

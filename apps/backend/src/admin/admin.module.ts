@@ -7,7 +7,7 @@ import { TrainersModule } from '../trainers/trainers.module';
 import { FitnessModule } from '../fitness/fitness.module';
 import { AdminCrashFreeCron } from './admin-crash-free.cron';
 import { AdminController } from './admin.controller';
-import { AdminEventLogService } from './admin-event-log.service';
+import { AdminEventLogModule } from './admin-event-log.module';
 import { AdminOwnerActivityService } from './admin-owner-activity.service';
 import { AdminService } from './admin.service';
 
@@ -19,14 +19,10 @@ import { AdminService } from './admin.service';
     TrainingsModule,
     TrainersModule,
     FitnessModule,
+    AdminEventLogModule,
   ],
   controllers: [AdminController],
-  providers: [
-    AdminService,
-    AdminEventLogService,
-    AdminOwnerActivityService,
-    AdminCrashFreeCron,
-  ],
-  exports: [AdminEventLogService],
+  providers: [AdminService, AdminOwnerActivityService, AdminCrashFreeCron],
+  exports: [AdminEventLogModule],
 })
 export class AdminModule {}

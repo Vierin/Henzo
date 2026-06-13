@@ -159,19 +159,14 @@ export function LanguageProvider({
     publicModules.push('public/salon');
     // Booking module needed for DateTimePicker component (selectTime, timeIntervals)
     publicModules.push('public/booking');
-  } else if (
-    pathNoLocale.startsWith('/salon/') ||
-    pathNoLocale.startsWith('/studio/')
-  ) {
+  } else if (pathNoLocale.startsWith('/salon/')) {
     publicModules.push('public/salon');
-    // Booking module needed for BookingModal component
     publicModules.push('public/booking');
-    // Auth module needed for LoginForm in BookingModal
     publicModules.push('shared/auth');
-    // Homepage module needed for search components
     publicModules.push('public/homepage');
-    // Categories module needed for category-related components
     publicModules.push('public/categories');
+  } else if (pathNoLocale.startsWith('/studio/')) {
+    // Studio share landing — no salon/booking UI
   } else if (pathNoLocale.startsWith('/bookings/')) {
     publicModules.push('public/booking');
   } else if (pathNoLocale.startsWith('/booking')) {

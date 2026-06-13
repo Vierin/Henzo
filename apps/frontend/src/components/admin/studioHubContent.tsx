@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ActivityTierBadge,
   formatLastActive,
@@ -11,6 +12,7 @@ import {
   createAdminStudioTrainer,
   createAdminStudioTraining,
   fetchAdminStudio,
+  fetchAdminStudioActivity,
   fetchAdminStudioAnalytics,
   fetchAdminStudioTrainers,
   fetchAdminStudioTrainings,
@@ -22,6 +24,7 @@ import type {
   AdminTrainer,
   AdminTraining,
   StudioAnalyticsData,
+  StudioActivityResponse,
 } from '@/lib/admin/types';
 
 type Tab = 'overview' | 'analytics' | 'edit' | 'subscription';
@@ -41,8 +44,14 @@ function defaultPeriod() {
 }
 
 export function StudioHubContent({ studioId }: { studioId: string }) {
-  const [tab, setTab] = useState<Tab>('overview');
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const validTabs: Tab[] = ['overview', 'analytics', 'edit', 'subscription'];
+  const [tab, setTab] = useState<Tab>(
+    validTabs.includes(initialTab as Tab) ? (initialTab as Tab) : 'overview',
+  );
   const [studio, setStudio] = useState<AdminStudioDetail | null>(null);
+  const [activity, setActivity] = useState<StudioActivityResponse | null>(null);
   const [analytics, setAnalytics] = useState<StudioAnalyticsData | null>(null);
   const [trainings, setTrainings] = useState<AdminTraining[]>([]);
   const [trainers, setTrainers] = useState<AdminTrainer[]>([]);
@@ -83,14 +92,24 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
     }
   }, [studioId]);
 
+  const loadActivity = useCallback(async () => {
+    try {
+      const data = await fetchAdminStudioActivity(studioId);
+      setActivity(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load activity');
+    }
+  }, [studioId]);
+
   useEffect(() => {
     void loadStudio();
   }, [loadStudio]);
 
   useEffect(() => {
+    if (tab === 'overview') void loadActivity();
     if (tab === 'analytics') void loadAnalytics();
     if (tab === 'edit') void loadEditData();
-  }, [tab, loadAnalytics, loadEditData]);
+  }, [tab, loadAnalytics, loadEditData, loadActivity]);
 
   if (error && !studio) {
     return <p className="text-sm text-red-600">{error}</p>;
@@ -144,7 +163,13 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
       ) : null}
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
-      {tab === 'overview' ? <OverviewTab studio={studio} /> : null}
+      {tab === 'overview' ? (
+        <OverviewTab
+          studio={studio}
+          activity={activity}
+          onGoToEdit={() => setTab('edit')}
+        />
+      ) : null}
 
       {tab === 'analytics' ? <AnalyticsTab analytics={analytics} /> : null}
 
@@ -243,15 +268,23 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
   );
 }
 
-function OverviewTab({ studio }: { studio: AdminStudioDetail }) {
+function OverviewTab({
+  studio,
+  activity,
+  onGoToEdit,
+}: {
+  studio: AdminStudioDetail;
+  activity: StudioActivityResponse | null;
+  onGoToEdit: () => void;
+}) {
   const cl = studio.onboardingChecklist;
   const stepLabels: Record<string, string> = {
     hasTraining: 'At least one training',
     hasPhoto: 'At least one photo',
-    hasLogo: 'Logo',
-    hasDescription: 'Description',
-    contactsConfigured: 'Contact info',
   };
+  const requiredSteps = Object.entries(cl.steps).filter(
+    ([, step]) => step.required,
+  );
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -312,7 +345,46 @@ function OverviewTab({ studio }: { studio: AdminStudioDetail }) {
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 lg:col-span-2">
-        <h2 className="font-medium">Onboarding checklist</h2>
+        <h2 className="font-medium">Activity (90d, weekly)</h2>
+        {!activity ? (
+          <p className="mt-2 text-sm text-zinc-500">Loading timeline…</p>
+        ) : activity.timeline.length === 0 ? (
+          <p className="mt-2 text-sm text-zinc-500">No activity yet</p>
+        ) : (
+          <table className="mt-3 w-full text-sm">
+            <thead>
+              <tr className="text-left text-zinc-500">
+                <th className="pb-2">Week</th>
+                <th className="pb-2">Bookings</th>
+                <th className="pb-2">Sessions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activity.timeline.map((row) => (
+                <tr key={row.weekStart} className="border-t border-zinc-100">
+                  <td className="py-1.5">{row.weekStart}</td>
+                  <td className="py-1.5">{row.bookings}</td>
+                  <td className="py-1.5">{row.sessions}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 lg:col-span-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">Onboarding checklist</h2>
+          {!cl.requiredCompleted ? (
+            <button
+              type="button"
+              onClick={onGoToEdit}
+              className="text-sm text-[#3F3287] hover:underline"
+            >
+              Fix in Edit →
+            </button>
+          ) : null}
+        </div>
         {!cl.requiredCompleted ? (
           <p className="mt-2 text-sm text-amber-700">
             Missing required: {cl.missingRequiredSteps.join(', ')}
@@ -323,7 +395,7 @@ function OverviewTab({ studio }: { studio: AdminStudioDetail }) {
           </p>
         )}
         <ul className="mt-3 space-y-2 text-sm">
-          {Object.entries(cl.steps).map(([key, step]) => (
+          {requiredSteps.map(([key, step]) => (
             <li key={key} className="flex items-center gap-2">
               <span
                 className={
@@ -332,7 +404,17 @@ function OverviewTab({ studio }: { studio: AdminStudioDetail }) {
               >
                 {step.completed ? '✓' : '○'}
               </span>
-              {stepLabels[key] ?? key}
+              {!step.completed ? (
+                <button
+                  type="button"
+                  onClick={onGoToEdit}
+                  className="text-left hover:text-[#3F3287]"
+                >
+                  {stepLabels[key] ?? key}
+                </button>
+              ) : (
+                <span>{stepLabels[key] ?? key}</span>
+              )}
               {step.required ? (
                 <span className="text-xs text-zinc-400">required</span>
               ) : null}
@@ -448,9 +530,13 @@ function EditTab({
   onCreateSessions: (body: Record<string, unknown>) => Promise<void>;
 }) {
   const [description, setDescription] = useState(studio.description ?? '');
+  const [name, setName] = useState(studio.name ?? '');
   const [phone, setPhone] = useState(studio.phone ?? '');
   const [email, setEmail] = useState(studio.email ?? '');
   const [address, setAddress] = useState(studio.address ?? '');
+  const [website, setWebsite] = useState(studio.website ?? '');
+  const [instagram, setInstagram] = useState(studio.instagram ?? '');
+  const [photos, setPhotos] = useState((studio.photos ?? []).join('\n'));
 
   const [trName, setTrName] = useState('');
   const [trDuration, setTrDuration] = useState('60');
@@ -469,6 +555,14 @@ function EditTab({
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         <h2 className="font-medium">Profile</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm sm:col-span-2">
+            <span className="text-zinc-500">Studio name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </label>
           <label className="block text-sm sm:col-span-2">
             <span className="text-zinc-500">Description</span>
             <textarea
@@ -502,16 +596,48 @@ function EditTab({
               className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
             />
           </label>
+          <label className="block text-sm">
+            <span className="text-zinc-500">Website</span>
+            <input
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-zinc-500">Instagram</span>
+            <input
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-2">
+            <span className="text-zinc-500">Photo URLs (one per line)</span>
+            <textarea
+              value={photos}
+              onChange={(e) => setPhotos(e.target.value)}
+              rows={3}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </label>
         </div>
         <button
           type="button"
           disabled={saving}
           onClick={() =>
             void onSaveProfile({
+              name,
               description,
               phone,
               email,
               address,
+              website,
+              instagram,
+              photos: photos
+                .split('\n')
+                .map((p) => p.trim())
+                .filter(Boolean),
             })
           }
           className="mt-4 rounded-lg bg-[#3F3287] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"

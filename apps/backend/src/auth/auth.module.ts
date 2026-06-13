@@ -7,9 +7,10 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { MetricsSecretGuard } from './metrics-secret.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
+import { AdminEventLogModule } from '../admin/admin-event-log.module';
 
 @Module({
-  imports: [PrismaModule, EmailModule, ConfigModule],
+  imports: [PrismaModule, EmailModule, ConfigModule, AdminEventLogModule],
   controllers: [AuthController],
   providers: [
     AuthService,

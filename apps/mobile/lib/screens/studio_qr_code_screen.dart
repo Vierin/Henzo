@@ -47,8 +47,10 @@ class _StudioQrCodeScreenState extends State<StudioQrCodeScreen> {
       'henzo://studio/${studio.id}';
 
   /// HTTPS ссылка для кнопки Share (работает и как Universal Link).
-  String _studioShareUrl(Studio studio) =>
-      studioShareUrl(id: studio.id, slug: studio.slug);
+  String _studioShareUrl(Studio studio) => studioShareUrl(
+        id: studio.id,
+        studioName: studio.name,
+      );
 
   @override
   Widget build(BuildContext context) {

@@ -81,6 +81,27 @@ function OverviewContent() {
       </div>
 
       <h2 className="mt-10 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        Growth
+      </h2>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <KpiCard label="Bookings (7d)" value={data.bookingsLast7d} />
+        <KpiCard label="New studios (30d)" value={data.newStudiosLast30d} />
+        <KpiCard
+          label="Open feedback"
+          value={data.openFeedbackCount}
+          hint="Mobile + web contact inbox"
+        />
+      </div>
+      {data.openFeedbackCount > 0 ? (
+        <Link
+          href="/en/admin/feedback?status=open"
+          className="mt-3 inline-block text-sm text-[#3F3287] hover:underline"
+        >
+          View open feedback →
+        </Link>
+      ) : null}
+
+      <h2 className="mt-10 text-sm font-semibold uppercase tracking-wide text-zinc-500">
         Platform
       </h2>
       <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

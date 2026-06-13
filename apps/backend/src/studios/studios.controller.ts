@@ -22,7 +22,6 @@ import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AnalyticsService } from '../analytics/analytics.service';
-import { generateStudioSlug } from '../utils/slug';
 import { Public } from '../auth/public.decorator';
 
 @Controller('studios')
@@ -302,7 +301,6 @@ export class StudiosController {
         where: { ownerId: currentUser.user.id },
         select: {
           id: true,
-          slug: true,
           name: true,
           address: true,
           phone: true,
@@ -314,12 +312,8 @@ export class StudiosController {
         throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
       }
 
-      // Use slug from DB or generate if not exists
       const baseUrl = process.env.FRONTEND_URL || 'https://henzo.app';
-      const slug =
-        studio.slug ||
-        generateStudioSlug(studio.name, studio.id, studio.address || undefined);
-      const studioUrl = `${baseUrl}/studio/${slug}`;
+      const studioUrl = `${baseUrl}/studio/${studio.id}?name=${encodeURIComponent(studio.name)}`;
 
       // Generate QR code URL (increased size to match PDF display)
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(studioUrl)}`;

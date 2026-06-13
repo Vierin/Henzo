@@ -126,6 +126,11 @@ function StudiosContent() {
               render: (r) => r.User.email,
             },
             {
+              key: 'clients',
+              header: 'Clients',
+              render: (r) => r.clientsCount,
+            },
+            {
               key: 'usage',
               header: '30d bookings / sessions',
               render: (r) => `${r.bookingsLast30d} / ${r.sessionsLast30d}`,

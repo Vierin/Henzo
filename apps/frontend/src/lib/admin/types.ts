@@ -12,6 +12,9 @@ export type AdminOverview = {
   ownersWarming30d: number;
   ownersSleeping30d: number;
   ownersNeverUsed: number;
+  bookingsLast7d: number;
+  newStudiosLast30d: number;
+  openFeedbackCount: number;
   todayBookings: number;
   failedNotifications24h: number;
   failedPayments24h: number;
@@ -29,6 +32,7 @@ export type AdminStudioRow = {
   activityTier: ActivityTier;
   bookingsLast30d: number;
   sessionsLast30d: number;
+  clientsCount: number;
   User: { id: string; email: string; name: string | null };
   Subscription: {
     id?: string;
@@ -69,6 +73,7 @@ export type AdminStudioDetail = {
   activityTier: ActivityTier;
   bookingsLast30d: number;
   sessionsLast30d: number;
+  clientsCount: number;
   User: {
     id: string;
     email: string;
@@ -157,4 +162,27 @@ export type AdminTrainer = {
   email: string | null;
   phone: string | null;
   accessLevel: string;
+};
+
+export type WeeklyActivityBucket = {
+  weekStart: string;
+  bookings: number;
+  sessions: number;
+};
+
+export type StudioActivityResponse = {
+  timeline: WeeklyActivityBucket[];
+  onboardingGaps: string[];
+};
+
+export type AdminFeedbackRow = {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  platform: string | null;
+  source: string;
+  status: string;
+  adminNote: string | null;
+  createdAt: string;
 };

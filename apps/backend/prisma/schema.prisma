@@ -382,15 +382,20 @@ model AdminEventLog {
 }
 
 model AppFeedback {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   name       String
   email      String
   message    String
   platform   String?
   appVersion String?
-  createdAt  DateTime @default(now())
+  status     String    @default("open")
+  adminNote  String?
+  resolvedAt DateTime?
+  source     String    @default("mobile")
+  createdAt  DateTime  @default(now())
 
   @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 model TrainerInvite {

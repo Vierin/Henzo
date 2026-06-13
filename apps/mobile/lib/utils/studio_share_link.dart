@@ -1,12 +1,15 @@
 import '../config/app_config.dart';
 
-/// HTTPS share URL for a studio (`https://www.henzo.app/studio/{slug|id}`).
-String studioShareUrl({required String id, String? slug}) {
+/// HTTPS share URL for a studio (`https://www.henzo.app/studio/{id}`).
+String studioShareUrl({required String id, String? studioName}) {
   final base = AppConfig.webUrl;
-  final segment = (slug != null && slug.trim().isNotEmpty)
-      ? slug.trim()
-      : id.trim();
-  return '$base/studio/$segment';
+  final segment = id.trim();
+  final uri = Uri.parse('$base/studio/${Uri.encodeComponent(segment)}');
+  final name = studioName?.trim();
+  if (name != null && name.isNotEmpty) {
+    return uri.replace(queryParameters: {'name': name}).toString();
+  }
+  return uri.toString();
 }
 
 String buildStudioShareMessage({

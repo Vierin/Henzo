@@ -24,6 +24,8 @@ import { UpdateServiceDto } from '../trainings/dto/update-service.dto';
 import { CreateRecurringTrainingSessionsDto } from '../fitness/dto/create-recurring-training-sessions.dto';
 import { PatchAdminSubscriptionDto } from './dto/patch-admin-subscription.dto';
 import { CreateAdminTrainerDto } from './dto/create-admin-trainer.dto';
+import { PatchAdminFeedbackDto } from './dto/patch-admin-feedback.dto';
+import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
 
 const ADMIN_TZ = 'Asia/Ho_Chi_Minh';
 
@@ -71,6 +73,8 @@ export class AdminService {
       failedPayments24h,
       crashFromDb,
       activitySummary,
+      platformStats,
+      openFeedbackCount,
     ] = await Promise.all([
       this.prisma.studio.count({ where: { status: 'ACTIVE' } }),
       this.prisma.sessionBooking.count({
@@ -101,6 +105,8 @@ export class AdminService {
       }),
       this.eventLog.getLatestCrashFreeRate(),
       this.ownerActivity.countTierSummary(),
+      this.ownerActivity.getPlatformActivityStats(),
+      this.prisma.appFeedback.count({ where: { status: 'open' } }),
     ]);
 
     const envRate = this.config.get<string>('ADMIN_CRASH_FREE_RATE');
@@ -116,6 +122,9 @@ export class AdminService {
       ownersWarming30d: activitySummary.ownersWarming30d,
       ownersSleeping30d: activitySummary.ownersSleeping30d,
       ownersNeverUsed: activitySummary.ownersNeverUsed,
+      bookingsLast7d: platformStats.bookingsLast7d,
+      newStudiosLast30d: platformStats.newStudiosLast30d,
+      openFeedbackCount,
       todayBookings: todayBookings + todayEnrollments,
       failedNotifications24h,
       failedPayments24h,
@@ -211,6 +220,7 @@ export class AdminService {
         activityTier: m?.activityTier ?? 'draft',
         bookingsLast30d: m?.bookingsLast30d ?? 0,
         sessionsLast30d: m?.sessionsLast30d ?? 0,
+        clientsCount: m?.clientsCount ?? 0,
       };
     });
 
@@ -267,6 +277,7 @@ export class AdminService {
       activityTier: activity?.activityTier ?? 'draft',
       bookingsLast30d: activity?.bookingsLast30d ?? 0,
       sessionsLast30d: activity?.sessionsLast30d ?? 0,
+      clientsCount: activity?.clientsCount ?? 0,
       onboardingChecklist: checklist,
     };
   }
@@ -327,11 +338,24 @@ export class AdminService {
     const where: {
       type?: string | { in: string[] };
       createdAt?: { gte?: Date; lte?: Date };
-    } = {
-      type: type?.trim()
-        ? type.trim()
-        : { in: ['push_failed', 'email_reminder_failed'] },
-    };
+    } = {};
+    const trimmedType = type?.trim();
+    if (trimmedType === 'all') {
+      where.type = {
+        in: [
+          'push_failed',
+          'email_reminder_failed',
+          'subscription_failed',
+          'revenuecat_webhook_error',
+          'admin_action',
+          'admin_subscription_changed',
+        ],
+      };
+    } else if (trimmedType) {
+      where.type = trimmedType;
+    } else {
+      where.type = { in: ['push_failed', 'email_reminder_failed'] };
+    }
     if (from || to) {
       where.createdAt = {};
       if (from) where.createdAt.gte = new Date(from);
@@ -355,16 +379,26 @@ export class AdminService {
     authHeader: string | undefined,
     page: number,
     limit: number,
+    status?: string,
   ) {
     await assertAdmin(this.authService, authHeader);
     const skip = (page - 1) * limit;
+    const where: { status?: string } = {};
+    if (
+      status === 'open' ||
+      status === 'in_progress' ||
+      status === 'resolved'
+    ) {
+      where.status = status;
+    }
     const [items, total] = await Promise.all([
       this.prisma.appFeedback.findMany({
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.appFeedback.count(),
+      this.prisma.appFeedback.count({ where }),
     ]);
     return { items, total, page, limit };
   }
@@ -395,6 +429,56 @@ export class AdminService {
         this.config.get<string>('ADMIN_ALLOWED_EMAILS')?.trim(),
       ),
     };
+  }
+
+  async getStudioActivity(authHeader: string | undefined, studioId: string) {
+    await assertAdmin(this.authService, authHeader);
+    await this.assertStudioExists(studioId);
+    const timeline =
+      await this.ownerActivity.getStudioActivityTimeline(studioId);
+    const checklist =
+      await this.studiosService.getStudioOnboardingChecklist(studioId);
+    return { timeline, onboardingGaps: checklist.missingRequiredSteps };
+  }
+
+  async patchFeedback(
+    authHeader: string | undefined,
+    feedbackId: string,
+    dto: PatchAdminFeedbackDto,
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const existing = await this.prisma.appFeedback.findUnique({
+      where: { id: feedbackId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Feedback not found');
+    }
+
+    const data: {
+      status?: string;
+      adminNote?: string | null;
+      resolvedAt?: Date | null;
+    } = {};
+    if (dto.status) {
+      data.status = dto.status;
+      data.resolvedAt = dto.status === 'resolved' ? new Date() : null;
+    }
+    if (dto.adminNote !== undefined) {
+      data.adminNote = dto.adminNote.trim() || null;
+    }
+
+    const updated = await this.prisma.appFeedback.update({
+      where: { id: feedbackId },
+      data,
+    });
+
+    await this.eventLog.logAdminAction({
+      action: 'feedback_updated',
+      adminEmail: admin.email,
+      metadata: { feedbackId, status: dto.status },
+    });
+
+    return updated;
   }
 
   async getStudioAnalytics(
@@ -608,6 +692,31 @@ export class AdminService {
     });
 
     return created;
+  }
+
+  async updateStudioTrainer(
+    authHeader: string | undefined,
+    studioId: string,
+    trainerId: string,
+    dto: UpdateAdminTrainerDto,
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const trainerStudioId =
+      await this.trainersService.findTrainerStudioId(trainerId);
+    if (trainerStudioId !== studioId) {
+      throw new NotFoundException('Trainer not found');
+    }
+
+    const updated = await this.trainersService.updateTrainer(trainerId, dto);
+
+    await this.eventLog.logAdminAction({
+      action: 'trainer_updated',
+      adminEmail: admin.email,
+      studioId,
+      metadata: { trainerId },
+    });
+
+    return updated;
   }
 
   async createStudioRecurringSessions(

@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import type {
+  AdminFeedbackRow,
   AdminOverview,
   AdminSettings,
   AdminStudioDetail,
@@ -8,6 +9,7 @@ import type {
   AdminTrainer,
   AdminTraining,
   Paginated,
+  StudioActivityResponse,
   StudioAnalyticsData,
 } from './types';
 
@@ -33,6 +35,15 @@ export async function fetchAdminStudios(params: {
   if (params.activityTier) q.set('activityTier', params.activityTier);
   const res = await apiClient.get<ApiWrap<Paginated<AdminStudioRow>>>(
     `/admin/studios?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminStudioActivity(
+  id: string,
+): Promise<StudioActivityResponse> {
+  const res = await apiClient.get<ApiWrap<StudioActivityResponse>>(
+    `/admin/studios/${id}/activity`,
   );
   return res.data;
 }
@@ -119,6 +130,35 @@ export async function createAdminStudioTrainer(
   return res.data;
 }
 
+export async function updateAdminStudioTrainer(
+  studioId: string,
+  trainerId: string,
+  body: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    accessLevel?: 'ADMIN' | 'EMPLOYEE';
+  },
+): Promise<unknown> {
+  const res = await apiClient.patch<ApiWrap<unknown>>(
+    `/admin/studios/${studioId}/trainers/${trainerId}`,
+    body,
+  );
+  return res.data;
+}
+
+export async function updateAdminStudioTraining(
+  studioId: string,
+  trainingId: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  const res = await apiClient.patch<ApiWrap<unknown>>(
+    `/admin/studios/${studioId}/trainings/${trainingId}`,
+    body,
+  );
+  return res.data;
+}
+
 export async function createAdminRecurringSessions(
   studioId: string,
   body: Record<string, unknown>,
@@ -181,12 +221,25 @@ export async function fetchAdminNotifications(params: {
 export async function fetchAdminFeedback(params: {
   page?: number;
   limit?: number;
-}): Promise<Paginated<Record<string, unknown>>> {
+  status?: string;
+}): Promise<Paginated<AdminFeedbackRow>> {
   const q = new URLSearchParams();
   if (params.page) q.set('page', String(params.page));
   if (params.limit) q.set('limit', String(params.limit));
-  const res = await apiClient.get<ApiWrap<Paginated<Record<string, unknown>>>>(
+  if (params.status) q.set('status', params.status);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminFeedbackRow>>>(
     `/admin/feedback?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function patchAdminFeedback(
+  id: string,
+  body: { status?: string; adminNote?: string },
+): Promise<AdminFeedbackRow> {
+  const res = await apiClient.patch<ApiWrap<AdminFeedbackRow>>(
+    `/admin/feedback/${id}`,
+    body,
   );
   return res.data;
 }
