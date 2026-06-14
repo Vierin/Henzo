@@ -426,6 +426,7 @@
     "detailTitle": "Class",
     "share": "Share",
     "capacityWaitlistLine": "{spots} spots left · {waitlist} on waitlist",
+    "spotsLeftLine": "{spots} spots left",
     "attendanceColumnLabel": "NO SHOW / COMPLETED",
     "noShowOnlyAfterSession": "No-show can be marked only after the class has ended.",
     "capacityLabel": "CAPACITY",

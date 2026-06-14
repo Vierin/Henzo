@@ -277,7 +277,9 @@ class _OwnerTrainingSessionDetailScreenState
     if (session.sessionId.isEmpty) return false;
     final st = session.status.toUpperCase();
     if (st == 'CANCELLED' || st == 'COMPLETED') return false;
-    return session.effectiveEndsAt.isAfter(DateTime.now());
+    final now = DateTime.now();
+    return session.effectiveEndsAt.isAfter(now) ||
+        session.startsAt.isAfter(now);
   }
 
   Future<void> _confirmCancelSession() async {

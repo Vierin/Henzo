@@ -96,9 +96,12 @@ class SessionCapacityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    tr('ownerSession.capacityWaitlistLine')
-                        .replaceAll('{spots}', '$spotsLeft')
-                        .replaceAll('{waitlist}', '$waitlistCount'),
+                    waitlistCount > 0
+                        ? tr('ownerSession.capacityWaitlistLine')
+                            .replaceAll('{spots}', '$spotsLeft')
+                            .replaceAll('{waitlist}', '$waitlistCount')
+                        : tr('ownerSession.spotsLeftLine')
+                            .replaceAll('{spots}', '$spotsLeft'),
                     style: TextStyle(
                       fontSize: 11.sp,
                       letterSpacing: -0.3,

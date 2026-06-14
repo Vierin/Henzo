@@ -426,6 +426,7 @@
     "detailTitle": "Занятие",
     "share": "Поделиться",
     "capacityWaitlistLine": "Осталось мест: {spots} · в листе ожидания: {waitlist}",
+    "spotsLeftLine": "Осталось мест: {spots}",
     "attendanceColumnLabel": "НЕ ПРИШЁЛ / ПРИШЁЛ",
     "noShowOnlyAfterSession": "No-show можно отметить только после окончания занятия.",
     "capacityLabel": "ЗАПОЛНЕНИЕ",

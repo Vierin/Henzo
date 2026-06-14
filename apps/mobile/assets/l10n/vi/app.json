@@ -426,6 +426,7 @@
     "detailTitle": "Buổi tập",
     "share": "Chia sẻ",
     "capacityWaitlistLine": "Còn {spots} chỗ · {waitlist} trong danh sách chờ",
+    "spotsLeftLine": "Còn {spots} chỗ",
     "attendanceColumnLabel": "VẮNG / ĐÃ THAM GIA",
     "noShowOnlyAfterSession": "Chỉ có thể đánh dấu vắng sau khi buổi tập kết thúc.",
     "capacityLabel": "SỨC CHỨA",

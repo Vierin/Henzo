@@ -420,36 +420,38 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                     ),
                   )
                 else
-                  SizedBox(
-                    height: 190,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: favorites.length,
-                      itemBuilder: (_, index) {
-                        final studio = _studioPreview(
-                          favorites[index],
-                          locale.localeCode,
-                        );
-                        return TopStudioCard(
-                          homeLayout: true,
-                          studio: studio,
-                          categoryOptions: _trainingCategories,
-                          isFavorite: favStore.isFavorite(studio.id),
-                          isFavoriteLoading: _favoriteLoadingIds.contains(
-                            studio.id,
-                          ),
-                          onToggleFavorite: () => _toggleFavorite(studio),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => PublicStudioDetailScreen(
-                                  studioId: studio.id,
+                  ClipRect(
+                    child: SizedBox(
+                      height: 190,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: favorites.length,
+                        itemBuilder: (_, index) {
+                          final studio = _studioPreview(
+                            favorites[index],
+                            locale.localeCode,
+                          );
+                          return TopStudioCard(
+                            homeLayout: true,
+                            studio: studio,
+                            categoryOptions: _trainingCategories,
+                            isFavorite: favStore.isFavorite(studio.id),
+                            isFavoriteLoading: _favoriteLoadingIds.contains(
+                              studio.id,
+                            ),
+                            onToggleFavorite: () => _toggleFavorite(studio),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => PublicStudioDetailScreen(
+                                    studioId: studio.id,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
               ],

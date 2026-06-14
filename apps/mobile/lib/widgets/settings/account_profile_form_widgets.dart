@@ -19,7 +19,6 @@ class AccountSectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 12),
       child: Text(
         text.toUpperCase(),
         style: TextStyle(

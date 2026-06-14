@@ -138,7 +138,6 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
 
   InitialRectBuilder _initialRectBuilderFor(_StudioPhotoCropFormat format) {
     final crops = widget.initialCrops;
-    final imageSize = _imageSize;
     final normalized = crops == null
         ? null
         : switch (format) {
@@ -146,12 +145,15 @@ class _StudioPhotoCropScreenState extends State<_StudioPhotoCropScreen> {
             _StudioPhotoCropFormat.browseCard => crops.browseCard,
           };
 
-    if (normalized != null &&
-        imageSize != null &&
-        !_isFullFrameCrop(normalized)) {
-      return InitialRectBuilder.withArea(
-        _imageRectFromNormalized(normalized, imageSize),
-      );
+    if (normalized != null && !_isFullFrameCrop(normalized)) {
+      return InitialRectBuilder.withBuilder((viewportRect, imageRect) {
+        return Rect.fromLTWH(
+          imageRect.left + normalized.x * imageRect.width,
+          imageRect.top + normalized.y * imageRect.height,
+          normalized.w * imageRect.width,
+          normalized.h * imageRect.height,
+        );
+      });
     }
 
     return InitialRectBuilder.withBuilder((viewportRect, _) {
