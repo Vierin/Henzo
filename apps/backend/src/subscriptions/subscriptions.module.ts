@@ -8,10 +8,10 @@ import { SubscriptionsService } from './subscriptions.service';
 import { PlanLimitsService } from './plan-limits.service';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { AdminModule } from '../admin/admin.module';
+import { AdminEventLogModule } from '../admin/admin-event-log.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, AdminModule],
+  imports: [AuthModule, PrismaModule, AdminEventLogModule],
   controllers: [SubscriptionsController, RevenueCatWebhookController],
   providers: [
     StripePricingService,
