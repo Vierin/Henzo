@@ -255,6 +255,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       if (isBookingAlreadyBookedError(e)) {
         setState(() => _isBookedByMe = true);
         await _load();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(locale.t('clientClassDetail.alreadyBooked'))),
         );

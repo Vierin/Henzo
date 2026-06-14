@@ -314,15 +314,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  bool _salonHasDescription(
-    Studio? studio,
-    StudioOnboardingChecklist? checklist,
-  ) {
-    final fromSalon = studio?.description?.trim();
-    if (fromSalon != null && fromSalon.isNotEmpty) return true;
-    return checklist?.hasDescription.completed ?? false;
-  }
-
   bool _studioDetailsCompleted(Studio? studio) {
     if (studio == null) return false;
     final name = studio.name?.trim();

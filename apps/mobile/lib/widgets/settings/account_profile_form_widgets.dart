@@ -18,15 +18,13 @@ class AccountSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-          color: AppColors.textSecondary,
-        ),
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+        color: AppColors.textSecondary,
       ),
     );
   }
