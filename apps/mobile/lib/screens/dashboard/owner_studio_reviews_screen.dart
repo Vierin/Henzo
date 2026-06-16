@@ -146,61 +146,57 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
                   : RefreshIndicator(
                       onRefresh: _load,
                       color: AppColors.primary500,
-                      child: _reviews.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: [
-                                const SizedBox(height: 80),
-                                Center(
-                                  child: Text(
-                                    locale.t('dashboard.reviewsEmpty'),
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 15.sp,
-                                    ),
-                                  ),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(
+                          kScreenPaddingHorizontal,
+                          0,
+                          kScreenPaddingHorizontal,
+                          24,
+                        ),
+                        children: [
+                          StudioReviewsSummaryCard(
+                            avgRating: _avgFromPayload,
+                            reviewCount: _reviews.length,
+                            reviews: _reviews,
+                            onReviewsLabel: t('reviewsOnCount'),
+                          ),
+                          if (_reviews.isEmpty) ...[
+                            const SizedBox(height: 48),
+                            Center(
+                              child: Text(
+                                locale.t('dashboard.reviewsEmpty'),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 15.sp,
                                 ),
-                              ],
-                            )
-                          : ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(
-                                kScreenPaddingHorizontal,
-                                0,
-                                kScreenPaddingHorizontal,
-                                24,
                               ),
-                              children: [
-                                StudioReviewsSummaryCard(
-                                  avgRating: _avgFromPayload,
-                                  reviewCount: _reviews.length,
-                                  reviews: _reviews,
-                                  onReviewsLabel: t('reviewsOnCount'),
-                                ),
-                                const SizedBox(height: 16),
-                                ..._reviews.map((r) {
-                                  final created = DateTime.tryParse(
-                                    (r['createdAt'] ?? '').toString(),
-                                  );
-                                  final dateLabel =
-                                      formatRelativeReviewDateLabel(
-                                    created,
-                                    daysAgoTemplate: t('reviewsDaysAgo'),
-                                    hoursAgoTemplate: t('reviewsHoursAgo'),
-                                    justNowLabel: t('reviewsJustNow'),
-                                  );
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: StudioReviewCard(
-                                      review: r,
-                                      readMoreLabel: t('readMore'),
-                                      readLessLabel: t('readLess'),
-                                      dateLabel: dateLabel,
-                                    ),
-                                  );
-                                }),
-                              ],
                             ),
+                          ] else ...[
+                            const SizedBox(height: 16),
+                            ..._reviews.map((r) {
+                              final created = DateTime.tryParse(
+                                (r['createdAt'] ?? '').toString(),
+                              );
+                              final dateLabel = formatRelativeReviewDateLabel(
+                                created,
+                                daysAgoTemplate: t('reviewsDaysAgo'),
+                                hoursAgoTemplate: t('reviewsHoursAgo'),
+                                justNowLabel: t('reviewsJustNow'),
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: StudioReviewCard(
+                                  review: r,
+                                  readMoreLabel: t('readMore'),
+                                  readLessLabel: t('readLess'),
+                                  dateLabel: dateLabel,
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
                     ),
             ),
           ],

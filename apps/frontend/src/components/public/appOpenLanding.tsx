@@ -2,6 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
+import {
+  AppleStoreIcon,
+  GooglePlayIcon,
+} from '@/components/landing/storeIcons';
 import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
 import {
   getMobilePlatform,
@@ -20,19 +24,28 @@ type AppOpenLandingProps = {
   icon?: 'class' | 'studio' | 'invite';
 };
 
+function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 13 12"
+      fill="none"
+      className={className}
+      aria-hidden
+    >
+      <path
+        d="M0.5 4.77778H12.5M3.16667 0.5V1.72222M9.83333 0.5V1.72222M2.63333 11.5H10.3667C11.1134 11.5 11.4868 11.5 11.772 11.3668C12.0229 11.2496 12.2269 11.0626 12.3547 10.8327C12.5 10.5712 12.5 10.2289 12.5 9.54444V3.67778C12.5 2.99327 12.5 2.65101 12.3547 2.38957C12.2269 2.15959 12.0229 1.97261 11.772 1.85544C11.4868 1.72222 11.1134 1.72222 10.3667 1.72222H2.63333C1.8866 1.72222 1.51323 1.72222 1.22801 1.85544C0.977127 1.97261 0.773153 2.15959 0.645327 2.38957C0.5 2.65101 0.5 2.99327 0.5 3.67778V9.54444C0.5 10.2289 0.5 10.5712 0.645327 10.8327C0.773153 11.0626 0.977127 11.2496 1.22801 11.3668C1.51323 11.5 1.88659 11.5 2.63333 11.5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function LandingIcon({ kind }: { kind: AppOpenLandingProps['icon'] }) {
   if (kind === 'class') {
-    return (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="4" width="18" height="17" rx="3" fill="#ff5b5b" />
-        <path
-          d="M8 2v4M16 2v4M3 10h18"
-          stroke="white"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
+    return <CalendarIcon className="h-8 w-8 text-[#ff5b5b]" />;
   }
   if (kind === 'studio') {
     return (
@@ -138,9 +151,7 @@ export function AppOpenLanding({
             rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98l-.09.06c-.22.14-2.15 1.26-2.13 3.75.03 2.98 2.61 3.97 2.64 3.98l-.06.29zM13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-            </svg>
+            <AppleStoreIcon className="h-5 w-5" />
             <span className="text-sm font-medium text-gray-800">App Store</span>
           </a>
           <a
@@ -149,9 +160,7 @@ export function AppOpenLanding({
             rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3.18 23.76c.3.17.65.19.96.07l12.14-7.37-2.76-2.76-10.34 10zm16.35-9.75L5.82 5.92c-.36-.18-.78-.14-1.1.1L16.86 18.16l2.67-4.15zM2.22 6.44c-.14.27-.22.56-.22.88v9.36c0 .32.08.61.22.88l10.4-10.4-10.4-.72zM19.77 10.5l-1.96-1.2-3.08 3.08 3.08 3.08 1.98-1.21c.56-.34.9-.94.9-1.57s-.36-1.24-.92-1.18z" />
-            </svg>
+            <GooglePlayIcon className="h-5 w-5" />
             <span className="text-sm font-medium text-gray-800">
               Google Play
             </span>

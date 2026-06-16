@@ -188,7 +188,6 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
     final id = (widget.studio['id'] ?? '').toString();
-    final slug = (widget.studio['slug'] as String?)?.trim();
     if (id.isEmpty) return;
 
     final inviterName = resolveShareInviterName(
@@ -196,7 +195,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
       userEmail: auth.user?.email,
       tr: locale.t,
     );
-    final link = studioShareUrl(id: id, slug: slug);
+    final link = studioShareUrl(id: id, studioName: name);
     final message = buildStudioShareMessage(
       tr: locale.t,
       inviterName: inviterName,
@@ -744,7 +743,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                 locale.languageTag,
                               ),
                               trailingPriceLabel: price != null
-                                  ? formatVnd(price)
+                                  ? '${formatVnd(price)} ₫'
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: locale.t('booking.book'),

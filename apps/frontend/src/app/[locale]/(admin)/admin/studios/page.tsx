@@ -1,17 +1,27 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AdminGuard } from '@/components/admin/admin-guard';
 import { AdminTable } from '@/components/admin/admin-table';
+import {
+  ActivityTierBadge,
+  formatLastActive,
+} from '@/components/admin/activityTierBadge';
 import { fetchAdminStudios } from '@/lib/admin/api';
 import type { AdminStudioRow } from '@/lib/admin/types';
 
 function StudiosContent() {
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<AdminStudioRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [activityTier, setActivityTier] = useState(
+    searchParams.get('activityTier') ?? '',
+  );
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -22,13 +32,14 @@ function StudiosContent() {
         limit: 20,
         search: search || undefined,
         status: status || undefined,
+        activityTier: activityTier || undefined,
       });
       setRows(res.items);
       setTotal(res.total);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load studios');
     }
-  }, [page, search, status]);
+  }, [page, search, status, activityTier]);
 
   useEffect(() => {
     void load();
@@ -61,13 +72,49 @@ function StudiosContent() {
           <option value="READY">READY</option>
           <option value="DRAFT">DRAFT</option>
         </select>
+        <select
+          value={activityTier}
+          onChange={(e) => {
+            setActivityTier(e.target.value);
+            setPage(1);
+          }}
+          className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+        >
+          <option value="">All activity</option>
+          <option value="active">Active (7d)</option>
+          <option value="warming">Warming (8–30d)</option>
+          <option value="sleeping">Sleeping (30d+)</option>
+          <option value="never_used">Never used</option>
+          <option value="draft">Draft / Ready</option>
+        </select>
       </div>
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <div className="mt-6">
         <AdminTable
           rows={rows}
           columns={[
-            { key: 'name', header: 'Name', render: (r) => r.name },
+            {
+              key: 'name',
+              header: 'Name',
+              render: (r) => (
+                <Link
+                  href={`/en/admin/studios/${r.id}`}
+                  className="font-medium text-[#3F3287] hover:underline"
+                >
+                  {r.name}
+                </Link>
+              ),
+            },
+            {
+              key: 'activity',
+              header: 'Activity',
+              render: (r) => <ActivityTierBadge tier={r.activityTier} />,
+            },
+            {
+              key: 'lastActive',
+              header: 'Last active',
+              render: (r) => formatLastActive(r.lastActivityAt),
+            },
             {
               key: 'status',
               header: 'Status',
@@ -79,17 +126,22 @@ function StudiosContent() {
               render: (r) => r.User.email,
             },
             {
+              key: 'clients',
+              header: 'Clients',
+              render: (r) => r.clientsCount,
+            },
+            {
+              key: 'usage',
+              header: '30d bookings / sessions',
+              render: (r) => `${r.bookingsLast30d} / ${r.sessionsLast30d}`,
+            },
+            {
               key: 'sub',
               header: 'Subscription',
               render: (r) =>
                 r.Subscription
                   ? `${r.Subscription.type} / ${r.Subscription.status}`
                   : '—',
-            },
-            {
-              key: 'created',
-              header: 'Created',
-              render: (r) => new Date(r.createdAt).toLocaleDateString(),
             },
           ]}
         />

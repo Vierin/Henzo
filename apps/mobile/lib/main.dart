@@ -100,6 +100,9 @@ Future<void> main() async {
         await PushNotificationService.initialize(
           onNotificationReceived: notificationsStore.addFromPush,
         );
+        await PushNotificationService.syncAppBadge(
+          notificationsStore.unreadCount,
+        );
       } catch (e) {
         assert(() {
           // ignore: avoid_print
@@ -198,6 +201,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AnalyticsService.instance.logEvent('app_opened');
+    }
+    if (state == AppLifecycleState.paused) {
+      final store = widget.notificationsStore;
+      if (store != null) {
+        unawaited(PushNotificationService.syncAppBadge(store.unreadCount));
+      }
     }
   }
 

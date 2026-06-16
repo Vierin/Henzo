@@ -62,7 +62,7 @@ jobs:
 
             git -C "$APP_DIR" fetch origin
             git -C "$APP_DIR" checkout main
-            git -C "$APP_DIR" pull --ff-only origin main
+            git -C "$APP_DIR" reset --hard origin/main
 
             cd "$BACKEND_DIR"
             docker compose -f docker-compose.yml config --services \

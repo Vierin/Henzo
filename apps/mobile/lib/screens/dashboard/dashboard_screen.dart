@@ -314,15 +314,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  bool _salonHasDescription(
-    Studio? studio,
-    StudioOnboardingChecklist? checklist,
-  ) {
-    final fromSalon = studio?.description?.trim();
-    if (fromSalon != null && fromSalon.isNotEmpty) return true;
-    return checklist?.hasDescription.completed ?? false;
-  }
-
   bool _studioDetailsCompleted(Studio? studio) {
     if (studio == null) return false;
     final name = studio.name?.trim();
@@ -992,10 +983,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final studioDetails = _studioDetailsCompleted(studio);
     final hasTraining = c?.hasTraining.completed ?? false;
     final hasPhoto = c?.hasPhoto.completed ?? false;
-    final hasLogo = c?.hasLogo.completed ?? false;
-    final contacts = c?.contactsConfigured.completed ?? false;
-    final hasDescription = _salonHasDescription(studio, c);
-    final showOptionalPhase = status == StudioStatus.ready;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -1008,24 +995,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         studioDetailsCompleted: studioDetails,
         hasTraining: hasTraining,
         hasPhoto: hasPhoto,
-        hasLogo: hasLogo,
-        contactsConfigured: contacts,
-        hasDescription: hasDescription,
         canPublish: c?.canPublish ?? false,
         isStudioActive: status.isActive,
         isPublishing: _isPublishing,
-        showOptionalPhase: showOptionalPhase,
         showPreviewButton: studio != null,
         onStudioDetailsTap: _openStudioDetails,
         onCreateTrainingTap: _openTrainingSetup,
         onAddPhotoTap: _openStudioProfileSettings,
-        onAddLogoTap: _openStudioProfileSettings,
-        onContactsTap: () => _openStudioProfileSettings(
-          focusTarget: StudioProfileFocusTarget.contacts,
-        ),
-        onAddDescriptionTap: () => _openStudioProfileSettings(
-          focusTarget: StudioProfileFocusTarget.description,
-        ),
         onPreviewPublicPageTap: _previewPublicPage,
         onPublishTap: _publishStudio,
       ),

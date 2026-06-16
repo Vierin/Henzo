@@ -8,7 +8,7 @@ const nav = [
   { href: '/en/admin', label: 'Overview', exact: true },
   { href: '/en/admin/studios', label: 'Studios' },
   { href: '/en/admin/subscriptions', label: 'Subscriptions' },
-  { href: '/en/admin/notifications', label: 'Notifications' },
+  { href: '/en/admin/notifications', label: 'Events' },
   { href: '/en/admin/feedback', label: 'Feedback' },
   { href: '/en/admin/settings', label: 'Settings' },
 ];

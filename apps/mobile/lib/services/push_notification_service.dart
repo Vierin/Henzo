@@ -23,6 +23,9 @@ class PushNotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
+  /// Reserved id for silent iOS badge sync (not shown to user).
+  static const int _badgeSyncNotificationId = 2147483646;
+
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'henzo_default',
@@ -325,5 +328,36 @@ class PushNotificationService {
       message.notification?.body ?? '',
       _dataToStringMap(message.data),
     );
+  }
+
+  /// Keep launcher / home-screen badge aligned with in-app unread count.
+  static Future<void> syncAppBadge(int unreadCount) async {
+    try {
+      if (Platform.isIOS) {
+        await _localNotifications.show(
+          _badgeSyncNotificationId,
+          '',
+          '',
+          NotificationDetails(
+            iOS: DarwinNotificationDetails(
+              badgeNumber: unreadCount,
+              presentAlert: false,
+              presentSound: false,
+              presentBanner: false,
+              presentList: false,
+            ),
+          ),
+        );
+        await _localNotifications.cancel(_badgeSyncNotificationId);
+        _log('syncAppBadge iOS: $unreadCount');
+        return;
+      }
+      if (defaultTargetPlatform == TargetPlatform.android && unreadCount == 0) {
+        await _localNotifications.cancelAll();
+        _log('syncAppBadge Android: cleared tray');
+      }
+    } catch (e) {
+      _log('syncAppBadge($unreadCount) error: $e');
+    }
   }
 }

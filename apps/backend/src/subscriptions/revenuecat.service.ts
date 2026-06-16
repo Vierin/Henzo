@@ -177,6 +177,30 @@ export class RevenueCatService {
       throw new BadRequestException('Studio not found');
     }
 
+    const existing = await this.prisma.subscription.findUnique({
+      where: { studioId: studio.id },
+      select: { manualOverride: true },
+    });
+    if (existing?.manualOverride) {
+      this.logger.log(
+        `RevenueCat sync skipped for user=${userId} (manualOverride)`,
+      );
+      const current = await this.prisma.subscription.findUnique({
+        where: { studioId: studio.id },
+      });
+      if (!current) {
+        throw new BadRequestException('Subscription not found');
+      }
+      return {
+        id: current.id,
+        studioId: current.studioId,
+        type: current.type,
+        status: current.status,
+        startDate: current.startDate.toISOString(),
+        currentPeriodEnd: current.currentPeriodEnd?.toISOString() ?? null,
+      };
+    }
+
     const subscriber = await this.fetchSubscriber(userId);
     const tier = this.resolveSubscriptionType(subscriber);
     const periodEnd = this.resolvePeriodEnd(subscriber);

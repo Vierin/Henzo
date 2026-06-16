@@ -20,6 +20,7 @@ import '../utils/subscription_tier.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/subscription_legal_disclosure.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
+import '../widgets/settings/feedback_sheet.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const Color _activeBadgeBg = Color(0xFFE8F5E9);
@@ -160,10 +161,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           .notifySubscriptionMaybeChanged();
       await _load();
       if (!mounted) return;
-      showSubscriptionPurchaseSuccess(
-        context,
-        tier: _activePlanTier,
-      );
+      showSubscriptionPurchaseSuccess(context, tier: _activePlanTier);
     } else {
       showSubscriptionPurchaseWarning(
         context,
@@ -253,10 +251,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     await _openUrl(url);
   }
 
+  void _openPaymentHelpSheet() {
+    showFeedbackSheet(
+      context,
+      textOverrides: const FeedbackSheetTextOverrides(
+        titleKey: 'settings.feedback.paymentIssueTitle',
+        subtitleKey: 'settings.feedback.paymentIssueSubtitle',
+        hintKey: 'settings.feedback.paymentIssueHint',
+      ),
+      messageContext: FeedbackSheetMessageContext.paymentHelp,
+    );
+  }
+
   String _proPriceDisplay() {
     final priceString = switch (_activePlanTier) {
-      SubscriptionPlanTier.studio =>
-        _studioPackage?.storeProduct.priceString,
+      SubscriptionPlanTier.studio => _studioPackage?.storeProduct.priceString,
       SubscriptionPlanTier.enterprise =>
         _enterprisePackage?.storeProduct.priceString,
       SubscriptionPlanTier.solo => null,
@@ -283,164 +292,159 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           appBar: buildBrandedSettingsAppBar(
             context,
             title: locale.t('subscription.title'),
+            actions: [
+              IconButton(
+                onPressed: _openPaymentHelpSheet,
+                tooltip: locale.t('settings.feedback.sendFeedback'),
+                icon: const Icon(
+                  Icons.help_outline_rounded,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
           body: RefreshIndicator(
-                  onRefresh: () => _load(isRefresh: true),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 8),
-                        if (!_hasPaidPlan) ...[
-                          _PlanCard(
-                            title: locale.t(
-                              subscriptionPlanTitleKey(
-                                SubscriptionPlanTier.solo,
-                              ),
-                            ),
-                            tagline: locale.t(
-                              subscriptionPlanTaglineKey(
-                                SubscriptionPlanTier.solo,
-                              ),
-                            ),
-                            priceLabel: locale.t('subscription.soloFreePrice'),
-                            showPricePeriod: false,
-                            features: subscriptionPlanFeatureLabels(
-                              locale,
-                              SubscriptionPlanTier.solo,
-                            ),
-                            highlighted: false,
-                            showActiveBadge: true,
-                          ),
-                          const SizedBox(height: 20),
-                          _PlanCard(
-                            title: locale.t(
-                              subscriptionPlanTitleKey(
-                                SubscriptionPlanTier.studio,
-                              ),
-                            ),
-                            tagline: locale.t(
-                              subscriptionPlanTaglineKey(
-                                SubscriptionPlanTier.studio,
-                              ),
-                            ),
-                            priceLabel:
-                                _studioPackage?.storeProduct.priceString ??
-                                locale.t('subscription.studioFallbackPrice'),
-                            isPriceLoading: _pricesLoading,
-                            features: subscriptionPlanFeatureLabels(
-                              locale,
-                              SubscriptionPlanTier.studio,
-                            ),
-                            subscribeLabel: locale.t(
-                              'subscription.subscribeToStudioBtn',
-                            ),
-                            isLoading: _checkoutLoading == 'studio',
-                            onSubscribe: _pricesLoading
-                                ? null
-                                : () => _handleSelectPlan('studio'),
-                          ),
-                          const SizedBox(height: 20),
-                          _PlanCard(
-                            title: locale.t(
-                              subscriptionPlanTitleKey(
-                                SubscriptionPlanTier.enterprise,
-                              ),
-                            ),
-                            tagline: locale.t(
-                              subscriptionPlanTaglineKey(
-                                SubscriptionPlanTier.enterprise,
-                              ),
-                            ),
-                            priceLabel:
-                                _enterprisePackage?.storeProduct.priceString ??
-                                locale.t(
-                                  'subscription.enterpriseFallbackPrice',
-                                ),
-                            isPriceLoading: _pricesLoading,
-                            features: subscriptionPlanFeatureLabels(
-                              locale,
-                              SubscriptionPlanTier.enterprise,
-                            ),
-                            subscribeLabel: locale.t(
-                              'subscription.subscribeToEnterpriseBtn',
-                            ),
-                            isLoading: _checkoutLoading == 'enterprise',
-                            onSubscribe: _pricesLoading
-                                ? null
-                                : () => _handleSelectPlan('enterprise'),
-                          ),
-
-                          const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: _restoreLoading
-                                ? null
-                                : _restorePurchases,
-                            child: Text(
-                              _restoreLoading
-                                  ? locale.t('common.loading')
-                                  : locale.t('subscription.restorePurchases'),
-                              style: _subscriptionButtonTextStyle(),
-                            ),
-                          ),
-                        ] else ...[
-                          _ProStatusCard(
-                            priceLabel: _proPriceDisplay(),
-                            isPriceLoading: _pricesLoading,
-                            periodLabel: locale.t('subscription.perOneMonth'),
-                            nextPaymentDate:
-                                _nextPaymentDateLabel(context) ?? '—',
-                            activeLabel: locale.t('profile.active'),
-                            planTitle: locale.t(
-                              subscriptionPlanTitleKey(_activePlanTier),
-                            ),
-                            tagline: locale.t(
-                              subscriptionPlanTaglineKey(_activePlanTier),
-                            ),
-                            nextPaymentLabel: locale.t(
-                              'subscription.nextPayment',
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _ProWhatsIncludedCard(
-                            title: locale.t('subscription.whatsIncluded'),
-                            features: subscriptionPlanFeatureLabels(
-                              locale,
-                              _activePlanTier,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            height: AuthFormStyles.buttonHeight,
-                            child: FilledButton(
-                              onPressed: _openManageSubscription,
-                              style: AuthFormStyles.primaryButtonStyle(),
-                              child: Text(
-                                locale.t('subscription.manageSubscription'),
-                                style: _subscriptionButtonTextStyle(),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (!AppConfig.isRevenueCatEnabled && !kReleaseMode)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Text(
-                              locale.t('subscription.storeNotConfigured'),
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: AppColors.textTertiary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                      ],
+            onRefresh: () => _load(isRefresh: true),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 8),
+                  if (!_hasPaidPlan) ...[
+                    _PlanCard(
+                      title: locale.t(
+                        subscriptionPlanTitleKey(SubscriptionPlanTier.solo),
+                      ),
+                      tagline: locale.t(
+                        subscriptionPlanTaglineKey(SubscriptionPlanTier.solo),
+                      ),
+                      priceLabel: locale.t('subscription.soloFreePrice'),
+                      showPricePeriod: false,
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        SubscriptionPlanTier.solo,
+                      ),
+                      highlighted: false,
+                      showActiveBadge: true,
                     ),
-                  ),
-                ),
+                    const SizedBox(height: 20),
+                    _PlanCard(
+                      title: locale.t(
+                        subscriptionPlanTitleKey(SubscriptionPlanTier.studio),
+                      ),
+                      tagline: locale.t(
+                        subscriptionPlanTaglineKey(SubscriptionPlanTier.studio),
+                      ),
+                      priceLabel:
+                          _studioPackage?.storeProduct.priceString ??
+                          locale.t('subscription.studioFallbackPrice'),
+                      isPriceLoading: _pricesLoading,
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        SubscriptionPlanTier.studio,
+                      ),
+                      subscribeLabel: locale.t(
+                        'subscription.subscribeToStudioBtn',
+                      ),
+                      isLoading: _checkoutLoading == 'studio',
+                      onSubscribe: _pricesLoading
+                          ? null
+                          : () => _handleSelectPlan('studio'),
+                    ),
+                    const SizedBox(height: 20),
+                    _PlanCard(
+                      title: locale.t(
+                        subscriptionPlanTitleKey(
+                          SubscriptionPlanTier.enterprise,
+                        ),
+                      ),
+                      tagline: locale.t(
+                        subscriptionPlanTaglineKey(
+                          SubscriptionPlanTier.enterprise,
+                        ),
+                      ),
+                      priceLabel:
+                          _enterprisePackage?.storeProduct.priceString ??
+                          locale.t('subscription.enterpriseFallbackPrice'),
+                      isPriceLoading: _pricesLoading,
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        SubscriptionPlanTier.enterprise,
+                      ),
+                      subscribeLabel: locale.t(
+                        'subscription.subscribeToEnterpriseBtn',
+                      ),
+                      isLoading: _checkoutLoading == 'enterprise',
+                      onSubscribe: _pricesLoading
+                          ? null
+                          : () => _handleSelectPlan('enterprise'),
+                    ),
+
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _restoreLoading ? null : _restorePurchases,
+                      child: Text(
+                        _restoreLoading
+                            ? locale.t('common.loading')
+                            : locale.t('subscription.restorePurchases'),
+                        style: _subscriptionButtonTextStyle(),
+                      ),
+                    ),
+                  ] else ...[
+                    _ProStatusCard(
+                      priceLabel: _proPriceDisplay(),
+                      isPriceLoading: _pricesLoading,
+                      periodLabel: locale.t('subscription.perOneMonth'),
+                      nextPaymentDate: _nextPaymentDateLabel(context) ?? '—',
+                      activeLabel: locale.t('profile.active'),
+                      planTitle: locale.t(
+                        subscriptionPlanTitleKey(_activePlanTier),
+                      ),
+                      tagline: locale.t(
+                        subscriptionPlanTaglineKey(_activePlanTier),
+                      ),
+                      nextPaymentLabel: locale.t('subscription.nextPayment'),
+                    ),
+                    const SizedBox(height: 12),
+                    _ProWhatsIncludedCard(
+                      title: locale.t('subscription.whatsIncluded'),
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        _activePlanTier,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: AuthFormStyles.buttonHeight,
+                      child: FilledButton(
+                        onPressed: _openManageSubscription,
+                        style: AuthFormStyles.primaryButtonStyle(),
+                        child: Text(
+                          locale.t('subscription.manageSubscription'),
+                          style: _subscriptionButtonTextStyle(),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (!AppConfig.isRevenueCatEnabled && !kReleaseMode)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text(
+                        locale.t('subscription.storeNotConfigured'),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.textTertiary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
@@ -905,8 +909,7 @@ class _PlanCard extends StatelessWidget {
               width: double.infinity,
               height: AuthFormStyles.buttonHeight,
               child: FilledButton(
-                onPressed:
-                    isLoading || isPriceLoading ? null : onSubscribe,
+                onPressed: isLoading || isPriceLoading ? null : onSubscribe,
                 style: AuthFormStyles.primaryButtonStyle(),
                 child: isLoading
                     ? const SizedBox(

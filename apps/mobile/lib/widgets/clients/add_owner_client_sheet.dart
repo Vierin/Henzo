@@ -692,6 +692,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               iconAsset: 'assets/icons/icon-profile-large.svg',
               title: tr('ownerClient.anonymousSpotTitle'),
               subtitle: tr('ownerClient.anonymousSpotSubtitle'),
+              loading: _saving,
               onTap: _saving ? null : _enrollAnonymous,
             ),
           ],
@@ -948,12 +949,14 @@ class _SourceCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.onTap,
+    this.loading = false,
   });
 
   final String iconAsset;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -968,7 +971,20 @@ class _SourceCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SvgPicture.asset(iconAsset, width: 24, height: 20),
+              if (loading)
+                const SizedBox(
+                  width: 24,
+                  height: 20,
+                  child: Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                )
+              else
+                SvgPicture.asset(iconAsset, width: 24, height: 20),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

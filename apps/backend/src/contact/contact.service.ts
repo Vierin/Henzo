@@ -25,6 +25,26 @@ export class ContactService {
       },
     });
 
+    await this.notifyTelegram({
+      name,
+      email,
+      message: `🌐 Web contact\n\n${message}`,
+    });
+
+    try {
+      await this.prisma.appFeedback.create({
+        data: {
+          name,
+          email,
+          message,
+          source: 'web',
+          status: 'open',
+        },
+      });
+    } catch (error) {
+      console.error('AppFeedback persist error (web contact):', error);
+    }
+
     return {
       success: true,
       message:
@@ -49,6 +69,8 @@ export class ContactService {
           message,
           platform: platform?.trim() || null,
           appVersion: appVersion?.trim() || null,
+          source: 'mobile',
+          status: 'open',
         },
       });
     } catch (error) {

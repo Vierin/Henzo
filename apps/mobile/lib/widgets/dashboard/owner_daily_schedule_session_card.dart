@@ -120,6 +120,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.showSubtitleLeadingIcon = true,
     this.useLargeTrainerIcon = false,
     this.secondaryTimeLabel,
+    this.statusBadgeLabel,
+    this.statusBadgeBackgroundColor,
+    this.statusBadgeTextColor,
     required this.onTap,
   });
 
@@ -168,6 +171,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
 
   /// When set, replaces the duration line under start time (e.g. Passes).
   final String? secondaryTimeLabel;
+  final String? statusBadgeLabel;
+  final Color? statusBadgeBackgroundColor;
+  final Color? statusBadgeTextColor;
   final VoidCallback onTap;
 
   @override
@@ -204,10 +210,11 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     );
     final priceText = trailingPriceLabel?.trim() ?? '';
     final priceColor = trailingPriceColor ?? accent;
+    final badgeLabel = statusBadgeLabel?.trim() ?? '';
+    final hasStatusBadge = badgeLabel.isNotEmpty;
     final hasBookAction = isBooked || onBookAgain != null || bookActionLoading;
-    final hasReviewAction = onLeaveReview != null ||
-        leaveReviewLoading ||
-        leaveReviewSubmitted;
+    final hasReviewAction =
+        onLeaveReview != null || leaveReviewLoading || leaveReviewSubmitted;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
     final showPriceAboveBook = priceText.isNotEmpty && hasBookAction;
     final trailingInset =
@@ -417,6 +424,38 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         ),
                       ),
                     )
+                  : hasStatusBadge
+                  ? Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              statusBadgeBackgroundColor ??
+                              const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color:
+                                (statusBadgeTextColor ??
+                                        const Color(0xFFEF6C00))
+                                    .withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          badgeLabel,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
+                            color:
+                                statusBadgeTextColor ?? const Color(0xFFEF6C00),
+                          ),
+                        ),
+                      ),
+                    )
                   : hasBookAction || hasReviewAction
                   ? Center(
                       child: _ScheduleTrailingActions(
@@ -607,9 +646,7 @@ class _ScheduleReviewButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = !loading && !disabled && onPressed != null;
-    final color = disabled
-        ? AppColors.textTertiary
-        : AppColors.primary500;
+    final color = disabled ? AppColors.textTertiary : AppColors.primary500;
     return TextButton(
       onPressed: isEnabled ? onPressed : null,
       style: TextButton.styleFrom(

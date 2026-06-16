@@ -1,4 +1,6 @@
 import '../l10n/locale_provider.dart';
+import '../models/subscription.dart';
+import 'subscription_tier.dart';
 
 /// Solo / Studio / Enterprise — feature copy lives in l10n only.
 enum SubscriptionPlanTier { solo, studio, enterprise }
@@ -57,4 +59,12 @@ SubscriptionPlanTier subscriptionPlanTierFromSubscriptionType(String? type) {
   if (t == 'ENTERPRISE') return SubscriptionPlanTier.enterprise;
   if (t == 'STUDIO' || t == 'PRO') return SubscriptionPlanTier.studio;
   return SubscriptionPlanTier.solo;
+}
+
+bool subscriptionPlanHasAnalyticsAccess(Subscription? subscription) {
+  if (subscription == null) return false;
+  return subscriptionIsActivePaid(
+    type: subscription.type,
+    status: subscription.status,
+  );
 }

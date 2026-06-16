@@ -448,7 +448,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
     final durationOk = duration > 0;
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
-    final capacityOk = capacity > 0;
+    final capacityOk = capacity > 0 && capacity <= 30;
     final priceOk = _parsePriceDigits() > 0;
     final categoryOk = _categories.isEmpty || _selectedCategoryId != null;
 
@@ -1450,7 +1450,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       );
       return;
     }
-    if (duration <= 0 || capacity <= 0 || price <= 0) {
+    if (duration <= 0 || capacity <= 0 || capacity > 30 || price <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(
@@ -1890,6 +1890,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                     style: _stepFieldInputStyle,
                                     keyboardType: TextInputType.number,
                                     textInputAction: TextInputAction.next,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      _MaxIntValueFormatter(30),
+                                    ],
                                     onChanged: (_) => setState(
                                       () => _step1CapacityError = false,
                                     ),
@@ -2009,6 +2013,29 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               ),
       ),
     );
+  }
+}
+
+class _MaxIntValueFormatter extends TextInputFormatter {
+  final int max;
+  _MaxIntValueFormatter(this.max);
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+    final n = int.tryParse(newValue.text);
+    if (n == null) return oldValue;
+    if (n > max) {
+      final clamped = max.toString();
+      return TextEditingValue(
+        text: clamped,
+        selection: TextSelection.collapsed(offset: clamped.length),
+      );
+    }
+    return newValue;
   }
 }
 

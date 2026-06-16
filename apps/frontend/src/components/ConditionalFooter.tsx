@@ -41,7 +41,7 @@ export default function ConditionalFooter() {
     return null;
   }
 
-  // Full-bleed public studio card (has its own layout)
+  // Studio share landing (AppOpenLanding, full-bleed)
   if (pathname.includes('/studio/')) {
     return null;
   }

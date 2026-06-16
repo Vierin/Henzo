@@ -393,12 +393,7 @@ export class StudiosService {
     }
 
     const hasTraining = (studio._count?.Training ?? 0) > 0;
-    const hasLogo = this.hasLogoUrl(studio.logoUrl);
     const hasPhoto = this.hasAtLeastOnePhoto(studio.photos);
-    const hasDescription =
-      typeof studio.description === 'string' &&
-      studio.description.trim().length > 0;
-    const contactsConfigured = this.hasContactInfo(studio);
 
     const missingRequiredSteps: string[] = [];
     if (!hasTraining) missingRequiredSteps.push('hasTraining');
@@ -420,18 +415,6 @@ export class StudiosService {
         hasPhoto: {
           required: true,
           completed: hasPhoto,
-        },
-        hasLogo: {
-          required: false,
-          completed: hasLogo,
-        },
-        hasDescription: {
-          required: false,
-          completed: hasDescription,
-        },
-        contactsConfigured: {
-          required: false,
-          completed: contactsConfigured,
         },
       },
     };
@@ -1262,16 +1245,15 @@ export class StudiosService {
       // Check if Studio already exists for this user
       const existingStudio = await studioRepo.findFirst({
         where: { ownerId: userId },
+        select: {
+          id: true,
+          ownerId: true,
+        },
       });
 
       if (existingStudio) {
-        // Idempotent behavior: return existing studio instead of throwing.
-        // This prevents mobile setup flow from getting stuck in "Setup required".
-        const currentStudio = await this.getCurrentUserStudio(userId);
-        if (currentStudio) {
-          return currentStudio;
-        }
-        return existingStudio;
+        // Idempotent behavior: keep onboarding unblocked when studio already exists.
+        return this.getCurrentUserStudio(userId);
       }
 
       this.assertStudioTextContent({

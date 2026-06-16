@@ -637,7 +637,9 @@ class _OwnerEditTrainingSessionScreenState
   Future<void> _cancelSession(LocaleProvider locale) async {
     final session = _initial;
     if (session == null) return;
-    if (!session.effectiveEndsAt.isAfter(DateTime.now()) ||
+    final now = DateTime.now();
+    if ((!session.effectiveEndsAt.isAfter(now) &&
+            !session.startsAt.isAfter(now)) ||
         session.status.toUpperCase() == 'CANCELLED' ||
         session.status.toUpperCase() == 'COMPLETED') {
       return;
@@ -695,7 +697,9 @@ class _OwnerEditTrainingSessionScreenState
     }
 
     final statusUpper = session.status.toUpperCase();
-    final completed = !session.effectiveEndsAt.isAfter(DateTime.now());
+    final nowTs = DateTime.now();
+    final completed = !session.effectiveEndsAt.isAfter(nowTs) &&
+        !session.startsAt.isAfter(nowTs);
     final canEditSchedule = !completed;
     final canPickLocation =
         canEditSchedule && !_loadingTrainers && _locations.length > 1;
@@ -827,7 +831,7 @@ class _OwnerEditTrainingSessionScreenState
               : Text(locale.t('common.save')),
         ),
       ),
-      if (!completed && statusUpper != 'CANCELLED') ...[
+      if (!completed && statusUpper != 'CANCELLED' && statusUpper != 'COMPLETED') ...[
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,

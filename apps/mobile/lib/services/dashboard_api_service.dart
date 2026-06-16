@@ -107,8 +107,7 @@ class OwnerTrainingSession {
                   (training is Map<String, dynamic> ? training['id'] : null) ??
                   '')
               .toString(),
-      startsAt:
-          parseApiDateTime(json['startsAt']) ?? DateTime.now(),
+      startsAt: parseApiDateTime(json['startsAt']) ?? DateTime.now(),
       endsAt: parseApiDateTime(json['endsAt']) ?? DateTime.now(),
       status: (json['status'] ?? 'ACTIVE').toString(),
       capacity: (json['capacity'] as num?)?.toInt() ?? 0,
@@ -132,8 +131,8 @@ class OwnerTrainingSession {
           : null,
       trainingLanguage: training is Map<String, dynamic>
           ? (training['language'] as String?)?.trim().isNotEmpty == true
-              ? (training['language'] as String).trim()
-              : null
+                ? (training['language'] as String).trim()
+                : null
           : null,
       trainingCategoryNameEn: catEn,
       trainingCategoryNameRu: catRu,
@@ -179,6 +178,7 @@ class OwnerTrainingSession {
     if (trainerId != null) 'trainerId': trainerId,
     if (locationId != null) 'locationId': locationId,
     if (locationName != null) 'locationName': locationName,
+    'waitlistCount': waitlistCount,
   };
 
   factory OwnerTrainingSession.fromRouteArgs(Map<String, dynamic> m) {
@@ -206,6 +206,7 @@ class OwnerTrainingSession {
           : trainerRaw.toString(),
       locationId: m['locationId']?.toString(),
       locationName: m['locationName']?.toString(),
+      waitlistCount: (m['waitlistCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -225,34 +226,35 @@ class OwnerTrainingSession {
     String? trainingCategoryNameEn,
     String? trainingCategoryNameRu,
     String? trainingCategoryNameVn,
-  }) =>
-      OwnerTrainingSession(
-        sessionId: sessionId,
-        trainingId: trainingId,
-        startsAt: startsAt ?? this.startsAt,
-        endsAt: endsAt ?? this.endsAt,
-        status: status ?? this.status,
-        capacity: capacity,
-        enrolledCount: enrolledCount ?? this.enrolledCount,
-        attendedCount: attendedCount ?? this.attendedCount,
-        trainingName: trainingName ?? this.trainingName,
-        trainingPrice: trainingPrice ?? this.trainingPrice,
-        trainingDurationMinutes:
-            trainingDurationMinutes ?? this.trainingDurationMinutes,
-        trainingDisplayColorHex:
-            trainingDisplayColorHex ?? this.trainingDisplayColorHex,
-        trainingLanguage: trainingLanguage ?? this.trainingLanguage,
-        trainingCategoryNameEn:
-            trainingCategoryNameEn ?? this.trainingCategoryNameEn,
-        trainingCategoryNameRu:
-            trainingCategoryNameRu ?? this.trainingCategoryNameRu,
-        trainingCategoryNameVn:
-            trainingCategoryNameVn ?? this.trainingCategoryNameVn,
-        trainerName: trainerName,
-        trainerId: trainerId,
-        locationId: locationId ?? this.locationId,
-        locationName: locationName ?? this.locationName,
-      );
+    int? waitlistCount,
+  }) => OwnerTrainingSession(
+    sessionId: sessionId,
+    trainingId: trainingId,
+    startsAt: startsAt ?? this.startsAt,
+    endsAt: endsAt ?? this.endsAt,
+    status: status ?? this.status,
+    capacity: capacity,
+    enrolledCount: enrolledCount ?? this.enrolledCount,
+    attendedCount: attendedCount ?? this.attendedCount,
+    trainingName: trainingName ?? this.trainingName,
+    trainingPrice: trainingPrice ?? this.trainingPrice,
+    trainingDurationMinutes:
+        trainingDurationMinutes ?? this.trainingDurationMinutes,
+    trainingDisplayColorHex:
+        trainingDisplayColorHex ?? this.trainingDisplayColorHex,
+    trainingLanguage: trainingLanguage ?? this.trainingLanguage,
+    trainingCategoryNameEn:
+        trainingCategoryNameEn ?? this.trainingCategoryNameEn,
+    trainingCategoryNameRu:
+        trainingCategoryNameRu ?? this.trainingCategoryNameRu,
+    trainingCategoryNameVn:
+        trainingCategoryNameVn ?? this.trainingCategoryNameVn,
+    trainerName: trainerName,
+    trainerId: trainerId,
+    locationId: locationId ?? this.locationId,
+    locationName: locationName ?? this.locationName,
+    waitlistCount: waitlistCount ?? this.waitlistCount,
+  );
 
   /// When API [endsAt] is missing or invalid, derive from [startsAt] + duration.
   DateTime get effectiveEndsAt {
@@ -342,6 +344,38 @@ class OwnerSessionEnrollment {
           DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
           DateTime.now(),
       cancelledAt: DateTime.tryParse((json['cancelledAt'] ?? '').toString()),
+      name: user is Map<String, dynamic> ? user['name']?.toString() : null,
+      email: user is Map<String, dynamic> ? user['email']?.toString() : null,
+      phone: user is Map<String, dynamic> ? user['phone']?.toString() : null,
+    );
+  }
+}
+
+class OwnerSessionWaitlistEntry {
+  final String entryId;
+  final String userId;
+  final DateTime createdAt;
+  final String? name;
+  final String? email;
+  final String? phone;
+
+  const OwnerSessionWaitlistEntry({
+    required this.entryId,
+    required this.userId,
+    required this.createdAt,
+    this.name,
+    this.email,
+    this.phone,
+  });
+
+  factory OwnerSessionWaitlistEntry.fromJson(Map<String, dynamic> json) {
+    final user = json['user'];
+    return OwnerSessionWaitlistEntry(
+      entryId: (json['entryId'] ?? '').toString(),
+      userId: (json['userId'] ?? '').toString(),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+          DateTime.now(),
       name: user is Map<String, dynamic> ? user['name']?.toString() : null,
       email: user is Map<String, dynamic> ? user['email']?.toString() : null,
       phone: user is Map<String, dynamic> ? user['phone']?.toString() : null,
@@ -448,10 +482,9 @@ class StudioAnalytics {
           ? _asInt(clients['inactive'])
           : 0,
       analyticsTier: (json['analyticsTier'] ?? 'SOLO').toString(),
-      isPro: json['isPro'] == true ||
-          subscriptionTypeIsPaid(
-            (json['analyticsTier'] ?? '').toString(),
-          ),
+      isPro:
+          json['isPro'] == true ||
+          subscriptionTypeIsPaid((json['analyticsTier'] ?? '').toString()),
       proLocked: json['proLocked'] == true,
     );
   }
@@ -623,10 +656,11 @@ class DashboardApiService {
         return null;
       }
       final data = body['data'];
+      if (data == null) return null;
       if (data is Map<String, dynamic>) {
         return Subscription.fromJson(Map<String, dynamic>.from(data));
       }
-      return Subscription.fromJson(body);
+      return null;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[DashboardAPI] getCurrentSubscription: $e');
       return null;
@@ -902,7 +936,8 @@ class DashboardApiService {
     if (serviceId != null && serviceId.isNotEmpty) {
       body['serviceId'] = serviceId;
     }
-    if (trainerId != null && trainerId.isNotEmpty) body['trainerId'] = trainerId;
+    if (trainerId != null && trainerId.isNotEmpty)
+      body['trainerId'] = trainerId;
     if (timeIso != null && timeIso.isNotEmpty) body['time'] = timeIso;
     if (notes != null) body['notes'] = notes;
     if (status != null && status.isNotEmpty) body['status'] = status;
@@ -1040,6 +1075,48 @@ class DashboardApiService {
     );
   }
 
+  static Future<List<OwnerSessionWaitlistEntry>> getOwnerSessionWaitlist(
+    String accessToken,
+    String sessionId,
+  ) async {
+    final raw = await ApiClient.get(
+      '/fitness/owner/training-sessions/$sessionId/waitlist',
+      accessToken,
+    );
+    if (raw is! List) return [];
+    final items = <OwnerSessionWaitlistEntry>[];
+    for (final item in raw) {
+      if (item is Map<String, dynamic>) {
+        items.add(
+          OwnerSessionWaitlistEntry.fromJson(Map<String, dynamic>.from(item)),
+        );
+      }
+    }
+    return items;
+  }
+
+  static Future<void> promoteOwnerSessionWaitlistEntry(
+    String accessToken,
+    String sessionId,
+    String entryId,
+  ) async {
+    await ApiClient.post(
+      '/fitness/owner/training-sessions/$sessionId/waitlist/$entryId/promote',
+      accessToken,
+    );
+  }
+
+  static Future<void> removeOwnerSessionWaitlistEntry(
+    String accessToken,
+    String sessionId,
+    String entryId,
+  ) async {
+    await ApiClient.delete(
+      '/fitness/owner/training-sessions/$sessionId/waitlist/$entryId',
+      accessToken,
+    );
+  }
+
   static Future<List<OwnerStudioClientRow>> getOwnerStudioClients(
     String accessToken,
   ) async {
@@ -1050,9 +1127,11 @@ class DashboardApiService {
       );
       if (raw is! List) return [];
       return raw
-          .map((e) => OwnerStudioClientRow.fromJson(
-                Map<String, dynamic>.from(e as Map),
-              ))
+          .map(
+            (e) => OwnerStudioClientRow.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
           .toList();
     } on ApiException catch (e) {
       if (e.message.toLowerCase().contains('studio not found')) {
@@ -1073,9 +1152,11 @@ class DashboardApiService {
     );
     if (raw is! List) return [];
     return raw
-        .map((e) => OwnerStudioClientSearchHit.fromJson(
-              Map<String, dynamic>.from(e as Map),
-            ))
+        .map(
+          (e) => OwnerStudioClientSearchHit.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ),
+        )
         .toList();
   }
 

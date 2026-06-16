@@ -90,7 +90,9 @@ jobs:
 
             git -C "$APP_DIR" fetch origin
             git -C "$APP_DIR" checkout staging
-            git -C "$APP_DIR" pull --ff-only origin staging
+            # reset --hard: deploy server must match remote exactly (pull fails on
+            # untracked files that were added to the repo, e.g. setup-certbot-auto-renew.sh)
+            git -C "$APP_DIR" reset --hard origin/staging
 
             cd "$BACKEND_DIR"
             docker compose -f docker-compose.yml config --services \

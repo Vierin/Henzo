@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
+import 'settings_form_tokens.dart';
 import 'settings_typography.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -25,6 +26,64 @@ class SettingsSectionLabel extends StatelessWidget {
     return Text(
       title.toUpperCase(),
       style: SettingsTypography.sectionTitle(context),
+    );
+  }
+}
+
+/// Form section headers (studio profile, account settings, onboarding).
+class SettingsFormSectionLabel extends StatelessWidget {
+  const SettingsFormSectionLabel({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title.toUpperCase(),
+      style: TextStyle(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// Titled block for owner studio / account forms.
+class SettingsFormSection extends StatelessWidget {
+  const SettingsFormSection({
+    super.key,
+    required this.title,
+    required this.child,
+    this.carded = true,
+    this.titleGap = 8,
+  });
+
+  static const double cardPadding = 16;
+
+  final String title;
+  final Widget child;
+  final bool carded;
+  final double titleGap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsFormSectionLabel(title: title),
+        SizedBox(height: titleGap),
+        if (carded)
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: settingsSectionDecoration(),
+            padding: const EdgeInsets.all(cardPadding),
+            child: child,
+          )
+        else
+          child,
+      ],
     );
   }
 }

@@ -19,13 +19,18 @@ import { Public } from './public.decorator';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { GetUserRoleDto } from './dto/get-user-role.dto';
+import { assertAdmin } from '../admin/admin-auth.util';
+import { AdminEventLogService } from '../admin/admin-event-log.service';
 
 @Throttle({ short: { limit: 25, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly adminEventLog: AdminEventLogService,
+  ) {}
 
   @Public()
   @Post('register-owner/request-code')
@@ -331,17 +336,25 @@ export class AuthController {
     @Headers('authorization') authHeader: string,
   ) {
     try {
-      // Проверяем, что запрос делает админ
-      const currentUser = await this.authService.getCurrentUser(authHeader);
-      if (currentUser.user.role !== 'ADMIN') {
-        throw new Error('Only admins can update user roles');
-      }
+      const admin = await assertAdmin(this.authService, authHeader);
+      const previous = await this.authService.getUserRole(data.userId);
 
       const updatedUser = await this.authService.updateUserRole(
         data.userId,
         data.role,
         { allowPrivilegeEscalation: true },
       );
+
+      await this.adminEventLog.logAdminAction({
+        action: 'user_role_changed',
+        adminEmail: admin.email,
+        metadata: {
+          userId: data.userId,
+          previousRole: previous,
+          newRole: data.role,
+        },
+      });
+
       return {
         success: true,
         user: updatedUser,
@@ -363,13 +376,16 @@ export class AuthController {
     @Headers('authorization') authHeader: string,
   ) {
     try {
-      // Проверяем, что запрос делает админ
-      const currentUser = await this.authService.getCurrentUser(authHeader);
-      if (currentUser.user.role !== 'ADMIN') {
-        throw new Error('Only admins can sync users');
-      }
+      const admin = await assertAdmin(this.authService, authHeader);
 
       const user = await this.authService.syncUserFromSupabase(data.userId);
+
+      await this.adminEventLog.logAdminAction({
+        action: 'user_synced',
+        adminEmail: admin.email,
+        metadata: { userId: data.userId },
+      });
+
       return {
         success: true,
         user,

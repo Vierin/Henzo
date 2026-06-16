@@ -255,6 +255,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       if (isBookingAlreadyBookedError(e)) {
         setState(() => _isBookedByMe = true);
         await _load();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(locale.t('clientClassDetail.alreadyBooked'))),
         );
@@ -419,10 +420,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
         child: _loadingCore
-            ? _ClassDetailLoadingView(
-                hintStartsAt: widget.sessionStartsAtHint,
-                distanceKm: widget.distanceKm,
-              )
+            ? const _ClassDetailLoadingView()
             : session == null
             ? _ClassDetailErrorView(
                 message: _error ??
@@ -787,7 +785,8 @@ class _ClassDetailBody extends StatelessWidget {
             ],
           ),
         ),
-        if (startsAt != null)
+        if (startsAt != null &&
+            !ClientScheduleStore.sessionHasEnded(session, DateTime.now()))
           _BookBar(
             startsAt: startsAt,
             onBook: onBook,
@@ -941,25 +940,10 @@ class _ShimmerBoxState extends State<_ShimmerBox>
 }
 
 class _ClassDetailLoadingView extends StatelessWidget {
-  const _ClassDetailLoadingView({
-    required this.hintStartsAt,
-    this.distanceKm,
-  });
-
-  final DateTime hintStartsAt;
-  final double? distanceKm;
+  const _ClassDetailLoadingView();
 
   @override
   Widget build(BuildContext context) {
-    final locale = context.watch<LocaleProvider>();
-    final dateLabel = formatCalendarWeekdayDayMonthUpper(
-      hintStartsAt,
-      locale.localeCode,
-    );
-    final distanceLabel = distanceKm != null
-        ? formatDistanceKmLabel(distanceKm)
-        : null;
-
     return Column(
       children: [
         const _ClassDetailTopBar(),
@@ -995,16 +979,8 @@ class _ClassDetailLoadingView extends StatelessWidget {
                           borderRadius: 999,
                         ),
                         const SizedBox(width: 17),
-                        Expanded(
-                          child: Text(
-                            dateLabel,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
+                        const Expanded(
+                          child: _ShimmerBox(height: 14, borderRadius: 4),
                         ),
                       ],
                     ),
@@ -1030,16 +1006,6 @@ class _ClassDetailLoadingView extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const _ShimmerBox(height: 52, borderRadius: 10),
-                    if (distanceLabel != null && distanceLabel.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        distanceLabel,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

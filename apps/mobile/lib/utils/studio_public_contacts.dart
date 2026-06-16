@@ -136,7 +136,7 @@ Uri? studioPublicContactUri(StudioPublicContact contact) {
 Future<void> launchStudioPublicContact(StudioPublicContact contact) async {
   final uri = studioPublicContactUri(contact);
   if (uri == null) return;
-  if (await canLaunchUrl(uri)) {
+  try {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
+  } catch (_) {}
 }

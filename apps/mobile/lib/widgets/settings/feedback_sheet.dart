@@ -17,17 +17,42 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 const int _minMessageLength = 10;
 const int _maxMessageLength = 1000;
 
-Future<void> showFeedbackSheet(BuildContext context) {
+class FeedbackSheetTextOverrides {
+  const FeedbackSheetTextOverrides({
+    this.titleKey,
+    this.subtitleKey,
+    this.hintKey,
+  });
+
+  final String? titleKey;
+  final String? subtitleKey;
+  final String? hintKey;
+}
+
+enum FeedbackSheetMessageContext { generic, paymentHelp }
+
+Future<void> showFeedbackSheet(
+  BuildContext context, {
+  FeedbackSheetTextOverrides? textOverrides,
+  FeedbackSheetMessageContext messageContext =
+      FeedbackSheetMessageContext.generic,
+}) {
   return showHenzoModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) => const _FeedbackSheet(),
+    builder: (sheetContext) => _FeedbackSheet(
+      textOverrides: textOverrides,
+      messageContext: messageContext,
+    ),
   );
 }
 
 class _FeedbackSheet extends StatefulWidget {
-  const _FeedbackSheet();
+  const _FeedbackSheet({this.textOverrides, required this.messageContext});
+
+  final FeedbackSheetTextOverrides? textOverrides;
+  final FeedbackSheetMessageContext messageContext;
 
   @override
   State<_FeedbackSheet> createState() => _FeedbackSheetState();
@@ -60,10 +85,15 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   String _buildMessageBody(String userText, UserModel? user) {
     final platform = Platform.isIOS ? 'iOS' : 'Android';
     final role = user?.role.trim();
+    final category = widget.messageContext ==
+            FeedbackSheetMessageContext.paymentHelp
+        ? 'Payment help'
+        : null;
     final lines = <String>[
       userText.trim(),
       '',
       '---',
+      if (category != null) 'Category: $category',
       'Henzo mobile ($platform)',
       if (user != null) 'User id: ${user.id}',
       if (role != null && role.isNotEmpty) 'Role: $role',
@@ -77,9 +107,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
     final text = _messageController.text.trim();
 
     if (text.length < _minMessageLength) {
-      setState(
-        () => _validationError = t('settings.feedback.messageTooShort'),
-      );
+      setState(() => _validationError = t('settings.feedback.messageTooShort'));
       return;
     }
 
@@ -118,6 +146,12 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final t = locale.t;
+    final titleKey =
+        widget.textOverrides?.titleKey ?? 'settings.feedback.sheetTitle';
+    final subtitleKey =
+        widget.textOverrides?.subtitleKey ?? 'settings.feedback.sheetSubtitle';
+    final hintKey =
+        widget.textOverrides?.hintKey ?? 'settings.feedback.messageHint';
 
     return SafeArea(
       top: false,
@@ -142,7 +176,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      t('settings.feedback.sheetTitle'),
+                      t(titleKey),
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.w700,
@@ -170,7 +204,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
               ),
               const SizedBox(height: 4),
               Text(
-                t('settings.feedback.sheetSubtitle'),
+                t(subtitleKey),
                 style: TextStyle(
                   fontSize: 14.sp,
                   color: AppColors.textSecondary,
@@ -187,7 +221,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
                 enabled: !_sending,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: settingsInputDecoration(
-                  hintText: t('settings.feedback.messageHint'),
+                  hintText: t(hintKey),
                   maxLines: 5,
                 ),
                 onChanged: (_) {
@@ -201,10 +235,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
                 SelectableText.rich(
                   TextSpan(
                     text: _validationError,
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 13.sp,
-                    ),
+                    style: TextStyle(color: Colors.red, fontSize: 13.sp),
                   ),
                 ),
               ],

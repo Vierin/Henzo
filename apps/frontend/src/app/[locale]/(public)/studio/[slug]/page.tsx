@@ -1,10 +1,9 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { serverApiGet } from '@/lib/api-server';
-import { isLocale, type Locale } from '@/i18n/routing';
+import { isLocale } from '@/i18n/routing';
 import { buildDynamicPageMetadata, resolveLocale } from '@/seo';
-import StudioPublicClient from './StudioPublicClient';
-import type { PublicStudioPayload } from './types';
+import { StudioShareLanding } from './studioShareLanding';
 
 export async function generateMetadata({
   params,
@@ -13,41 +12,31 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale: raw, slug } = await params;
   const locale = resolveLocale(raw);
-  const data = await serverApiGet<PublicStudioPayload>(
-    `/studios/public/by-slug/${encodeURIComponent(slug)}`,
-    { revalidate: 120 },
-  );
-  if (!data) {
-    return { title: 'Studio' };
-  }
-  const title = data.name || 'Studio';
-  const desc =
-    (data.descriptionEn || data.description || '').trim().slice(0, 160) ||
-    `${title} · Henzo`;
-  const og = data.photos?.[0];
   return buildDynamicPageMetadata(locale, {
     pathAfterLocale: `/studio/${slug}`,
-    title,
-    description: desc,
-    ...(og ? { images: [og] } : {}),
+    title: 'Henzo',
+    description: 'Open Henzo to view the studio schedule and book a class.',
   });
 }
 
-export default async function StudioPublicPage({
+export default async function StudioSharePage({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale: raw, slug } = await params;
   if (!isLocale(raw)) notFound();
-  const locale = raw as Locale;
+  if (!slug?.trim()) notFound();
 
-  const studio = await serverApiGet<PublicStudioPayload>(
-    `/studios/public/by-slug/${encodeURIComponent(slug)}`,
-    { revalidate: 120 },
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-white">
+          <p className="text-sm text-gray-400">Loading…</p>
+        </div>
+      }
+    >
+      <StudioShareLanding />
+    </Suspense>
   );
-
-  if (!studio) notFound();
-
-  return <StudioPublicClient locale={locale} studio={studio} />;
 }

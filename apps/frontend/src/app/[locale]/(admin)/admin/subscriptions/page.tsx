@@ -96,6 +96,33 @@ function SubscriptionsContent() {
                 return cpe ? new Date(cpe).toLocaleDateString() : '—';
               },
             },
+            {
+              key: 'override',
+              header: 'Override',
+              render: (r) =>
+                r.manualOverride ? (
+                  <span className="text-xs text-amber-700">Manual</span>
+                ) : (
+                  '—'
+                ),
+            },
+            {
+              key: 'link',
+              header: '',
+              render: (r) => {
+                const studio = r.Studio as { id?: string } | undefined;
+                return studio?.id ? (
+                  <a
+                    href={`/en/admin/studios/${studio.id}?tab=subscription`}
+                    className="text-sm text-[#3F3287] hover:underline"
+                  >
+                    Open
+                  </a>
+                ) : (
+                  '—'
+                );
+              },
+            },
           ]}
         />
       </div>

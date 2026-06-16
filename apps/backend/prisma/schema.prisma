@@ -175,6 +175,9 @@ model Subscription {
   startDate         DateTime
   /// End of the current paid period (from Stripe), when known.
   currentPeriodEnd  DateTime?
+  manualOverride    Boolean            @default(false)
+  manualOverrideAt  DateTime?
+  manualOverrideBy  String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime
   Studio            Studio             @relation(fields: [studioId], references: [id])
@@ -379,15 +382,20 @@ model AdminEventLog {
 }
 
 model AppFeedback {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   name       String
   email      String
   message    String
   platform   String?
   appVersion String?
-  createdAt  DateTime @default(now())
+  status     String    @default("open")
+  adminNote  String?
+  resolvedAt DateTime?
+  source     String    @default("mobile")
+  createdAt  DateTime  @default(now())
 
   @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 model TrainerInvite {

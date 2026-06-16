@@ -162,6 +162,20 @@ export class FitnessSessionsService {
 
     const studio = await this.prisma.studio.findFirst({
       where: { id: dto.studioId, ownerId: currentUser.user.id },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new Error('Studio not found or not owned by user');
+    }
+
+    return this.createRecurringSessionsForStudio(dto);
+  }
+
+  async createRecurringSessionsForStudio(
+    dto: CreateRecurringTrainingSessionsDto,
+  ) {
+    const studio = await this.prisma.studio.findFirst({
+      where: { id: dto.studioId },
       select: {
         id: true,
         name: true,
@@ -170,7 +184,7 @@ export class FitnessSessionsService {
       },
     });
     if (!studio) {
-      throw new Error('Studio not found or not owned by user');
+      throw new Error('Studio not found');
     }
 
     const training = await this.prisma.training.findFirst({
@@ -814,6 +828,125 @@ export class FitnessSessionsService {
     }));
   }
 
+  async getOwnerSessionWaitlist(authHeader: string, sessionId: string) {
+    await this.getOwnedSessionOrThrow(authHeader, sessionId);
+    const rows = await this.prisma.waitlistEntry.findMany({
+      where: { sessionId },
+      select: {
+        id: true,
+        userId: true,
+        createdAt: true,
+        User: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map((r) => ({
+      entryId: r.id,
+      userId: r.userId,
+      createdAt: r.createdAt.toISOString(),
+      user: {
+        name: r.User.name,
+        email: r.User.email,
+        phone: r.User.phone,
+      },
+    }));
+  }
+
+  async promoteOwnerSessionWaitlistEntry(
+    authHeader: string,
+    sessionId: string,
+    entryId: string,
+  ) {
+    const { session } = await this.getOwnedSessionOrThrow(
+      authHeader,
+      sessionId,
+    );
+    const entry = await this.prisma.waitlistEntry.findFirst({
+      where: { id: entryId, sessionId },
+      select: { id: true, userId: true },
+    });
+    if (!entry) {
+      throw new HttpException('Waitlist entry not found', HttpStatus.NOT_FOUND);
+    }
+    if ((session.bookedCount ?? 0) >= session.capacity) {
+      throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const existingEnrollment = await tx.sessionEnrollment.findFirst({
+        where: { sessionId, userId: entry.userId },
+        select: { id: true, status: true },
+      });
+
+      if (existingEnrollment?.status === SessionEnrollmentStatus.ACTIVE) {
+        await tx.waitlistEntry.delete({ where: { id: entry.id } });
+        await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: { waitlistCount: { decrement: 1 } },
+        });
+        return;
+      }
+
+      if (existingEnrollment) {
+        await tx.sessionEnrollment.update({
+          where: { id: existingEnrollment.id },
+          data: {
+            status: SessionEnrollmentStatus.ACTIVE,
+            cancelledAt: null,
+          },
+        });
+      } else {
+        await tx.sessionEnrollment.create({
+          data: {
+            sessionId,
+            userId: entry.userId,
+            status: SessionEnrollmentStatus.ACTIVE,
+          },
+        });
+      }
+
+      await tx.waitlistEntry.delete({ where: { id: entry.id } });
+      await tx.trainingSession.update({
+        where: { id: sessionId },
+        data: {
+          bookedCount: { increment: 1 },
+          waitlistCount: { decrement: 1 },
+        },
+      });
+    });
+
+    return { success: true };
+  }
+
+  async removeOwnerSessionWaitlistEntry(
+    authHeader: string,
+    sessionId: string,
+    entryId: string,
+  ) {
+    await this.getOwnedSessionOrThrow(authHeader, sessionId);
+    const entry = await this.prisma.waitlistEntry.findFirst({
+      where: { id: entryId, sessionId },
+      select: { id: true },
+    });
+    if (!entry) {
+      throw new HttpException('Waitlist entry not found', HttpStatus.NOT_FOUND);
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.waitlistEntry.delete({ where: { id: entry.id } });
+      await tx.trainingSession.update({
+        where: { id: sessionId },
+        data: { waitlistCount: { decrement: 1 } },
+      });
+    });
+    return { success: true };
+  }
+
   async addOwnerSessionEnrollment(
     authHeader: string,
     sessionId: string,
@@ -1412,9 +1545,35 @@ export class FitnessSessionsService {
       take: 300,
     });
 
+    const waitlistRows = await this.prisma.waitlistEntry.findMany({
+      where: {
+        userId,
+        TrainingSession: {
+          status: TrainingSessionStatus.ACTIVE,
+          startsAt: {
+            gte: fromDate,
+            lte: toDate,
+          },
+        },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        TrainingSession: {
+          select: clientScheduleEnrollmentSelect.TrainingSession.select,
+        },
+      },
+      orderBy: {
+        TrainingSession: {
+          startsAt: 'asc',
+        },
+      },
+      take: 300,
+    });
+
     const studioIds = [
       ...new Set(
-        enrollments
+        [...enrollments, ...waitlistRows]
           .map((e) => e.TrainingSession.Studio?.id)
           .filter((id): id is string => Boolean(id)),
       ),
@@ -1434,7 +1593,18 @@ export class FitnessSessionsService {
       reviewedStudioRows.map((r) => r.studioId),
     );
 
-    return enrollments.map((e) => {
+    const mapScheduleRow = (
+      row: {
+        id: string;
+        createdAt: Date;
+        TrainingSession: (typeof enrollments)[number]['TrainingSession'];
+      },
+      opts?: {
+        waitlisted?: boolean;
+      },
+    ) => {
+      const waitlisted = opts?.waitlisted === true;
+      const e = row;
       const studio = e.TrainingSession.Studio;
       const studioName = studio?.name?.trim() ?? 'Studio';
       const ownerDisplayName =
@@ -1449,9 +1619,11 @@ export class FitnessSessionsService {
       );
 
       return {
-        enrollmentId: e.id,
+        enrollmentId: waitlisted ? null : e.id,
         bookedAt: e.createdAt.toISOString(),
         sessionId: e.TrainingSession.id,
+        bookingStatus: waitlisted ? 'WAITLISTED' : 'ACTIVE',
+        waitlisted,
         startsAt: e.TrainingSession.startsAt.toISOString(),
         endsAt: e.TrainingSession.endsAt.toISOString(),
         sessionStatus: e.TrainingSession.status,
@@ -1494,7 +1666,29 @@ export class FitnessSessionsService {
           : null,
         hasReview: studio?.id ? reviewedStudioIds.has(studio.id) : false,
       };
+    };
+
+    const enrolledSessionIds = new Set(
+      enrollments.map((e) => e.TrainingSession.id),
+    );
+    const waitlistedWithoutEnrollment = waitlistRows.filter(
+      (w) => !enrolledSessionIds.has(w.TrainingSession.id),
+    );
+
+    const merged = [
+      ...enrollments.map((e) => mapScheduleRow(e)),
+      ...waitlistedWithoutEnrollment.map((w) =>
+        mapScheduleRow(w, { waitlisted: true }),
+      ),
+    ];
+
+    merged.sort((a, b) => {
+      const aa = new Date(a.startsAt).getTime();
+      const bb = new Date(b.startsAt).getTime();
+      return aa - bb;
     });
+
+    return merged;
   }
 
   async getClientProfileStats(authHeader: string): Promise<{

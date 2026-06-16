@@ -7,7 +7,10 @@ export type AdminEventType =
   | 'email_reminder_failed'
   | 'subscription_failed'
   | 'revenuecat_webhook_error'
-  | 'crash_free_rate_snapshot';
+  | 'crash_free_rate_snapshot'
+  | 'admin_action'
+  | 'admin_subscription_changed'
+  | 'admin_studio_edited';
 
 @Injectable()
 export class AdminEventLogService {
@@ -48,5 +51,24 @@ export class AdminEventLogService {
     });
     const rate = (row?.metadata as { rate?: number } | null)?.rate;
     return typeof rate === 'number' && Number.isFinite(rate) ? rate : null;
+  }
+
+  async logAdminAction(params: {
+    action: string;
+    adminEmail: string;
+    studioId?: string;
+    metadata?: Prisma.InputJsonValue;
+  }): Promise<void> {
+    await this.log({
+      type: 'admin_action',
+      severity: 'info',
+      message: `${params.action} by ${params.adminEmail}`,
+      studioId: params.studioId,
+      metadata: {
+        action: params.action,
+        adminEmail: params.adminEmail,
+        ...(params.metadata as object),
+      },
+    });
   }
 }

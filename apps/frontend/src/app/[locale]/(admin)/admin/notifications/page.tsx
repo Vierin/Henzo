@@ -33,9 +33,9 @@ function NotificationsContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Notifications</h1>
+      <h1 className="text-2xl font-semibold">Events</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Failed push and email reminder deliveries
+        Operational failures and admin actions
       </p>
       <div className="mt-4">
         <select
@@ -46,9 +46,18 @@ function NotificationsContent() {
           }}
           className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
         >
-          <option value="">All failure types</option>
+          <option value="">Notifications (push/email)</option>
+          <option value="all">All events</option>
           <option value="push_failed">push_failed</option>
           <option value="email_reminder_failed">email_reminder_failed</option>
+          <option value="subscription_failed">subscription_failed</option>
+          <option value="revenuecat_webhook_error">
+            revenuecat_webhook_error
+          </option>
+          <option value="admin_action">admin_action</option>
+          <option value="admin_subscription_changed">
+            admin_subscription_changed
+          </option>
         </select>
       </div>
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
@@ -70,6 +79,11 @@ function NotificationsContent() {
               key: 'message',
               header: 'Message',
               render: (r) => String(r.message ?? '—'),
+            },
+            {
+              key: 'studio',
+              header: 'Studio',
+              render: (r) => String(r.studioId ?? '—'),
             },
             {
               key: 'at',

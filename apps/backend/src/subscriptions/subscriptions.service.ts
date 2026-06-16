@@ -137,6 +137,20 @@ export class SubscriptionsService {
       throw new NotFoundException('Studio not found');
     }
 
+    const existingSub = await this.prisma.subscription.findUnique({
+      where: { studioId: studio.id },
+      select: { manualOverride: true },
+    });
+    if (existingSub?.manualOverride) {
+      const current = await this.prisma.subscription.findUnique({
+        where: { studioId: studio.id },
+      });
+      if (!current) {
+        throw new NotFoundException('Subscription not found');
+      }
+      return this.toCurrentPayload(current);
+    }
+
     const periodEnd = new Date(stripeSub.current_period_end * 1000);
     const startAt = new Date(stripeSub.start_date * 1000);
 
