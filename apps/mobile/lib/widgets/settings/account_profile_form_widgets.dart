@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'settings_list_widgets.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../widgets/auth/auth_form_styles.dart';
@@ -18,15 +19,7 @@ class AccountSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: TextStyle(
-        fontSize: 12.sp,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.4,
-        color: AppColors.textSecondary,
-      ),
-    );
+    return SettingsFormSectionLabel(title: text);
   }
 }
 

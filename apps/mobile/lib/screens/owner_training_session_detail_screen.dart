@@ -59,8 +59,10 @@ class OwnerTrainingSessionDetailScreen extends StatefulWidget {
 class _OwnerTrainingSessionDetailScreenState
     extends State<OwnerTrainingSessionDetailScreen> {
   late Future<List<OwnerSessionEnrollment>> _enrollmentsFuture;
+  late Future<List<OwnerSessionWaitlistEntry>> _waitlistFuture;
   late AuthService _authService;
   late OwnerTrainingSession _session;
+  final Set<String> _waitlistActionIds = <String>{};
 
   /// Optimistic overrides before PATCH (enrollmentId → ACTIVE | NO_SHOW).
   final Map<String, String> _pendingStatusByEnrollmentId = {};
@@ -80,6 +82,7 @@ class _OwnerTrainingSessionDetailScreenState
     _authService = context.read<AuthService>();
     _session = widget.session;
     _enrollmentsFuture = _loadEnrollmentsAndSyncCounts();
+    _waitlistFuture = _loadWaitlist();
   }
 
   Future<List<OwnerSessionEnrollment>> _loadEnrollmentsAndSyncCounts() async {
@@ -159,13 +162,19 @@ class _OwnerTrainingSessionDetailScreenState
     return DashboardApiService.getOwnerSessionEnrollments(token, sessionId);
   }
 
+  Future<List<OwnerSessionWaitlistEntry>> _loadWaitlist() async {
+    final token = _authService.accessToken;
+    if (token == null || token.isEmpty) return [];
+    final sessionId = _session.sessionId;
+    if (sessionId.isEmpty) return [];
+    return DashboardApiService.getOwnerSessionWaitlist(token, sessionId);
+  }
+
   Future<void> _syncEnrollmentsFromServer({bool notifyParent = false}) async {
     final list = await _loadEnrollmentsAndSyncCounts();
     if (!mounted) return;
     setState(() {
-      _session = _session.copyWith(
-        enrolledCount: _activeEnrollmentCount(list),
-      );
+      _session = _session.copyWith(enrolledCount: _activeEnrollmentCount(list));
       _enrollmentsFuture = Future.value(list);
     });
     if (notifyParent) {
@@ -178,8 +187,18 @@ class _OwnerTrainingSessionDetailScreenState
     unawaited(_syncEnrollmentsFromServer());
   }
 
+  Future<void> _refreshWaitlistOnly() async {
+    final list = await _loadWaitlist();
+    if (!mounted) return;
+    setState(() {
+      _waitlistFuture = Future.value(list);
+      _session = _session.copyWith(waitlistCount: list.length);
+    });
+  }
+
   void _reloadEnrollments() {
     unawaited(_syncEnrollmentsFromServer(notifyParent: true));
+    unawaited(_refreshWaitlistOnly());
   }
 
   Color _onAccentContent(Color accent) =>
@@ -209,9 +228,7 @@ class _OwnerTrainingSessionDetailScreenState
     final studioId = token != null
         ? (await studioCache.getStudio(token))?.id
         : null;
-    if (studioId != null &&
-        studioId.isNotEmpty &&
-        s.sessionId.isNotEmpty) {
+    if (studioId != null && studioId.isNotEmpty && s.sessionId.isNotEmpty) {
       final link = ClassSessionLink(
         studioId: studioId,
         sessionId: s.sessionId,
@@ -245,9 +262,8 @@ class _OwnerTrainingSessionDetailScreenState
     }
     final next = attended ? 'ACTIVE' : 'NO_SHOW';
     final baseline = e.status;
-    if (next == baseline && !_pendingStatusByEnrollmentId.containsKey(
-          e.enrollmentId,
-        )) {
+    if (next == baseline &&
+        !_pendingStatusByEnrollmentId.containsKey(e.enrollmentId)) {
       return;
     }
 
@@ -329,6 +345,77 @@ class _OwnerTrainingSessionDetailScreenState
     );
   }
 
+  Future<void> _promoteWaitlistEntry(OwnerSessionWaitlistEntry entry) async {
+    final token = _authService.accessToken;
+    final sessionId = _session.sessionId;
+    if (token == null || token.isEmpty || sessionId.isEmpty) return;
+    if (_waitlistActionIds.contains(entry.entryId)) return;
+    setState(() => _waitlistActionIds.add(entry.entryId));
+    try {
+      await DashboardApiService.promoteOwnerSessionWaitlistEntry(
+        token,
+        sessionId,
+        entry.entryId,
+      );
+      if (!mounted) return;
+      showSuccess(
+        context,
+        context.read<LocaleProvider>().t('ownerSession.participantAdded'),
+      );
+      _reloadEnrollments();
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() => _waitlistActionIds.remove(entry.entryId));
+      }
+    }
+  }
+
+  Future<void> _removeWaitlistEntry(OwnerSessionWaitlistEntry entry) async {
+    final tr = context.read<LocaleProvider>().t;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ownerSession.waitlistRemoveConfirmTitle')),
+        content: Text(tr('ownerSession.waitlistRemoveConfirmBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(tr('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error500),
+            child: Text(tr('ownerSession.actionDeleteParticipant')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final token = _authService.accessToken;
+    final sessionId = _session.sessionId;
+    if (token == null || token.isEmpty || sessionId.isEmpty) return;
+    if (_waitlistActionIds.contains(entry.entryId)) return;
+    setState(() => _waitlistActionIds.add(entry.entryId));
+    try {
+      await DashboardApiService.removeOwnerSessionWaitlistEntry(
+        token,
+        sessionId,
+        entry.entryId,
+      );
+      if (!mounted) return;
+      _reloadEnrollments();
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() => _waitlistActionIds.remove(entry.entryId));
+      }
+    }
+  }
+
   static Color _avatarTint(int index) {
     const tints = [
       Color(0xFFFFE4EC),
@@ -385,7 +472,7 @@ class _OwnerTrainingSessionDetailScreenState
     final attendanceTogglesVisible = !session.startsAt
         .subtract(const Duration(hours: 1))
         .isAfter(now);
-    const waitlistCount = 0;
+    final waitlistCount = session.waitlistCount;
     final venueLine = widget.venueName?.trim();
     final accentContent = _onAccentContent(_accent);
 
@@ -436,7 +523,10 @@ class _OwnerTrainingSessionDetailScreenState
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary500,
-          onRefresh: () async => _refreshEnrollmentsOnly(),
+          onRefresh: () async {
+            _refreshEnrollmentsOnly();
+            await _refreshWaitlistOnly();
+          },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -444,68 +534,66 @@ class _OwnerTrainingSessionDetailScreenState
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
                   child: SizedBox(
-                        height: 48,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.none,
+                    height: 48,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: Center(
+                            child: Text(
+                              tr('ownerSession.detailTitle'),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Positioned.fill(
-                              child: Center(
-                                child: Text(
-                                  tr('ownerSession.detailTitle'),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                    height: 1,
-                                  ),
+                            HenzoHeaderBackButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                            FilledButton.icon(
+                              onPressed: _shareSession,
+                              icon: SvgPicture.asset(
+                                'assets/icons/icon-share.svg',
+                                width: 16,
+                                height: 12,
+                                fit: BoxFit.contain,
+                                excludeFromSemantics: true,
+                                colorFilter: const ColorFilter.mode(
+                                  AppColors.textInverse,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                              label: Text(locale.t('ownerSession.share')),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary500,
+                                foregroundColor: AppColors.textInverse,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
                               ),
                             ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                HenzoHeaderBackButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(),
-                                ),
-                                FilledButton.icon(
-                                  onPressed: _shareSession,
-                                  icon: SvgPicture.asset(
-                                    'assets/icons/icon-share.svg',
-                                    width: 16,
-                                    height: 12,
-                                    fit: BoxFit.contain,
-                                    excludeFromSemantics: true,
-                                    colorFilter: const ColorFilter.mode(
-                                      AppColors.textInverse,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                  label: Text(locale.t('ownerSession.share')),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.primary500,
-                                    foregroundColor: AppColors.textInverse,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    visualDensity: VisualDensity.compact,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
                         ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -749,7 +837,7 @@ class _OwnerTrainingSessionDetailScreenState
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
-                              tr('ownerSession.noParticipants'),
+                              tr('ownerSession.waitlistEmpty'),
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 14.sp,
@@ -760,22 +848,24 @@ class _OwnerTrainingSessionDetailScreenState
                         return Column(
                           children: List.generate(list.length, (i) {
                             final e = list[i];
-                            final anonymous = isSyntheticGuestEmail(e.email) ||
+                            final anonymous =
+                                isSyntheticGuestEmail(e.email) ||
                                 (e.name?.trim().toLowerCase() == 'walk-in');
                             final displayName = anonymous
                                 ? tr('ownerClient.anonymousRosterTitle')
                                 : (e.name ??
-                                        e.email ??
-                                        e.phone ??
-                                        tr('booking.client'))
-                                    .trim();
+                                          e.email ??
+                                          e.phone ??
+                                          tr('booking.client'))
+                                      .trim();
                             final subtitle = anonymous
                                 ? ''
                                 : (e.phone?.isNotEmpty == true
-                                    ? e.phone!
-                                    : (e.email ?? ''));
-                            final effectiveStatus =
-                                _effectiveEnrollmentStatus(e);
+                                      ? e.phone!
+                                      : (e.email ?? ''));
+                            final effectiveStatus = _effectiveEnrollmentStatus(
+                              e,
+                            );
                             final attended = effectiveStatus == 'ACTIVE';
                             final cancelled = e.status == 'CANCELLED';
                             final canToggle = !cancelled && sessionEnded;
@@ -835,9 +925,7 @@ class _OwnerTrainingSessionDetailScreenState
                                     if (cancelled)
                                       statusBadgeForParticipant(e.status)
                                     else if (!attendanceTogglesVisible)
-                                      statusBadgeForParticipant(
-                                        effectiveStatus,
-                                      )
+                                      statusBadgeForParticipant(effectiveStatus)
                                     else
                                       Theme(
                                         data: Theme.of(context).copyWith(
@@ -868,10 +956,8 @@ class _OwnerTrainingSessionDetailScreenState
                                           child: Switch(
                                             value: attended,
                                             onChanged: canToggle
-                                                ? (v) => _onAttendanceToggle(
-                                                      e,
-                                                      v,
-                                                    )
+                                                ? (v) =>
+                                                      _onAttendanceToggle(e, v)
                                                 : null,
                                             inactiveThumbColor:
                                                 AppColors.primary500,
@@ -886,6 +972,173 @@ class _OwnerTrainingSessionDetailScreenState
                               ),
                             );
                           }),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      tr('dashboard.waitlist'),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (session.capacity - session.enrolledCount <= 0) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        tr('ownerSession.waitlistNoSpots'),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    FutureBuilder<List<OwnerSessionWaitlistEntry>>(
+                      future: _waitlistFuture,
+                      builder: (context, snap) {
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary500,
+                              ),
+                            ),
+                          );
+                        }
+                        if (snap.hasError) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              tr('ownerSession.participantsLoadError'),
+                              style: const TextStyle(color: AppColors.error500),
+                            ),
+                          );
+                        }
+                        final list = snap.data ?? const [];
+                        if (list.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              tr('ownerSession.noParticipants'),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: List.generate(list.length, (index) {
+                            final entry = list[index];
+                            final displayName =
+                                (entry.name?.trim().isNotEmpty == true
+                                ? entry.name!.trim()
+                                : (entry.email?.trim().isNotEmpty == true
+                                      ? entry.email!.trim()
+                                      : tr('booking.client')));
+                            final subtitle = entry.phone?.isNotEmpty == true
+                                ? entry.phone!
+                                : (entry.email ?? '');
+                            final isBusy = _waitlistActionIds.contains(
+                              entry.entryId,
+                            );
+                            final spotsLeft =
+                                session.capacity - session.enrolledCount;
+                            final canPromote = spotsLeft > 0;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.backgroundPrimary,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            displayName,
+                                            style: TextStyle(
+                                              fontSize: 15.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          if (subtitle.isNotEmpty)
+                                            Text(
+                                              subtitle,
+                                              style: TextStyle(
+                                                fontSize: 13.sp,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            tr(
+                                              'ownerSession.waitlistPosition',
+                                            ).replaceAll(
+                                              '{position}',
+                                              '${index + 1}',
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              color: AppColors.textTertiary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: (isBusy || !canPromote)
+                                          ? null
+                                          : () => _promoteWaitlistEntry(entry),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppColors.primary500,
+                                        side: const BorderSide(
+                                          color: AppColors.primary500,
+                                        ),
+                                      ),
+                                      child: isBusy
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(tr('ownerSession.add')),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: isBusy
+                                          ? null
+                                          : () => _removeWaitlistEntry(entry),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppColors.error500,
+                                        side: const BorderSide(
+                                          color: AppColors.error500,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        tr(
+                                          'ownerSession.actionDeleteParticipant',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         );
                       },
                     ),

@@ -1245,16 +1245,15 @@ export class StudiosService {
       // Check if Studio already exists for this user
       const existingStudio = await studioRepo.findFirst({
         where: { ownerId: userId },
+        select: {
+          id: true,
+          ownerId: true,
+        },
       });
 
       if (existingStudio) {
-        // Idempotent behavior: return existing studio instead of throwing.
-        // This prevents mobile setup flow from getting stuck in "Setup required".
-        const currentStudio = await this.getCurrentUserStudio(userId);
-        if (currentStudio) {
-          return currentStudio;
-        }
-        return existingStudio;
+        // Idempotent behavior: keep onboarding unblocked when studio already exists.
+        return this.getCurrentUserStudio(userId);
       }
 
       this.assertStudioTextContent({

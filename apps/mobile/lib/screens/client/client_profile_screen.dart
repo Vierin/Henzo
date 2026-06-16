@@ -23,6 +23,7 @@ import 'client_shell_scope.dart';
 import '../../widgets/client/client_section_header.dart';
 import '../../widgets/public/top_studio_card.dart';
 import '../public_studio_detail_screen.dart';
+import 'client_favorites_screen.dart';
 import 'client_edit_profile_screen.dart';
 import 'client_profile_settings_screen.dart';
 
@@ -262,7 +263,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text(context.read<LocaleProvider>().t('clientProfile.failedToUpdateFavorites'))),
+          SnackBar(
+            content: Text(
+              context.read<LocaleProvider>().t(
+                'clientProfile.failedToUpdateFavorites',
+              ),
+            ),
+          ),
         );
     }
   }
@@ -403,7 +410,15 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 ClientSectionHeader(
                   title: locale.t('clientActivity.favorites'),
                   actionLabel: favorites.isNotEmpty ? t('seeAll') : null,
-                  onAction: favorites.isNotEmpty ? () {} : null,
+                  onAction: favorites.isNotEmpty
+                      ? () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ClientFavoritesScreen(),
+                            ),
+                          );
+                        }
+                      : null,
                 ),
                 if (favorites.isEmpty)
                   Padding(
@@ -413,9 +428,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                       subtitle: locale.t('clientFavorites.emptySubtitle'),
                       actionLabel: locale.t('clientFavorites.explore'),
                       onAction: () {
-                        ClientShellScope.maybeOf(context)?.goToExplore(
-                          showClasses: false,
-                        );
+                        ClientShellScope.maybeOf(
+                          context,
+                        )?.goToExplore(showClasses: false);
                       },
                     ),
                   )

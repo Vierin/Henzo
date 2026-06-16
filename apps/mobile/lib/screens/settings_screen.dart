@@ -25,6 +25,7 @@ import '../../widgets/address_picker_modal.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
+import '../../widgets/settings/settings_list_widgets.dart';
 import '../../widgets/settings/settings_typography.dart';
 import '../../widgets/settings/studio_photo_crop_sheet.dart';
 import '../../widgets/settings/studio_profile_skeleton.dart';
@@ -930,7 +931,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _ProfileSection(
+                              SettingsFormSection(
                                 title: locale.t('profileForm.studioLogo'),
                                 child: Column(
                                   crossAxisAlignment:
@@ -969,9 +970,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _ProfileSectionTitle(
+                                  SettingsFormSectionLabel(
                                     title: locale.t('profileForm.studioPhotos'),
                                   ),
+                                  const SizedBox(height: 8),
                                   Container(
                                     clipBehavior: Clip.antiAlias,
                                     decoration: settingsSectionDecoration(),
@@ -981,9 +983,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       children: [
                                         Padding(
                                           padding: const EdgeInsets.fromLTRB(
-                                            _ProfileSection.cardPadding,
-                                            _ProfileSection.cardPadding,
-                                            _ProfileSection.cardPadding,
+                                            SettingsFormSection.cardPadding,
+                                            SettingsFormSection.cardPadding,
+                                            SettingsFormSection.cardPadding,
                                             12,
                                           ),
                                           child: Text(
@@ -1007,7 +1009,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                             'profileForm.mainPhoto',
                                           ),
                                           horizontalPadding:
-                                              _ProfileSection.cardPadding,
+                                              SettingsFormSection.cardPadding,
                                           onAdd: _pickStudioPhotos,
                                           onAdjust: _adjustStudioPhotoAt,
                                           onRemove: _removePhotoAt,
@@ -1015,10 +1017,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         ),
                                         Padding(
                                           padding: const EdgeInsets.fromLTRB(
-                                            _ProfileSection.cardPadding,
+                                            SettingsFormSection.cardPadding,
                                             8,
-                                            _ProfileSection.cardPadding,
-                                            _ProfileSection.cardPadding,
+                                            SettingsFormSection.cardPadding,
+                                            SettingsFormSection.cardPadding,
                                           ),
                                           child: Column(
                                             crossAxisAlignment:
@@ -1070,7 +1072,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              _ProfileSection(
+                              SettingsFormSection(
                                 title: locale.t('profileForm.mainInfo'),
                                 carded: false,
                                 child: Column(
@@ -1264,7 +1266,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              _ProfileSection(
+                              SettingsFormSection(
                                 key: _contactsSectionKey,
                                 title: locale.t('profileForm.contactInfo'),
                                 carded: false,
@@ -1299,9 +1301,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _ProfileSectionTitle(
+                                  SettingsFormSectionLabel(
                                     title: locale.t('profileForm.socialLinks'),
                                   ),
+                                  const SizedBox(height: 8),
                                   ...List.generate(_socialLinks.length, (
                                     index,
                                   ) {
@@ -1863,23 +1866,6 @@ class _SocialLinkActionButton extends StatelessWidget {
   }
 }
 
-class _ProfileSectionTitle extends StatelessWidget {
-  const _ProfileSectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, bottom: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: SettingsTypography.sectionTitle(context),
-      ),
-    );
-  }
-}
-
 class _StudioPreviewFooter extends StatelessWidget {
   const _StudioPreviewFooter({
     required this.label,
@@ -1924,40 +1910,6 @@ class _StudioPreviewFooter extends StatelessWidget {
             ),
           ),
         ),
-    );
-  }
-}
-
-class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({
-    super.key,
-    required this.title,
-    required this.child,
-    this.carded = true,
-  });
-
-  static const double cardPadding = 16;
-
-  final String title;
-  final Widget child;
-  final bool carded;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ProfileSectionTitle(title: title),
-        if (carded)
-          Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: settingsSectionDecoration(),
-            padding: const EdgeInsets.all(cardPadding),
-            child: child,
-          )
-        else
-          child,
-      ],
     );
   }
 }

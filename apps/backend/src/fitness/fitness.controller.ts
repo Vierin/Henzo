@@ -260,6 +260,40 @@ export class FitnessController {
     );
   }
 
+  @Get('owner/training-sessions/:id/waitlist')
+  async getOwnerTrainingSessionWaitlist(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    return this.fitnessSessionsService.getOwnerSessionWaitlist(authHeader, id);
+  }
+
+  @Post('owner/training-sessions/:id/waitlist/:entryId/promote')
+  async promoteOwnerTrainingSessionWaitlistEntry(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+  ) {
+    return this.fitnessSessionsService.promoteOwnerSessionWaitlistEntry(
+      authHeader,
+      id,
+      entryId,
+    );
+  }
+
+  @Delete('owner/training-sessions/:id/waitlist/:entryId')
+  async removeOwnerTrainingSessionWaitlistEntry(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+  ) {
+    return this.fitnessSessionsService.removeOwnerSessionWaitlistEntry(
+      authHeader,
+      id,
+      entryId,
+    );
+  }
+
   @Patch('owner/enrollments/:id/status')
   async updateOwnerEnrollmentStatus(
     @Headers('authorization') authHeader: string,

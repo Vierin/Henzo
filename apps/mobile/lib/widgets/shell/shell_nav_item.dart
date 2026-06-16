@@ -16,6 +16,7 @@ class ShellNavItem extends StatelessWidget {
     required this.onTap,
     this.inactiveIconColor,
     this.inactiveLabelColor,
+    this.badgeCount,
   });
 
   final String svgAsset;
@@ -24,6 +25,7 @@ class ShellNavItem extends StatelessWidget {
   final VoidCallback onTap;
   final Color? inactiveIconColor;
   final Color? inactiveLabelColor;
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +45,47 @@ class ShellNavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                svgAsset,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  SvgPicture.asset(
+                    svgAsset,
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                  ),
+                  if ((badgeCount ?? 0) > 0)
+                    Positioned(
+                      right: -7,
+                      top: -6,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.error500,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary500
+                                : AppColors.backgroundPrimary,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          (badgeCount ?? 0) > 99 ? '99+' : '${badgeCount ?? 0}',
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(

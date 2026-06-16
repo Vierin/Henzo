@@ -58,3 +58,9 @@ SubscriptionPlanTier subscriptionPlanTierFromSubscriptionType(String? type) {
   if (t == 'STUDIO' || t == 'PRO') return SubscriptionPlanTier.studio;
   return SubscriptionPlanTier.solo;
 }
+
+bool subscriptionPlanHasAnalyticsAccess(String? type) {
+  final tier = subscriptionPlanTierFromSubscriptionType(type);
+  return tier == SubscriptionPlanTier.studio ||
+      tier == SubscriptionPlanTier.enterprise;
+}

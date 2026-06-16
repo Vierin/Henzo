@@ -13,6 +13,7 @@ import '../utils/show_api_error.dart';
 import '../widgets/address_picker_modal.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/common/henzo_modal.dart';
+import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
 import '../widgets/settings/studio_name_address_fields.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -249,8 +250,9 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
                   children: [
                     Form(
                       key: _formKey,
-                      child: StudioProfileFormSection(
+                      child: SettingsFormSection(
                         title: locale.t('profileForm.mainInfo'),
+                        carded: false,
                         child: StudioNameAddressFields(
                           nameController: _nameController,
                           locationDisplayName: _locationName,

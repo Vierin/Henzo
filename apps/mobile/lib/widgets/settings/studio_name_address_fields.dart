@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import 'settings_form_tokens.dart';
-import 'settings_typography.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Studio name + default address row — same as owner [SettingsScreen] main info.
@@ -115,35 +114,6 @@ class StudioNameAddressFields extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-/// Section header used on studio profile / details forms.
-class StudioProfileFormSection extends StatelessWidget {
-  const StudioProfileFormSection({
-    super.key,
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 12, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
-            style: SettingsTypography.sectionTitle(context),
-          ),
-        ),
-        child,
       ],
     );
   }

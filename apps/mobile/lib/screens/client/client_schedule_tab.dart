@@ -137,13 +137,21 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
       ClientScheduleStore.invalidate();
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(context.read<LocaleProvider>().t('client.bookingCancelled'))),
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('client.bookingCancelled'),
+          ),
+        ),
       );
       await _load(force: true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(context.read<LocaleProvider>().t('client.cancelBookingFailed'))),
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('client.cancelBookingFailed'),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _cancelingBookingIds.remove(bookingId));
@@ -229,10 +237,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
             final entry = entries[index];
             if (entry.year != null) {
               return Padding(
-                padding: EdgeInsets.only(
-                  top: index == 0 ? 0 : 16,
-                  bottom: 10,
-                ),
+                padding: EdgeInsets.only(top: index == 0 ? 0 : 16, bottom: 10),
                 child: Text(
                   '${entry.year}',
                   style: TextStyle(
@@ -253,6 +258,12 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
               item,
             );
             final canCancel = _canCancelBooking(item);
+            final bookingStatus =
+                (item['bookingStatus'] ?? item['status'] ?? '')
+                    .toString()
+                    .toUpperCase();
+            final isWaitlisted =
+                item['waitlisted'] == true || bookingStatus == 'WAITLISTED';
             final bookingId = _bookingId(item);
             final isCanceling =
                 bookingId != null && _cancelingBookingIds.contains(bookingId);
@@ -270,9 +281,18 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
                 localeTag,
               ),
               dimPastSessions: false,
+              statusBadgeLabel: isWaitlisted
+                  ? locale.t('dashboard.waitlist')
+                  : null,
+              statusBadgeBackgroundColor: isWaitlisted
+                  ? const Color(0xFFFFF3E0)
+                  : null,
+              statusBadgeTextColor: isWaitlisted
+                  ? const Color(0xFFEF6C00)
+                  : null,
               cancelActionLabel: locale.t('clientActivity.cancel'),
               cancelActionLoading: isCanceling,
-              onCancelBooking: canCancel && !isCanceling
+              onCancelBooking: canCancel && !isCanceling && !isWaitlisted
                   ? () => _confirmCancel(item)
                   : null,
               onTap: () => _openStudio(item),

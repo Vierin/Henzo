@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
+import '../services/notifications_store.dart';
 import '../services/push_notification_service.dart';
 import '../widgets/client/browse_map_button.dart';
 import '../widgets/shell/shell_nav_item.dart';
@@ -14,6 +15,7 @@ import 'client/client_profile_screen.dart';
 import 'client/client_search_screen.dart';
 import 'client/client_shell_scope.dart';
 import 'client_map_screen.dart';
+import 'notifications_screen.dart';
 import 'public_home_screen.dart';
 
 class ClientShell extends StatefulWidget {
@@ -49,6 +51,19 @@ class _ClientShellState extends State<ClientShell> {
 
   void _openMapScreen() {
     unawaited(ClientMapScreen.open(context));
+  }
+
+  Future<void> _openClientNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationsScreen(
+          audience: NotificationsScreenAudience.client,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    final token = context.read<AuthService>().accessToken;
+    await context.read<NotificationsStore>().syncFromServer(token);
   }
 
   void goToExploreTab({
@@ -121,6 +136,9 @@ class _ClientShellState extends State<ClientShell> {
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  final unreadCount = context
+                      .watch<NotificationsStore>()
+                      .unreadCount;
                   final itemWidth = constraints.maxWidth / 4;
                   return Stack(
                     children: [
@@ -154,8 +172,10 @@ class _ClientShellState extends State<ClientShell> {
                               svgAsset: 'assets/icons/icon-search.svg',
                               label: locale.t('clientShell.browse'),
                               isSelected: _currentIndex == 1,
-                              onTap: () =>
-                                  goToExploreTab(showClasses: true, resetWeek: true),
+                              onTap: () => goToExploreTab(
+                                showClasses: true,
+                                resetWeek: true,
+                              ),
                             ),
                           ),
                           Expanded(
@@ -163,7 +183,14 @@ class _ClientShellState extends State<ClientShell> {
                               svgAsset: 'assets/icons/icon-schedule.svg',
                               label: locale.t('clientShell.activity'),
                               isSelected: _currentIndex == 2,
-                              onTap: () => setState(() => _currentIndex = 2),
+                              badgeCount: unreadCount,
+                              onTap: () {
+                                if (_currentIndex == 2 && unreadCount > 0) {
+                                  _openClientNotifications();
+                                  return;
+                                }
+                                setState(() => _currentIndex = 2);
+                              },
                             ),
                           ),
                           Expanded(

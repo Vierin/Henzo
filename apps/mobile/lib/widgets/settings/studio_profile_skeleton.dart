@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/locale_provider.dart';
 import '../common/shimmer_box.dart';
 import 'settings_form_tokens.dart';
-import 'settings_typography.dart';
+import 'settings_list_widgets.dart';
 
 /// Skeleton layout for owner studio profile while studio data loads.
 class StudioProfileSkeleton extends StatelessWidget {
@@ -21,7 +21,7 @@ class StudioProfileSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SkeletonSection(
+        SettingsFormSection(
           title: locale.t('profileForm.studioLogo'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,9 +42,10 @@ class StudioProfileSkeleton extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SkeletonSectionTitle(
+            SettingsFormSectionLabel(
               title: locale.t('profileForm.studioPhotos'),
             ),
+            const SizedBox(height: 8),
             Container(
               clipBehavior: Clip.antiAlias,
               decoration: settingsSectionDecoration(),
@@ -83,7 +84,7 @@ class StudioProfileSkeleton extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        _SkeletonSection(
+        SettingsFormSection(
           title: locale.t('profileForm.mainInfo'),
           carded: false,
           child: Column(
@@ -98,7 +99,7 @@ class StudioProfileSkeleton extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        _SkeletonSection(
+        SettingsFormSection(
           title: locale.t('profileForm.contactInfo'),
           carded: false,
           child: Column(
@@ -114,9 +115,10 @@ class StudioProfileSkeleton extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SkeletonSectionTitle(
+            SettingsFormSectionLabel(
               title: locale.t('profileForm.socialLinks'),
             ),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: settingsSectionDecoration(),
@@ -159,54 +161,6 @@ class StudioProfileSkeleton extends StatelessWidget {
     return ShimmerBox(
       height: height,
       borderRadius: kSettingsInputBorderRadius,
-    );
-  }
-}
-
-class _SkeletonSectionTitle extends StatelessWidget {
-  const _SkeletonSectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, bottom: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: SettingsTypography.sectionTitle(context),
-      ),
-    );
-  }
-}
-
-class _SkeletonSection extends StatelessWidget {
-  const _SkeletonSection({
-    required this.title,
-    required this.child,
-    this.carded = true,
-  });
-
-  final String title;
-  final Widget child;
-  final bool carded;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SkeletonSectionTitle(title: title),
-        if (carded)
-          Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: settingsSectionDecoration(),
-            padding: const EdgeInsets.all(StudioProfileSkeleton._cardPadding),
-            child: child,
-          )
-        else
-          child,
-      ],
     );
   }
 }

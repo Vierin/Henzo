@@ -8,18 +8,23 @@ import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
+import '../../models/subscription.dart';
 import '../../services/cache/studio_cache.dart';
+import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
 import '../../services/push_notification_service.dart';
 import '../../utils/owner_navigation_restore.dart';
+import '../../utils/subscription_plan_features.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
 import 'app_settings_screen.dart';
+import 'analytics_screen.dart';
 import 'add_training_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
+import 'notifications_screen.dart';
 import 'owner_edit_training_session_screen.dart';
 import '../widgets/common/workspace_loading_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -32,13 +37,15 @@ class MainShell extends StatefulWidget {
 }
 
 class MainShellState extends State<MainShell> with WidgetsBindingObserver {
-  /// Bottom bar: 0 Home, 1 Schedule, 2 Clients, 3 Settings.
+  /// Bottom bar: 0 Home, 1 Schedule, 2 Clients, [3 Analytics], Settings.
   static const int scheduleTabIndex = 1;
+  static const int clientsTabIndex = 2;
 
   int _currentIndex = 0;
 
   int get currentTabIndex => _currentIndex;
   bool _studioLoading = true;
+  bool _showAnalyticsTab = false;
   final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
       GlobalKey<CalendarScreenState>();
   final GlobalKey<NavigatorState> _homeNavigatorKey =
@@ -46,21 +53,30 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   final GlobalKey<ClientsScreenState> _clientsTabKey =
       GlobalKey<ClientsScreenState>();
 
-  late final List<Widget> _shellBodyTabs;
+  int get _settingsTabIndex => _showAnalyticsTab ? 4 : 3;
+
+  int get _tabCount => _showAnalyticsTab ? 5 : 4;
+
+  List<Widget> _buildShellBodyTabs() => <Widget>[
+        _buildHomeNavigator(),
+        CalendarScreen(key: _scheduleCalendarKey),
+        ClientsScreen(key: _clientsTabKey),
+        if (_showAnalyticsTab) const AnalyticsScreen(),
+        const AppSettingsScreen(embeddedInShell: true),
+      ];
+
+  void _clampCurrentIndex() {
+    final maxIndex = _tabCount - 1;
+    if (_currentIndex > maxIndex) _currentIndex = maxIndex;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _shellBodyTabs = <Widget>[
-      _buildHomeNavigator(),
-      CalendarScreen(key: _scheduleCalendarKey),
-      ClientsScreen(key: _clientsTabKey),
-      const AppSettingsScreen(embeddedInShell: true),
-    ];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _restoreShellTabIfNeeded();
-      if (mounted) await _loadStudio();
+      await _loadStudio();
+      if (mounted) await _restoreShellTabIfNeeded();
     });
   }
 
@@ -94,7 +110,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
     final saved = await OwnerNavigationRestore.readShellTabIndex();
     if (!mounted || saved == null) return;
-    if (saved < 0 || saved >= _shellBodyTabs.length) return;
+    if (saved < 0 || saved >= _tabCount) return;
     if (saved == _currentIndex) return;
     setState(() => _currentIndex = saved);
   }
@@ -108,8 +124,20 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     final studioCache = context.read<StudioCache>();
     final bookingsCache = context.read<BookingsCache>();
     try {
-      await studioCache.getStudio(token);
-      await bookingsCache.getBookings(token);
+      final results = await Future.wait([
+        studioCache.getStudio(token),
+        bookingsCache.getBookings(token),
+        DashboardApiService.getCurrentSubscription(token),
+      ]);
+      final subscription = results[2] as Subscription?;
+      if (mounted) {
+        setState(() {
+          _showAnalyticsTab = subscriptionPlanHasAnalyticsAccess(
+            subscription?.type,
+          );
+          _clampCurrentIndex();
+        });
+      }
     } catch (_) {
       // показываем интерфейс даже при ошибке
     }
@@ -158,7 +186,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   /// Вернуть нижнюю навигацию на вкладку (после закрытия экрана с другой вкладки).
   void restoreShellTab(int index) {
     if (!mounted) return;
-    if (index < 0 || index >= _shellBodyTabs.length) return;
+    if (index < 0 || index >= _tabCount) return;
     setState(() => _currentIndex = index);
   }
 
@@ -179,9 +207,18 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _openOwnerNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+    );
+    if (!mounted) return;
+    final token = context.read<AuthService>().accessToken;
+    await context.read<NotificationsStore>().syncFromServer(token);
+  }
+
   /// Opens the Clients shell tab and applies optional filter/search (one list).
   void openClientsTab({String? initialFilter, String? initialQuery}) {
-    setState(() => _currentIndex = 2);
+    setState(() => _currentIndex = clientsTabIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _clientsTabKey.currentState?.applyRouteArgs(
         filter: initialFilter,
@@ -237,7 +274,10 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _shellBodyTabs),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _buildShellBodyTabs(),
+      ),
       bottomNavigationBar: ColoredBox(
         color: AppColors.backgroundSecondary,
         child: SafeArea(
@@ -253,9 +293,14 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
             child: Consumer<LocaleProvider>(
               builder: (context, locale, _) {
                 final t = locale.t;
+                final unreadCount = context
+                    .watch<NotificationsStore>()
+                    .unreadCount;
                 return LayoutBuilder(
                   builder: (context, constraints) {
-                    final itemWidth = constraints.maxWidth / 4;
+                    final tabCount = _tabCount;
+                    final itemWidth = constraints.maxWidth / tabCount;
+                    final settingsIndex = _settingsTabIndex;
                     return Stack(
                       children: [
                         AnimatedPositioned(
@@ -305,17 +350,36 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
                               child: _NavItem(
                                 svgAsset: 'assets/icons/icon-people.svg',
                                 label: t('shell.tabClients'),
-                                isSelected: _currentIndex == 2,
-                                onTap: () => setState(() => _currentIndex = 2),
+                                isSelected: _currentIndex == clientsTabIndex,
+                                onTap: () => setState(
+                                  () => _currentIndex = clientsTabIndex,
+                                ),
                               ),
                             ),
+                            if (_showAnalyticsTab)
+                              Expanded(
+                                child: _NavItem(
+                                  icon: Icons.bar_chart_rounded,
+                                  label: t('shell.tabAnalytics'),
+                                  isSelected: _currentIndex == 3,
+                                  onTap: () => setState(() => _currentIndex = 3),
+                                ),
+                              ),
                             Expanded(
                               child: _NavItem(
                                 svgAsset: 'assets/icons/icon-settings.svg',
                                 label: t('shell.tabSettings'),
-                                isSelected: _currentIndex == 3,
+                                isSelected: _currentIndex == settingsIndex,
                                 iconSize: 22,
-                                onTap: () => setState(() => _currentIndex = 3),
+                                badgeCount: unreadCount,
+                                onTap: () {
+                                  if (_currentIndex == settingsIndex &&
+                                      unreadCount > 0) {
+                                    _openOwnerNotifications();
+                                    return;
+                                  }
+                                  setState(() => _currentIndex = settingsIndex);
+                                },
                               ),
                             ),
                           ],
@@ -336,19 +400,26 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
 class _NavItem extends StatelessWidget {
   static const _inactiveIconAndLabel = AppColors.brandText;
 
-  final String svgAsset;
+  final String? svgAsset;
+  final IconData? icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   final double iconSize;
+  final int? badgeCount;
 
   const _NavItem({
-    required this.svgAsset,
+    this.svgAsset,
+    this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
     this.iconSize = 20,
-  });
+    this.badgeCount,
+  }) : assert(
+         (svgAsset != null) ^ (icon != null),
+         'Provide either svgAsset or icon',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -370,11 +441,50 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                svgAsset,
-                width: iconSize,
-                height: iconSize,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (svgAsset != null)
+                    SvgPicture.asset(
+                      svgAsset!,
+                      width: iconSize,
+                      height: iconSize,
+                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                    )
+                  else
+                    Icon(icon, size: iconSize, color: iconColor),
+                  if ((badgeCount ?? 0) > 0)
+                    Positioned(
+                      right: -8,
+                      top: -6,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.error500,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary500
+                                : AppColors.backgroundPrimary,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          (badgeCount ?? 0) > 99 ? '99+' : '${badgeCount ?? 0}',
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
