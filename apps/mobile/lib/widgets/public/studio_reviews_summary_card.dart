@@ -35,9 +35,9 @@ class StudioReviewsSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final counts = _countByStar();
     final total = reviewCount > 0 ? reviewCount : 1;
-    final ratingText = avgRating > 0
+    final ratingText = reviewCount > 0
         ? avgRating.toStringAsFixed(1).replaceAll('.', ',')
-        : '—';
+        : '0';
     final subtitle = onReviewsLabel.replaceAll('{count}', '$reviewCount');
 
     return Container(
@@ -67,7 +67,8 @@ class StudioReviewsSummaryCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: List.generate(5, (i) {
-                    final filled = avgRating > 0 && i < avgRating.round();
+                    final filled =
+                        reviewCount > 0 && avgRating > 0 && i < avgRating.round();
                     return Padding(
                       padding: EdgeInsets.only(right: i < 4 ? 2 : 0),
                       child: Icon(
