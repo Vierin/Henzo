@@ -60,12 +60,12 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int get _tabCount => _showAnalyticsTab ? 5 : 4;
 
   List<Widget> _buildShellBodyTabs() => <Widget>[
-        _buildHomeNavigator(),
-        CalendarScreen(key: _scheduleCalendarKey),
-        ClientsScreen(key: _clientsTabKey),
-        if (_showAnalyticsTab) const AnalyticsScreen(),
-        const AppSettingsScreen(embeddedInShell: true),
-      ];
+    _buildHomeNavigator(),
+    CalendarScreen(key: _scheduleCalendarKey),
+    ClientsScreen(key: _clientsTabKey),
+    if (_showAnalyticsTab) const AnalyticsScreen(),
+    const AppSettingsScreen(embeddedInShell: true),
+  ];
 
   void _clampCurrentIndex() {
     final maxIndex = _tabCount - 1;
@@ -303,10 +303,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _buildShellBodyTabs(),
-      ),
+      body: IndexedStack(index: _currentIndex, children: _buildShellBodyTabs()),
       bottomNavigationBar: ColoredBox(
         color: AppColors.backgroundSecondary,
         child: SafeArea(
@@ -314,7 +311,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
           minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
           child: Container(
             height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(16),
@@ -391,7 +388,8 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
                                   svgAsset: 'assets/icons/icon-trending.svg',
                                   label: t('shell.tabAnalytics'),
                                   isSelected: _currentIndex == 3,
-                                  onTap: () => setState(() => _currentIndex = 3),
+                                  onTap: () =>
+                                      setState(() => _currentIndex = 3),
                                 ),
                               ),
                             Expanded(

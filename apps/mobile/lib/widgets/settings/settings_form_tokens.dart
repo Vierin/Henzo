@@ -31,9 +31,22 @@ InputDecoration settingsInputDecoration({
   bool alignLabelWithHint = false,
   int maxLines = 1,
   bool readOnly = false,
+  bool invalid = false,
 }) {
   final radius = settingsInputBorderRadius(maxLines: maxLines);
   final outline = _settingsInputOutline(radius: radius);
+  final errorOutline = _settingsInputOutline(
+    radius: radius,
+    borderColor: AppColors.error600,
+    width: 1.5,
+  );
+  final focusedOutline = invalid
+      ? errorOutline
+      : _settingsInputOutline(
+          radius: radius,
+          borderColor: AppColors.primary500,
+          width: 1.5,
+        );
   return InputDecoration(
     hintText: hintText,
     labelText: labelText,
@@ -44,12 +57,10 @@ InputDecoration settingsInputDecoration({
         ? AppColors.backgroundTertiary
         : AppColors.backgroundPrimary,
     border: OutlineInputBorder(borderRadius: radius),
-    enabledBorder: outline,
-    focusedBorder: _settingsInputOutline(
-      radius: radius,
-      borderColor: AppColors.primary500,
-      width: 1.5,
-    ),
+    enabledBorder: invalid ? errorOutline : outline,
+    focusedBorder: focusedOutline,
+    errorBorder: errorOutline,
+    focusedErrorBorder: errorOutline,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     alignLabelWithHint: alignLabelWithHint,
   );

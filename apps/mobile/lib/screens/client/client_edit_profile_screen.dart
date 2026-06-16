@@ -8,6 +8,7 @@ import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/owner_photo_storage_service.dart';
 import '../../utils/auth_ui_result.dart';
+import '../../utils/form_validators.dart';
 import '../../utils/owner_image_picker.dart';
 import '../../utils/owner_navigation_restore.dart';
 import '../../widgets/auth/auth_form_styles.dart';
@@ -348,9 +349,11 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
                         decoration: AuthFormStyles.fieldDecoration(
                           hintText: locale.t('profileForm.firstName'),
                         ),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? locale.t('profileForm.enterName')
-                            : null,
+                        validator: (v) => validateRequiredNullable(
+                          locale.t,
+                          v,
+                          emptyKey: 'profileForm.enterName',
+                        ),
                       ),
                       const SizedBox(height: AuthFormStyles.fieldGap),
                       TextFormField(

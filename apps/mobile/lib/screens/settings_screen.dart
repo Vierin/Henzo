@@ -18,6 +18,7 @@ import '../../services/cache/studio_public_detail_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/owner_photo_storage_service.dart';
 import '../../utils/default_training_location_swap.dart';
+import '../../utils/form_validators.dart';
 import '../../utils/text_content_validation.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/owner_image_picker.dart';
@@ -1088,12 +1089,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                       textCapitalization:
                                           TextCapitalization.words,
-                                      validator: (v) =>
-                                          (v == null || v.trim().isEmpty)
-                                          ? locale.t(
-                                              'profileForm.requiredField',
-                                            )
-                                          : null,
+                                      validator: (v) => validateRequiredNullable(
+                                        locale.t,
+                                        v,
+                                        emptyKey: 'profileForm.requiredField',
+                                      ),
                                     ),
                                     const SizedBox(height: 16),
                                     TextFormField(

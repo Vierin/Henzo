@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../constants/colors.dart';
+import '../common/validated_text_field.dart';
 import 'auth_form_styles.dart';
 
 typedef AuthFieldDecorationBuilder = InputDecoration Function({
@@ -9,7 +8,7 @@ typedef AuthFieldDecorationBuilder = InputDecoration Function({
 });
 
 /// Auth input with fixed height; validation text renders below the field.
-class AuthFormTextField extends StatefulWidget {
+class AuthFormTextField extends StatelessWidget {
   const AuthFormTextField({
     super.key,
     required this.controller,
@@ -36,55 +35,19 @@ class AuthFormTextField extends StatefulWidget {
   final void Function(String)? onChanged;
 
   @override
-  State<AuthFormTextField> createState() => _AuthFormTextFieldState();
-}
-
-class _AuthFormTextFieldState extends State<AuthFormTextField> {
-  @override
   Widget build(BuildContext context) {
-    return FormField<String>(
-      validator: (_) => widget.validator?.call(widget.controller.text),
-      builder: (field) {
-        final invalid = field.hasError;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: AuthFormStyles.fieldHeight,
-              child: TextField(
-                controller: widget.controller,
-                style: widget.style,
-                keyboardType: widget.keyboardType,
-                textInputAction: widget.textInputAction,
-                obscureText: widget.obscureText,
-                textCapitalization: widget.textCapitalization,
-                onSubmitted: widget.onFieldSubmitted,
-                onChanged: (value) {
-                  field.didChange(value);
-                  widget.onChanged?.call(value);
-                  if (field.hasError) {
-                    field.validate();
-                  }
-                },
-                decoration: widget.decorationBuilder(invalid: invalid),
-              ),
-            ),
-            if (invalid && field.errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 2),
-                child: Text(
-                  field.errorText!,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    height: 1.2,
-                    color: AppColors.error600,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+    return ValidatedTextField(
+      controller: controller,
+      decorationBuilder: decorationBuilder,
+      style: style,
+      validator: validator,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      obscureText: obscureText,
+      textCapitalization: textCapitalization,
+      fixedHeight: AuthFormStyles.fieldHeight,
+      onFieldSubmitted: onFieldSubmitted,
+      onChanged: onChanged,
     );
   }
 }

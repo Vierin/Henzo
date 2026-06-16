@@ -9,6 +9,7 @@ import '../l10n/locale_provider.dart';
 import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
+import '../utils/form_validators.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
@@ -157,13 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   invalid: invalid,
                 ),
                 style: AuthFormStyles.fieldTextStyle,
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return locale.t('auth.enterEmail');
-                  }
-                  if (!v.contains('@')) return locale.t('auth.invalidEmail');
-                  return null;
-                },
+                validator: (v) => validateEmailNullable(locale.t, v),
               ),
             ],
           ),
@@ -287,15 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       invalid: invalid,
                     ),
                     style: AuthFormStyles.fieldTextStyle,
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return locale.t('auth.enterEmail');
-                      }
-                      if (!v.contains('@')) {
-                        return locale.t('auth.invalidEmail');
-                      }
-                      return null;
-                    },
+                    validator: (v) => validateEmailNullable(locale.t, v),
                   ),
                   const SizedBox(height: AuthFormStyles.fieldGap),
                   AuthFormTextField(
@@ -333,13 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       invalid: invalid,
                     ),
                     style: AuthFormStyles.fieldTextStyle,
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return locale.t('auth.enterPassword');
-                      }
-                      if (v.length < 6) return locale.t('auth.passwordMin');
-                      return null;
-                    },
+                    validator: (v) => validatePasswordNullable(locale.t, v),
                   ),
                   const SizedBox(height: 8),
                   Align(
