@@ -11,10 +11,11 @@ class SubscriptionApiService {
       final body = await ApiClient.get('/subscriptions/current', accessToken);
       if (body is! Map<String, dynamic>) return null;
       final data = body['data'];
+      if (data == null) return null;
       if (data is Map<String, dynamic>) {
         return Subscription.fromJson(Map<String, dynamic>.from(data));
       }
-      return Subscription.fromJson(body);
+      return null;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[SubscriptionAPI] getCurrent: $e');
       return null;

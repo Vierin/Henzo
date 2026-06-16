@@ -946,7 +946,17 @@
     "retry": "Повторить",
     "proLockedTitle": "Расширенная аналитика доступна в Pro",
     "proLockedDescription": "Перейдите на Pro, чтобы открыть посещаемость, неявки, загрузку сессий и инсайты по топ-тренировкам.",
-    "upgradeToPro": "Перейти на Pro"
+    "upgradeToPro": "Перейти на Pro",
+    "last7Days": "7 дней",
+    "last30Days": "30 дней",
+    "last90Days": "90 дней",
+    "activeClients": "Активные клиенты",
+    "avgOccupancy": "Средняя загрузка",
+    "waitlistRequests": "Заявки в лист ожидания",
+    "revenueTrend": "Динамика выручки (₫)",
+    "fromPreviousDays": "к предыдущим {days} дням",
+    "ofBookings": "{pct}% от записей",
+    "notEnoughDataYet": "Пока недостаточно данных для анализа"
   },
   "profileForm": {
     "profileUpdated": "Профиль обновлён",

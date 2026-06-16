@@ -13,6 +13,7 @@ import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/subscription_refresh_notifier.dart';
 import '../utils/legal_web_links.dart';
 import '../config/plan_limits.dart';
 import '../utils/subscription_tier.dart';
@@ -275,6 +276,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                             ),
                           );
                           if (mounted) await _loadData();
+                          if (mounted) {
+                            context
+                                .read<SubscriptionRefreshNotifier>()
+                                .notifySubscriptionMaybeChanged();
+                          }
                         },
                       ),
                     ],

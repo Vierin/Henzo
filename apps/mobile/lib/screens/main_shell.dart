@@ -13,6 +13,7 @@ import '../../services/cache/studio_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
 import '../../services/push_notification_service.dart';
+import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/owner_navigation_restore.dart';
 import '../../utils/subscription_plan_features.dart';
 import 'dashboard/dashboard_screen.dart';
@@ -46,6 +47,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int get currentTabIndex => _currentIndex;
   bool _studioLoading = true;
   bool _showAnalyticsTab = false;
+  SubscriptionRefreshNotifier? _subRefresh;
   final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
       GlobalKey<CalendarScreenState>();
   final GlobalKey<NavigatorState> _homeNavigatorKey =
@@ -75,6 +77,9 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      _subRefresh = context.read<SubscriptionRefreshNotifier>();
+      _subRefresh!.addListener(_onSubscriptionRefresh);
       await _loadStudio();
       if (mounted) await _restoreShellTabIfNeeded();
     });
@@ -82,8 +87,36 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _subRefresh?.removeListener(_onSubscriptionRefresh);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _onSubscriptionRefresh() {
+    if (mounted) unawaited(_refreshAnalyticsTabVisibility());
+  }
+
+  void _applyAnalyticsTabForSubscription(Subscription? subscription) {
+    final show = subscriptionPlanHasAnalyticsAccess(subscription);
+    if (show == _showAnalyticsTab) return;
+    setState(() {
+      _showAnalyticsTab = show;
+      _clampCurrentIndex();
+    });
+  }
+
+  Future<void> _refreshAnalyticsTabVisibility() async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final subscription = await DashboardApiService.getCurrentSubscription(
+        token,
+      );
+      if (!mounted) return;
+      _applyAnalyticsTabForSubscription(subscription);
+    } catch (_) {
+      // Keep current tab layout on transient errors.
+    }
   }
 
   @override
@@ -91,6 +124,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (state != AppLifecycleState.resumed || !mounted) return;
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
+    unawaited(_refreshAnalyticsTabVisibility());
     final locale = context.read<LocaleProvider>();
     unawaited(
       PushNotificationService.registerToken(
@@ -123,28 +157,23 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
     final studioCache = context.read<StudioCache>();
     final bookingsCache = context.read<BookingsCache>();
+
+    // Analytics tab must not depend on studio/bookings prefetch failures.
+    await _refreshAnalyticsTabVisibility();
+
     try {
-      final results = await Future.wait([
-        studioCache.getStudio(token),
-        bookingsCache.getBookings(token),
-        DashboardApiService.getCurrentSubscription(token),
-      ]);
-      final subscription = results[2] as Subscription?;
-      if (mounted) {
-        setState(() {
-          _showAnalyticsTab = subscriptionPlanHasAnalyticsAccess(
-            subscription?.type,
-          );
-          _clampCurrentIndex();
-        });
-      }
-    } catch (_) {
-      // показываем интерфейс даже при ошибке
-    }
+      await studioCache.getStudio(token);
+    } catch (_) {}
+    try {
+      await bookingsCache.getBookings(token);
+    } catch (_) {}
+
     if (mounted) {
       setState(() => _studioLoading = false);
     }
     if (!mounted) return;
+
+    unawaited(_refreshAnalyticsTabVisibility());
     final locale = context.read<LocaleProvider>();
     await PushNotificationService.requestNotificationPermission();
     if (mounted) {
@@ -359,7 +388,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
                             if (_showAnalyticsTab)
                               Expanded(
                                 child: _NavItem(
-                                  icon: Icons.bar_chart_rounded,
+                                  svgAsset: 'assets/icons/icon-trending.svg',
                                   label: t('shell.tabAnalytics'),
                                   isSelected: _currentIndex == 3,
                                   onTap: () => setState(() => _currentIndex = 3),

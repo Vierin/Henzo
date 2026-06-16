@@ -656,10 +656,11 @@ class DashboardApiService {
         return null;
       }
       final data = body['data'];
+      if (data == null) return null;
       if (data is Map<String, dynamic>) {
         return Subscription.fromJson(Map<String, dynamic>.from(data));
       }
-      return Subscription.fromJson(body);
+      return null;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[DashboardAPI] getCurrentSubscription: $e');
       return null;

@@ -946,7 +946,17 @@
     "retry": "Retry",
     "proLockedTitle": "Advanced analytics is available in Pro",
     "proLockedDescription": "Upgrade to Pro to unlock attendance, no-shows, sessions utilization and top training insights.",
-    "upgradeToPro": "Upgrade to Pro"
+    "upgradeToPro": "Upgrade to Pro",
+    "last7Days": "7 Days",
+    "last30Days": "30 Days",
+    "last90Days": "90 Days",
+    "activeClients": "Active clients",
+    "avgOccupancy": "Avg. occupancy",
+    "waitlistRequests": "Waitlist requests",
+    "revenueTrend": "Revenue trend (₫)",
+    "fromPreviousDays": "from previous {days} days",
+    "ofBookings": "{pct}% of bookings",
+    "notEnoughDataYet": "Not enough data for analysis yet"
   },
   "profileForm": {
     "profileUpdated": "Profile updated",

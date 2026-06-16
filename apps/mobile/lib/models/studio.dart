@@ -22,6 +22,7 @@ class Studio {
   final double? latitude;
   final double? longitude;
   final double? rating;
+  final DateTime? createdAt;
 
   Studio({
     required this.id,
@@ -43,6 +44,7 @@ class Studio {
     this.latitude,
     this.longitude,
     this.rating,
+    this.createdAt,
   });
 
   factory Studio.fromJson(Map<String, dynamic> json) {
@@ -114,6 +116,7 @@ class Studio {
       latitude: lat,
       longitude: lon,
       rating: rating,
+      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
     );
   }
 

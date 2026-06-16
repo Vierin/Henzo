@@ -946,7 +946,17 @@
     "retry": "Thử lại",
     "proLockedTitle": "Phân tích nâng cao chỉ có trong Pro",
     "proLockedDescription": "Nâng cấp Pro để mở khóa tỷ lệ tham gia, vắng mặt, hiệu suất buổi tập và insight lớp nổi bật.",
-    "upgradeToPro": "Nâng cấp Pro"
+    "upgradeToPro": "Nâng cấp Pro",
+    "last7Days": "7 ngày",
+    "last30Days": "30 ngày",
+    "last90Days": "90 ngày",
+    "activeClients": "Khách đang hoạt động",
+    "avgOccupancy": "Công suất TB",
+    "waitlistRequests": "Yêu cầu chờ",
+    "revenueTrend": "Xu hướng doanh thu (₫)",
+    "fromPreviousDays": "so với {days} ngày trước",
+    "ofBookings": "{pct}% lượt đặt",
+    "notEnoughDataYet": "Chưa đủ dữ liệu để phân tích"
   },
   "profileForm": {
     "profileUpdated": "Đã cập nhật hồ sơ",
