@@ -291,7 +291,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Future<void> _openAddTrainingPage() async {
     final added = await Navigator.of(
       context,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const AddTrainingScreen()));
+    ).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const AddTrainingScreen(),
+        settings: const RouteSettings(name: '/trainings/new'),
+      ),
+    );
     if (added == true && mounted) {
       await _loadData();
     }

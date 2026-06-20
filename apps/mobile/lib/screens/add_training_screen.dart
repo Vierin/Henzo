@@ -39,6 +39,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Matches registration / mock secondary controls (chevron, pin tint).
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
 
+/// Max class duration in minutes (8 hours).
+const int _kMaxDurationMinutes = 480;
+
 const Color _kRegHintMuted = Color(0x993F3F3F);
 
 TextStyle _regHintTextStyle() => TextStyle(
@@ -352,6 +355,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   style: _stepFieldInputStyle,
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    _MaxIntValueFormatter(_kMaxDurationMinutes),
+                  ],
                   onChanged: (_) => setState(() => _step1DurationError = false),
                   decoration: InputDecoration(
                     hintText: '60',
@@ -446,7 +453,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   bool _validateStep1() {
     final nameOk = _nameController.text.trim().isNotEmpty;
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
-    final durationOk = duration > 0;
+    final durationOk = duration > 0 && duration <= _kMaxDurationMinutes;
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     final capacityOk = capacity > 0 && capacity <= 30;
     final priceOk = _parsePriceDigits() > 0;
@@ -1450,7 +1457,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       );
       return;
     }
-    if (duration <= 0 || capacity <= 0 || capacity > 30 || price <= 0) {
+    if (duration <= 0 ||
+        duration > _kMaxDurationMinutes ||
+        capacity <= 0 ||
+        capacity > 30 ||
+        price <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(
@@ -1597,7 +1608,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.primary500),
               )
-            : ListView(
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: ListView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: kScreenPaddingHorizontal,
                   vertical: 10,
@@ -2010,6 +2024,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         ),
                       ]
                     : _buildStep2Widgets(loc),
+                ),
               ),
       ),
     );

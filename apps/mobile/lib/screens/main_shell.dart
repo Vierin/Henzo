@@ -46,6 +46,24 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   int get currentTabIndex => _currentIndex;
   bool _studioLoading = true;
+
+  /// Full-screen routes (inside the home tab) that hide the bottom nav bar.
+  static const Set<String> _navHiddenRoutes = {'/trainings/new'};
+  bool _hideBottomNav = false;
+  late final _HideNavRouteObserver _homeRouteObserver = _HideNavRouteObserver(
+    hiddenRouteNames: _navHiddenRoutes,
+    onChanged: _onHomeRouteChanged,
+  );
+
+  void _onHomeRouteChanged(bool hide) {
+    if (hide == _hideBottomNav) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && hide != _hideBottomNav) {
+        setState(() => _hideBottomNav = hide);
+      }
+    });
+  }
+
   bool _showAnalyticsTab = false;
   SubscriptionRefreshNotifier? _subRefresh;
   final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
@@ -260,6 +278,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     return Navigator(
       key: _homeNavigatorKey,
       initialRoute: '/',
+      observers: [_homeRouteObserver],
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/':
@@ -304,7 +323,9 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _buildShellBodyTabs()),
-      bottomNavigationBar: ColoredBox(
+      bottomNavigationBar: _hideBottomNav
+          ? null
+          : ColoredBox(
         color: AppColors.backgroundSecondary,
         child: SafeArea(
           top: false,
@@ -571,4 +592,37 @@ class _ClientsTabOpenerState extends State<_ClientsTabOpener> {
       ),
     );
   }
+}
+
+/// Notifies when the home navigator's top route enters/leaves a full-screen
+/// route that should hide the shell bottom navigation bar.
+class _HideNavRouteObserver extends NavigatorObserver {
+  _HideNavRouteObserver({
+    required this.hiddenRouteNames,
+    required this.onChanged,
+  });
+
+  final Set<String> hiddenRouteNames;
+  final ValueChanged<bool> onChanged;
+
+  void _update(Route<dynamic>? top) {
+    final name = top?.settings.name;
+    onChanged(name != null && hiddenRouteNames.contains(name));
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _update(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _update(previousRoute);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _update(previousRoute);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _update(newRoute);
 }
