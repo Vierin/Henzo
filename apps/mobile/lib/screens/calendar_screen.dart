@@ -801,6 +801,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                         if (raw == null || !context.mounted) {
                                           return;
                                         }
+                                        if (ModalRoute.of(context)?.isCurrent !=
+                                            true) {
+                                          return;
+                                        }
                                         await Navigator.of(context).push<void>(
                                           MaterialPageRoute<void>(
                                             builder: (_) =>
@@ -824,6 +828,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                                 .getStudio(token)
                                           : null;
                                       if (!context.mounted) return;
+                                      if (ModalRoute.of(context)?.isCurrent !=
+                                          true) {
+                                        return;
+                                      }
                                       String? venue;
                                       if (studio != null) {
                                         final n = studio.name?.trim();

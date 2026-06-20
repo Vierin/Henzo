@@ -84,7 +84,24 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _init() async {
     try {
-      final session = _supabase.auth.currentSession;
+      var session = _supabase.auth.currentSession;
+      // On cold start the persisted access token is often already expired.
+      // Refresh it before hitting the API so we don't fire a doomed 401, and
+      // so a still-valid refresh token transparently recovers the session.
+      // gotrue de-dupes concurrent refreshes, so this is safe alongside
+      // Supabase's own lazy recoverSession().
+      if (session != null && session.isExpired) {
+        try {
+          final res = await _supabase.auth.refreshSession();
+          session = res.session ?? _supabase.auth.currentSession;
+        } catch (e) {
+          // Refresh token invalid/expired ("Refresh Token Not Found") — the
+          // session can't be recovered; treat as logged out. Supabase has
+          // already cleared it and emitted signedOut.
+          if (kDebugMode) debugPrint('[Auth] init refresh failed: $e');
+          session = null;
+        }
+      }
       if (session != null) {
         await _fetchUser(session.accessToken);
       } else {
@@ -130,6 +147,17 @@ class AuthService extends ChangeNotifier {
 
       if (event == AuthChangeEvent.userUpdated) {
         await _fetchUser(session.accessToken);
+        notifyListeners();
+      }
+    }, onError: (Object error) {
+      // Auth stream errors (e.g. a failed token refresh) surface here. The
+      // session is already invalid at this point; drop local auth state so the
+      // app routes to login instead of leaving a stale, broken session.
+      if (kDebugMode) debugPrint('[Auth] auth stream error: $error');
+      if (_user != null || _trainerInfo != null || _isAuthenticated) {
+        _user = null;
+        _trainerInfo = null;
+        _isAuthenticated = false;
         notifyListeners();
       }
     });

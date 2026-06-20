@@ -2564,12 +2564,14 @@ export class StudiosService {
     lng?: number;
     radius: number;
     limit: number;
+    strict?: boolean;
   }) {
-    const { lat, lng, radius, limit } = params;
+    const { lat, lng, radius, limit, strict } = params;
 
-    // If no coordinates provided, return featured Studios
+    // If no coordinates provided, return featured Studios — unless strict, in
+    // which case "nearby" must mean nearby (no distance-agnostic fallback).
     if (lat == null || lng == null) {
-      return this.findFeaturedStudios(limit);
+      return strict ? [] : this.findFeaturedStudios(limit);
     }
 
     // Get all Studios with coordinates
@@ -2624,8 +2626,9 @@ export class StudiosService {
 
     // Fallback for MVP: if no Studios in selected radius, return featured list
     // so client map/home are not empty for new regions with sparse data.
+    // Skipped in strict mode so a "near you" list never shows far studios.
     if (StudiosWithDistance.length === 0) {
-      return this.findFeaturedStudios(limit);
+      return strict ? [] : this.findFeaturedStudios(limit);
     }
 
     const nearbyIds = StudiosWithDistance.map((s) => s.id);

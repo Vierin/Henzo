@@ -127,14 +127,16 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       _studiosLoadError = null;
     });
     try {
-      final query = StringBuffer('/studios/nearby?limit=50');
+      // strict=true + 20km radius so "near you" only shows genuinely nearby
+      // studios (no distance-agnostic featured fallback / far-away studios).
+      final query = StringBuffer('/studios/nearby?limit=50&strict=true');
       if (loc.lat != null && loc.lon != null) {
         query
           ..write('&lat=')
           ..write(loc.lat!.toStringAsFixed(6))
           ..write('&lng=')
           ..write(loc.lon!.toStringAsFixed(6))
-          ..write('&radius=50');
+          ..write('&radius=20');
       }
       final path = query.toString();
       var raw = ClientNearbyCache.get(path);

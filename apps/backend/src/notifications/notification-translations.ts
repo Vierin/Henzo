@@ -13,6 +13,8 @@ export const notificationTranslations = {
     waitlistPromotedTitle: 'Spot opened up!',
     waitlistPromotedBody:
       'A spot opened in {class} at {studio}. You are now booked!',
+    ownerBookedTitle: "You're booked",
+    ownerBookedBody: '{studio} booked you for {class} on {date}.',
     sessionCancelledTitle: 'Class cancelled',
     sessionCancelledBody: '{class} at {studio} on {date} has been cancelled.',
     sessionRescheduledTitle: 'Class time changed',
@@ -34,6 +36,8 @@ export const notificationTranslations = {
     waitlistPromotedTitle: 'Появилось место!',
     waitlistPromotedBody:
       'Место в {class} в {studio} освободилось. Вы записаны!',
+    ownerBookedTitle: 'Вас записали',
+    ownerBookedBody: '{studio} записал(а) вас на {class} — {date}.',
     sessionCancelledTitle: 'Занятие отменено',
     sessionCancelledBody: '{class} в {studio} {date} отменено.',
     sessionRescheduledTitle: 'Время занятия изменено',
@@ -55,6 +59,8 @@ export const notificationTranslations = {
     waitlistPromotedTitle: 'Có chỗ trống!',
     waitlistPromotedBody:
       'Có chỗ trống trong {class} tại {studio}. Bạn đã được đặt chỗ!',
+    ownerBookedTitle: 'Bạn đã được đặt chỗ',
+    ownerBookedBody: '{studio} đã đặt chỗ cho bạn vào {class} — {date}.',
     sessionCancelledTitle: 'Lớp học đã bị hủy',
     sessionCancelledBody: '{class} tại {studio} ngày {date} đã bị hủy.',
     sessionRescheduledTitle: 'Thay đổi thời gian lớp học',

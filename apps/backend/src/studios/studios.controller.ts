@@ -150,12 +150,16 @@ export class StudiosController {
     @Query('lng') lng?: string,
     @Query('radius') radius?: string,
     @Query('limit') limit?: string,
+    @Query('strict') strict?: string,
   ) {
     const params = {
       lat: lat ? parseFloat(lat) : undefined,
       lng: lng ? parseFloat(lng) : undefined,
       radius: radius ? parseInt(radius, 10) : 50, // km - default 50km for MVP
       limit: limit ? parseInt(limit, 10) : 10,
+      // strict: never fall back to the (distance-agnostic) featured list, so
+      // far-away studios don't appear in a "near you" context.
+      strict: strict === 'true' || strict === '1',
     };
 
     return this.studiosService.findNearbyStudios(params);

@@ -1074,6 +1074,35 @@ export class FitnessSessionsService {
       } catch (e) {
         console.error('post-enrollment push schedule failed:', e);
       }
+
+      // Immediate push + in-app notification to the client that the studio
+      // booked them — independent of the confirmation-email toggle.
+      try {
+        const info = await this.prisma.trainingSession.findUnique({
+          where: { id: sessionId },
+          select: {
+            startsAt: true,
+            studioId: true,
+            Training: { select: { name: true } },
+            Studio: { select: { name: true, timezone: true } },
+          },
+        });
+        if (info) {
+          await this.notificationsService.sendOwnerEnrolledClientPush(
+            targetUserId!,
+            {
+              sessionId,
+              studioId: info.studioId,
+              className: info.Training?.name || 'class',
+              studioName: info.Studio?.name || 'studio',
+              startsAt: info.startsAt,
+              timezone: info.Studio?.timezone ?? undefined,
+            },
+          );
+        }
+      } catch (e) {
+        console.error('post-enrollment client push failed:', e);
+      }
     }
 
     return { success: true };

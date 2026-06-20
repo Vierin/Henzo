@@ -462,6 +462,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openSessionDetail(OwnerTrainingSession s) {
+    // Guard against rapid double-taps opening the page 2-3 times.
+    if (ModalRoute.of(context)?.isCurrent != true) return;
     if (widget.trainerMode) {
       final raw = _trainerRawSessionsById[s.sessionId];
       if (raw == null) return;

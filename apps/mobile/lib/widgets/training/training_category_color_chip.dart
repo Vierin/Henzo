@@ -13,7 +13,7 @@ class TrainingCategoryColorChip extends StatelessWidget {
     this.category,
     this.selected = false,
     this.fontWeight = FontWeight.w600,
-    this.lineHeight = 1.1,
+    this.lineHeight = 1.2,
   });
 
   final TrainingCategoryOption? category;

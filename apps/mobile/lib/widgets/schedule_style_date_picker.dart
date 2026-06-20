@@ -234,7 +234,14 @@ class _ScheduleStyleDatePickerSheetState
                           ? _prevMonth
                           : null,
                       icon: const Icon(Icons.chevron_left_rounded),
+                      iconSize: 28,
                       color: AppColors.textSecondary,
+                      padding: const EdgeInsets.all(12),
+                      constraints: const BoxConstraints(
+                        minWidth: 56,
+                        minHeight: 56,
+                      ),
+                      splashRadius: 28,
                     ),
                     Expanded(
                       child: Text(
@@ -255,7 +262,14 @@ class _ScheduleStyleDatePickerSheetState
                           ? _nextMonth
                           : null,
                       icon: const Icon(Icons.chevron_right_rounded),
+                      iconSize: 28,
                       color: AppColors.textSecondary,
+                      padding: const EdgeInsets.all(12),
+                      constraints: const BoxConstraints(
+                        minWidth: 56,
+                        minHeight: 56,
+                      ),
+                      splashRadius: 28,
                     ),
                   ],
                 );

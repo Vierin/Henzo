@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../models/training_category_option.dart';
 import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
 import '../services/cache/bookings_cache.dart';
@@ -11,6 +13,7 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart'
     show DashboardApiService, OwnerTrainingSession;
+import '../services/services_api_service.dart';
 import '../utils/load_error_message.dart';
 import '../utils/owner_session_card_subtitle.dart';
 import '../utils/show_api_error.dart';
@@ -18,7 +21,7 @@ import '../utils/synthetic_guest.dart';
 import '../widgets/common/app_app_bar.dart';
 import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../widgets/schedule_style_date_picker.dart';
-import '../widgets/training/training_filter_chip.dart';
+import '../widgets/training/training_category_color_chip.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClientBookTarget {
@@ -94,6 +97,7 @@ class BookClientSessionScreen extends StatefulWidget {
 
 class _BookClientSessionScreenState extends State<BookClientSessionScreen> {
   List<OwnerTrainingSession> _sessions = const [];
+  List<TrainingCategoryOption> _categoryOptions = const [];
   var _loading = true;
   String? _loadError;
   var _enrollingSessionId = '';
@@ -133,11 +137,18 @@ class _BookClientSessionScreenState extends State<BookClientSessionScreen> {
         fromUtc: now.toUtc(),
         toUtc: to.toUtc(),
       );
+      // Category colors come from the DB (chip bg/fg). A failure here should
+      // not block the session list — pills just fall back to neutral styling.
+      List<TrainingCategoryOption> categories = const [];
+      try {
+        categories = await ServicesApiService.getTrainingCategories(token);
+      } catch (_) {}
       if (!mounted) return;
       final bookable = list.where((s) => _isBookableSession(s, now)).toList()
         ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
       setState(() {
         _sessions = bookable;
+        _categoryOptions = categories;
         _loading = false;
       });
     } catch (e) {
@@ -214,15 +225,31 @@ class _BookClientSessionScreenState extends State<BookClientSessionScreen> {
     return email.isNotEmpty ? email : null;
   }
 
-  /// Distinct category labels present in the loaded sessions, sorted.
+  /// Distinct category labels present in the loaded sessions, «Other» last.
   List<String> _categories(String localeCode) {
     final set = <String>{};
     for (final s in _sessions) {
       final label = s.categoryLabelForLocale(localeCode)?.trim();
       if (label != null && label.isNotEmpty) set.add(label);
     }
-    final list = set.toList()..sort();
-    return list;
+    return TrainingCategoryOption.sortLabelsWithOtherLast(
+      set.toList()..sort(),
+      options: _categoryOptions,
+    );
+  }
+
+  /// Matches a localized session category label to its DB option (for colors).
+  TrainingCategoryOption? _optionForLabel(String label, String localeCode) {
+    final l = label.trim().toLowerCase();
+    for (final o in _categoryOptions) {
+      if (o.label(localeCode).trim().toLowerCase() == l ||
+          o.nameEn.trim().toLowerCase() == l ||
+          o.nameRu.trim().toLowerCase() == l ||
+          o.nameVn.trim().toLowerCase() == l) {
+        return o;
+      }
+    }
+    return null;
   }
 
   List<OwnerTrainingSession> _filteredSessions(String localeCode) {
@@ -262,20 +289,25 @@ class _BookClientSessionScreenState extends State<BookClientSessionScreen> {
     final localeCode = context.watch<LocaleProvider>().localeCode;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundPrimary,
+      backgroundColor: AppColors.backgroundSecondary,
       appBar: AppAppBar(
         title: tr('ownerClient.bookSessionTitle'),
         actions: [
           IconButton(
             tooltip: tr('ownerClient.bookSessionTitle'),
             onPressed: _enrollingSessionId.isNotEmpty ? null : _pickDay,
-            icon: Icon(
-              _selectedDay != null
-                  ? Icons.event_available
-                  : Icons.calendar_today_outlined,
-              color: _selectedDay != null
-                  ? AppColors.primary500
-                  : AppColors.textPrimary,
+            icon: SvgPicture.asset(
+              'assets/icons/icon-calendar.svg',
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+              colorFilter: ColorFilter.mode(
+                _selectedDay != null
+                    ? AppColors.primary500
+                    : AppColors.textPrimary,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ],
@@ -285,18 +317,6 @@ class _BookClientSessionScreenState extends State<BookClientSessionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text(
-                tr('ownerClient.bookSessionSubtitle')
-                    .replaceAll('{name}', widget.client.displayName.trim()),
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: AppColors.textSecondary,
-                  height: 1.3,
-                ),
-              ),
-            ),
             const SizedBox(height: 12),
             _buildFilterPills(tr, localeCode),
             if (_selectedDay != null) _buildSelectedDayChip(localeCode),
@@ -327,23 +347,29 @@ class _BookClientSessionScreenState extends State<BookClientSessionScreen> {
     final categories = _categories(localeCode);
     if (categories.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 40,
+      height: 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          TrainingFilterChip(
-            label: tr('ownerClient.filterAll'),
-            selected: _selectedCategory == null,
-            onSelected: (_) => setState(() => _selectedCategory = null),
+          Center(
+            child: TrainingCategoryColorChip(
+              label: tr('ownerClient.filterAll'),
+              selected: _selectedCategory == null,
+              onTap: () => setState(() => _selectedCategory = null),
+            ),
           ),
           for (final cat in categories) ...[
             const SizedBox(width: 8),
-            TrainingFilterChip(
-              label: cat,
-              selected: _selectedCategory == cat,
-              onSelected: (_) => setState(
-                () => _selectedCategory = _selectedCategory == cat ? null : cat,
+            Center(
+              child: TrainingCategoryColorChip(
+                label: cat,
+                category: _optionForLabel(cat, localeCode),
+                selected: _selectedCategory == cat,
+                onTap: () => setState(
+                  () =>
+                      _selectedCategory = _selectedCategory == cat ? null : cat,
+                ),
               ),
             ),
           ],
