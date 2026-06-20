@@ -20,6 +20,10 @@ import {
   generateGoogleCalendarUrl,
   generateGoogleMapsUrl,
 } from '../src/email/email-helpers';
+import {
+  configureEmailIconBaseUrl,
+  resolveEmailIconBaseUrl,
+} from '../src/email/templates/email-layout.helpers';
 
 const TARGET_EMAIL = process.argv[2] || 'ivanvierin@gmail.com';
 const FILTER = process.argv[3]?.toLowerCase();
@@ -27,6 +31,14 @@ const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@henzo.app';
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'Henzo';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://henzo.app';
+
+configureEmailIconBaseUrl(
+  resolveEmailIconBaseUrl({
+    emailIconBaseUrl: process.env.EMAIL_ICON_BASE_URL,
+    frontendUrl: FRONTEND_URL,
+    backendUrl: process.env.BACKEND_URL,
+  }),
+);
 
 const SAMPLE_BOOKING = {
   serviceName: 'Стрижка + укладка',

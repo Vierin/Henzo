@@ -2,16 +2,11 @@ import { OTP_EMAIL_STRINGS } from '../copy/otp-email.strings';
 import { TRAINER_INVITE_EMAIL_STRINGS } from '../copy/trainer-invite-email.strings';
 import { resolveClientEmailLocale } from '../copy/client-email-locale';
 import {
-  EMAIL_CLOCK_ICON,
-  EMAIL_COPY_ICON,
-  EMAIL_LINK_ICON,
-  EMAIL_LOCK_ICON,
-  EMAIL_SHIELD_ICON,
-  EMAIL_TRAINER_ICON,
   escapeHtml,
   renderEmailFooter,
   renderEmailInfoRow,
   renderEmailLogoHeader,
+  renderEmailIcon,
   renderEmailIconCircle,
 } from './email-layout.helpers';
 
@@ -136,7 +131,7 @@ export function renderOtpEmailHtml(
                 <tr>
                   <td align="center">
                     <span style="display:inline-block;background-color:#FFF0EB;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;color:#F15942;line-height:1;">
-                      ${EMAIL_LOCK_ICON}&nbsp;&nbsp;${L.secureBadge}
+                      ${renderEmailIcon('lock', 14, '', true)}&nbsp;&nbsp;${L.secureBadge}
                     </span>
                   </td>
                 </tr>
@@ -240,15 +235,11 @@ export function renderTrainerInviteHtml(
   const safeInviteUrl = escapeHtml(inviteUrl);
 
   const expiryRow = renderEmailInfoRow(
-    EMAIL_CLOCK_ICON,
+    'clock',
     '#D4F000',
     `${L.expiryText} <strong>${L.expiryDays}</strong>.`,
   );
-  const ignoreRow = renderEmailInfoRow(
-    EMAIL_SHIELD_ICON,
-    '#FFF0EB',
-    L.ignoreText,
-  );
+  const ignoreRow = renderEmailInfoRow('shield', '#FFF0EB', L.ignoreText);
 
   return `<!DOCTYPE html>
 <html lang="${loc}">
@@ -278,7 +269,7 @@ export function renderTrainerInviteHtml(
                 <tr>
                   <td align="center">
                     <span style="display:inline-block;background-color:#FFF0EB;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;color:#F15942;line-height:1;">
-                      ${EMAIL_TRAINER_ICON}&nbsp;&nbsp;${L.badge}
+                      ${renderEmailIcon('people', 14, '', true)}&nbsp;&nbsp;${L.badge}
                     </span>
                   </td>
                 </tr>
@@ -329,7 +320,7 @@ export function renderTrainerInviteHtml(
                         <td style="border-top:1px dashed #E8DDD6;width:42%;"></td>
                         <td align="center" style="width:16%;padding:0 8px;">
                           <span style="display:inline-block;width:32px;height:32px;background-color:#FFF0EB;border-radius:50%;text-align:center;line-height:32px;">
-                            ${EMAIL_LINK_ICON}
+                            ${renderEmailIcon('link', 14)}
                           </span>
                         </td>
                         <td style="border-top:1px dashed #E8DDD6;width:42%;"></td>
@@ -354,7 +345,7 @@ export function renderTrainerInviteHtml(
                           <a href="${safeInviteUrl}" style="color:#F15942;text-decoration:none;">${safeInviteUrl}</a>
                         </td>
                         <td align="right" valign="middle" style="padding:14px 16px 14px 0;width:32px;">
-                          ${EMAIL_COPY_ICON}
+                          ${renderEmailIcon('copy', 16)}
                         </td>
                       </tr>
                     </table>

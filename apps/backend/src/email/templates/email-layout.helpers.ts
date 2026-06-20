@@ -1,5 +1,54 @@
+const DEFAULT_EMAIL_ICON_BASE_URL = 'https://henzo.app/images/email';
+
+function isPublicHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    return host !== 'localhost' && host !== '127.0.0.1' && host !== '0.0.0.0';
+  } catch {
+    return false;
+  }
+}
+
+let emailIconBaseUrl = DEFAULT_EMAIL_ICON_BASE_URL;
+
+/** Brevo API does not support CID inline images — icons must be public HTTPS URLs. */
+export function configureEmailIconBaseUrl(baseUrl?: string): void {
+  const trimmed = baseUrl?.replace(/\/$/, '').trim();
+  emailIconBaseUrl = trimmed || DEFAULT_EMAIL_ICON_BASE_URL;
+}
+
+export function resolveEmailIconBaseUrl(env: {
+  emailIconBaseUrl?: string;
+  frontendUrl?: string;
+  backendUrl?: string;
+}): string {
+  const explicit = env.emailIconBaseUrl?.trim();
+  if (explicit) {
+    return explicit.replace(/\/$/, '');
+  }
+
+  const frontend = env.frontendUrl?.trim();
+  if (frontend && isPublicHttpUrl(frontend)) {
+    return `${frontend.replace(/\/$/, '')}/images/email`;
+  }
+
+  const backend = env.backendUrl?.trim();
+  if (backend && isPublicHttpUrl(backend)) {
+    return `${backend.replace(/\/$/, '')}/email/icons`;
+  }
+
+  return DEFAULT_EMAIL_ICON_BASE_URL;
+}
+
+export function getEmailIconUrl(name: EmailIconName): string {
+  return `${emailIconBaseUrl}/icon-${name}.png`;
+}
+
 export const HENZO_EMAIL_LOGO_URL = 'https://henzo.app/logo.png';
-export const HENZO_EMAIL_ICON_BASE_URL = 'https://api.henzo.app/email/icons';
 
 export type EmailIconName =
   | 'lock'
@@ -21,7 +70,7 @@ export function renderEmailIcon(
   const display = inline
     ? 'display:inline-block;vertical-align:middle;border:0;outline:none;text-decoration:none;'
     : 'display:block;margin:0 auto;border:0;outline:none;text-decoration:none;';
-  return `<img src="${HENZO_EMAIL_ICON_BASE_URL}/icon-${name}.png" width="${size}" height="${size}" alt="${safeAlt}" style="${display}" />`;
+  return `<img src="${getEmailIconUrl(name)}" width="${size}" height="${size}" alt="${safeAlt}" style="${display}" />`;
 }
 
 export function renderEmailIconCircle(
@@ -39,19 +88,6 @@ export function renderEmailIconCircle(
       </tr>
     </table>`;
 }
-
-export const EMAIL_CLOCK_ICON = renderEmailIcon('clock', 18);
-export const EMAIL_SHIELD_ICON = renderEmailIcon('shield', 18);
-export const EMAIL_LOCK_ICON = renderEmailIcon('lock', 14, '', true);
-export const EMAIL_TRAINER_ICON = renderEmailIcon('people', 14, '', true);
-export const EMAIL_LINK_ICON = renderEmailIcon('link', 14);
-export const EMAIL_COPY_ICON = renderEmailIcon('copy', 16);
-export const EMAIL_INSTAGRAM_ICON = renderEmailIcon(
-  'instagram',
-  18,
-  'Instagram',
-);
-export const EMAIL_FACEBOOK_ICON = renderEmailIcon('facebook', 18, 'Facebook');
 
 export function renderEmailLogoHeader(
   maxWidth = 560,
@@ -97,7 +133,7 @@ export function renderEmailFooter(footerTagline: string): string {
                       <tr>
                         <td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;background-color:#ffffff;border-radius:50%;box-shadow:0 2px 8px rgba(63,63,63,0.08);">
                           <a href="https://www.instagram.com/henzo.app/" target="_blank" rel="noopener noreferrer" style="display:block;line-height:0;text-decoration:none;">
-                            ${EMAIL_INSTAGRAM_ICON}
+                            ${renderEmailIcon('instagram', 18, 'Instagram')}
                           </a>
                         </td>
                       </tr>
@@ -108,7 +144,7 @@ export function renderEmailFooter(footerTagline: string): string {
                       <tr>
                         <td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;background-color:#ffffff;border-radius:50%;box-shadow:0 2px 8px rgba(63,63,63,0.08);">
                           <a href="https://www.facebook.com/profile.php?id=61581892591997" target="_blank" rel="noopener noreferrer" style="display:block;line-height:0;text-decoration:none;">
-                            ${EMAIL_FACEBOOK_ICON}
+                            ${renderEmailIcon('facebook', 18, 'Facebook')}
                           </a>
                         </td>
                       </tr>
@@ -132,7 +168,7 @@ export function renderEmailFooter(footerTagline: string): string {
 }
 
 export function renderEmailInfoRow(
-  icon: string,
+  name: EmailIconName,
   iconBg: string,
   text: string,
 ): string {
@@ -143,13 +179,7 @@ export function renderEmailInfoRow(
           <table role="presentation" cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td valign="middle" align="center" style="padding-right:12px;">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;">
-                  <tr>
-                    <td align="center" valign="middle" style="width:36px;height:36px;background-color:${iconBg};border-radius:50%;">
-                      ${icon}
-                    </td>
-                  </tr>
-                </table>
+                ${renderEmailIconCircle(name, iconBg)}
               </td>
               <td valign="middle" style="font-size:14px;color:#3F3F3F;line-height:1.5;max-width:380px;text-align:left;">
                 ${text}
