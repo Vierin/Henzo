@@ -29,14 +29,23 @@ class ClientNearbyCache {
     _entries[path] = _Entry(_clone(raw), DateTime.now());
   }
 
-  /// When Map requests limit=25 but Home recently fetched limit=50 for the same point.
+  /// When Map requests limit=N but Home recently fetched limit=50 for the same point.
   static List<dynamic>? sliceFromHomeCache(
     double lat,
     double lon, {
     required int take,
+    int radius = 50,
   }) {
+    final latS = lat.toStringAsFixed(6);
+    final lonS = lon.toStringAsFixed(6);
+    final mapPath =
+        '/studios/nearby/map?limit=$take&strict=true&lat=$latS&lng=$lonS&radius=$radius';
+    final mapRaw = get(mapPath);
+    if (mapRaw is List && mapRaw.isNotEmpty) {
+      return List<dynamic>.from(mapRaw.take(take));
+    }
     final homePath =
-        '/studios/nearby?limit=50&lat=${lat.toStringAsFixed(6)}&lng=${lon.toStringAsFixed(6)}&radius=50';
+        '/studios/nearby?limit=50&lat=$latS&lng=$lonS&radius=$radius';
     final raw = get(homePath);
     if (raw is List && raw.isNotEmpty) {
       return List<dynamic>.from(raw.take(take));

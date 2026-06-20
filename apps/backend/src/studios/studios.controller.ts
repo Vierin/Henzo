@@ -144,6 +144,21 @@ export class StudiosController {
   }
 
   @Public()
+  @Get('nearby/map')
+  @Header('Cache-Control', 'public, max-age=90, stale-while-revalidate=180')
+  async getNearbyStudiosForMap(
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('radius') radius?: string,
+    @Query('limit') limit?: string,
+    @Query('strict') strict?: string,
+  ) {
+    return this.studiosService.findNearbyStudiosForMap(
+      this.parseNearbyStudiosQuery(lat, lng, radius, limit, strict),
+    );
+  }
+
+  @Public()
   @Get('nearby')
   async getNearbyStudios(
     @Query('lat') lat?: string,
@@ -152,17 +167,26 @@ export class StudiosController {
     @Query('limit') limit?: string,
     @Query('strict') strict?: string,
   ) {
-    const params = {
+    return this.studiosService.findNearbyStudios(
+      this.parseNearbyStudiosQuery(lat, lng, radius, limit, strict),
+    );
+  }
+
+  private parseNearbyStudiosQuery(
+    lat?: string,
+    lng?: string,
+    radius?: string,
+    limit?: string,
+    strict?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return {
       lat: lat ? parseFloat(lat) : undefined,
       lng: lng ? parseFloat(lng) : undefined,
-      radius: radius ? parseInt(radius, 10) : 50, // km - default 50km for MVP
-      limit: limit ? parseInt(limit, 10) : 10,
-      // strict: never fall back to the (distance-agnostic) featured list, so
-      // far-away studios don't appear in a "near you" context.
+      radius: radius ? parseInt(radius, 10) : 50,
+      limit: Math.min(Math.max(limitNum, 1), 100),
       strict: strict === 'true' || strict === '1',
     };
-
-    return this.studiosService.findNearbyStudios(params);
   }
 
   @Get(':id/stats')

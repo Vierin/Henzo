@@ -2559,6 +2559,19 @@ export class StudiosService {
     return degrees * (Math.PI / 180);
   }
 
+  /** Rough lat/lng bounding box for SQL pre-filter before Haversine. */
+  private geoBoundingBox(lat: number, lng: number, radiusKm: number) {
+    const latDelta = radiusKm / 111.32;
+    const cosLat = Math.max(Math.cos(this.toRad(lat)), 0.01);
+    const lngDelta = radiusKm / (111.32 * cosLat);
+    return {
+      south: lat - latDelta,
+      north: lat + latDelta,
+      west: lng - lngDelta,
+      east: lng + lngDelta,
+    };
+  }
+
   async findNearbyStudios(params: {
     lat?: number;
     lng?: number;
@@ -2566,88 +2579,138 @@ export class StudiosService {
     limit: number;
     strict?: boolean;
   }) {
+    return this.queryNearbyStudios(params, 'full');
+  }
+
+  async findNearbyStudiosForMap(params: {
+    lat?: number;
+    lng?: number;
+    radius: number;
+    limit: number;
+    strict?: boolean;
+  }) {
+    return this.queryNearbyStudios(params, 'map');
+  }
+
+  private async queryNearbyStudios(
+    params: {
+      lat?: number;
+      lng?: number;
+      radius: number;
+      limit: number;
+      strict?: boolean;
+    },
+    mode: 'full' | 'map',
+  ) {
     const { lat, lng, radius, limit, strict } = params;
 
-    // If no coordinates provided, return featured Studios — unless strict, in
-    // which case "nearby" must mean nearby (no distance-agnostic fallback).
     if (lat == null || lng == null) {
       return strict ? [] : this.findFeaturedStudios(limit);
     }
 
-    // Get all Studios with coordinates
-    const Studios = await this.prisma.Studio.findMany({
+    const bbox = this.geoBoundingBox(lat, lng, radius);
+    const select =
+      mode === 'map'
+        ? {
+            id: true,
+            name: true,
+            slug: true,
+            address: true,
+            latitude: true,
+            longitude: true,
+            logoUrl: true,
+            photos: true,
+            reminderSettings: true,
+          }
+        : {
+            id: true,
+            name: true,
+            slug: true,
+            address: true,
+            latitude: true,
+            longitude: true,
+            logoUrl: true,
+            photos: true,
+            photoGallery: true,
+            reminderSettings: true,
+            _count: {
+              select: {
+                Review: true,
+                Booking: true,
+              },
+            },
+          };
+
+    const studios = await this.prisma.studio.findMany({
       where: {
-        status: 'ACTIVE', // Only show active Studios
-        latitude: { not: null },
-        longitude: { not: null },
+        status: 'ACTIVE',
+        latitude: { gte: bbox.south, lte: bbox.north },
+        longitude: { gte: bbox.west, lte: bbox.east },
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        address: true,
-        latitude: true,
-        longitude: true,
-        logoUrl: true,
-        photos: true,
-        photoGallery: true,
-        reminderSettings: true,
-        _count: {
-          select: {
-            Review: true,
-            Booking: true,
-          },
-        },
-      },
+      select,
     });
 
-    // Calculate distances and filter by radius
-    const StudiosWithDistance = Studios.map((Studio) => {
-      if (!Studio.latitude || !Studio.longitude) {
-        return null;
-      }
-      const distance = this.calculateDistance(
-        lat,
-        lng,
-        Studio.latitude,
-        Studio.longitude,
-      );
-      return {
-        ...Studio,
-        distance,
-      };
-    })
-      .filter(
-        (Studio): Studio is NonNullable<typeof Studio> =>
-          Studio !== null && Studio.distance <= radius,
-      )
+    const studiosWithDistance = studios
+      .map((studio) => {
+        if (studio.latitude == null || studio.longitude == null) return null;
+        const distance = this.calculateDistance(
+          lat,
+          lng,
+          studio.latitude,
+          studio.longitude,
+        );
+        if (distance > radius) return null;
+        return { ...studio, distance };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, limit);
 
-    // Fallback for MVP: if no Studios in selected radius, return featured list
-    // so client map/home are not empty for new regions with sparse data.
-    // Skipped in strict mode so a "near you" list never shows far studios.
-    if (StudiosWithDistance.length === 0) {
+    if (studiosWithDistance.length === 0) {
       return strict ? [] : this.findFeaturedStudios(limit);
     }
 
-    const nearbyIds = StudiosWithDistance.map((s) => s.id);
+    const nearbyIds = studiosWithDistance.map((s) => s.id);
     const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
       await this.getStudioDiscoveryMeta(nearbyIds);
 
-    return StudiosWithDistance.map((s) => {
+    return studiosWithDistance.map((s) => {
       const r = ratingMap.get(s.id) || { avgRating: 0, reviewCount: 0 };
       const studioName = resolveStudioBrandNameForDiscovery({
         name: s.name,
         slug: s.slug,
         reminderSettings: s.reminderSettings,
       });
+      const locationName = resolveBrowseStudioLocationName(s.reminderSettings);
+      const firstPhoto =
+        Array.isArray(s.photos) && s.photos.length > 0
+          ? s.photos[0]
+          : undefined;
+
+      if (mode === 'map') {
+        return {
+          id: s.id,
+          name: studioName,
+          address: s.address,
+          locationName,
+          lat: s.latitude ?? undefined,
+          lng: s.longitude ?? undefined,
+          logoUrl: s.logoUrl,
+          photoUrl: firstPhoto,
+          distance: s.distance,
+          avgRating: r.avgRating,
+          reviewCount: r.reviewCount,
+          trainingCategoryIds: categoryIdsByStudio.get(s.id) ?? [],
+          categories: categoriesByStudio.get(s.id) ?? [],
+        };
+      }
+
       return {
         id: s.id,
         name: studioName,
         studioName,
         address: s.address,
-        locationName: resolveBrowseStudioLocationName(s.reminderSettings),
+        locationName,
         latitude: s.latitude ?? undefined,
         longitude: s.longitude ?? undefined,
         photos: s.photos,
