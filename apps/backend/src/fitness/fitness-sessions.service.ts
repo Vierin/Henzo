@@ -88,8 +88,9 @@ export class FitnessSessionsService {
   ) {}
 
   /**
-   * Marks scheduled group sessions whose end time is in the past as COMPLETED.
-   * Keeps analytics, owner calendar, and client schedule consistent without manual action.
+   * Marks ACTIVE sessions past endsAt as COMPLETED.
+   * Read endpoints (schedule, analytics) call this for fresh UI; RemindersScheduler
+   * runs it every 15 min as a background fallback when nobody is browsing.
    */
   async completePastTrainingSessions(): Promise<{ updated: number }> {
     const result = await this.prisma.trainingSession.updateMany({
@@ -1195,8 +1196,6 @@ export class FitnessSessionsService {
       return { success: true };
     }
 
-    await this.completePastTrainingSessions();
-
     const sessionEndsAt = await this.prisma.trainingSession.findUnique({
       where: { id: row.sessionId },
       select: { endsAt: true },
@@ -1311,8 +1310,6 @@ export class FitnessSessionsService {
     if (row.status !== SessionEnrollmentStatus.ACTIVE) {
       return { success: true };
     }
-
-    await this.completePastTrainingSessions();
 
     const sessionRow = await this.prisma.trainingSession.findUnique({
       where: { id: row.sessionId },

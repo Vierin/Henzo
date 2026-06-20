@@ -7,6 +7,7 @@ export type BrevoSendPayload = {
   sender: { email: string; name: string };
   subject: string;
   htmlContent: string;
+  attachment?: { name: string; content: string }[];
 };
 
 @Injectable()

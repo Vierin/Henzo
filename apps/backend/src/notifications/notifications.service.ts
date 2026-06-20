@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +10,8 @@ import {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   /** Cron runs every 15 min — allow slack around the target offset. */
   private static readonly REMINDER_1H_MIN_MS = 40 * 60 * 1000;
   private static readonly REMINDER_1H_MAX_MS = 75 * 60 * 1000;
@@ -846,8 +848,8 @@ export class NotificationsService {
         }
 
         if (!this.isWithinPreClassReminderWindow(reminder.type, msUntilStart)) {
-          console.log(
-            `[Notifications] Dropping stale ${reminder.type} reminder ${reminder.id} ` +
+          this.logger.debug(
+            `Dropping stale ${reminder.type} reminder ${reminder.id} ` +
               `(${Math.round(msUntilStart / 60000)} min until class)`,
           );
           await this.prisma.scheduledPushReminder.delete({

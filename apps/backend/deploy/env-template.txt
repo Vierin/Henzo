@@ -59,7 +59,7 @@ GOOGLE_MAPS_API_KEY="AIza..."
 # ============================================
 # Comma-separated admin emails (extra guard beyond User.role=ADMIN)
 # ADMIN_ALLOWED_EMAILS="you@henzo.app"
-# Crash-free KPI (manual until Firebase API wired); cron snapshots hourly
+# Crash-free KPI (manual until Firebase API wired; shown on admin dashboard)
 # ADMIN_CRASH_FREE_RATE=99.2
 # Deep links for admin Overview / Settings
 # CRASHLYTICS_CONSOLE_URL="https://console.firebase.google.com/project/YOUR_PROJECT/crashlytics"

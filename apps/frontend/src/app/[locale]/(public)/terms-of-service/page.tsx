@@ -712,7 +712,7 @@ export default async function TermsOfService({
                 'Henzo Terms of Service - Legal terms for our fitness studio management and booking platform',
               url: '/terms-of-service',
               dateModified: '2026-05-23',
-              datePublished: '2025-01-15',
+              datePublished: '2026-03-15',
               author: {
                 '@type': 'Organization',
                 name: 'Henzo',

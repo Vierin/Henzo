@@ -1,5 +1,6 @@
 import type { BookingConfirmationStrings } from '../copy/booking-confirmation.strings';
 import type { BookingReminderStrings } from '../copy/booking-reminder.strings';
+import { renderEmailLogoHeader } from './email-layout.helpers';
 
 export function renderBookingConfirmationHtml(
   L: BookingConfirmationStrings,
@@ -77,6 +78,7 @@ export function renderBookingConfirmationHtml(
         </head>
         <body>
           <div class="container">
+            ${renderEmailLogoHeader(600)}
             <div class="header">
               <h1>${L.title}</h1>
               <p>${L.subtitle.replace('{salonName}', bookingData.salonName)}</p>
@@ -196,6 +198,7 @@ export function renderBookingReminderHtml(
         </head>
         <body>
           <div class="container">
+            ${renderEmailLogoHeader(600)}
             <div class="header">
               <h1>${L.headerTitle}</h1>
               <p>${L.headerSubtitleBefore} ${bookingData.salonName} ${L.headerSubtitleAfter}</p>
