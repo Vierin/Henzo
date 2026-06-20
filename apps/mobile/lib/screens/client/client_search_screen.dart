@@ -1307,7 +1307,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final query = _searchQuery.trim();
     final hint = locale.t('clientHome.searchHint');
     final filterCount = _activeFilterCount;
-    return Padding(
+    // Solid background fills the compact band so the expanded chrome's date
+    // pills don't peek through the gaps between the pill / search / filter.
+    return ColoredBox(
+      color: AppColors.backgroundSecondary,
+      child: Padding(
       padding: EdgeInsets.fromLTRB(
         kScreenPaddingHorizontal,
         0,
@@ -1368,6 +1372,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             onTap: _openAllFiltersSheet,
           ),
         ],
+      ),
       ),
     );
   }
@@ -1525,7 +1530,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      body: SafeArea(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
         child: ValueListenableBuilder<bool>(
           valueListenable: _browseShowClasses,
           builder: (context, showClasses, _) {
@@ -1646,6 +1654,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
             );
           },
         ),
+      ),
       ),
     );
   }

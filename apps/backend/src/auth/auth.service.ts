@@ -13,6 +13,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtVerifierService } from './jwt-verifier.service';
 import * as crypto from 'crypto';
 import { renderOtpEmailHtml } from '../email/templates/transactional-email-templates';
+import { OTP_EMAIL_STRINGS } from '../email/copy/otp-email.strings';
+import { resolveClientEmailLocale } from '../email/copy/client-email-locale';
 import { Prisma } from '@prisma/client';
 
 type RegistrationOtpKind = 'client' | 'owner';
@@ -291,14 +293,15 @@ export class AuthService {
     email: string,
     code: string,
     kind: RegistrationOtpKind,
+    locale?: string,
   ) {
+    const loc = resolveClientEmailLocale(locale);
+    const L = OTP_EMAIL_STRINGS[loc];
     const isOwner = kind === 'owner';
     await this.emailService.sendEmail({
       to: email,
-      subject: isOwner
-        ? 'Your Henzo business verification code'
-        : 'Your Henzo verification code',
-      html: renderOtpEmailHtml(code, kind),
+      subject: isOwner ? L.ownerSubject : L.subject,
+      html: renderOtpEmailHtml(code, kind, loc),
       fromName: 'Henzo',
     });
   }

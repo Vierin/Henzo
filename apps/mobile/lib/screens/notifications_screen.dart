@@ -521,7 +521,13 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final kind = _notificationKind(notification, isClient);
     final theme = _NotificationTheme.forKind(kind);
-    final timeStr = _relativeTime(notification.createdAt, locale);
+    // Show the "sent at" stamp in the studio timezone (not the device's): if
+    // you're enrolled in a studio you're almost always in its country.
+    final studioOffset = _studioUtcOffset(notification);
+    final sentAt = studioOffset != null
+        ? notification.createdAt.toUtc().add(studioOffset)
+        : notification.createdAt;
+    final timeStr = _relativeTime(sentAt, locale);
     final isTappable = kind != _NotificationKind.bookingCancelled;
     final session = _isBookingFilterKind(kind)
         ? _bookingSessionParts(notification, locale)
@@ -781,10 +787,44 @@ class _NotificationCard extends StatelessWidget {
     return ' left a review.';
   }
 
+  /// Studio UTC offset derived from the backend-provided pair
+  /// (`startsAt` UTC instant + `startsAtLocal` studio wall-clock). Lets us
+  /// render times in the studio timezone without a tz database on the client.
+  Duration? _studioUtcOffset(AppNotification n) {
+    final utcRaw = n.data['startsAt']?.trim();
+    final localRaw = n.data['startsAtLocal']?.trim();
+    if (utcRaw == null ||
+        utcRaw.isEmpty ||
+        localRaw == null ||
+        localRaw.isEmpty) {
+      return null;
+    }
+    final utc = DateTime.tryParse(utcRaw)?.toUtc();
+    final wall = DateTime.tryParse(localRaw);
+    if (utc == null || wall == null) return null;
+    final wallAsUtc = DateTime.utc(
+      wall.year,
+      wall.month,
+      wall.day,
+      wall.hour,
+      wall.minute,
+      wall.second,
+    );
+    return wallAsUtc.difference(utc);
+  }
+
   _BookingSessionParts? _bookingSessionParts(
     AppNotification n,
     LocaleProvider locale,
   ) {
+    // Prefer the studio-local wall-clock time computed by the backend, so the
+    // card shows the same time as the notification body (not device-local).
+    final localRaw = n.data['startsAtLocal']?.trim();
+    if (localRaw != null && localRaw.isNotEmpty) {
+      final dt = DateTime.tryParse(localRaw);
+      if (dt != null) return _formatSessionParts(dt, locale);
+    }
+
     final raw = n.data['dateTime']?.trim() ?? n.data['startsAt']?.trim();
     if (raw != null && raw.isNotEmpty) {
       try {
@@ -1072,6 +1112,7 @@ Future<void> _openBookingSessionDetail(
   final venue = studio?.name?.trim();
 
   if (!context.mounted) return;
+  if (ModalRoute.of(context)?.isCurrent != true) return;
   await Navigator.of(context).push<void>(
     MaterialPageRoute<void>(
       builder: (navCtx) => OwnerTrainingSessionDetailScreen(

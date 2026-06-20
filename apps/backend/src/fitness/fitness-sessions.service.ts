@@ -88,8 +88,9 @@ export class FitnessSessionsService {
   ) {}
 
   /**
-   * Marks scheduled group sessions whose end time is in the past as COMPLETED.
-   * Keeps analytics, owner calendar, and client schedule consistent without manual action.
+   * Marks ACTIVE sessions past endsAt as COMPLETED.
+   * Read endpoints (schedule, analytics) call this for fresh UI; RemindersScheduler
+   * runs it every 15 min as a background fallback when nobody is browsing.
    */
   async completePastTrainingSessions(): Promise<{ updated: number }> {
     const result = await this.prisma.trainingSession.updateMany({
@@ -1074,6 +1075,35 @@ export class FitnessSessionsService {
       } catch (e) {
         console.error('post-enrollment push schedule failed:', e);
       }
+
+      // Immediate push + in-app notification to the client that the studio
+      // booked them — independent of the confirmation-email toggle.
+      try {
+        const info = await this.prisma.trainingSession.findUnique({
+          where: { id: sessionId },
+          select: {
+            startsAt: true,
+            studioId: true,
+            Training: { select: { name: true } },
+            Studio: { select: { name: true, timezone: true } },
+          },
+        });
+        if (info) {
+          await this.notificationsService.sendOwnerEnrolledClientPush(
+            targetUserId!,
+            {
+              sessionId,
+              studioId: info.studioId,
+              className: info.Training?.name || 'class',
+              studioName: info.Studio?.name || 'studio',
+              startsAt: info.startsAt,
+              timezone: info.Studio?.timezone ?? undefined,
+            },
+          );
+        }
+      } catch (e) {
+        console.error('post-enrollment client push failed:', e);
+      }
     }
 
     return { success: true };
@@ -1165,8 +1195,6 @@ export class FitnessSessionsService {
     if (row.status === nextStatus) {
       return { success: true };
     }
-
-    await this.completePastTrainingSessions();
 
     const sessionEndsAt = await this.prisma.trainingSession.findUnique({
       where: { id: row.sessionId },
@@ -1282,8 +1310,6 @@ export class FitnessSessionsService {
     if (row.status !== SessionEnrollmentStatus.ACTIVE) {
       return { success: true };
     }
-
-    await this.completePastTrainingSessions();
 
     const sessionRow = await this.prisma.trainingSession.findUnique({
       where: { id: row.sessionId },

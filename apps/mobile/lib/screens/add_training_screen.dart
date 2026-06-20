@@ -29,6 +29,7 @@ import '../widgets/address_picker_modal.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/schedule_style_date_picker.dart';
 import '../widgets/common/henzo_header_back_button.dart';
+import '../widgets/common/shimmer_box.dart';
 import '../widgets/training/training_category_picker_sheet.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import '../widgets/training/training_time_picker_sheet.dart';
@@ -38,6 +39,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
+
+/// Max class duration in minutes (8 hours).
+const int _kMaxDurationMinutes = 480;
 
 const Color _kRegHintMuted = Color(0x993F3F3F);
 
@@ -352,6 +356,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                   style: _stepFieldInputStyle,
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    _MaxIntValueFormatter(_kMaxDurationMinutes),
+                  ],
                   onChanged: (_) => setState(() => _step1DurationError = false),
                   decoration: InputDecoration(
                     hintText: '60',
@@ -446,7 +454,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   bool _validateStep1() {
     final nameOk = _nameController.text.trim().isNotEmpty;
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
-    final durationOk = duration > 0;
+    final durationOk = duration > 0 && duration <= _kMaxDurationMinutes;
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     final capacityOk = capacity > 0 && capacity <= 30;
     final priceOk = _parsePriceDigits() > 0;
@@ -1450,7 +1458,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       );
       return;
     }
-    if (duration <= 0 || capacity <= 0 || capacity > 30 || price <= 0) {
+    if (duration <= 0 ||
+        duration > _kMaxDurationMinutes ||
+        capacity <= 0 ||
+        capacity > 30 ||
+        price <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(
@@ -1556,6 +1568,57 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
   }
 
+  /// Skeleton mirroring the step-1 form layout, shown while data loads so the
+  /// page renders instantly instead of blocking on a full-screen spinner.
+  Widget _buildStep1Skeleton() {
+    Widget label() =>
+        const ShimmerBox(height: 12, width: 110, borderRadius: 4);
+    Widget field({double height = 56}) =>
+        ShimmerBox(height: height, borderRadius: 12);
+    Widget block({double fieldHeight = 56}) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        label(),
+        const SizedBox(height: 10),
+        field(height: fieldHeight),
+      ],
+    );
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+        horizontal: kScreenPaddingHorizontal,
+        vertical: 10,
+      ),
+      children: [
+        block(),
+        const SizedBox(height: 22),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: block()),
+            const SizedBox(width: 12),
+            Expanded(child: block()),
+          ],
+        ),
+        const SizedBox(height: 22),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: block()),
+            const SizedBox(width: 12),
+            Expanded(child: block()),
+          ],
+        ),
+        const SizedBox(height: 22),
+        block(fieldHeight: 110),
+        const SizedBox(height: 22),
+        block(),
+        const SizedBox(height: 30),
+        field(height: 60),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = context.watch<LocaleProvider>();
@@ -1594,10 +1657,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           scrolledUnderElevation: 0,
         ),
         body: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary500),
-              )
-            : ListView(
+            ? _buildStep1Skeleton()
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: ListView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: kScreenPaddingHorizontal,
                   vertical: 10,
@@ -2010,6 +2074,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         ),
                       ]
                     : _buildStep2Widgets(loc),
+                ),
               ),
       ),
     );

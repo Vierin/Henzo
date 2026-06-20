@@ -15,6 +15,7 @@ import '../services/dashboard_api_service.dart';
 import '../utils/class_session_link.dart';
 import '../utils/color_hex.dart';
 import '../utils/google_maps_link.dart';
+import '../utils/owner_paid_plan.dart';
 import '../utils/share_utils.dart';
 import '../utils/show_api_error.dart';
 import '../utils/synthetic_guest.dart';
@@ -64,6 +65,9 @@ class _OwnerTrainingSessionDetailScreenState
   late OwnerTrainingSession _session;
   final Set<String> _waitlistActionIds = <String>{};
 
+  /// Waitlist is a paid feature (Studio / Enterprise). Hidden until confirmed.
+  bool _hasPaidPlan = false;
+
   /// Optimistic overrides before PATCH (enrollmentId → ACTIVE | NO_SHOW).
   final Map<String, String> _pendingStatusByEnrollmentId = {};
   Timer? _attendanceDebounceTimer;
@@ -83,6 +87,18 @@ class _OwnerTrainingSessionDetailScreenState
     _session = widget.session;
     _enrollmentsFuture = _loadEnrollmentsAndSyncCounts();
     _waitlistFuture = _loadWaitlist();
+    _loadPaidPlan();
+  }
+
+  Future<void> _loadPaidPlan() async {
+    final token = _authService.accessToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final isPaid = await resolveOwnerHasPaidPlan(token);
+      if (mounted) setState(() => _hasPaidPlan = isPaid);
+    } catch (_) {
+      // Keep waitlist hidden on failure.
+    }
   }
 
   Future<List<OwnerSessionEnrollment>> _loadEnrollmentsAndSyncCounts() async {
@@ -975,6 +991,7 @@ class _OwnerTrainingSessionDetailScreenState
                         );
                       },
                     ),
+                    if (_hasPaidPlan) ...[
                     const SizedBox(height: 20),
                     Text(
                       tr('dashboard.waitlist'),
@@ -1142,6 +1159,7 @@ class _OwnerTrainingSessionDetailScreenState
                         );
                       },
                     ),
+                    ],
                   ]),
                 ),
               ),

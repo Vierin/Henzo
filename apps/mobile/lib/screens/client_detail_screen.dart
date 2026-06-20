@@ -19,7 +19,7 @@ import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/synthetic_guest.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
-import '../../widgets/clients/book_client_session_sheet.dart';
+import 'book_client_session_screen.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -368,7 +368,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       return;
     }
 
-    final booked = await showBookClientSessionSheet(
+    final booked = await showBookClientSessionScreen(
       context,
       client: target,
     );

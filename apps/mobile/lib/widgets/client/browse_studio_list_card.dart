@@ -317,8 +317,8 @@ class BrowseStudioListCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 1),
                   child: SvgPicture.asset(
                     'assets/icons/icon-pin.svg',
-                    width: 11,
-                    height: 15,
+                    width: 9,
+                    height: 12,
                   ),
                 ),
                 const SizedBox(width: 4),

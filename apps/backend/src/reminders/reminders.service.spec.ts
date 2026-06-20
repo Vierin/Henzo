@@ -39,8 +39,15 @@ describe('RemindersService', () => {
     const emailService = {
       sendBookingReminder: jest.fn().mockResolvedValue({}),
     };
+    const analytics = { track: jest.fn() };
+    const adminEventLog = { log: jest.fn().mockResolvedValue(undefined) };
 
-    const service = new RemindersService(prisma as any, emailService as any);
+    const service = new RemindersService(
+      prisma as any,
+      emailService as any,
+      analytics as any,
+      adminEventLog as any,
+    );
 
     const result = await service.sendBookingReminders();
 

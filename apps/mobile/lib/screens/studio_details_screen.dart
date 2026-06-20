@@ -9,6 +9,7 @@ import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
+import '../utils/form_validators.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/address_picker_modal.dart';
 import '../widgets/common/henzo_header_back_button.dart';
@@ -258,10 +259,11 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
                           locationDisplayName: _locationName,
                           addressText: _addressText,
                           onAddressTap: _openAddressPicker,
-                          nameValidator: (v) =>
-                              (v == null || v.trim().isEmpty)
-                              ? locale.t('profileForm.requiredField')
-                              : null,
+                          nameValidator: (v) => validateRequiredNullable(
+                            locale.t,
+                            v,
+                            emptyKey: 'profileForm.requiredField',
+                          ),
                         ),
                       ),
                     ),

@@ -12,10 +12,12 @@ import '../../models/owner_studio_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../utils/form_validators.dart';
 import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
 import '../common/sheet_action_button_style.dart';
 import '../settings/settings_form_tokens.dart';
+import '../settings/settings_validated_text_field.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum AddOwnerClientMode { directoryOnly, enrollInSession }
@@ -25,14 +27,6 @@ String _emailLocale(LocaleProvider loc) {
   if (c == 'vi' || c == 'en' || c == 'ru') return c;
   return 'en';
 }
-
-bool _isValidEmail(String raw) {
-  final s = raw.trim();
-  return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
-}
-
-String _requiredFieldHint(String Function(String) tr, String key) =>
-    '${tr(key)} *';
 
 /// Picked client from roster / search (same shape for list + enroll).
 class _ClientPick {
@@ -141,11 +135,13 @@ class _DirectoryAddSheet extends StatefulWidget {
 }
 
 class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
+  final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _notes = TextEditingController();
   var _saving = false;
+  String? _submitError;
 
   @override
   void dispose() {
@@ -165,59 +161,87 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
         child: _SheetChrome(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(tr('ownerClient.addToDirectory'), style: _sheetTitleStyle),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _name,
-                  enabled: !_saving,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: settingsInputDecoration(
-                    hintText: _requiredFieldHint(tr, 'ownerSession.name'),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr('ownerClient.addToDirectory'),
+                    style: _sheetTitleStyle,
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _email,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: settingsInputDecoration(
-                    hintText: _requiredFieldHint(tr, 'ownerSession.email'),
+                  const SizedBox(height: 12),
+                  SettingsValidatedTextField(
+                    controller: _name,
+                    enabled: !_saving,
+                    textCapitalization: TextCapitalization.words,
+                    hintText: requiredFieldHint(tr, 'ownerSession.name'),
+                    validator: (v) => validateRequired(tr, v),
+                    onChanged: (_) {
+                      if (_submitError != null) {
+                        setState(() => _submitError = null);
+                      }
+                    },
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _phone,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.phone,
-                  decoration: settingsInputDecoration(
-                    hintText: tr('ownerSession.phone'),
+                  const SizedBox(height: 10),
+                  SettingsValidatedTextField(
+                    controller: _email,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.emailAddress,
+                    hintText: requiredFieldHint(tr, 'ownerSession.email'),
+                    validator: (v) => validateEmail(
+                      tr,
+                      v,
+                      emptyKey: 'settings.requiredField',
+                    ),
+                    onChanged: (_) {
+                      if (_submitError != null) {
+                        setState(() => _submitError = null);
+                      }
+                    },
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _notes,
-                  enabled: !_saving,
-                  maxLines: 2,
-                  decoration: settingsInputDecoration(
-                    hintText: tr('ownerClient.notesOptional'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _phone,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.phone,
+                    decoration: settingsInputDecoration(
+                      hintText: tr('ownerSession.phone'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _notes,
+                    enabled: !_saving,
                     maxLines: 2,
+                    decoration: settingsInputDecoration(
+                      hintText: tr('ownerClient.notesOptional'),
+                      maxLines: 2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                _SheetActions(
-                  saving: _saving,
-                  onCancel: () => Navigator.of(context).pop(),
-                  onPrimary: () {
-                    _submit();
-                  },
-                  primaryLabel: tr('ownerSession.add'),
-                ),
-              ],
+                  if (_submitError != null) ...[
+                    const SizedBox(height: 10),
+                    SelectableText.rich(
+                      TextSpan(
+                        text: _submitError,
+                        style: TextStyle(
+                          color: AppColors.error600,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  _SheetActions(
+                    saving: _saving,
+                    onCancel: () => Navigator.of(context).pop(),
+                    onPrimary: _submit,
+                    primaryLabel: tr('ownerSession.add'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -229,14 +253,11 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
     final t = context.read<LocaleProvider>().t;
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (_name.text.trim().isEmpty || !_isValidEmail(_email.text)) {
-      messenger?.showSnackBar(
-        SnackBar(content: Text(t('ownerClient.missingNameEmail'))),
-      );
-      return;
-    }
-    setState(() => _saving = true);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      _saving = true;
+      _submitError = null;
+    });
     try {
       await DashboardApiService.createOwnerStudioDirectoryClient(
         token,
@@ -246,14 +267,16 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
         notes: _notes.text.trim(),
       );
       widget.onSuccess?.call();
-      messenger?.showSnackBar(
-        SnackBar(content: Text(t('ownerClient.addedToDirectory'))),
-      );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(t('ownerClient.addedToDirectory'))),
+        );
+      }
     } catch (e) {
-      messenger?.showSnackBar(
-        SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        setState(() => _submitError = '$e');
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -274,6 +297,7 @@ class _EnrollParticipantSheet extends StatefulWidget {
 
 class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
   _EnrollStep _step = _EnrollStep.chooseSource;
+  final _walkInFormKey = GlobalKey<FormState>();
 
   final _search = TextEditingController();
   final _name = TextEditingController();
@@ -288,6 +312,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
   var _loadingSearch = false;
   var _saving = false;
   var _sendConfirmation = false;
+  String? _walkInSubmitError;
 
   @override
   void initState() {
@@ -454,19 +479,17 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
   }
 
   Future<void> _enrollWalkIn() async {
-    final t = context.read<LocaleProvider>().t;
-    final addedMsg = t('ownerSession.participantAdded');
+    final addedMsg = context.read<LocaleProvider>().t(
+      'ownerSession.participantAdded',
+    );
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (!(_walkInFormKey.currentState?.validate() ?? false)) return;
     final loc = context.read<LocaleProvider>();
-    if (_name.text.trim().isEmpty || !_isValidEmail(_email.text)) {
-      messenger?.showSnackBar(
-        SnackBar(content: Text(t('ownerClient.missingNameEmail'))),
-      );
-      return;
-    }
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _walkInSubmitError = null;
+    });
     try {
       await DashboardApiService.addOwnerSessionEnrollment(
         token,
@@ -478,12 +501,16 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
         locale: _emailLocale(loc),
       );
       widget.onSuccess?.call();
-      messenger?.showSnackBar(SnackBar(content: Text(addedMsg)));
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(addedMsg)),
+        );
+      }
     } catch (e) {
-      messenger?.showSnackBar(
-        SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        setState(() => _walkInSubmitError = '$e');
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -575,10 +602,9 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                       }
                     },
                     primaryLabel: tr('ownerSession.add'),
-                    primaryEnabled: _step == _EnrollStep.newWalkIn
-                        ? _name.text.trim().isNotEmpty &&
-                              _isValidEmail(_email.text)
-                        : _selected != null,
+                    primaryEnabled: _step == _EnrollStep.pickFromList
+                        ? _selected != null
+                        : true,
                     showCancel: false,
                   ),
                 ],
@@ -743,38 +769,63 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
           ],
         );
       case _EnrollStep.newWalkIn:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _name,
-              enabled: !_saving,
-              textCapitalization: TextCapitalization.words,
-              onChanged: (_) => setState(() {}),
-              decoration: settingsInputDecoration(
-                hintText: _requiredFieldHint(tr, 'ownerSession.name'),
+        return Form(
+          key: _walkInFormKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SettingsValidatedTextField(
+                controller: _name,
+                enabled: !_saving,
+                textCapitalization: TextCapitalization.words,
+                hintText: requiredFieldHint(tr, 'ownerSession.name'),
+                validator: (v) => validateRequired(tr, v),
+                onChanged: (_) {
+                  if (_walkInSubmitError != null) {
+                    setState(() => _walkInSubmitError = null);
+                  }
+                },
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _email,
-              enabled: !_saving,
-              keyboardType: TextInputType.emailAddress,
-              onChanged: (_) => setState(() {}),
-              decoration: settingsInputDecoration(
-                hintText: _requiredFieldHint(tr, 'ownerSession.email'),
+              const SizedBox(height: 10),
+              SettingsValidatedTextField(
+                controller: _email,
+                enabled: !_saving,
+                keyboardType: TextInputType.emailAddress,
+                hintText: requiredFieldHint(tr, 'ownerSession.email'),
+                validator: (v) => validateEmail(
+                  tr,
+                  v,
+                  emptyKey: 'settings.requiredField',
+                ),
+                onChanged: (_) {
+                  if (_walkInSubmitError != null) {
+                    setState(() => _walkInSubmitError = null);
+                  }
+                },
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _phone,
-              enabled: !_saving,
-              keyboardType: TextInputType.phone,
-              decoration: settingsInputDecoration(
-                hintText: tr('ownerSession.phone'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _phone,
+                enabled: !_saving,
+                keyboardType: TextInputType.phone,
+                decoration: settingsInputDecoration(
+                  hintText: tr('ownerSession.phone'),
+                ),
               ),
-            ),
-          ],
+              if (_walkInSubmitError != null) ...[
+                const SizedBox(height: 10),
+                SelectableText.rich(
+                  TextSpan(
+                    text: _walkInSubmitError,
+                    style: TextStyle(
+                      color: AppColors.error600,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         );
     }
   }

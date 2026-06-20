@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +10,8 @@ import {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   /** Cron runs every 15 min — allow slack around the target offset. */
   private static readonly REMINDER_1H_MIN_MS = 40 * 60 * 1000;
   private static readonly REMINDER_1H_MAX_MS = 75 * 60 * 1000;
@@ -225,6 +227,7 @@ export class NotificationsService {
     startsAt: Date;
     trainingName?: string;
     studioName?: string;
+    timezone?: string;
   }): Record<string, string> {
     const data: Record<string, string> = {
       type: params.type,
@@ -232,6 +235,16 @@ export class NotificationsService {
       studioId: params.studioId,
       startsAt: params.startsAt.toISOString(),
     };
+    // Wall-clock time in the studio timezone so the client app shows the same
+    // time as the notification body (instead of converting to device local).
+    if (params.timezone) {
+      data.timezone = params.timezone;
+      data.startsAtLocal = formatInTimeZone(
+        params.startsAt,
+        params.timezone,
+        "yyyy-MM-dd'T'HH:mm:ss",
+      );
+    }
     if (params.trainingName) data.trainingName = params.trainingName;
     if (params.studioName) data.studioName = params.studioName;
     return data;
@@ -835,8 +848,8 @@ export class NotificationsService {
         }
 
         if (!this.isWithinPreClassReminderWindow(reminder.type, msUntilStart)) {
-          console.log(
-            `[Notifications] Dropping stale ${reminder.type} reminder ${reminder.id} ` +
+          this.logger.debug(
+            `Dropping stale ${reminder.type} reminder ${reminder.id} ` +
               `(${Math.round(msUntilStart / 60000)} min until class)`,
           );
           await this.prisma.scheduledPushReminder.delete({
@@ -878,7 +891,26 @@ export class NotificationsService {
           startsAt: session.startsAt,
           trainingName: session.Training?.name || 'class',
           studioName: session.Studio?.name || 'studio',
+          timezone: sessionTz,
         });
+
+        // Create the in-app record first and stamp its id into the push so the
+        // client dedupes the incoming push against the inbox (no duplicates).
+        try {
+          const inAppId = await this.createInAppNotification({
+            userId: reminder.userId,
+            type: 'PRE_CLASS_REMINDER',
+            title,
+            body,
+            data: pushData,
+          });
+          pushData.notificationId = inAppId;
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save pre-class in-app notification:',
+            inAppErr,
+          );
+        }
 
         await this.sendPushNotification(
           tokens,
@@ -888,21 +920,6 @@ export class NotificationsService {
           undefined,
           'henzo_default',
         );
-
-        try {
-          await this.createInAppNotification({
-            userId: reminder.userId,
-            type: 'PRE_CLASS_REMINDER',
-            title,
-            body,
-            data: pushData,
-          });
-        } catch (inAppErr) {
-          console.error(
-            '[Notifications] Failed to save pre-class in-app notification:',
-            inAppErr,
-          );
-        }
 
         await this.prisma.scheduledPushReminder.update({
           where: { id: reminder.id },
@@ -978,7 +995,24 @@ export class NotificationsService {
           trainingName:
             cancelledSession?.Training?.name || sessionInfo.className,
           studioName: cancelledSession?.Studio?.name || sessionInfo.studioName,
+          timezone: cancelledTz,
         });
+
+        try {
+          const inAppId = await this.createInAppNotification({
+            userId,
+            type: 'SESSION_CANCELLED',
+            title,
+            body,
+            data: pushData,
+          });
+          pushData.notificationId = inAppId;
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save cancellation in-app notification:',
+            inAppErr,
+          );
+        }
 
         await this.sendPushNotification(
           tokens,
@@ -988,21 +1022,6 @@ export class NotificationsService {
           undefined,
           'henzo_default',
         );
-
-        try {
-          await this.createInAppNotification({
-            userId,
-            type: 'SESSION_CANCELLED',
-            title,
-            body,
-            data: pushData,
-          });
-        } catch (inAppErr) {
-          console.error(
-            '[Notifications] Failed to save cancellation in-app notification:',
-            inAppErr,
-          );
-        }
       }
     } catch (err) {
       console.error('[Notifications] notifySessionCancelled failed:', err);
@@ -1084,7 +1103,24 @@ export class NotificationsService {
             rescheduledSession?.Training?.name || sessionInfo.className,
           studioName:
             rescheduledSession?.Studio?.name || sessionInfo.studioName,
+          timezone: rescheduledTz,
         });
+
+        try {
+          const inAppId = await this.createInAppNotification({
+            userId: enrollment.userId,
+            type: 'SESSION_RESCHEDULED',
+            title,
+            body,
+            data: pushData,
+          });
+          pushData.notificationId = inAppId;
+        } catch (inAppErr) {
+          console.error(
+            '[Notifications] Failed to save reschedule in-app notification:',
+            inAppErr,
+          );
+        }
 
         await this.sendPushNotification(
           tokens,
@@ -1094,21 +1130,6 @@ export class NotificationsService {
           undefined,
           'henzo_default',
         );
-
-        try {
-          await this.createInAppNotification({
-            userId: enrollment.userId,
-            type: 'SESSION_RESCHEDULED',
-            title,
-            body,
-            data: pushData,
-          });
-        } catch (inAppErr) {
-          console.error(
-            '[Notifications] Failed to save reschedule in-app notification:',
-            inAppErr,
-          );
-        }
       }
     } catch (err) {
       console.error('[Notifications] notifySessionRescheduled failed:', err);
@@ -1187,6 +1208,101 @@ export class NotificationsService {
   }
 
   /** Push notification to user when promoted from waitlist to enrolled. */
+  /**
+   * Notify a client that the studio owner/trainer booked them into a class.
+   * Sends a push and saves an in-app notification (independent of the
+   * confirmation email, which is controlled by a separate owner toggle).
+   */
+  async sendOwnerEnrolledClientPush(
+    userId: string,
+    sessionInfo: {
+      sessionId: string;
+      studioId: string;
+      className: string;
+      studioName: string;
+      startsAt: Date;
+      timezone?: string;
+    },
+  ): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensByUserId(userId);
+
+      const tz = sessionInfo.timezone ?? 'Asia/Ho_Chi_Minh';
+      const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: tz,
+      });
+
+      // Save an in-app notification even when the client has no push token.
+      const baseLang = tokens[0]?.language || 'en';
+      const buildContent = (lang: string) => {
+        const title = getNotificationText(lang, 'ownerBookedTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'ownerBookedBody' as any),
+          {
+            class: sessionInfo.className,
+            studio: sessionInfo.studioName,
+            date: dateStr,
+          },
+        );
+        return { title, body };
+      };
+      const pushData = this.clientSessionPushData({
+        type: 'OWNER_BOOKED',
+        sessionId: sessionInfo.sessionId,
+        studioId: sessionInfo.studioId,
+        startsAt: sessionInfo.startsAt,
+        trainingName: sessionInfo.className,
+        studioName: sessionInfo.studioName,
+        timezone: tz,
+      });
+
+      const { title, body } = buildContent(baseLang);
+      try {
+        const inAppId = await this.createInAppNotification({
+          userId,
+          type: 'OWNER_BOOKED',
+          title,
+          body,
+          data: pushData,
+        });
+        pushData.notificationId = inAppId;
+      } catch (inAppErr) {
+        console.error(
+          '[Notifications] Failed to save owner-booked in-app notification:',
+          inAppErr,
+        );
+      }
+
+      if (tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const localized = buildContent(lang);
+        await this.sendPushNotification(
+          langTokens,
+          localized.title,
+          localized.body,
+          pushData,
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] Failed to send owner-booked push:', err);
+    }
+  }
+
   async sendWaitlistPromotionPush(
     userId: string,
     sessionInfo: {
@@ -1199,6 +1315,40 @@ export class NotificationsService {
   ): Promise<void> {
     try {
       const tokens = await this.getPushTokensByUserId(userId);
+
+      const pushData = this.clientSessionPushData({
+        type: 'WAITLIST_PROMOTED',
+        sessionId: sessionInfo.sessionId,
+        studioId: sessionInfo.studioId,
+        startsAt: sessionInfo.startsAt ?? new Date(),
+        trainingName: sessionInfo.className,
+        studioName: sessionInfo.studioName,
+      });
+
+      // One in-app record (not one per language group) so the inbox has no
+      // duplicates; stamp its id into the push for client-side dedup.
+      const baseLang = tokens[0]?.language || 'en';
+      const baseTitle = getNotificationText(baseLang, 'waitlistPromotedTitle');
+      const baseBody = formatNotificationTemplate(
+        getNotificationText(baseLang, 'waitlistPromotedBody'),
+        { class: sessionInfo.className, studio: sessionInfo.studioName },
+      );
+      try {
+        const inAppId = await this.createInAppNotification({
+          userId,
+          type: 'WAITLIST_PROMOTED',
+          title: baseTitle,
+          body: baseBody,
+          data: pushData,
+        });
+        pushData.notificationId = inAppId;
+      } catch (inAppErr) {
+        console.error(
+          '[Notifications] Failed to save waitlist in-app notification:',
+          inAppErr,
+        );
+      }
+
       if (tokens.length === 0) return;
 
       const languageGroups = new Map<string, typeof tokens>();
@@ -1209,20 +1359,11 @@ export class NotificationsService {
       }
 
       for (const [lang, langTokens] of languageGroups) {
-        const title = getNotificationText(lang, 'waitlistPromotedTitle' as any);
+        const title = getNotificationText(lang, 'waitlistPromotedTitle');
         const body = formatNotificationTemplate(
-          getNotificationText(lang, 'waitlistPromotedBody' as any),
+          getNotificationText(lang, 'waitlistPromotedBody'),
           { class: sessionInfo.className, studio: sessionInfo.studioName },
         );
-        const pushData = this.clientSessionPushData({
-          type: 'WAITLIST_PROMOTED',
-          sessionId: sessionInfo.sessionId,
-          studioId: sessionInfo.studioId,
-          startsAt: sessionInfo.startsAt ?? new Date(),
-          trainingName: sessionInfo.className,
-          studioName: sessionInfo.studioName,
-        });
-
         await this.sendPushNotification(
           langTokens,
           title,
@@ -1231,21 +1372,6 @@ export class NotificationsService {
           undefined,
           'henzo_default',
         );
-
-        try {
-          await this.createInAppNotification({
-            userId,
-            type: 'WAITLIST_PROMOTED',
-            title,
-            body,
-            data: pushData,
-          });
-        } catch (inAppErr) {
-          console.error(
-            '[Notifications] Failed to save waitlist in-app notification:',
-            inAppErr,
-          );
-        }
       }
     } catch (err) {
       console.error('[Notifications] Failed to send waitlist push:', err);
