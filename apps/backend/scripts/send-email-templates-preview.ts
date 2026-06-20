@@ -117,8 +117,10 @@ function buildTemplates(): TemplateItem[] {
       subject: `[TEST] Booking reminder (${locale.toUpperCase()}) — ${SAMPLE_BOOKING.salonName}`,
       html: renderBookingReminderHtml(
         reminderStrings,
+        'Anya',
         SAMPLE_BOOKING,
-        priceFormatted,
+        calendarUrl,
+        mapsUrl,
       ),
     });
   }

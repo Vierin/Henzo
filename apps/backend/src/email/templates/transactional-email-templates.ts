@@ -8,6 +8,7 @@ import {
   renderEmailLogoHeader,
   renderEmailIcon,
   renderEmailIconCircle,
+  renderEmailDashedIconDivider,
 } from './email-layout.helpers';
 
 export function renderContactMessageHtml(context: {
@@ -268,8 +269,8 @@ export function renderTrainerInviteHtml(
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
                 <tr>
                   <td align="center">
-                    <span style="display:inline-block;background-color:#FFF0EB;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;color:#F15942;line-height:1;">
-                      ${renderEmailIcon('people', 14, '', true)}&nbsp;&nbsp;${L.badge}
+                    <span style="display:inline-block;background-color:#FFF0EB;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;color:#F15942;line-height:1;">
+                      ${renderEmailIcon('profile-large', 22, '', true, 24)}&nbsp;&nbsp;${L.badge}
                     </span>
                   </td>
                 </tr>
@@ -315,17 +316,7 @@ export function renderTrainerInviteHtml(
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
                 <tr>
                   <td align="center">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td style="border-top:1px dashed #E8DDD6;width:42%;"></td>
-                        <td align="center" style="width:16%;padding:0 8px;">
-                          <span style="display:inline-block;width:32px;height:32px;background-color:#FFF0EB;border-radius:50%;text-align:center;line-height:32px;">
-                            ${renderEmailIcon('link', 14)}
-                          </span>
-                        </td>
-                        <td style="border-top:1px dashed #E8DDD6;width:42%;"></td>
-                      </tr>
-                    </table>
+                    ${renderEmailDashedIconDivider('link', { circleSize: 44, iconSize: 22 })}
                   </td>
                 </tr>
               </table>

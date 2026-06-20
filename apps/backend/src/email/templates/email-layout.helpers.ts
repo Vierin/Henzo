@@ -55,6 +55,8 @@ export type EmailIconName =
   | 'shield'
   | 'clock'
   | 'people'
+  | 'profile-large'
+  | 'pin'
   | 'link'
   | 'copy'
   | 'instagram'
@@ -65,12 +67,14 @@ export function renderEmailIcon(
   size = 18,
   alt = '',
   inline = false,
+  height?: number,
 ): string {
   const safeAlt = escapeHtml(alt);
+  const iconHeight = height ?? size;
   const display = inline
     ? 'display:inline-block;vertical-align:middle;border:0;outline:none;text-decoration:none;'
     : 'display:block;margin:0 auto;border:0;outline:none;text-decoration:none;';
-  return `<img src="${getEmailIconUrl(name)}" width="${size}" height="${size}" alt="${safeAlt}" style="${display}" />`;
+  return `<img src="${getEmailIconUrl(name)}" width="${size}" height="${iconHeight}" alt="${safeAlt}" style="${display}" />`;
 }
 
 export function renderEmailIconCircle(
@@ -184,6 +188,44 @@ export function renderEmailInfoRow(
               <td valign="middle" style="font-size:14px;color:#3F3F3F;line-height:1.5;max-width:380px;text-align:left;">
                 ${text}
               </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
+}
+
+export function renderEmailDashedIconDivider(
+  name: EmailIconName,
+  options?: { circleSize?: number; iconSize?: number; iconHeight?: number },
+): string {
+  const circleSize = options?.circleSize ?? 40;
+  const iconSize = options?.iconSize ?? 18;
+  const iconHeight = options?.iconHeight ?? iconSize;
+
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr>
+        <td width="50%" valign="middle" style="vertical-align:middle;padding:0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="border-top:1px dashed #E8DDD6;font-size:0;line-height:0;height:1px;mso-line-height-rule:exactly;">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+        <td valign="middle" align="center" style="vertical-align:middle;padding:0 12px;white-space:nowrap;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td align="center" valign="middle" width="${circleSize}" height="${circleSize}" style="width:${circleSize}px;height:${circleSize}px;background-color:#FFF0EB;border-radius:50%;">
+                ${renderEmailIcon(name, iconSize, '', false, iconHeight)}
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td width="50%" valign="middle" style="vertical-align:middle;padding:0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="border-top:1px dashed #E8DDD6;font-size:0;line-height:0;height:1px;mso-line-height-rule:exactly;">&nbsp;</td>
             </tr>
           </table>
         </td>

@@ -103,6 +103,7 @@ export class ClientBookingEmailService {
       salonAddress?: string;
       salonPhone?: string;
       staffName?: string;
+      dateTime?: Date | string;
       salonTimezone?: string;
       locale?: 'en' | 'ru' | 'vi';
     },
@@ -112,10 +113,29 @@ export class ClientBookingEmailService {
     const loc = resolveClientEmailLocale(bookingData.locale);
     const L = BOOKING_REMINDER_STRINGS[loc] || BOOKING_REMINDER_STRINGS.en;
 
+    let calendarUrl: string | null = null;
+    let mapsUrl: string | null = null;
+    if (bookingData.dateTime) {
+      calendarUrl = generateGoogleCalendarUrl({
+        serviceName: bookingData.serviceName,
+        dateTime: bookingData.dateTime,
+        duration: bookingData.duration,
+        salonName: bookingData.salonName,
+        salonAddress: bookingData.salonAddress,
+        staffName: bookingData.staffName,
+        salonTimezone: bookingData.salonTimezone,
+      });
+      if (bookingData.salonAddress) {
+        mapsUrl = generateGoogleMapsUrl(bookingData.salonAddress);
+      }
+    }
+
     const htmlContent = renderBookingReminderHtml(
       L,
+      clientName,
       bookingData,
-      formatVnd(bookingData.price),
+      calendarUrl,
+      mapsUrl,
     );
 
     return this.delivery.send({
