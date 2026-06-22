@@ -73,6 +73,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   /// All studios from the last area search (up to [ClientMapViewport.mapFetchLimit]).
   List<ExploreStudioItem> _studios = const [];
   List<ExploreStudioItem> _filteredStudios = const [];
+  /// Studios inside the current map viewport — pins layer only.
+  List<ExploreStudioItem> _visibleMapStudios = const [];
   /// Frozen carousel list — set when user opens a pin card, unchanged until close/search.
   List<ExploreStudioItem> _carouselStudios = const [];
   List<TrainingCategoryOption> _trainingCategories = const [];
@@ -101,19 +103,52 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             .toList();
   }
 
+  List<ExploreStudioItem> _studiosInView(MapCamera camera) {
+    return ClientMapViewport.studiosForMapPins(
+      _filteredStudios,
+      camera,
+      pinPadding: ClientMapViewport.pinFilterPadding(
+        bottomSafeInset: MediaQuery.paddingOf(context).bottom,
+        showCarouselCard: _showCarouselCard,
+      ),
+      sortFrom: camera.center,
+    );
+  }
+
+  bool _sameVisibleStudioIds(
+    List<ExploreStudioItem> a,
+    List<ExploreStudioItem> b,
+  ) {
+    if (a.length != b.length) return false;
+    final idsA = a.map((s) => s.id).toSet();
+    return idsA.length == b.length && idsA.containsAll(b.map((s) => s.id));
+  }
+
+  void _syncVisibleMapStudios(MapCamera camera) {
+    final visible = _studiosInView(camera);
+    if (_sameVisibleStudioIds(_visibleMapStudios, visible)) return;
+    if (!mounted) return;
+    setState(() => _visibleMapStudios = visible);
+  }
+
   void _closeCarousel() {
     _selectedStudioId = null;
     _showCarouselCard = false;
     _carouselStudios = const [];
+    _visibleMapStudios = _studiosInView(_mapController.camera);
   }
 
   List<ExploreStudioItem> _snapshotCarouselStudios(
     ExploreStudioItem anchor,
   ) {
     final camera = _mapController.camera;
-    final inView = ClientMapViewport.studiosInBounds(
+    final inView = ClientMapViewport.studiosForMapPins(
       _filteredStudios,
-      camera.visibleBounds,
+      camera,
+      pinPadding: ClientMapViewport.pinFilterPadding(
+        bottomSafeInset: MediaQuery.paddingOf(context).bottom,
+        showCarouselCard: _showCarouselCard,
+      ),
       sortFrom: camera.center,
     );
     if (inView.any((s) => s.id == anchor.id)) return inView;
@@ -149,12 +184,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _syncMapToClientLocation();
     final after = context.read<ClientLocationStore>();
     if (_hasClientMapCenter(after)) {
-      unawaited(_loadStudios());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_loadStudios());
+      });
     } else if (mounted) {
       setState(() {
         _isLoadingStudios = false;
         _studios = const [];
         _filteredStudios = const [];
+        _visibleMapStudios = const [];
         _carouselStudios = const [];
         _studiosLoadError = null;
       });
@@ -186,7 +225,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _syncMapToClientLocation();
     final loc = context.read<ClientLocationStore>();
     if (_hasClientMapCenter(loc)) {
-      unawaited(_loadStudios());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_loadStudios());
+      });
     }
   }
 
@@ -198,6 +240,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       LatLng(loc.lat!, loc.lon!),
       _clientLocationZoom,
     );
+    _syncVisibleMapStudios(_mapController.camera);
+  }
+
+  Future<void> _centerMapOnUser() async {
+    final loc = context.read<ClientLocationStore>();
+    if (_hasClientMapCenter(loc)) {
+      _syncMapToClientLocation();
+      return;
+    }
+    await _showLocationRequestModal();
   }
 
   Future<void> _showLocationRequestModal() async {
@@ -349,16 +401,30 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   Future<void> _loadStudios({double? searchLat, double? searchLon}) async {
     final loc = context.read<ClientLocationStore>();
+    final camera = _mapController.camera;
+    final pinPadding = ClientMapViewport.pinFilterPadding(
+      bottomSafeInset: MediaQuery.paddingOf(context).bottom,
+      showCarouselCard: _showCarouselCard,
+    );
     final effectiveLat = searchLat ?? loc.lat;
     final effectiveLon = searchLon ?? loc.lon;
     if (!mounted) return;
-    final radiusKm = ClientMapViewport.searchRadiusKmForZoom(
-      _mapController.camera.zoom,
+    final radiusKm = effectiveLat != null && effectiveLon != null
+        ? ClientMapViewport.searchRadiusKmForMapLoad(
+            camera: camera,
+            center: LatLng(effectiveLat, effectiveLon),
+            pinPadding: pinPadding,
+          )
+        : ClientMapViewport.searchRadiusKmForZoom(camera.zoom);
+    final radiusRound = radiusKm.round().clamp(
+      1,
+      ClientMapViewport.maxSearchRadiusKm.round(),
     );
     setState(() {
       _isLoadingStudios = true;
       _studiosLoadError = null;
       _showSearchThisArea = false;
+      _visibleMapStudios = const [];
       _studioClassesCache.clear();
     });
     try {
@@ -373,7 +439,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ..write('&lng=')
           ..write(effectiveLon.toStringAsFixed(6))
           ..write('&radius=')
-          ..write(radiusKm.round());
+          ..write(radiusRound);
       }
       final path = query.toString();
       dynamic raw = ClientNearbyCache.get(path);
@@ -382,7 +448,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           effectiveLat,
           effectiveLon,
           take: ClientMapViewport.mapFetchLimit,
-          radius: radiusKm.round(),
+          radius: radiusRound,
         );
       }
       raw ??= await ApiClient.get(path, null);
@@ -403,6 +469,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _studios = mapped;
         _rebuildFilteredStudios();
+        _visibleMapStudios = _studiosInView(_mapController.camera);
         _isLoadingStudios = false;
         _closeCarousel();
         _lastSearchLat = effectiveLat;
@@ -411,9 +478,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         _pendingSearchLat = null;
         _pendingSearchLon = null;
       });
-      if (searchLat == null && searchLon == null && mapped.isNotEmpty) {
-        _syncMapToClientLocation();
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncVisibleMapStudios(_mapController.camera);
+      });
     } catch (e) {
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
@@ -565,8 +633,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  /// Pan/zoom end: only update the «Search this area» affordance — no pin/card changes.
   void _onMapEvent(MapEvent event) {
+    final camera = event.camera;
+    if (event is MapEventWithMove || event is MapEventNonRotatedSizeChange) {
+      _syncVisibleMapStudios(camera);
+    }
     final isInteractionEnd = switch (event) {
       MapEventMoveEnd(source: MapEventSource.dragEnd) => true,
       MapEventFlingAnimationEnd() => true,
@@ -574,7 +645,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       _ => false,
     };
     if (!isInteractionEnd) return;
-    _updateSearchThisAreaButton(event.camera);
+    _syncVisibleMapStudios(camera);
+    _updateSearchThisAreaButton(camera);
   }
 
   void _updateSearchThisAreaButton(MapCamera camera) {
@@ -639,15 +711,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       _carouselStudios = carousel;
       _selectedStudioId = studio.id;
       _showCarouselCard = true;
+      _visibleMapStudios = _studiosInView(_mapController.camera);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_carouselController.hasClients) return;
       if (_carouselController.page?.round() == index) return;
-      _carouselController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeOutCubic,
-      );
+      _carouselController.jumpToPage(index);
     });
     unawaited(_ensureStudioClassesLoaded(studio));
     _preloadClassesAroundIndex(index);
@@ -656,6 +725,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   void _onCarouselPageChanged(int index) {
     if (index < 0 || index >= _carouselStudios.length) return;
     final studio = _carouselStudios[index];
+    if (studio.id == _selectedStudioId) return;
     setState(() {
       _selectedStudioId = studio.id;
       _showCarouselCard = true;
@@ -698,28 +768,34 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          locale.t('clientHome.filterByType'),
-                          style: TextStyle(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                        Expanded(
+                          child: Text(
+                            locale.t('clientHome.filterByType'),
+                            style: TextStyle(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
-                        if (tempSelected.isNotEmpty)
-                          TextButton(
-                            onPressed: () =>
-                                setModalState(() => tempSelected = {}),
-                            child: Text(
-                              locale.t('common.reset'),
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
+                        Opacity(
+                          opacity: tempSelected.isNotEmpty ? 1 : 0,
+                          child: IgnorePointer(
+                            ignoring: tempSelected.isEmpty,
+                            child: TextButton(
+                              onPressed: () =>
+                                  setModalState(() => tempSelected = {}),
+                              child: Text(
+                                locale.t('common.reset'),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),
@@ -730,6 +806,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                         TrainingCategoryColorChip(
                           label: locale.t('clientHome.filterAllTypes'),
                           selected: tempSelected.isEmpty,
+                          dimmed: tempSelected.isNotEmpty,
+                          staticBorder: true,
+                          useSelectionBorder: false,
                           onTap: () => setModalState(() => tempSelected = {}),
                         ),
                         ..._trainingCategories.map(
@@ -737,6 +816,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                             category: cat,
                             label: cat.label(locale.localeCode),
                             selected: tempSelected.contains(cat.id),
+                            dimmed: tempSelected.isNotEmpty &&
+                                !tempSelected.contains(cat.id),
+                            useSelectionBorder: false,
                             onTap: () => setModalState(() {
                               if (tempSelected.contains(cat.id)) {
                                 tempSelected = {...tempSelected}..remove(cat.id);
@@ -772,6 +854,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _selectedCategoryIds = result;
         _rebuildFilteredStudios();
+        _visibleMapStudios = _studiosInView(_mapController.camera);
         _closeCarousel();
       });
     }
@@ -859,6 +942,32 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
+  Widget _buildLocateButton() {
+    final locale = context.read<LocaleProvider>();
+    return Semantics(
+      button: true,
+      label: locale.t('clientMap.centerOnLocation'),
+      child: Material(
+        color: Colors.white,
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: _centerMapOnUser,
+          borderRadius: BorderRadius.circular(12),
+          child: const Padding(
+            padding: EdgeInsets.all(10),
+            child: Icon(
+              Icons.my_location_rounded,
+              size: 22,
+              color: AppColors.primary500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMapCloseButton() {
     return Material(
       color: Colors.white,
@@ -910,13 +1019,20 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               options: MapOptions(
                 initialCenter: center,
                 initialZoom: hasCoords ? 14 : 10,
+                minZoom: ClientMapViewport.clientMapMinZoom,
+                maxZoom: ClientMapViewport.clientMapMaxZoom,
                 interactionOptions: HenzoMapLayers.interactionOptions(),
               ),
               children: [
                 HenzoMapLayers.cartoLightTileLayer(),
+                if (hasCoords)
+                  ClientMapUserMarkerLayer(
+                    lat: loc.lat!,
+                    lon: loc.lon!,
+                  ),
                 ClientMapStudioClusterLayer(
                   mapController: _mapController,
-                  mapStudios: _filteredStudios,
+                  mapStudios: _visibleMapStudios,
                   selectedStudioId: _selectedStudioId,
                   onPinTap: _selectStudioFromPin,
                   clusterFitPadding: ClientMapViewport.clusterFitPadding(
@@ -927,11 +1043,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   ClientMapSelectedPinLayer(
                     studio: selectedMapStudio,
                     onPinTap: _selectStudioFromPin,
-                  ),
-                if (hasCoords)
-                  ClientMapUserMarkerLayer(
-                    lat: loc.lat!,
-                    lon: loc.lon!,
                   ),
                 HenzoMapLayers.cartoAttribution(),
               ],
@@ -951,9 +1062,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             child: SafeArea(
               bottom: false,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildFilterButton(),
+                  const SizedBox(width: 8),
+                  _buildLocateButton(),
+                  const Spacer(),
                   _buildMapCloseButton(),
                 ],
               ),
@@ -995,13 +1108,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             left: 0,
             right: 0,
             bottom: bottomInset +
-                (_filteredStudios.isEmpty && !_isLoadingStudios
+                (_filteredStudios.isEmpty &&
+                        _visibleMapStudios.isEmpty &&
+                        !_isLoadingStudios
                     ? 10
                     : _carouselBottomPadding),
             child: _StudioCarousel(
               isLoading: _isLoadingStudios,
               loadError: _studiosLoadError,
-              showNoStudiosMessage: _filteredStudios.isEmpty,
+              showNoStudiosMessage:
+                  _filteredStudios.isEmpty && _visibleMapStudios.isEmpty,
               studios: _carouselStudios,
               showCard: _showCarouselCard,
               classesByStudio: _studioClassesCache.snapshot,
