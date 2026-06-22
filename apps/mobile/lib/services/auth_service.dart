@@ -238,6 +238,30 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated = false;
   }
 
+  /// Adopts a backend-issued Supabase session (returned by the OTP verify
+  /// endpoints) into the local gotrue client. Without this, [accessToken] —
+  /// which reads from `currentSession` — stays null after registration, so
+  /// token-based screens (e.g. the owner dashboard / onboarding checklist)
+  /// load no data until the next real sign-in.
+  ///
+  /// Returns the live access token of the established session, falling back to
+  /// the payload's `access_token`, or null when no session is present.
+  Future<String?> _adoptBackendSession(dynamic session) async {
+    if (session is! Map<String, dynamic>) return null;
+    final accessToken = session['access_token'] as String?;
+    final refreshToken = session['refresh_token'] as String?;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        final res = await _supabase.auth.setSession(refreshToken);
+        final live = res.session?.accessToken;
+        if (live != null && live.isNotEmpty) return live;
+      } catch (e) {
+        if (kDebugMode) debugPrint('[Auth] setSession after OTP failed: $e');
+      }
+    }
+    return (accessToken != null && accessToken.isNotEmpty) ? accessToken : null;
+  }
+
   Future<({bool ok, String? errorL10nKey, String? errorRaw})> _fetchUser(
     String accessToken, {
     bool syncIfMissing = false,
@@ -816,10 +840,7 @@ class AuthService extends ChangeNotifier {
       );
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final payload = json.decode(response.body) as Map<String, dynamic>?;
-        final session = payload?['session'];
-        final accessToken = session is Map<String, dynamic>
-            ? (session['access_token'] as String?)
-            : null;
+        final accessToken = await _adoptBackendSession(payload?['session']);
         if (accessToken == null || accessToken.isEmpty) {
           return (
             success: false,
@@ -932,10 +953,7 @@ class AuthService extends ChangeNotifier {
       );
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final payload = json.decode(response.body) as Map<String, dynamic>?;
-        final session = payload?['session'];
-        final accessToken = session is Map<String, dynamic>
-            ? (session['access_token'] as String?)
-            : null;
+        final accessToken = await _adoptBackendSession(payload?['session']);
         if (accessToken == null || accessToken.isEmpty) {
           return (
             success: false,
