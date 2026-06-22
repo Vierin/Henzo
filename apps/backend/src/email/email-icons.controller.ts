@@ -19,6 +19,8 @@ const ALLOWED_ICONS = new Set([
   'icon-link.png',
   'icon-lock.png',
   'icon-people.png',
+  'icon-profile-large.png',
+  'icon-pin.png',
   'icon-shield.png',
 ]);
 

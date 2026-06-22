@@ -2,28 +2,25 @@ import type { ClientEmailLocale } from './client-email-locale';
 
 export type BookingReminderStrings = {
   pageTitle: string;
-  greeting: string;
-  headerTitle: string;
-  headerSubtitleBefore: string;
-  headerSubtitleAfter: string;
-  reminderTitle: string;
-  reminderLead: string;
-  appointmentDetails: string;
-  salonInfo: string;
-  importantLabel: string;
-  importantBody: string;
-  rescheduleLine: string;
-  footer: string;
+  eyebrow: string;
+  greetingBefore: string;
+  greetingHighlight: string;
+  subheading: string;
+  withPrefix: string;
+  arriveEarlyBefore: string;
+  arriveEarlyHighlight: string;
+  arriveEarlyAfter: string;
+  addToCalendar: string;
+  getDirections: string;
+  closingTitle: string;
+  footerTagline: string;
   subject: string;
+  dateLabel: string;
+  timeLabel: string;
+  instructorLabel: string;
+  locationLabel: string;
   minutes: string;
-  service: string;
-  dateTime: string;
-  duration: string;
-  price: string;
-  staff: string;
-  salon: string;
-  address: string;
-  phone: string;
+  defaultClientName: string;
 };
 
 export const BOOKING_REMINDER_STRINGS: Record<
@@ -31,83 +28,69 @@ export const BOOKING_REMINDER_STRINGS: Record<
   BookingReminderStrings
 > = {
   en: {
-    pageTitle: 'Appointment Reminder',
-    greeting: 'Hello,',
-    headerTitle: 'Appointment Reminder',
-    headerSubtitleBefore: 'Your appointment at',
-    headerSubtitleAfter: 'is coming up!',
-    reminderTitle: "Don't forget!",
-    reminderLead:
-      'Your appointment is scheduled soon. We look forward to seeing you!',
-    appointmentDetails: 'Appointment Details',
-    salonInfo: 'Salon Information',
-    importantLabel: 'Important:',
-    importantBody: 'Please arrive 5-10 minutes before your appointment time.',
-    rescheduleLine:
-      'If you need to reschedule or cancel, please contact the salon directly as soon as possible.',
-    footer: 'This is an automated reminder. Please do not reply to this email.',
-    subject: 'Appointment Reminder - {salonName}',
-    minutes: 'minutes',
-    service: 'Service',
-    dateTime: 'Date & Time',
-    duration: 'Duration',
-    price: 'Price',
-    staff: 'Staff',
-    salon: 'Salon:',
-    address: 'Address:',
-    phone: 'Phone:',
+    pageTitle: 'Class Reminder',
+    eyebrow: 'BOOKING REMINDER',
+    greetingBefore: 'Hi {name}, your class is ',
+    greetingHighlight: 'tomorrow',
+    subheading: 'Just a friendly reminder about your upcoming class.',
+    withPrefix: 'with',
+    arriveEarlyBefore: 'Arrive ',
+    arriveEarlyHighlight: '10–15 min early',
+    arriveEarlyAfter: ' to get settled and make the most of your session.',
+    addToCalendar: 'Add to calendar',
+    getDirections: 'Get directions',
+    closingTitle: 'We can’t wait to see you!',
+    footerTagline: 'Henzo — book fitness your way',
+    subject: 'Class reminder — {salonName}',
+    dateLabel: 'Date',
+    timeLabel: 'Time',
+    instructorLabel: 'Instructor',
+    locationLabel: 'Location',
+    minutes: 'min',
+    defaultClientName: 'there',
   },
   ru: {
-    pageTitle: 'Напоминание о записи',
-    greeting: 'Здравствуйте!',
-    headerTitle: 'Напоминание о записи',
-    headerSubtitleBefore: 'Ваша запись в',
-    headerSubtitleAfter: 'скоро!',
-    reminderTitle: 'Не забудьте!',
-    reminderLead: 'Ваша запись скоро состоится. Будем рады видеть вас!',
-    appointmentDetails: 'Детали записи',
-    salonInfo: 'Информация о салоне',
-    importantLabel: 'Важно:',
-    importantBody: 'Пожалуйста, приходите за 5–10 минут до времени записи.',
-    rescheduleLine:
-      'Чтобы перенести или отменить запись, свяжитесь с салоном как можно скорее.',
-    footer:
-      'Это автоматическое напоминание. Пожалуйста, не отвечайте на это письмо.',
-    subject: 'Напоминание о записи - {salonName}',
+    pageTitle: 'Напоминание о занятии',
+    eyebrow: 'НАПОМИНАНИЕ О ЗАПИСИ',
+    greetingBefore: 'Привет, {name}! Занятие ',
+    greetingHighlight: 'завтра',
+    subheading: 'Напоминаем о вашем предстоящем занятии.',
+    withPrefix: 'с',
+    arriveEarlyBefore: 'Приходите ',
+    arriveEarlyHighlight: 'за 10–15 минут',
+    arriveEarlyAfter: ', чтобы спокойно подготовиться к занятию.',
+    addToCalendar: 'Добавить в календарь',
+    getDirections: 'Как добраться',
+    closingTitle: 'Ждём вас!',
+    footerTagline: 'Henzo — бронируйте фитнес удобно',
+    subject: 'Напоминание о занятии — {salonName}',
+    dateLabel: 'Дата',
+    timeLabel: 'Время',
+    instructorLabel: 'Тренер',
+    locationLabel: 'Локация',
     minutes: 'мин',
-    service: 'Услуга',
-    dateTime: 'Дата и время',
-    duration: 'Длительность',
-    price: 'Цена',
-    staff: 'Специалист',
-    salon: 'Салон:',
-    address: 'Адрес:',
-    phone: 'Телефон:',
+    defaultClientName: 'друг',
   },
   vi: {
-    pageTitle: 'Nhắc lịch hẹn',
-    greeting: 'Xin chào,',
-    headerTitle: 'Nhắc lịch hẹn',
-    headerSubtitleBefore: 'Lịch hẹn của bạn tại',
-    headerSubtitleAfter: 'sắp tới!',
-    reminderTitle: 'Đừng quên!',
-    reminderLead: 'Lịch hẹn của bạn sắp đến. Hẹn gặp bạn!',
-    appointmentDetails: 'Chi tiết lịch hẹn',
-    salonInfo: 'Thông tin salon',
-    importantLabel: 'Lưu ý:',
-    importantBody: 'Vui lòng đến trước 5-10 phút so với giờ hẹn.',
-    rescheduleLine:
-      'Nếu cần đổi lịch hoặc hủy, vui lòng liên hệ salon sớm nhất có thể.',
-    footer: 'Đây là nhắc nhở tự động. Vui lòng không trả lời email này.',
-    subject: 'Nhắc lịch hẹn - {salonName}',
+    pageTitle: 'Nhắc lịch tập',
+    eyebrow: 'NHẮC LỊCH HẸN',
+    greetingBefore: 'Chào {name}, lớp học của bạn là ',
+    greetingHighlight: 'ngày mai',
+    subheading: 'Nhắc bạn về buổi tập sắp tới.',
+    withPrefix: 'với',
+    arriveEarlyBefore: 'Hãy đến ',
+    arriveEarlyHighlight: 'trước 10–15 phút',
+    arriveEarlyAfter: ' để chuẩn bị và tận hưởng buổi tập.',
+    addToCalendar: 'Thêm vào lịch',
+    getDirections: 'Chỉ đường',
+    closingTitle: 'Hẹn gặp bạn!',
+    footerTagline: 'Henzo — đặt lịch fitness dễ dàng',
+    subject: 'Nhắc lịch tập — {salonName}',
+    dateLabel: 'Ngày',
+    timeLabel: 'Giờ',
+    instructorLabel: 'Huấn luyện viên',
+    locationLabel: 'Địa điểm',
     minutes: 'phút',
-    service: 'Dịch vụ',
-    dateTime: 'Ngày & Giờ',
-    duration: 'Thời lượng',
-    price: 'Giá',
-    staff: 'Nhân viên',
-    salon: 'Salon:',
-    address: 'Địa chỉ:',
-    phone: 'Điện thoại:',
+    defaultClientName: 'bạn',
   },
 };

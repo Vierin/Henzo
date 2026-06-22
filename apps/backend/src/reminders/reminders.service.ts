@@ -216,6 +216,7 @@ export class RemindersService {
               salonAddress: booking.Studio.address || undefined,
               salonPhone: booking.Studio.phone || undefined,
               staffName: booking.Trainer?.name || undefined,
+              dateTime: booking.startsAt,
               salonTimezone,
               locale: booking.clientEmailLocale as 'en' | 'ru' | 'vi',
             };

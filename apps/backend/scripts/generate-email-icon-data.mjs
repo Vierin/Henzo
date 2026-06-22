@@ -15,6 +15,8 @@ const names = [
   'shield',
   'clock',
   'people',
+  'profile-large',
+  'pin',
   'link',
   'copy',
   'instagram',
