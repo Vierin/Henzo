@@ -12,6 +12,9 @@ class TrainingCategoryColorChip extends StatelessWidget {
     required this.onTap,
     this.category,
     this.selected = false,
+    this.dimmed = false,
+    this.useSelectionBorder = true,
+    this.staticBorder = false,
     this.fontWeight = FontWeight.w600,
     this.lineHeight = 1.2,
   });
@@ -19,6 +22,10 @@ class TrainingCategoryColorChip extends StatelessWidget {
   final TrainingCategoryOption? category;
   final String label;
   final bool selected;
+  final bool dimmed;
+  final bool useSelectionBorder;
+  /// [AppColors.primary300] outline — same when selected or not.
+  final bool staticBorder;
   final VoidCallback onTap;
   final FontWeight fontWeight;
   final double lineHeight;
@@ -38,11 +45,18 @@ class TrainingCategoryColorChip extends StatelessWidget {
     }
 
     const borderW = 2.0;
-    final borderColor = selected
-        ? AppColors.primary500
-        : (isOther || category == null
-              ? AppColors.primary300
-              : Colors.transparent);
+    final Color borderColor;
+    if (staticBorder) {
+      borderColor = AppColors.primary300;
+    } else {
+      borderColor = useSelectionBorder && selected
+          ? AppColors.primary500
+          : (useSelectionBorder && (isOther || category == null)
+                ? AppColors.primary300
+                : Colors.transparent);
+    }
+    final chipBg = dimmed ? bg.withValues(alpha: bg.a * 0.38) : bg;
+    final chipFg = dimmed ? fg.withValues(alpha: fg.a * 0.55) : fg;
 
     return Material(
       color: Colors.transparent,
@@ -51,7 +65,7 @@ class TrainingCategoryColorChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         child: Ink(
           decoration: BoxDecoration(
-            color: bg,
+            color: chipBg,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: borderColor, width: borderW),
           ),
@@ -59,7 +73,7 @@ class TrainingCategoryColorChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: fg,
+              color: chipFg,
               fontWeight: fontWeight,
               letterSpacing: -0.3,
               fontSize: 13.sp,

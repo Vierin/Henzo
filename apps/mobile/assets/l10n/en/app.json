@@ -319,7 +319,8 @@
     "locationPromptTitle": "Share your location",
     "locationPromptBody": "To show studios on the map, allow location access or choose your city.",
     "locationPromptManual": "Choose city manually",
-    "searchThisArea": "Search this area"
+    "searchThisArea": "Search this area",
+    "centerOnLocation": "Center on my location"
   },
   "publicHome": {
     "loginLink": "Login",

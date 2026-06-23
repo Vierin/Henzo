@@ -104,7 +104,7 @@ class ClientMapStudioClusterLayer extends StatelessWidget {
     return MarkerClusterLayerWidget(
       options: MarkerClusterLayerOptions(
         disableClusteringAtZoom: ClientMapViewport.clusterDisableZoom,
-        maxClusterRadius: 50,
+        maxClusterRadius: ClientMapViewport.clusterMaxRadius,
         size: const Size(36, 36),
         alignment: Alignment.center,
         padding: fitPadding,

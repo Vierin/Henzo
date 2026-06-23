@@ -1,4 +1,4 @@
-package com.henzo.app
+package com.henzo.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

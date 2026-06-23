@@ -12,16 +12,7 @@ export function StudioPhoneFrame({ className }: { className?: string }) {
       )}
     >
       <Image
-        src="/images/screen-calendar.webp"
-        alt=""
-        width={417}
-        height={799}
-        className="block absolute inset-[15px_20px] w-[calc(100%-40px)] overflow-hidden h-[calc(100%-30px)] rounded-[2rem]"
-        draggable={false}
-        sizes="(max-width: 768px) 72vw, 400px"
-      />
-      <Image
-        src="/images/mockup.webp"
+        src="/images/phone-1.webp"
         alt=""
         width={417}
         height={799}

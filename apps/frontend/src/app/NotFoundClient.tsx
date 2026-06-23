@@ -43,7 +43,7 @@ export default function NotFoundClient() {
 
   return (
     <>
-      <PublicHeader hideGetApp />
+      <PublicHeader />
       <div className="min-h-screen bg-[#fff7f6] flex items-center justify-center px-4">
         <div className="text-center max-w-md mx-auto">
           {/* Title */}

@@ -12,11 +12,11 @@
 
 ## Applications in scope
 
-| Surface     | Package / ID                             | Notes                                          |
-| ----------- | ---------------------------------------- | ---------------------------------------------- |
-| iOS app     | `com.henzo.app` (verify in Xcode)        | HealthKit read-only, IAP via RevenueCat        |
-| Android app | `com.henzo.app` (verify in build.gradle) | Health Connect, IAP, FCM                       |
-| Web         | henzo.app                                | Next.js, cookie banner, Google Analytics (web) |
+| Surface     | Package / ID                                | Notes                                          |
+| ----------- | ------------------------------------------- | ---------------------------------------------- |
+| iOS app     | `com.henzo.vn.Henzo` (verify in Xcode)      | HealthKit read-only, IAP via RevenueCat        |
+| Android app | `com.henzo.mobile` (verify in build.gradle) | Health Connect, IAP, FCM                       |
+| Web         | henzo.app                                   | Next.js, cookie banner, Google Analytics (web) |
 
 ---
 

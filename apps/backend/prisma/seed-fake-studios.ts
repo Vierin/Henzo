@@ -370,6 +370,128 @@ const STUDIOS: SeedStudio[] = [
       },
     ],
   },
+  {
+    key: 'saigon-flow-yoga',
+    name: 'Saigon Flow Yoga',
+    descriptionEn:
+      'Rooftop vinyasa and evening yin in District 1, steps from Nguyen Hue.',
+    descriptionRu:
+      'Виньяса на крыше и вечерний инь в районе 1, рядом с Nguyen Hue.',
+    descriptionVi:
+      'Vinyasa trên sân thượng và yin buổi tối tại Quận 1, gần Nguyễn Huệ.',
+    address: '22 Nguyen Hue, District 1, Ho Chi Minh City, Vietnam',
+    latitude: 10.7738,
+    longitude: 106.7045,
+    phone: '+84 906 111 001',
+    email: 'hello@saigonflow-yoga.test',
+    instagram: '@saigonflow.yoga',
+    logoUrl:
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=256&h=256&fit=crop',
+    photoUrls: [
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200&fit=crop',
+      'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200&fit=crop',
+    ],
+    ownerEmail: 'seed-owner-saigonflow@henzo.dev',
+    ownerName: 'Saigon Flow Owner',
+    subscriptionType: SubscriptionType.STUDIO,
+    trainers: [
+      {
+        name: 'Thao Le',
+        email: 'thao@saigonflow-yoga.test',
+        phone: '+84 906 111 002',
+      },
+      { name: 'Minh Vo', email: 'minh@saigonflow-yoga.test' },
+    ],
+    trainings: [
+      {
+        name: 'District 1 Sunrise Flow',
+        description: '60-minute vinyasa before the city heats up.',
+        duration: 60,
+        price: 200000,
+        categoryId: 1,
+        displayColor: '#FDE047',
+        trainerIndexes: [0, 1],
+      },
+      {
+        name: 'Rooftop Yin',
+        description: 'Slow stretches with skyline views.',
+        duration: 75,
+        price: 240000,
+        categoryId: 1,
+        displayColor: '#FDE047',
+        trainerIndexes: [1],
+      },
+      {
+        name: 'Breathwork Reset',
+        description: 'Pranayama and guided relaxation.',
+        duration: 45,
+        price: 170000,
+        categoryId: 5,
+        displayColor: '#7C3AED',
+        trainerIndexes: [0],
+      },
+    ],
+  },
+  {
+    key: 'thao-dien-strength',
+    name: 'Thao Dien Strength Club',
+    descriptionEn:
+      'Barbell coaching, HIIT circuits, and mobility in Thao Dien.',
+    descriptionRu: 'Штанга, HIIT-круги и мобилити в районе Thao Dien.',
+    descriptionVi: 'Coaching tạ, vòng HIIT và mobility tại Thảo Điền.',
+    address: '44 Nguyen Van Huong, Thao Dien, Ho Chi Minh City, Vietnam',
+    latitude: 10.8025,
+    longitude: 106.7398,
+    phone: '+84 906 222 001',
+    email: 'team@thaodien-strength.test',
+    instagram: '@thaodien.strength',
+    logoUrl:
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=256&h=256&fit=crop',
+    photoUrls: [
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&fit=crop',
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&fit=crop',
+    ],
+    ownerEmail: 'seed-owner-thaodien@henzo.dev',
+    ownerName: 'Thao Dien Strength Owner',
+    subscriptionType: SubscriptionType.ENTERPRISE,
+    trainers: [
+      {
+        name: 'Chris Miller',
+        email: 'chris@thaodien-strength.test',
+        phone: '+84 906 222 002',
+      },
+      { name: 'Lan Pham', email: 'lan@thaodien-strength.test' },
+    ],
+    trainings: [
+      {
+        name: 'Strength Foundations',
+        description: 'Squat, hinge, and press progressions.',
+        duration: 60,
+        price: 280000,
+        categoryId: 4,
+        displayColor: '#1E293B',
+        trainerIndexes: [0],
+      },
+      {
+        name: 'HIIT Engine',
+        description: 'Intervals on rower, bike, and sled.',
+        duration: 45,
+        price: 220000,
+        categoryId: 4,
+        displayColor: '#1E293B',
+        trainerIndexes: [0, 1],
+      },
+      {
+        name: 'Mobility Lab',
+        description: 'Bands, foam rolling, and recovery flows.',
+        duration: 50,
+        price: 190000,
+        categoryId: 6,
+        displayColor: '#14B8A6',
+        trainerIndexes: [1],
+      },
+    ],
+  },
 ];
 
 function upcomingSessionSlots(count: number): Date[] {

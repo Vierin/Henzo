@@ -2,9 +2,9 @@
 
 Manual steps in vendor consoles (cannot be automated from the repo).
 
-## Google Play Console (`com.henzo.app`)
+## Google Play Console (`com.henzo.mobile`)
 
-- [ ] Create app with package **`com.henzo.app`** (immutable after first release)
+- [ ] Create app with package **`com.henzo.mobile`** (immutable after first release)
 - [ ] Store listing: app name, short/full description, icon 512×512, feature graphic 1024×500, ≥2 phone screenshots
 - [ ] **App content** → Privacy policy URL (e.g. `https://henzo.app/privacy-policy`)
 - [ ] **Data safety** form (location, photos, health, account, analytics)
@@ -28,10 +28,10 @@ Manual steps in vendor consoles (cannot be automated from the repo).
 ## RevenueCat
 
 - [ ] iOS app: `com.henzo.vn.Henzo`
-- [ ] Android app: `com.henzo.app`
+- [ ] Android app: `com.henzo.mobile`
 - [ ] Test Store keys OK for internal; switch to `appl_` / `goog_` before public release
 
 ## Firebase
 
-- [ ] Android app `com.henzo.app` registered with debug + upload SHA-1 ([FIREBASE_ANDROID.md](FIREBASE_ANDROID.md))
+- [ ] Android app `com.henzo.mobile` registered with debug + upload SHA-1 ([FIREBASE_ANDROID.md](FIREBASE_ANDROID.md))
 - [ ] iOS app `com.henzo.vn.Henzo` unchanged

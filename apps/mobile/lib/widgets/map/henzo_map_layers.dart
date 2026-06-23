@@ -18,7 +18,7 @@ abstract final class HenzoMapLayers {
             CursorKeyboardRotationOptions.disabled(),
       );
 
-  static const _userAgentPackageName = 'com.henzo.app';
+  static const _userAgentPackageName = 'com.henzo.mobile';
   static const _cartoLightUrlTemplate =
       'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   static const _cartoSubdomains = ['a', 'b', 'c', 'd'];
