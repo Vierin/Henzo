@@ -20,16 +20,16 @@ flutter build appbundle --release --build-name=1.0.0 --build-number=2
 flutter build ipa --release --build-name=1.0.0 --build-number=2
 ```
 
-## Android (`com.henzo.app`)
+## Android (`com.henzo.mobile`)
 
 | Step | Action |
 |------|--------|
 | 1 | `copy android\key.properties.example android\key.properties` and set passwords |
 | 2 | `.\android\scripts\create-upload-keystore.ps1` (once) — upload SHA-1: `70:A5:A9:76:D4:97:F8:00:6E:B7:5B:1C:0F:44:12:71:E6:13:47:94` |
 | 3 | `assets/.env` from `assets/.env.production.example` (production API, not LAN). Release builds **fail at startup** if `.example` or placeholder keys are loaded (`lib/config/release_env.dart`). |
-| 4 | Firebase: add Android app `com.henzo.app` → `dart run flutterfire configure` |
-| 5 | Google OAuth Android client: package `com.henzo.app` + debug & release SHA-1 ([GOOGLE_OAUTH_ANDROID.md](../GOOGLE_OAUTH_ANDROID.md)) |
-| 6 | RevenueCat: Android app package `com.henzo.app` |
+| 4 | Firebase: add Android app `com.henzo.mobile` → `dart run flutterfire configure` |
+| 5 | Google OAuth Android client: package `com.henzo.mobile` + debug & release SHA-1 ([GOOGLE_OAUTH_ANDROID.md](../GOOGLE_OAUTH_ANDROID.md)) |
+| 6 | RevenueCat: Android app package `com.henzo.mobile` |
 | 7 | `flutter build appbundle --release` → upload `build/app/outputs/bundle/release/app-release.aab` |
 | 8 | Play Console → Internal testing → add tester emails |
 
@@ -56,7 +56,7 @@ Release builds use **HTTPS only** (`usesCleartextTraffic=false`). Debug allows H
 
 ## Google Play Console checklist
 
-- [ ] App created with package **`com.henzo.app`** (immutable after first release)
+- [ ] App created with package **`com.henzo.mobile`** (immutable after first release)
 - [ ] Store listing draft: icon 512, screenshots, short description
 - [ ] App content: Data safety, Health Connect, privacy policy URL
 - [ ] Internal testing track + tester list

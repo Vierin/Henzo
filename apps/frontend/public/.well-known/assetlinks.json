@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.henzo.app",
+      "package_name": "com.henzo.mobile",
       "sha256_cert_fingerprints": [
         "D4:2E:C2:73:A5:B0:36:72:69:6C:8C:AC:F6:91:A9:B6:77:4F:89:0E:63:A7:3D:C4:F6:C4:34:37:24:E6:C5:D0",
         "F0:B3:45:74:47:D6:DB:1E:40:18:60:AF:76:4E:6C:79:79:20:CC:44:90:82:2C:70:80:35:75:CE:F4:C3:F3:39",

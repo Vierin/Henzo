@@ -5,7 +5,7 @@ Mobile Pro subscriptions use **RevenueCat** + native IAP. Stripe Checkout in the
 ## 1. RevenueCat project
 
 1. Create a project at [revenuecat.com](https://www.revenuecat.com).
-2. Add **iOS** (`com.henzo.vn.Henzo`) and **Android** (`com.henzo.app`) apps.
+2. Add **iOS** (`com.henzo.vn.Henzo`) and **Android** (`com.henzo.mobile`) apps.
 3. Connect **App Store Connect** (shared secret / App Store Connect API) and **Google Play** (service account JSON).
 4. Create entitlement **`pro`** (or set `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`).
 5. Create products in App Store Connect & Play Console, link them in RevenueCat.

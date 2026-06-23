@@ -20,7 +20,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.henzo.app"
+    namespace = "com.henzo.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -72,7 +72,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.henzo.app"
+        applicationId = "com.henzo.mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // health plugin (steps/calories/workouts) requires API 26+
