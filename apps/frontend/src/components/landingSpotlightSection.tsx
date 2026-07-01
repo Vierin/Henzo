@@ -73,6 +73,20 @@ const FAN_ORIGIN_X = '260%';
 const FAN_ORIGIN_Y = '50%';
 let spotlightRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
+const CARD_TINT_RAMP_END = 0.72;
+
+function cardBackTintOpacity(depthAway: number): number {
+  if (depthAway <= 0) {
+    return 0;
+  }
+  if (depthAway >= CARD_TINT_RAMP_END) {
+    return 1;
+  }
+  const t = depthAway / CARD_TINT_RAMP_END;
+  // smoothstep — мягкий вход в сплошной цвет
+  return t * t * (3 - 2 * t);
+}
+
 function scheduleSpotlightLayoutRefresh() {
   if (typeof window === 'undefined') {
     return;
@@ -335,6 +349,7 @@ export function LandingSpotlightSection() {
               let y = 40;
               let opacity = 0;
               let scale = 0.96;
+              let tintOpacity = 0;
               const depth = focus - j;
 
               if (depth >= 0) {
@@ -343,6 +358,7 @@ export function LandingSpotlightSection() {
                 scale = 1 - depth * 0.12;
                 scale = clamp(scale, 0.3, 1.2);
                 opacity = 1;
+                tintOpacity = cardBackTintOpacity(depth);
               } else if (depth > -1) {
                 // Next card enters smoothly from below and fades in quickly.
                 const p = 1 + depth; // -1..0 => 0..1
@@ -352,6 +368,7 @@ export function LandingSpotlightSection() {
                 scale = 0.96 + 0.04 * p;
               }
 
+              const tint = el.querySelector<HTMLElement>('[data-card-tint]');
               gsap.set(el, {
                 y,
                 scale,
@@ -359,6 +376,9 @@ export function LandingSpotlightSection() {
                 zIndex: 100 + j,
                 force3D: true,
               });
+              if (tint) {
+                gsap.set(tint, { opacity: tintOpacity });
+              }
             });
           },
         });
@@ -551,6 +571,16 @@ export function LandingSpotlightSection() {
                   src={s.videoSrc}
                   label={s.videoLabel}
                   className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div
+                  data-card-tint
+                  className="pointer-events-none absolute inset-0 z-10 opacity-0"
+                  style={{
+                    backgroundColor:
+                      SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length] ??
+                      '#FFFFFF',
+                  }}
+                  aria-hidden
                 />
               </div>
             ))}

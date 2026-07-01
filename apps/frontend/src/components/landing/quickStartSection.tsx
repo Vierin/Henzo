@@ -1,10 +1,11 @@
 'use client';
 
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
-import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { cn } from '@/lib/utils';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Image from 'next/image';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const scriptClass =
@@ -12,8 +13,166 @@ const scriptClass =
 
 const BASE = 'homepage.studio.quickStart';
 const MOBILE_STEP_SCROLL_PX = 460;
+const STEP_MOCKUPS = [
+  '/images/step-1.webp',
+  '/images/step-2.webp',
+  '/images/step-3.webp',
+] as const;
+const PHONE_MOCKUP_WIDTH = 417;
+const PHONE_MOCKUP_HEIGHT = 799;
 
 type Step = { label: string; text: string };
+
+function QuickStartPhoneMockup({
+  activeStep,
+  className,
+}: {
+  activeStep: number;
+  className?: string;
+}) {
+  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const prevStepRef = useRef(activeStep);
+  const didInitRef = useRef(false);
+
+  useLayoutEffect(() => {
+    const slides = slideRefs.current.filter(
+      (el): el is HTMLDivElement => el !== null,
+    );
+    if (slides.length === 0) {
+      return;
+    }
+
+    const prev = prevStepRef.current;
+    const next = Math.min(Math.max(activeStep, 0), STEP_MOCKUPS.length - 1);
+
+    const setVisible = (el: HTMLDivElement, i: number) => {
+      gsap.set(el, {
+        yPercent: 0,
+        scale: 1,
+        opacity: 1,
+        filter: 'blur(0px)',
+        zIndex: i + 1,
+      });
+    };
+
+    if (!didInitRef.current) {
+      didInitRef.current = true;
+      slides.forEach((el, i) => {
+        if (i === 0) {
+          setVisible(el, i);
+          return;
+        }
+        gsap.set(el, {
+          yPercent: 10,
+          scale: 1.04,
+          opacity: 0,
+          filter: 'blur(8px)',
+          zIndex: i + 1,
+        });
+      });
+      prevStepRef.current = next;
+      return;
+    }
+
+    if (prev === next) {
+      return;
+    }
+
+    if (next > prev) {
+      slides.forEach((el, i) => {
+        if (i < next) {
+          setVisible(el, i);
+          return;
+        }
+        if (i === next) {
+          gsap.fromTo(
+            el,
+            {
+              yPercent: 10,
+              scale: 1.04,
+              opacity: 0,
+              filter: 'blur(8px)',
+              zIndex: i + 1,
+            },
+            {
+              yPercent: 0,
+              scale: 1,
+              opacity: 1,
+              filter: 'blur(0px)',
+              duration: 0.58,
+              ease: 'power3.out',
+              overwrite: true,
+            },
+          );
+          return;
+        }
+        gsap.set(el, {
+          yPercent: 10,
+          scale: 1.04,
+          opacity: 0,
+          filter: 'blur(8px)',
+          zIndex: i + 1,
+        });
+      });
+    } else {
+      slides.forEach((el, i) => {
+        if (i <= next) {
+          setVisible(el, i);
+          return;
+        }
+        if (i === prev) {
+          gsap.to(el, {
+            yPercent: -10,
+            scale: 1.04,
+            opacity: 0,
+            filter: 'blur(6px)',
+            duration: 0.45,
+            ease: 'power2.in',
+            overwrite: true,
+          });
+          return;
+        }
+        gsap.set(el, {
+          yPercent: 10,
+          scale: 1.04,
+          opacity: 0,
+          filter: 'blur(8px)',
+          zIndex: i + 1,
+        });
+      });
+    }
+
+    prevStepRef.current = next;
+  }, [activeStep]);
+
+  return (
+    <div
+      className={cn('relative mx-auto shrink-0 select-none', className)}
+      style={{ aspectRatio: `${PHONE_MOCKUP_WIDTH}/${PHONE_MOCKUP_HEIGHT}` }}
+    >
+      {STEP_MOCKUPS.map((src, i) => (
+        <div
+          key={src}
+          ref={(el) => {
+            slideRefs.current[i] = el;
+          }}
+          className="absolute inset-0 will-change-[transform,opacity,filter]"
+          style={{ zIndex: i + 1, opacity: i === 0 ? 1 : 0 }}
+        >
+          <Image
+            src={src}
+            alt=""
+            width={PHONE_MOCKUP_WIDTH}
+            height={PHONE_MOCKUP_HEIGHT}
+            className="block h-full w-full object-contain"
+            draggable={false}
+            sizes="(max-width: 768px) 72vw, 20rem"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function parseSteps(raw: unknown): Step[] {
   if (!Array.isArray(raw)) {
@@ -42,6 +201,7 @@ export function QuickStartSection() {
   const bodyRefs = useRef<Array<HTMLParagraphElement | null>>([]);
   const arrowRefs = useRef<Array<HTMLImageElement | null>>([]);
   const [mobileActiveStep, setMobileActiveStep] = useState(0);
+  const [desktopActiveStep, setDesktopActiveStep] = useState(0);
 
   const line1 = String(t(`${BASE}.line1`));
   const line2Before = String(t(`${BASE}.line2Before`));
@@ -86,6 +246,7 @@ export function QuickStartSection() {
         }
 
         let maxProgress = 0;
+        let lastDesktopStep = 0;
 
         labels.forEach((labelEl, i) => {
           gsap.set(labelEl, {
@@ -117,15 +278,29 @@ export function QuickStartSection() {
             onUpdate: (self: ScrollTrigger) => {
               if (self.progress >= maxProgress) {
                 maxProgress = self.progress;
-                return;
+              } else {
+                self.animation?.progress(maxProgress);
               }
-              self.animation?.progress(maxProgress);
+
+              const time = maxProgress * tl.duration();
+              let idx = 0;
+              for (let i = itemsCount - 1; i >= 0; i -= 1) {
+                if (time >= (tl.labels[`step-${i}`] ?? 0)) {
+                  idx = i;
+                  break;
+                }
+              }
+              if (idx !== lastDesktopStep) {
+                lastDesktopStep = idx;
+                setDesktopActiveStep(idx);
+              }
             },
             invalidateOnRefresh: true,
           },
         });
 
         for (let i = 0; i < itemsCount; i += 1) {
+          tl.addLabel(`step-${i}`);
           const labelChars = steps[i]?.label.length ?? 10;
           tl.to(labels[i], {
             width: `var(--label-chars)`,
@@ -273,7 +448,10 @@ export function QuickStartSection() {
           className="relative mt-14 hidden min-h-[620px] w-full md:block"
         >
           <div className="absolute left-1/2 top-1/2 z-[2] w-[30vw] -translate-x-1/2 -translate-y-[46%]">
-            <StudioPhoneFrame className="w-[min(23vw,20rem)]" />
+            <QuickStartPhoneMockup
+              activeStep={desktopActiveStep}
+              className="w-[min(23vw,20rem)]"
+            />
           </div>
 
           <div className="absolute left-0 top-[2%] max-w-[min(240px,28vw)] text-left">
@@ -394,7 +572,10 @@ export function QuickStartSection() {
               </div>
             </div>
             <div className="flex items-end justify-center">
-              <StudioPhoneFrame className="w-[min(72vw,18rem)]" />
+              <QuickStartPhoneMockup
+                activeStep={mobileActiveStep}
+                className="w-[min(72vw,18rem)]"
+              />
             </div>
           </div>
         </div>

@@ -2,15 +2,21 @@
 
 import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
 import { LandingEntryNotificationCard } from '@/components/landing/landingEntryNotificationCard';
+import { getStableViewportHeight } from '@/utils/viewport';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 function phoneMotion(isMobile: boolean) {
-  const h = window.innerHeight;
+  const h = isMobile
+    ? getStableViewportHeight() || window.innerHeight
+    : window.innerHeight;
   return isMobile
-    ? { startY: h * -0.18, endY: h * 0.52 }
+    ? {
+        startY: Math.round(h * -0.17),
+        endY: Math.round(h * -0.6),
+      }
     : { startY: h * -0.06, endY: h * 0.42 };
 }
 
@@ -152,16 +158,27 @@ export function LandingPhoneShowcaseSection() {
       });
 
       mm.add('(max-width: 767px)', () => {
-        const { startY, endY } = phoneMotion(true);
-        gsap.fromTo(
-          phoneFrame,
-          { y: startY },
-          {
-            y: endY,
-            ease: 'none',
-            scrollTrigger: phoneScrollTrigger,
+        let { startY, endY } = phoneMotion(true);
+
+        gsap.set(phoneFrame, { y: startY, force3D: true });
+
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top 55%',
+          end: 'bottom bottom',
+          pin: phone,
+          pinSpacing: false,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onRefresh: () => {
+            ({ startY, endY } = phoneMotion(true));
           },
-        );
+          onUpdate: (self: ScrollTrigger) => {
+            const y = Math.round(startY + (endY - startY) * self.progress);
+            gsap.set(phoneFrame, { y, force3D: true });
+          },
+        });
       });
 
       gsap.fromTo(
@@ -255,11 +272,11 @@ export function LandingPhoneShowcaseSection() {
         </div>
         <div
           ref={phoneRef}
-          className="sticky top-0 z-10 flex h-[100svh] w-full items-center justify-center"
+          className="relative top-0 z-10 flex h-[100svh] w-full items-center justify-center md:sticky"
         >
           <div
             ref={phoneFrameRef}
-            className="origin-center will-change-transform transform-gpu [backface-visibility:hidden]"
+            className="origin-center md:will-change-transform md:transform-gpu md:[backface-visibility:hidden]"
           >
             <StudioPhoneFrame />
           </div>
