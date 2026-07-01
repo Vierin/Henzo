@@ -2,8 +2,16 @@ import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
 
+type StudioPhoneFrameProps = {
+  className?: string;
+  src?: string;
+};
+
 /** Phone mock image for landing sections (decorative, not interactive). */
-export function StudioPhoneFrame({ className }: { className?: string }) {
+export function StudioPhoneFrame({
+  className,
+  src = '/images/phone-1.webp',
+}: StudioPhoneFrameProps) {
   return (
     <div
       className={cn(
@@ -12,7 +20,7 @@ export function StudioPhoneFrame({ className }: { className?: string }) {
       )}
     >
       <Image
-        src="/images/phone-1.webp"
+        src={src}
         alt=""
         width={417}
         height={799}

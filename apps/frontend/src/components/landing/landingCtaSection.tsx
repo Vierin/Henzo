@@ -112,7 +112,10 @@ export function LandingCtaSection() {
           </div>
 
           <div className="relative z-10 flex justify-center md:justify-end bottom-[-25%] sm:bottom-0">
-            <StudioPhoneFrame className="w-[min(58vw,220px)] md:w-[min(32vw,250px)]" />
+            <StudioPhoneFrame
+              src="/images/phone-2.webp"
+              className="w-[min(58vw,220px)] md:w-[min(32vw,250px)]"
+            />
           </div>
         </div>
       </div>
