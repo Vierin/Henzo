@@ -267,5 +267,94 @@
 			"copyright": "Copyright © Henzo app. All rights reserved. 2026",
 			"email": "hello@henzo.app"
 		}
+	},
+	"client": {
+		"header": {
+			"explore": "Explore",
+			"classes": "Classes",
+			"trainers": "Trainers",
+			"blog": "Blog",
+			"location": "Da Nang, Vietnam",
+			"login": "Log in",
+			"signUp": "Sign up",
+			"forBusiness": "For business"
+		},
+		"hero": {
+			"line1": "Move. Feel good.",
+			"line2Highlight": "Live better.",
+			"subtitle": "Discover and book the best fitness, wellness and sports classes near you.",
+			"searchPlaceholder": "Search classes, studios or trainers...",
+			"floatingCardTitle": "Find your next class",
+			"floatingCardSubtitle": "3,200+ classes happening today",
+			"categories": {
+				"yoga": "Yoga",
+				"pilates": "Pilates",
+				"gym": "Gym",
+				"boxing": "Boxing",
+				"padel": "Padel",
+				"surfing": "Surfing",
+				"more": "More"
+			},
+			"features": {
+				"findClasses": {
+					"title": "Find classes that fit you",
+					"subtitle": "Yoga, gym, pilates and more"
+				},
+				"bookFast": {
+					"title": "Book in seconds",
+					"subtitle": "Fast and easy booking"
+				},
+				"reminders": {
+					"title": "Stay on track with reminders",
+					"subtitle": "Never miss a class"
+				},
+				"allInOne": {
+					"title": "All in one place",
+					"subtitle": "Manage bookings and favorites"
+				}
+			}
+		},
+		"appPromo": {
+			"eyebrow": "Why people love Henzo",
+			"title": "Your fitness life in one app",
+			"subtitle": "Book classes, manage your schedule and never miss a workout.",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"qrLabel": "Scan to download the app",
+			"pills": {
+				"easyBooking": "Easy booking",
+				"smartReminders": "Smart reminders",
+				"memberships": "Manage memberships",
+				"trackActivity": "Track your activity"
+			}
+		},
+		"businessPromo": {
+			"title": "Grow your studio with Henzo",
+			"subtitle": "All the tools you need to run and grow your business in one simple platform.",
+			"features": {
+				"bookings": "Online bookings 24/7",
+				"clients": "Client & membership management",
+				"schedule": "Schedule & payments",
+				"reminders": "Automated reminders"
+			},
+			"cta": "Join Henzo for free"
+		},
+		"popularStudios": {
+			"title": "Popular studios near you",
+			"seeAll": "See all studios",
+			"distanceMeters": "{value} m",
+			"distanceKilometers": "{value} km"
+		},
+		"nearbyClasses": {
+			"badge": "Near you",
+			"titleLead": "Classes happening",
+			"titleHighlight": "near you",
+			"subtitle": "Explore upcoming classes at top studios around Da Nang. Book your spot in seconds.",
+			"viewSchedule": "View full schedule",
+			"seeAll": "See all",
+			"today": "Today",
+			"tomorrow": "Tomorrow",
+			"durationMin": "{value} min"
+		}
 	}
 }

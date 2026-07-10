@@ -2498,6 +2498,7 @@ export class StudiosService {
 
       return {
         id: Studio.id,
+        slug: Studio.slug,
         name: studioName,
         studioName,
         address: Studio.address,
@@ -2707,6 +2708,7 @@ export class StudiosService {
 
       return {
         id: s.id,
+        slug: s.slug,
         name: studioName,
         studioName,
         address: s.address,

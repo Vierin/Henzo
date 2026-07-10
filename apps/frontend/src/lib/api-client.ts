@@ -114,6 +114,7 @@ export class ApiClient {
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname;
             const isAdminPath = currentPath.includes('/admin');
+            const isOwnerPath = currentPath.includes('/owner');
             if (
               !currentPath.includes('/login') &&
               !currentPath.includes('/register')
@@ -122,7 +123,9 @@ export class ApiClient {
                 extractLocaleFromPath(currentPath) ?? ('en' as Locale);
               window.location.href = isAdminPath
                 ? withLocale('/admin/login?session=expired', locale)
-                : withLocale('/login?session=expired', locale);
+                : isOwnerPath
+                  ? withLocale('/owner/login?session=expired', locale)
+                  : withLocale('/login?session=expired', locale);
             }
           }
         } catch (logoutError) {

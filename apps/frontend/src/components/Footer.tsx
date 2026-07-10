@@ -39,6 +39,11 @@ export default function Footer() {
   const locale = extractLocaleFromPath(pathname) ?? language;
   const t = useTranslation();
   const homePath = withLocale('/', (locale as 'en' | 'ru' | 'vi') || 'en');
+  const businessPath = withLocale(
+    '/business',
+    (locale as 'en' | 'ru' | 'vi') || 'en',
+  );
+  const sectionBase = businessPath;
   const navBenefits =
     locale === 'ru' ? 'Преимущества' : locale === 'vi' ? 'Lợi ích' : 'Benefits';
   const navPricing =
@@ -91,19 +96,19 @@ export default function Footer() {
                 className="mt-8 flex flex-wrap items-center gap-x-9 gap-y-3 text-[1.02rem] font-medium text-[#3F3F3F]"
               >
                 <Link
-                  href={`${homePath}#benefits`}
+                  href={`${sectionBase}#benefits`}
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navBenefits}
                 </Link>
                 <Link
-                  href={`${homePath}#pricing`}
+                  href={`${sectionBase}#pricing`}
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navPricing}
                 </Link>
                 <Link
-                  href={`${homePath}#how-it-works`}
+                  href={`${sectionBase}#how-it-works`}
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navHowItWorks}

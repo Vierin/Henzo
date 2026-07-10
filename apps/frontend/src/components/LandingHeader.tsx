@@ -11,7 +11,13 @@ import {
 } from '@/components/usePublicHeaderState';
 import { PublicHeaderActions } from '@/components/publicHeaderActions';
 
-function LandingHeaderContent({ sectionNavHref }: { sectionNavHref?: string }) {
+function LandingHeaderContent({
+  homeHref,
+  sectionNavHref,
+}: {
+  homeHref?: string;
+  sectionNavHref?: string;
+}) {
   const {
     pathname,
     currentLocale,
@@ -28,12 +34,13 @@ function LandingHeaderContent({ sectionNavHref }: { sectionNavHref?: string }) {
   const navHowItWorks = String(t('homepage.studio.header.navHowItWorks'));
   const sectionNavBase = sectionNavHref ?? pathname.split('#')[0];
   const locale = currentLocale as 'en' | 'ru' | 'vi';
+  const logoHref = homeHref ?? withLocale('/business', locale);
 
   return (
     <header className="relative z-40 bg-transparent">
       <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 md:px-12 md:py-5 sm:gap-4">
         <Link
-          href={withLocale('/', locale)}
+          href={logoHref}
           className="relative z-10 flex min-w-0 items-center gap-2 sm:gap-3"
         >
           <Image
@@ -68,6 +75,12 @@ function LandingHeaderContent({ sectionNavHref }: { sectionNavHref?: string }) {
             >
               {navHowItWorks}
             </a>
+            <Link
+              href={withLocale('/owner/login', locale)}
+              className="whitespace-nowrap transition hover:text-[#E86D4F]"
+            >
+              Studio login
+            </Link>
           </nav>
 
           <div className="relative z-10 shrink-0">
@@ -89,8 +102,10 @@ function LandingHeaderContent({ sectionNavHref }: { sectionNavHref?: string }) {
 }
 
 export default function LandingHeader({
+  homeHref,
   sectionNavHref,
 }: {
+  homeHref?: string;
   sectionNavHref?: string;
 }) {
   return (
@@ -104,7 +119,10 @@ export default function LandingHeader({
         </header>
       }
     >
-      <LandingHeaderContent sectionNavHref={sectionNavHref} />
+      <LandingHeaderContent
+        homeHref={homeHref}
+        sectionNavHref={sectionNavHref}
+      />
     </Suspense>
   );
 }

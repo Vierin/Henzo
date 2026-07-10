@@ -83,6 +83,7 @@ export function LanguageProvider({
   // Determine which modules to load based on current path
   const pathNoLocale = stripLocaleFromPath(pathname);
   const isOwnerPage =
+    pathNoLocale.startsWith('/owner') ||
     pathNoLocale.startsWith('/owner-dashboard') ||
     pathNoLocale.startsWith('/salon-info') ||
     pathNoLocale.startsWith('/services') ||
@@ -105,50 +106,79 @@ export function LanguageProvider({
 
   // Determine specific owner module based on path
   let ownerModule: TranslationModule | undefined;
-  if (pathNoLocale.startsWith('/owner-dashboard')) {
+  if (
+    pathNoLocale === '/owner' ||
+    pathNoLocale.startsWith('/owner/dashboard') ||
+    pathNoLocale.startsWith('/owner-dashboard')
+  ) {
     ownerModule = 'owner/dashboard';
-    // Booking module needed for BookingModal component
     publicModules.push('public/booking');
-    // Auth module needed for BookingAuthForm in BookingModal
     publicModules.push('shared/auth');
-    // Homepage module needed for minutesShort translation
     publicModules.push('public/homepage');
-  } else if (pathNoLocale.startsWith('/salon-info')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/studio') ||
+    pathNoLocale.startsWith('/salon-info')
+  ) {
     ownerModule = 'owner/salonInfo';
-  } else if (pathNoLocale.startsWith('/profile-settings')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/account') ||
+    pathNoLocale.startsWith('/profile-settings')
+  ) {
     ownerModule = 'owner/profileSettings';
-  } else if (pathNoLocale.startsWith('/services')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/services') ||
+    pathNoLocale.startsWith('/services')
+  ) {
     if (pathNoLocale.includes('/new')) {
       ownerModule = 'owner/servicesNew';
-      // Load categories module for category selector
       publicModules.push('public/categories');
     } else {
       ownerModule = 'owner/services';
     }
-  } else if (pathNoLocale.startsWith('/staff')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/staff') ||
+    pathNoLocale.startsWith('/staff')
+  ) {
     if (pathNoLocale.includes('/new')) {
       ownerModule = 'owner/staffNew';
     } else {
       ownerModule = 'owner/staff';
     }
-  } else if (pathNoLocale.startsWith('/calendar')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/calendar') ||
+    pathNoLocale.startsWith('/calendar')
+  ) {
     ownerModule = 'owner/calendar';
-    // Booking module needed for BookingModal component
     publicModules.push('public/booking');
-    // Auth module needed for BookingAuthForm in BookingModal
     publicModules.push('shared/auth');
-    // Homepage module needed for minutesShort translation
     publicModules.push('public/homepage');
-    // Core weekdays module needed for calendar weekday translations
     publicModules.push('core/weekdays');
-  } else if (pathNoLocale.startsWith('/marketing')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/marketing') ||
+    pathNoLocale.startsWith('/marketing')
+  ) {
     ownerModule = 'owner/marketing';
-  } else if (pathNoLocale.startsWith('/subscription')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/subscription') ||
+    pathNoLocale.startsWith('/subscription')
+  ) {
     ownerModule = 'owner/subscription';
-  } else if (pathNoLocale.startsWith('/clients')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/clients') ||
+    pathNoLocale.startsWith('/clients')
+  ) {
     ownerModule = 'owner/clients';
-  } else if (pathNoLocale.startsWith('/owner-help')) {
+  } else if (
+    pathNoLocale.startsWith('/owner/help') ||
+    pathNoLocale.startsWith('/owner-help')
+  ) {
     ownerModule = 'owner/help';
+  } else if (pathNoLocale.startsWith('/owner/reviews')) {
+    ownerModule = 'owner/dashboard';
+  } else if (pathNoLocale.startsWith('/owner/notifications')) {
+    ownerModule = 'owner/dashboard';
+  } else if (pathNoLocale.startsWith('/owner/analytics')) {
+    ownerModule = 'owner/dashboard';
   }
 
   // Check for homepage (root path)
@@ -207,6 +237,7 @@ export function LanguageProvider({
     // Core weekdays module needed for days of week translations
     publicModules.push('core/weekdays');
   } else if (pathNoLocale.startsWith('/business')) {
+    publicModules.push('public/homepage');
     publicModules.push('public/business');
   } else if (pathNoLocale.startsWith('/contact')) {
     publicModules.push('public/contact');

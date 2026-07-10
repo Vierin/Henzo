@@ -3,6 +3,7 @@ import type { Locale } from '@/i18n/routing';
 /** Static public routes with locale-prefixed URLs (`/en/...`, `/ru/...`, `/vi/...`). */
 export type PublicPageId =
   | 'home'
+  | 'business'
   | 'about'
   | 'contact'
   | 'terms'
@@ -18,6 +19,7 @@ export type PageSeoCopy = {
 /** Path after locale (e.g. `/contact`). Home uses `''`. */
 export const PAGE_PATHS: Record<PublicPageId, string> = {
   home: '',
+  business: '/business',
   about: '/about',
   contact: '/contact',
   terms: '/terms-of-service',
@@ -27,6 +29,7 @@ export const PAGE_PATHS: Record<PublicPageId, string> = {
 
 export const PAGE_OG_IMAGES: Record<PublicPageId, string> = {
   home: '/og-image.jpg',
+  business: '/og-image.jpg',
   about: '/og-about.jpg',
   contact: '/og-contact.jpg',
   terms: '/og-terms.jpg',
@@ -40,13 +43,38 @@ export const PUBLIC_PAGE_COPY: Record<
 > = {
   home: {
     en: {
-      title: 'Henzo Fitness - Studio operations in one mobile app',
+      title: 'Henzo — Book fitness & wellness classes near you',
+      description:
+        'Discover and book yoga, pilates, gym, boxing and more. Find classes, studios and trainers in one place.',
+      keywords: ['fitness classes', 'book yoga', 'wellness booking', 'Henzo'],
+    },
+    ru: {
+      title: 'Henzo — Запись на фитнес и wellness рядом с вами',
+      description:
+        'Находите и бронируйте йогу, пилатес, зал, бокс и другие занятия. Классы, студии и тренеры в одном месте.',
+      keywords: [
+        'фитнес занятия',
+        'запись на йогу',
+        'бронирование wellness',
+        'Henzo',
+      ],
+    },
+    vi: {
+      title: 'Henzo — Đặt lớp fitness & wellness gần bạn',
+      description:
+        'Khám phá và đặt yoga, pilates, gym, boxing và nhiều hơn. Lớp học, studio và huấn luyện viên ở một nơi.',
+      keywords: ['lớp fitness', 'đặt yoga', 'đặt lịch wellness', 'Henzo'],
+    },
+  },
+  business: {
+    en: {
+      title: 'Henzo Fitness — Studio operations in one mobile app',
       description:
         'Run your fitness studio from mobile with scheduling, coach workflows, and booking operations in one place.',
       keywords: ['fitness studio app', 'studio management', 'Henzo Fitness'],
     },
     ru: {
-      title: 'Henzo Fitness - управление студией в одном приложении',
+      title: 'Henzo Fitness — управление студией в одном приложении',
       description:
         'Управляйте фитнес-студией с телефона: расписание, тренеры и записи клиентов в едином процессе.',
       keywords: [
@@ -56,10 +84,10 @@ export const PUBLIC_PAGE_COPY: Record<
       ],
     },
     vi: {
-      title: 'Henzo Fitness - Van hanh studio tren mobile',
+      title: 'Henzo Fitness — Vận hành studio trên mobile',
       description:
-        'Quan ly lich, huan luyen vien va dat cho khach hang trong mot ung dung duy nhat.',
-      keywords: ['ung dung fitness studio', 'quan ly studio', 'Henzo Fitness'],
+        'Quản lý lịch, huấn luyện viên và đặt chỗ khách hàng trong một ứng dụng duy nhất.',
+      keywords: ['ứng dụng fitness studio', 'quản lý studio', 'Henzo Fitness'],
     },
   },
   about: {

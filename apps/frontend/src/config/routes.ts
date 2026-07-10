@@ -16,7 +16,8 @@ export interface RouteConfig {
  * Public routes - accessible without authentication
  */
 export const publicRoutes = [
-  '/', // homepage
+  '/', // client homepage
+  '/business', // studio landing
   '/about',
   '/contact',
   '/terms-of-service',
@@ -31,7 +32,7 @@ export const clientRoutes = [] as const;
 /**
  * Owner routes - require OWNER role
  */
-export const ownerRoutes = [] as const;
+export const ownerRoutes = ['/owner'] as const;
 
 /**
  * Admin routes - require ADMIN role
@@ -115,5 +116,6 @@ export const specialRoutes = {
     public: [] as string[],
     protected: (_path: string) => false,
   },
-  ownerPrefix: (_path: string) => false,
+  ownerPrefix: (path: string) =>
+    path === '/owner' || path.startsWith('/owner/'),
 } as const;

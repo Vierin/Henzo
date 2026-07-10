@@ -1,0 +1,230 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  Activity,
+  Bell,
+  Calendar,
+  Check,
+  CreditCard,
+  QrCode,
+} from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
+import { withLocale } from '@/i18n/routing';
+import { usePublicHeaderState } from '@/components/usePublicHeaderState';
+import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
+import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
+import { playStoreUrl } from '@/constants/appStores';
+
+const APP_BASE = 'homepage.client.appPromo';
+const BUSINESS_BASE = 'homepage.client.businessPromo';
+
+type PillConfig = {
+  key: string;
+  icon: typeof Calendar;
+  color: string;
+  className: string;
+};
+
+const APP_PILLS: PillConfig[] = [
+  {
+    key: 'easyBooking',
+    icon: Calendar,
+    color: 'bg-[#5B8DEF]',
+    className: 'right-0 top-[8%] lg:-right-2 xl:right-0',
+  },
+  {
+    key: 'smartReminders',
+    icon: Bell,
+    color: 'bg-[#3F3287]',
+    className: 'right-0 top-[30%] lg:-right-6 xl:-right-2',
+  },
+  {
+    key: 'memberships',
+    icon: CreditCard,
+    color: 'bg-[#E86D4F]',
+    className: 'right-0 top-[52%] lg:-right-2 xl:right-2',
+  },
+  {
+    key: 'trackActivity',
+    icon: Activity,
+    color: 'bg-[#3DBFBD]',
+    className: 'right-0 top-[74%] lg:-right-8 xl:-right-1',
+  },
+];
+
+const BUSINESS_FEATURES = [
+  'bookings',
+  'clients',
+  'schedule',
+  'reminders',
+] as const;
+
+function FeaturePill({
+  label,
+  icon: Icon,
+  color,
+  className,
+}: {
+  label: string;
+  icon: typeof Calendar;
+  color: string;
+  className: string;
+}) {
+  return (
+    <div
+      className={`absolute z-10 hidden w-[max(11rem,42%)] items-center gap-2.5 rounded-full border border-[#F0EBE6] bg-white px-3 py-2.5 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.1)] sm:flex sm:w-auto sm:px-4 sm:py-3 ${className}`}
+    >
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-white`}
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="text-sm font-medium text-[#3F3F3F]">{label}</span>
+    </div>
+  );
+}
+
+export function ClientHomeAppPromoSection() {
+  const t = useTranslation();
+  const eyebrow = String(t(`${APP_BASE}.eyebrow`));
+  const title = String(t(`${APP_BASE}.title`));
+  const subtitle = String(t(`${APP_BASE}.subtitle`));
+  const storeAppStore = String(t(`${APP_BASE}.storeAppStore`));
+  const storeGooglePlay = String(t(`${APP_BASE}.storeGooglePlay`));
+  const qrLabel = String(t(`${APP_BASE}.qrLabel`));
+
+  return (
+    <section className="bg-[#F9F4F0] px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6">
+      <div className="mx-auto max-w-7xl">
+        <p className="mb-5 text-center text-sm font-medium text-[#878787] sm:mb-6">
+          {eyebrow}
+        </p>
+
+        <div className="overflow-hidden rounded-[2rem] bg-[#FDF5F0] px-5 py-8 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto_1fr] lg:gap-6 xl:gap-10">
+            <div className="max-w-md lg:max-w-none">
+              <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl">
+                {title}
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
+                {subtitle}
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-4 sm:mt-8">
+                <StoreBadgeLinks
+                  appStoreLabel={storeAppStore}
+                  googlePlayLabel={storeGooglePlay}
+                  className="mt-0 flex flex-wrap items-center gap-3 sm:gap-4"
+                  buttonClassName="inline-flex min-h-[44px] w-[148px] items-center justify-center gap-2 rounded-full border border-[#3F3F3F] bg-white px-5 py-2 text-sm font-semibold text-[#3F3F3F] transition hover:bg-white/80 sm:min-h-[48px] sm:w-[158px]"
+                />
+              </div>
+            </div>
+
+            <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[340px]">
+              <StudioPhoneFrame className="w-full max-w-none" />
+
+              {APP_PILLS.map(({ key, icon, color, className }) => (
+                <FeaturePill
+                  key={key}
+                  label={String(t(`${APP_BASE}.pills.${key}`))}
+                  icon={icon}
+                  color={color}
+                  className={className}
+                />
+              ))}
+            </div>
+
+            <div className="hidden lg:block" aria-hidden />
+          </div>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:hidden">
+            {APP_PILLS.map(({ key, icon: Icon, color }) => (
+              <div
+                key={key}
+                className="flex items-center gap-3 rounded-2xl border border-[#F0EBE6] bg-white px-4 py-3"
+              >
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-white`}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+                <span className="text-sm font-medium text-[#3F3F3F]">
+                  {String(t(`${APP_BASE}.pills.${key}`))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ClientHomeBusinessPromoSection() {
+  const t = useTranslation();
+  const { currentLocale } = usePublicHeaderState();
+  const locale = currentLocale as 'en' | 'ru' | 'vi';
+  const businessPath = withLocale('/business', locale);
+
+  const title = String(t(`${BUSINESS_BASE}.title`));
+  const subtitle = String(t(`${BUSINESS_BASE}.subtitle`));
+  const cta = String(t(`${BUSINESS_BASE}.cta`));
+
+  return (
+    <section className="bg-[#F9F4F0] px-4 pb-16 pt-2 sm:px-6 sm:pb-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="overflow-hidden rounded-[2rem] bg-[#EDE8F5] px-5 py-8 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+            <div className="max-w-lg">
+              <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl">
+                {title}
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
+                {subtitle}
+              </p>
+
+              <ul className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
+                {BUSINESS_FEATURES.map((key) => (
+                  <li key={key} className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3F3287] text-white">
+                      <Check
+                        className="h-3.5 w-3.5"
+                        strokeWidth={3}
+                        aria-hidden
+                      />
+                    </span>
+                    <span className="text-base font-medium text-[#3F3F3F]">
+                      {String(t(`${BUSINESS_BASE}.features.${key}`))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href={businessPath}
+                className="mt-8 inline-flex items-center rounded-full bg-[#3F3287] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#342a73] sm:mt-10 sm:px-8 sm:py-3.5 sm:text-base"
+              >
+                {cta}
+              </Link>
+            </div>
+
+            <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
+              <div className="overflow-hidden rounded-2xl border border-white/60 bg-white/40 shadow-[0_20px_60px_-20px_rgba(63,50,135,0.25)] sm:rounded-3xl">
+                <Image
+                  src="/images/mockup.webp"
+                  alt=""
+                  width={1200}
+                  height={800}
+                  className="h-auto w-full object-cover object-left-top"
+                  sizes="(max-width: 1024px) 90vw, 50vw"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -267,5 +267,94 @@
 			"copyright": "Copyright © Henzo app. Đã đăng ký bản quyền. 2026",
 			"email": "hello@henzo.app"
 		}
+	},
+	"client": {
+		"header": {
+			"explore": "Khám phá",
+			"classes": "Lớp học",
+			"trainers": "Huấn luyện viên",
+			"blog": "Blog",
+			"location": "Đà Nẵng, Việt Nam",
+			"login": "Đăng nhập",
+			"signUp": "Đăng ký",
+			"forBusiness": "Dành cho doanh nghiệp"
+		},
+		"hero": {
+			"line1": "Vận động. Cảm thấy tốt.",
+			"line2Highlight": "Sống tốt hơn.",
+			"subtitle": "Khám phá và đặt các lớp fitness, wellness và thể thao tốt nhất gần bạn.",
+			"searchPlaceholder": "Tìm lớp học, studio hoặc huấn luyện viên...",
+			"floatingCardTitle": "Tìm lớp tiếp theo",
+			"floatingCardSubtitle": "3.200+ lớp hôm nay",
+			"categories": {
+				"yoga": "Yoga",
+				"pilates": "Pilates",
+				"gym": "Gym",
+				"boxing": "Boxing",
+				"padel": "Padel",
+				"surfing": "Lướt sóng",
+				"more": "Thêm"
+			},
+			"features": {
+				"findClasses": {
+					"title": "Lớp phù hợp với bạn",
+					"subtitle": "Yoga, gym, pilates và hơn thế"
+				},
+				"bookFast": {
+					"title": "Đặt trong vài giây",
+					"subtitle": "Đặt lịch nhanh và dễ dàng"
+				},
+				"reminders": {
+					"title": "Nhắc nhở lịch học",
+					"subtitle": "Không bỏ lỡ buổi tập"
+				},
+				"allInOne": {
+					"title": "Tất cả ở một nơi",
+					"subtitle": "Quản lý đặt chỗ và yêu thích"
+				}
+			}
+		},
+		"appPromo": {
+			"eyebrow": "Vì sao mọi người yêu thích Henzo",
+			"title": "Cuộc sống fitness trong một ứng dụng",
+			"subtitle": "Đặt lớp học, quản lý lịch trình và không bỏ lỡ buổi tập.",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"qrLabel": "Quét để tải ứng dụng",
+			"pills": {
+				"easyBooking": "Đặt lịch dễ dàng",
+				"smartReminders": "Nhắc nhở thông minh",
+				"memberships": "Quản lý gói thành viên",
+				"trackActivity": "Theo dõi hoạt động"
+			}
+		},
+		"businessPromo": {
+			"title": "Phát triển studio với Henzo",
+			"subtitle": "Mọi công cụ bạn cần để vận hành và phát triển doanh nghiệp trên một nền tảng.",
+			"features": {
+				"bookings": "Đặt lịch trực tuyến 24/7",
+				"clients": "Quản lý khách hàng & gói thành viên",
+				"schedule": "Lịch trình & thanh toán",
+				"reminders": "Nhắc nhở tự động"
+			},
+			"cta": "Tham gia Henzo miễn phí"
+		},
+		"popularStudios": {
+			"title": "Studio phổ biến gần bạn",
+			"seeAll": "Xem tất cả studio",
+			"distanceMeters": "{value} m",
+			"distanceKilometers": "{value} km"
+		},
+		"nearbyClasses": {
+			"badge": "Gần bạn",
+			"titleLead": "Lớp học",
+			"titleHighlight": "gần bạn",
+			"subtitle": "Khám phá các lớp sắp diễn ra tại studio hàng đầu quanh Đà Nẵng. Đặt chỗ trong vài giây.",
+			"viewSchedule": "Xem toàn bộ lịch",
+			"seeAll": "Xem tất cả",
+			"today": "Hôm nay",
+			"tomorrow": "Ngày mai",
+			"durationMin": "{value} phút"
+		}
 	}
 }

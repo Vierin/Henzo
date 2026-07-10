@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/admin/',
+          '/owner/',
           '/owner-dashboard/',
           '/dashboard/',
           '/category/',
@@ -27,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/admin/',
+          '/owner/',
           '/owner-dashboard/',
           '/dashboard/',
           '/salons/',
