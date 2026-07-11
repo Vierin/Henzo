@@ -32,25 +32,25 @@ const APP_PILLS: PillConfig[] = [
     key: 'easyBooking',
     icon: Calendar,
     color: 'bg-[#5B8DEF]',
-    className: 'right-0 top-[8%] lg:-right-2 xl:right-0',
+    className: 'top-[8%] right-[-32%]',
   },
   {
     key: 'smartReminders',
     icon: Bell,
     color: 'bg-[#3F3287]',
-    className: 'right-0 top-[30%] lg:-right-6 xl:-right-2',
+    className: 'top-[30%] right-[-45%]',
   },
   {
     key: 'memberships',
     icon: CreditCard,
     color: 'bg-[#E86D4F]',
-    className: 'right-0 top-[52%] lg:-right-2 xl:right-2',
+    className: 'top-[52%] right-[-43%]',
   },
   {
     key: 'trackActivity',
     icon: Activity,
     color: 'bg-[#3DBFBD]',
-    className: 'right-0 top-[74%] lg:-right-8 xl:-right-1',
+    className: 'top-[74%] right-[-30%]',
   },
 ];
 
@@ -74,12 +74,12 @@ function FeaturePill({
 }) {
   return (
     <div
-      className={`absolute z-10 hidden w-[max(11rem,42%)] items-center gap-2.5 rounded-full border border-[#F0EBE6] bg-white px-3 py-2.5 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.1)] sm:flex sm:w-auto sm:px-4 sm:py-3 ${className}`}
+      className={`absolute z-10 hidden w-[max(20rem,50%)] items-center gap-2.5 rounded-xl bg-white p-2 sm:flex sm:w-auto ${className}`}
     >
       <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-white`}
+        className={`flex h-10 aspect-square shrink-0 items-center justify-center rounded-full ${color} text-white`}
       >
-        <Icon className="h-4 w-4" aria-hidden />
+        <Icon className="h-5 aspect-square" aria-hidden />
       </span>
       <span className="text-sm font-medium text-[#3F3F3F]">{label}</span>
     </div>
@@ -88,7 +88,6 @@ function FeaturePill({
 
 export function ClientHomeAppPromoSection() {
   const t = useTranslation();
-  const eyebrow = String(t(`${APP_BASE}.eyebrow`));
   const title = String(t(`${APP_BASE}.title`));
   const subtitle = String(t(`${APP_BASE}.subtitle`));
   const storeAppStore = String(t(`${APP_BASE}.storeAppStore`));
@@ -98,14 +97,10 @@ export function ClientHomeAppPromoSection() {
   return (
     <section className="bg-[#F9F4F0] px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6">
       <div className="mx-auto max-w-7xl">
-        <p className="mb-5 text-center text-sm font-medium text-[#878787] sm:mb-6">
-          {eyebrow}
-        </p>
-
         <div className="overflow-hidden rounded-[2rem] bg-[#FDF5F0] px-5 py-8 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto_1fr] lg:gap-6 xl:gap-10">
-            <div className="max-w-md lg:max-w-none">
-              <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl">
+          <div className="flex items-center justify-between">
+            <div className="max-w-md basis-1/3">
+              <h2 className="text-[2rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-6xl">
                 {title}
               </h2>
               <p className="mt-3 text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
@@ -122,8 +117,8 @@ export function ClientHomeAppPromoSection() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[340px]">
-              <StudioPhoneFrame className="w-full max-w-none" />
+            <div className="relative mx-auto w-full basis-1/3">
+              <StudioPhoneFrame className="max-w-[250px] sm:max-w-[270px] lg:max-w-[290px]" />
 
               {APP_PILLS.map(({ key, icon, color, className }) => (
                 <FeaturePill

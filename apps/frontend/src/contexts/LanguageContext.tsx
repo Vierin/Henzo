@@ -248,6 +248,7 @@ export function LanguageProvider({
   } else if (
     pathNoLocale.startsWith('/login') ||
     pathNoLocale.startsWith('/forgot-password') ||
+    pathNoLocale.startsWith('/register') ||
     pathNoLocale.startsWith('/check-email')
   ) {
     // Auth module needed for login, forgot-password, and check-email pages

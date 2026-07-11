@@ -16,10 +16,10 @@ type Props = {
 
 function StudioCardSkeleton() {
   return (
-    <div className="w-[200px] shrink-0 snap-start">
-      <div className="overflow-hidden rounded-[18px] bg-white">
+    <div className="w-[200px] shrink-0 snap-start sm:w-[280px]">
+      <div className="overflow-hidden rounded-[18px] bg-white sm:rounded-[25px]">
         <div className="aspect-[180/118] w-full animate-pulse bg-[#EDE8E3]" />
-        <div className="min-h-[78px] space-y-2 px-2.5 py-2.5">
+        <div className="min-h-[78px] space-y-2 px-2.5 py-2.5 sm:min-h-[110px] sm:space-y-3 sm:px-3.5 sm:py-3.5">
           <div className="h-4 w-3/4 animate-pulse rounded bg-[#EDE8E3]" />
           <div className="h-3 w-full animate-pulse rounded bg-[#EDE8E3]" />
           <div className="h-3 w-1/2 animate-pulse rounded bg-[#EDE8E3]" />
@@ -88,7 +88,7 @@ export function ClientHomePopularStudiosCarousel({
           </div>
         </div>
 
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-hide snap-x snap-mandatory sm:gap-3.5">
+        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-hide snap-x snap-mandatory sm:gap-5">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <StudioCardSkeleton key={`skeleton-${i}`} />

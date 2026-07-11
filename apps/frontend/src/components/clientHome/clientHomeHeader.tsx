@@ -11,7 +11,6 @@ import {
   usePublicHeaderState,
 } from '@/components/usePublicHeaderState';
 import { LanguageDropdown } from '@/components/landing/languageDropdown';
-import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
 
 function ClientHomeHeaderContent() {
   const {
@@ -66,26 +65,22 @@ function ClientHomeHeaderContent() {
             languages={publicHeaderLanguages}
             onToggle={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
             onSelect={handleLanguageSelect}
-            buttonClassName="flex h-9 w-9 items-center justify-center rounded-full border border-[#E8E0D8] bg-white/80 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:h-10 sm:w-10"
+            buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
           />
 
-          <a
-            href={appStoreUrl}
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href={withLocale('/login', locale)}
             className="hidden text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F] sm:inline"
           >
             {login}
-          </a>
+          </Link>
 
-          <a
-            href={playStoreUrl}
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href={withLocale('/register', locale)}
             className="inline-flex items-center rounded-full bg-[#E86D4F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d85e42] sm:px-5 sm:py-2.5"
           >
             {signUp}
-          </a>
+          </Link>
         </div>
       </div>
     </header>

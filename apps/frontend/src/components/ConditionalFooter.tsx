@@ -36,6 +36,15 @@ export default function ConditionalFooter() {
     };
   }, [pathname]);
 
+  // Auth pages use their own layout/footer
+  if (
+    pathname.includes('/login') ||
+    pathname.includes('/register') ||
+    pathname.includes('/forgot-password')
+  ) {
+    return null;
+  }
+
   // Hide footer on map page
   if (pathname === '/map') {
     return null;

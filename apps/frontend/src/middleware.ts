@@ -28,6 +28,11 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
+  // Auth callback (Supabase OAuth) — no locale prefix
+  if (pathname.startsWith('/auth')) {
+    return res;
+  }
+
   // Locale handling: ensure first segment is a supported locale
   const urlLocale = extractLocaleFromPath(pathname);
   if (!urlLocale) {

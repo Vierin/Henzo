@@ -22,6 +22,9 @@ export const publicRoutes = [
   '/contact',
   '/terms-of-service',
   '/privacy-policy',
+  '/login',
+  '/register',
+  '/forgot-password',
 ] as const;
 
 /**
