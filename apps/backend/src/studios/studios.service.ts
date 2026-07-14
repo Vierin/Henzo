@@ -83,7 +83,7 @@ export class StudiosService {
     }
     let hours = Number(e.hours);
     if (!Number.isFinite(hours)) hours = 24;
-    hours = Math.max(1, Math.min(24 * 14, Math.floor(hours)));
+    hours = Math.max(1, Math.min(48, Math.floor(hours)));
     return { mode: 'hoursBefore', hours, enabled };
   }
 
@@ -1511,6 +1511,7 @@ export class StudiosService {
         descriptionEn: true,
         descriptionVi: true,
         descriptionRu: true,
+        reminderSettings: true,
       },
     });
 
@@ -1655,6 +1656,29 @@ export class StudiosService {
         existingStudio.id,
         descriptionForTranslation,
       );
+    }
+
+    // Re-apply reminder timing to already-enrolled clients when the config
+    // changed (avoid needless work when other studio fields are saved).
+    if (updateStudioDto.reminderSettings !== undefined) {
+      const oldReminders = JSON.stringify(
+        (existingStudio as { reminderSettings?: { clientReminders?: unknown } })
+          .reminderSettings?.clientReminders ?? null,
+      );
+      const newReminders = JSON.stringify(
+        (StudioData as { reminderSettings?: { clientReminders?: unknown } })
+          .reminderSettings?.clientReminders ?? null,
+      );
+      if (oldReminders !== newReminders) {
+        void this.notifications
+          .rescheduleStudioClientReminders(existingStudio.id)
+          .catch((err) =>
+            console.error(
+              '[Studios] Failed to reschedule client reminders:',
+              err,
+            ),
+          );
+      }
     }
 
     return updatedStudio; // Возвращаем салон напрямую

@@ -244,7 +244,7 @@ export class NotificationsService {
         }
       } else {
         const hours = Number(e.hours);
-        if (Number.isFinite(hours) && hours > 0 && hours <= 24 * 14) {
+        if (Number.isFinite(hours) && hours > 0 && hours <= 48) {
           rules.push({ mode: 'hoursBefore', hours });
         }
       }
@@ -879,6 +879,39 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * Re-applies the studio's current reminder config to every active enrollment
+   * of its upcoming active sessions. Called when the owner changes the reminder
+   * settings so the change affects already-enrolled clients too (not just new
+   * enrollments). Already-sent reminders are left untouched.
+   */
+  async rescheduleStudioClientReminders(studioId: string): Promise<void> {
+    const now = new Date();
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        status: 'ACTIVE',
+        TrainingSession: {
+          studioId,
+          status: 'ACTIVE',
+          startsAt: { gt: now },
+        },
+      },
+      select: { id: true, userId: true },
+      take: 2000,
+    });
+    for (const e of enrollments) {
+      try {
+        await this.schedulePreClassReminders(e.id, e.userId);
+      } catch (err) {
+        console.error(
+          '[Notifications] Failed to reschedule reminders for enrollment',
+          e.id,
+          err,
+        );
+      }
+    }
+  }
+
   /** Called by RemindersScheduler — sends all due push reminders. */
   async sendPendingPushReminders(): Promise<{ sent: number; errors: number }> {
     const now = new Date();
@@ -1272,7 +1305,12 @@ export class NotificationsService {
           studio: params.studioName,
         },
       );
-      const pushData = { type: 'NEW_REVIEW', studioId: params.studioId };
+      const pushData = {
+        type: 'NEW_REVIEW',
+        studioId: params.studioId,
+        clientName: params.clientName,
+        rating: String(params.rating),
+      };
 
       const notificationId = await this.createInAppNotification({
         userId: studio.ownerId,

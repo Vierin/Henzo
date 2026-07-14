@@ -14,7 +14,7 @@ import '../common/sheet_action_button_style.dart';
 import '../training/training_time_picker_sheet.dart';
 
 const int kMinReminderHours = 1;
-const int kMaxReminderHours = 24 * 14;
+const int kMaxReminderHours = 48;
 
 /// One configurable client reminder rule.
 class ClientReminderRule {
