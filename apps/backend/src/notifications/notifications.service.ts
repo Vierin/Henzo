@@ -982,7 +982,10 @@ export class NotificationsService {
 
         const lang = tokens[0]?.language || 'en';
         const sessionTz = session.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
-        const timeStr = this.formatSessionLocalTime(session.startsAt, sessionTz);
+        const timeStr = this.formatSessionLocalTime(
+          session.startsAt,
+          sessionTz,
+        );
         const className = session.Training?.name || 'class';
         const studioName = session.Studio?.name || 'studio';
         const dayDiff = this.tzDayDiff(now, session.startsAt, sessionTz);
