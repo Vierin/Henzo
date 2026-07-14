@@ -883,6 +883,8 @@
       "reminderSlot": "Nhắc nhở {n}",
       "reminderModeHours": "Số giờ trước",
       "reminderModeEvening": "Tối hôm trước",
+      "reminderDayBeforeTitle": "Hôm trước",
+      "reminderBeforeClassTitle": "Trước buổi tập",
       "reminderHoursValue": "{h} giờ trước",
       "reminderHoursShort": "{h}h",
       "reminderTimeLabel": "Thời gian",

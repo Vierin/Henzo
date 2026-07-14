@@ -883,6 +883,8 @@
       "reminderSlot": "Напоминание {n}",
       "reminderModeHours": "За N часов",
       "reminderModeEvening": "Накануне вечером",
+      "reminderDayBeforeTitle": "Накануне",
+      "reminderBeforeClassTitle": "До занятия",
       "reminderHoursValue": "за {h} ч до занятия",
       "reminderHoursShort": "{h} ч",
       "reminderTimeLabel": "Время",

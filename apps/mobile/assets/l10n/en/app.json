@@ -883,6 +883,8 @@
       "reminderSlot": "Reminder {n}",
       "reminderModeHours": "Hours before",
       "reminderModeEvening": "Evening before",
+      "reminderDayBeforeTitle": "Day before",
+      "reminderBeforeClassTitle": "Before class",
       "reminderHoursValue": "{h} hours before",
       "reminderHoursShort": "{h}h",
       "reminderTimeLabel": "Time",
