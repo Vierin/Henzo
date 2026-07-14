@@ -59,6 +59,7 @@
     "default": "По умолчанию",
     "reviewsCount": "{count} отзывов",
     "distanceKmShort": "{value} км",
+    "minShort": "мин",
     "distanceMSshort": "{value} м",
     "signInToUploadPhoto": "Войдите снова, чтобы загрузить фото"
   },
@@ -368,6 +369,8 @@
   },
   "dashboard": {
     "welcomeBack": "С возвращением!",
+    "dailySchedule": "РАСПИСАНИЕ НА ДЕНЬ",
+    "seeAll": "ВСЕ",
     "upcomingBookings": "Предстоящие записи",
     "pendingConfirmations": "Ожидают подтверждения",
     "newBooking": "Новая запись",
@@ -442,6 +445,8 @@
     "cancelSessionMessage": "Занятие будет отменено. Клиенты могут получить уведомление.",
     "cancelSessionConfirm": "Отменить занятие",
     "cancelChooseScopeTitle": "Что отменить?",
+    "cancelNoteLabel": "Заметка для клиентов (необязательно)",
+    "cancelNoteHint": "Причина отмены",
     "cancelChooseScopeMessage": "Только этот слот в расписании или его и все следующие по той же услуге (только активные занятия).",
     "cancelThisSessionOnly": "Только это занятие",
     "cancelThisSessionOnlyHint": "Отменится только выбранный день.",
@@ -803,6 +808,17 @@
     "typeReview": "ОТЗЫВ",
     "typeAnnouncement": "ОБЪЯВЛЕНИЕ",
     "sessionDate": "Тренировка: {date}",
+    "msgReminder": "{studio}: скоро {class}",
+    "msgWaitlist": "{studio}: освободилось место на {class} — вы записаны!",
+    "msgCancelled": "{studio}: {class} отменено",
+    "msgRescheduled": "{studio}: {class} перенесено",
+    "cancelNote": "Причина: {note}",
+    "msgOwnerBooked": "{studio} записал(а) вас на {class}",
+    "ownerBooked": "{client} записался(ась) на {service}",
+    "ownerBookedGeneric": "{client} записался(ась) на занятие",
+    "ownerCancelled": "{client} отменил(а) {service}",
+    "ownerCancelledGeneric": "{client} отменил(а) занятие",
+    "ownerReview": "{client} оставил(а) отзыв.",
     "justNow": "только что",
     "minsAgo": "{n} мин. назад",
     "hoursAgo": "{n} ч. назад",
@@ -861,6 +877,16 @@
       "bookingPeriodHint": "От 1 до 60 дней",
       "bookingPeriodDaysLabel": "Дней",
       "bookingPeriodSaved": "Настройки бронирования сохранены",
+      "clientNotifications": "Уведомления клиентам",
+      "clientRemindersTitle": "Напоминания клиентам",
+      "clientRemindersDescription": "Когда записанные клиенты получают напоминание перед занятием. До 2 напоминаний.",
+      "reminderSlot": "Напоминание {n}",
+      "reminderModeHours": "За N часов",
+      "reminderModeEvening": "Накануне вечером",
+      "reminderHoursValue": "за {h} ч до занятия",
+      "reminderHoursShort": "{h} ч",
+      "reminderTimeLabel": "Время",
+      "clientRemindersSaved": "Настройки напоминаний сохранены",
       "bookingLink": "Предпросмотр салона"
     },
     "usage": {
@@ -872,6 +898,7 @@
     "studioQrCodeSubtitle": "Поделитесь страницей студии"
   },
   "calendar": {
+    "scheduleTitle": "Расписание",
     "months": [
       "Январь",
       "Февраль",

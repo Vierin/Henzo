@@ -59,6 +59,7 @@
     "default": "Mặc định",
     "reviewsCount": "{count} đánh giá",
     "distanceKmShort": "{value} km",
+    "minShort": "phút",
     "distanceMSshort": "{value} m",
     "signInToUploadPhoto": "Đăng nhập lại để tải ảnh"
   },
@@ -368,6 +369,8 @@
   },
   "dashboard": {
     "welcomeBack": "Chào mừng trở lại!",
+    "dailySchedule": "LỊCH TRONG NGÀY",
+    "seeAll": "XEM TẤT CẢ",
     "upcomingBookings": "Đặt chỗ sắp tới",
     "pendingConfirmations": "Chờ xác nhận",
     "newBooking": "Cuộc hẹn mới",
@@ -442,6 +445,8 @@
     "cancelSessionMessage": "Buổi tập sẽ được đánh dấu là đã hủy. Khách có thể nhận thông báo.",
     "cancelSessionConfirm": "Hủy buổi",
     "cancelChooseScopeTitle": "Hủy phạm vi nào?",
+    "cancelNoteLabel": "Ghi chú cho khách (tùy chọn)",
+    "cancelNoteHint": "Lý do hủy",
     "cancelChooseScopeMessage": "Chỉ hủy suất này hay hủy suất này và mọi suất sau cùng dịch vụ (chỉ slot đang active).",
     "cancelThisSessionOnly": "Chỉ buổi này",
     "cancelThisSessionOnlyHint": "Chỉ đánh dấu hủy ngày đã chọn.",
@@ -803,6 +808,17 @@
     "typeReview": "ĐÁNH GIÁ",
     "typeAnnouncement": "THÔNG BÁO",
     "sessionDate": "Buổi tập: {date}",
+    "msgReminder": "{studio}: sắp diễn ra {class}",
+    "msgWaitlist": "{studio}: đã có chỗ cho {class} — bạn đã được đặt!",
+    "msgCancelled": "{studio}: {class} đã bị hủy",
+    "msgRescheduled": "{studio}: {class} đã được dời lịch",
+    "cancelNote": "Lý do: {note}",
+    "msgOwnerBooked": "{studio} đã đặt {class} cho bạn",
+    "ownerBooked": "{client} đã đặt {service}",
+    "ownerBookedGeneric": "{client} đã đặt một buổi tập",
+    "ownerCancelled": "{client} đã hủy {service}",
+    "ownerCancelledGeneric": "{client} đã hủy một buổi tập",
+    "ownerReview": "{client} đã để lại đánh giá.",
     "justNow": "vừa xong",
     "minsAgo": "{n} phút trước",
     "hoursAgo": "{n} giờ trước",
@@ -861,6 +877,16 @@
       "bookingPeriodHint": "1–60 ngày",
       "bookingPeriodDaysLabel": "Ngày",
       "bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ",
+      "clientNotifications": "Thông báo cho khách",
+      "clientRemindersTitle": "Nhắc nhở cho khách",
+      "clientRemindersDescription": "Khi khách đã đăng ký nhận nhắc nhở trước buổi tập. Tối đa 2 nhắc nhở.",
+      "reminderSlot": "Nhắc nhở {n}",
+      "reminderModeHours": "Số giờ trước",
+      "reminderModeEvening": "Tối hôm trước",
+      "reminderHoursValue": "{h} giờ trước",
+      "reminderHoursShort": "{h}h",
+      "reminderTimeLabel": "Thời gian",
+      "clientRemindersSaved": "Đã lưu cài đặt nhắc nhở",
       "bookingLink": "Xem trước salon"
     },
     "usage": {
@@ -872,6 +898,7 @@
     "studioQrCodeSubtitle": "Chia sẻ trang studio"
   },
   "calendar": {
+    "scheduleTitle": "Lịch",
     "months": [
       "T1",
       "T2",

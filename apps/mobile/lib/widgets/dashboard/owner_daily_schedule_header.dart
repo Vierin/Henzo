@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// «DAILY SCHEDULE» и опционально «See all ›» (только дашборд).
@@ -14,11 +16,14 @@ class OwnerDailyScheduleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
     return Row(
       children: [
         Expanded(
           child: Text(
-            'DAILY SCHEDULE',
+            locale.t('dashboard.dailySchedule'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w500,
@@ -35,7 +40,7 @@ class OwnerDailyScheduleHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'SEE ALL',
+                  locale.t('dashboard.seeAll'),
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w500,

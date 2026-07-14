@@ -55,7 +55,36 @@ export class StudiosService {
     if (!Array.isArray((base as Record<string, unknown>)['intervals'])) {
       (base as Record<string, unknown>)['intervals'] = [24];
     }
+    const clientReminders = (base as Record<string, unknown>)[
+      'clientReminders'
+    ];
+    if (Array.isArray(clientReminders)) {
+      (base as Record<string, unknown>)['clientReminders'] = clientReminders
+        .slice(0, 2)
+        .map((e) => this.normalizeClientReminderEntry(e))
+        .filter((e): e is Record<string, unknown> => e !== null);
+    }
     return base;
+  }
+
+  /** Validates one client-reminder rule (hoursBefore N | eveningBefore HH:MM). */
+  private normalizeClientReminderEntry(
+    entry: unknown,
+  ): Record<string, unknown> | null {
+    if (!entry || typeof entry !== 'object') return null;
+    const e = entry as Record<string, unknown>;
+    const enabled = e.enabled !== false;
+    if (e.mode === 'eveningBefore') {
+      const time =
+        typeof e.time === 'string' && /^\d{1,2}:\d{2}$/.test(e.time)
+          ? e.time
+          : '20:00';
+      return { mode: 'eveningBefore', time, enabled };
+    }
+    let hours = Number(e.hours);
+    if (!Number.isFinite(hours)) hours = 24;
+    hours = Math.max(1, Math.min(48, Math.floor(hours)));
+    return { mode: 'hoursBefore', hours, enabled };
   }
 
   private assertStudioTextContent(input: {
@@ -1482,6 +1511,7 @@ export class StudiosService {
         descriptionEn: true,
         descriptionVi: true,
         descriptionRu: true,
+        reminderSettings: true,
       },
     });
 
@@ -1626,6 +1656,29 @@ export class StudiosService {
         existingStudio.id,
         descriptionForTranslation,
       );
+    }
+
+    // Re-apply reminder timing to already-enrolled clients when the config
+    // changed (avoid needless work when other studio fields are saved).
+    if (updateStudioDto.reminderSettings !== undefined) {
+      const oldReminders = JSON.stringify(
+        (existingStudio as { reminderSettings?: { clientReminders?: unknown } })
+          .reminderSettings?.clientReminders ?? null,
+      );
+      const newReminders = JSON.stringify(
+        (StudioData as { reminderSettings?: { clientReminders?: unknown } })
+          .reminderSettings?.clientReminders ?? null,
+      );
+      if (oldReminders !== newReminders) {
+        void this.notifications
+          .rescheduleStudioClientReminders(existingStudio.id)
+          .catch((err) =>
+            console.error(
+              '[Studios] Failed to reschedule client reminders:',
+              err,
+            ),
+          );
+      }
     }
 
     return updatedStudio; // Возвращаем салон напрямую

@@ -149,15 +149,15 @@
 			"line2Accent": "5 phút",
 			"steps": [
 				{
-					"label": "Bước 1:",
+					"label": "Step 1:",
 					"text": "Thêm tên và địa chỉ studio"
 				},
 				{
-					"label": "Bước 2:",
+					"label": "Step 2:",
 					"text": "Tải ảnh lên và tạo lớp học đầu tiên"
 				},
 				{
-					"label": "Bước 3:",
+					"label": "Step 3:",
 					"text": "Bắt đầu nhận booking đầu tiên"
 				}
 			]

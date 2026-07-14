@@ -59,6 +59,7 @@
     "default": "Default",
     "reviewsCount": "{count} reviews",
     "distanceKmShort": "{value} km",
+    "minShort": "min",
     "distanceMSshort": "{value} m",
     "signInToUploadPhoto": "Please sign in again to upload photo"
   },
@@ -368,6 +369,8 @@
   },
   "dashboard": {
     "welcomeBack": "Welcome back!",
+    "dailySchedule": "DAILY SCHEDULE",
+    "seeAll": "SEE ALL",
     "upcomingBookings": "Upcoming bookings",
     "pendingConfirmations": "Pending confirmations",
     "newBooking": "New booking",
@@ -442,6 +445,8 @@
     "cancelSessionMessage": "The session will be marked as cancelled. Clients may be notified.",
     "cancelSessionConfirm": "Cancel class",
     "cancelChooseScopeTitle": "Cancel which classes?",
+    "cancelNoteLabel": "Note for clients (optional)",
+    "cancelNoteHint": "Reason for cancellation",
     "cancelChooseScopeMessage": "Choose whether to cancel only this scheduled slot or this one and every later slot for the same service (active sessions only).",
     "cancelThisSessionOnly": "This class only",
     "cancelThisSessionOnlyHint": "Marks only this day as cancelled.",
@@ -803,6 +808,17 @@
     "typeReview": "REVIEW",
     "typeAnnouncement": "ANNOUNCEMENT",
     "sessionDate": "Training: {date}",
+    "msgReminder": "{studio}: upcoming {class}",
+    "msgWaitlist": "{studio}: a spot opened for {class} — you're booked!",
+    "msgCancelled": "{studio}: {class} was cancelled",
+    "msgRescheduled": "{studio}: {class} was rescheduled",
+    "cancelNote": "Reason: {note}",
+    "msgOwnerBooked": "{studio} booked you for {class}",
+    "ownerBooked": "{client} booked {service}",
+    "ownerBookedGeneric": "{client} booked a session",
+    "ownerCancelled": "{client} cancelled {service}",
+    "ownerCancelledGeneric": "{client} cancelled a session",
+    "ownerReview": "{client} left a review.",
     "justNow": "just now",
     "minsAgo": "{n} mins ago",
     "hoursAgo": "{n} hours ago",
@@ -861,6 +877,16 @@
       "bookingPeriodHint": "1–60 days",
       "bookingPeriodDaysLabel": "Days",
       "bookingPeriodSaved": "Booking settings saved",
+      "clientNotifications": "Client notifications",
+      "clientRemindersTitle": "Client reminders",
+      "clientRemindersDescription": "When enrolled clients get a reminder before class. Up to 2 reminders.",
+      "reminderSlot": "Reminder {n}",
+      "reminderModeHours": "Hours before",
+      "reminderModeEvening": "Evening before",
+      "reminderHoursValue": "{h} hours before",
+      "reminderHoursShort": "{h}h",
+      "reminderTimeLabel": "Time",
+      "clientRemindersSaved": "Reminder settings saved",
       "bookingLink": "Salon preview"
     },
     "usage": {
@@ -872,6 +898,7 @@
     "studioQrCodeSubtitle": "Share your studio page"
   },
   "calendar": {
+    "scheduleTitle": "Schedule",
     "months": [
       "Jan",
       "Feb",
@@ -1197,7 +1224,7 @@
     "confirmed": "Confirmed",
     "inviteFriends": "Invite friends",
     "youreIn": "You're in!",
-    "addToCalendar": "Add to cal",
+    "addToCalendar": "Add to calendar",
     "shareForClass": "Join me for {class}!",
     "calendarWithTrainer": "with {trainer}"
   },

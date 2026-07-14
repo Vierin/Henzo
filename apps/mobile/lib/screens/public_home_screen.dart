@@ -918,7 +918,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 50,
+                  height: 56,
                   child: (_loadingCategories || _isLoadingStudios)
                       ? const Center(
                           child: SizedBox(

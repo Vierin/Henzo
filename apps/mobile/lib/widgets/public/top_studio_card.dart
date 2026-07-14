@@ -20,6 +20,7 @@ class TopStudioCard extends StatelessWidget {
     required this.onToggleFavorite,
     required this.onTap,
     this.homeLayout = false,
+    this.gridLayout = false,
     this.categoryOptions = const [],
   });
 
@@ -29,6 +30,10 @@ class TopStudioCard extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
   final bool homeLayout;
+  /// Fill the parent's width (no fixed width / right margin) for a 2-column
+  /// grid. Uses the browse card layout, whose image and content are
+  /// width-flexible.
+  final bool gridLayout;
   final List<TrainingCategoryOption> categoryOptions;
 
   String? _distanceLabel(BuildContext context) {
@@ -51,7 +56,7 @@ class TopStudioCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final distanceLabel = _distanceLabel(context);
-    if (homeLayout) {
+    if (homeLayout && !gridLayout) {
       return _HomeStudioCard(
         studio: studio,
         isFavorite: isFavorite,
@@ -70,6 +75,7 @@ class TopStudioCard extends StatelessWidget {
       onTap: onTap,
       distanceLabel: distanceLabel,
       categoryOptions: categoryOptions,
+      gridLayout: gridLayout,
     );
   }
 }
@@ -305,6 +311,7 @@ class _BrowseStudioCard extends StatelessWidget {
     required this.onTap,
     required this.distanceLabel,
     required this.categoryOptions,
+    this.gridLayout = false,
   });
 
   final PublicStudioPreview studio;
@@ -314,12 +321,13 @@ class _BrowseStudioCard extends StatelessWidget {
   final VoidCallback onTap;
   final String? distanceLabel;
   final List<TrainingCategoryOption> categoryOptions;
+  final bool gridLayout;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 236,
-      margin: const EdgeInsets.only(right: 12),
+      width: gridLayout ? double.infinity : 236,
+      margin: gridLayout ? EdgeInsets.zero : const EdgeInsets.only(right: 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -431,7 +439,7 @@ class _BrowseStudioCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 19.sp,
+                        fontSize: gridLayout ? 16.sp : 19.sp,
                         height: 1.1,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -447,7 +455,9 @@ class _BrowseStudioCard extends StatelessWidget {
                         categoryOptions: categoryOptions,
                         style: TextStyle(
                           fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: gridLayout
+                              ? FontWeight.w400
+                              : FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
                       ),

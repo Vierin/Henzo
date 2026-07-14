@@ -679,6 +679,15 @@ class _NotificationCard extends StatelessWidget {
     const bold = TextStyle(fontWeight: FontWeight.w700);
     const normal = TextStyle(fontWeight: FontWeight.w400);
 
+    // Client inbox items: render the message from the notification type + data
+    // in the app language, so the Notifications page is localized regardless of
+    // the language the server stored the body in. Falls back to the raw server
+    // text for unknown types or missing data.
+    if (isClient) {
+      final localized = _localizedClientSpans(n, bold, normal);
+      if (localized != null) return localized;
+    }
+
     final leadName = isClient
         ? _clientLeadName(n)
         : n.data['clientName']?.trim();
@@ -709,6 +718,8 @@ class _NotificationCard extends StatelessWidget {
           ),
         ];
       }
+      final ownerLocalized = _localizedOwnerSpans(n, kind, bold, normal);
+      if (ownerLocalized != null) return ownerLocalized;
       return switch (kind) {
         _NotificationKind.bookingCancelled => [
           TextSpan(text: leadName, style: bold),
@@ -730,6 +741,105 @@ class _NotificationCard extends StatelessWidget {
     }
 
     return [_plainMessageSpan(n)];
+  }
+
+  /// Builds a localized message for known client notification types from their
+  /// `type` + `data` fields. Returns null when the type is unknown or the
+  /// required data (studio / class name) is missing, so the caller falls back
+  /// to the raw server text.
+  List<InlineSpan>? _localizedClientSpans(
+    AppNotification n,
+    TextStyle bold,
+    TextStyle normal,
+  ) {
+    final type = (n.data['type'] ?? n.data['eventType'] ?? '')
+        .trim()
+        .toUpperCase();
+    final key = switch (type) {
+      'PRE_CLASS_REMINDER' => 'notifications.msgReminder',
+      'WAITLIST_PROMOTED' => 'notifications.msgWaitlist',
+      'SESSION_CANCELLED' => 'notifications.msgCancelled',
+      'SESSION_RESCHEDULED' => 'notifications.msgRescheduled',
+      'OWNER_BOOKED' => 'notifications.msgOwnerBooked',
+      _ => null,
+    };
+    if (key == null) return null;
+
+    final studio = n.data['studioName']?.trim() ?? '';
+    final className = _serviceOrClassName(n)?.trim() ?? '';
+    if (studio.isEmpty || className.isEmpty) return null;
+
+    final text = locale
+        .t(key)
+        .replaceAll('{studio}', studio)
+        .replaceAll('{class}', className);
+
+    // Optional cancellation note left by the owner.
+    final note = n.data['note']?.trim() ?? '';
+    final noteSpan = note.isEmpty
+        ? null
+        : TextSpan(
+            text:
+                '\n${locale.t('notifications.cancelNote').replaceAll('{note}', note)}',
+            style: normal,
+          );
+
+    // Bold the studio name where the template leads with it.
+    if (text.startsWith(studio)) {
+      return [
+        TextSpan(text: studio, style: bold),
+        TextSpan(text: text.substring(studio.length), style: normal),
+        if (noteSpan != null) noteSpan,
+      ];
+    }
+    return [
+      TextSpan(text: text, style: normal),
+      if (noteSpan != null) noteSpan,
+    ];
+  }
+
+  /// Builds a localized message for owner notification cards from the
+  /// notification kind + data (client name / service). Returns null when the
+  /// client name is missing, so the caller falls back to the raw server text.
+  List<InlineSpan>? _localizedOwnerSpans(
+    AppNotification n,
+    _NotificationKind kind,
+    TextStyle bold,
+    TextStyle normal,
+  ) {
+    final client = n.data['clientName']?.trim() ?? '';
+    if (client.isEmpty) return null;
+    final service = _serviceOrClassName(n)?.trim() ?? '';
+
+    final String key;
+    switch (kind) {
+      case _NotificationKind.booking:
+        key = service.isNotEmpty
+            ? 'notifications.ownerBooked'
+            : 'notifications.ownerBookedGeneric';
+      case _NotificationKind.bookingCancelled:
+        key = service.isNotEmpty
+            ? 'notifications.ownerCancelled'
+            : 'notifications.ownerCancelledGeneric';
+      case _NotificationKind.review:
+        key = 'notifications.ownerReview';
+      case _NotificationKind.system:
+        return null;
+    }
+
+    final text = locale
+        .t(key)
+        .replaceAll('{client}', client)
+        .replaceAll('{service}', service);
+
+    // Bold the client name where the template leads with it.
+    if (text.startsWith(client)) {
+      return [
+        TextSpan(text: client, style: bold),
+        TextSpan(text: text.substring(client.length), style: normal),
+      ];
+    }
+    return [TextSpan(text: text, style: normal)];
   }
 
   String _bodyWithoutEmbeddedStudio(String body, String studio) {

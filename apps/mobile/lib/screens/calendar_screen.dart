@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
+import '../../utils/formatters.dart';
 import '../../models/studio.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
@@ -449,7 +450,9 @@ class CalendarScreenState extends State<CalendarScreen> {
   Widget _buildMonthExpanded(DateTime monthAnchor) {
     final monthStart = DateTime(monthAnchor.year, monthAnchor.month, 1);
     final cells = _monthCells(monthStart);
-    const dow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    final dow = calendarWeekdayHeaders(
+      context.read<LocaleProvider>().localeCode,
+    );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
@@ -678,7 +681,9 @@ class CalendarScreenState extends State<CalendarScreen> {
                   children: [
                     ScheduleCalendarTitleRow(
                       overtitle: _studioHeaderLabel(context),
-                      title: 'Schedule',
+                      title: context.read<LocaleProvider>().t(
+                        'calendar.scheduleTitle',
+                      ),
                       titleStyle: TextStyle(
                         fontSize: 24.sp,
                         fontWeight: FontWeight.w700,

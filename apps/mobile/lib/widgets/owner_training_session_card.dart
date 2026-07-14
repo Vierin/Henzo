@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../l10n/locale_provider.dart';
 import '../services/dashboard_api_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -48,10 +50,13 @@ class OwnerTrainingSessionCard extends StatelessWidget {
     return d.inMinutes.clamp(0, 24 * 60);
   }
 
-  static String durationMinutesLabel(OwnerTrainingSession session) {
+  static String durationMinutesLabel(
+    OwnerTrainingSession session,
+    String minLabel,
+  ) {
     final m = durationMinutes(session);
 
-    return '$m min';
+    return '$m $minLabel';
   }
 
   /// Effective trainer label when session has no Trainer row (owner teaches).
@@ -93,7 +98,10 @@ class OwnerTrainingSessionCard extends StatelessWidget {
       session.startsAt.toLocal(),
     ).format(context);
 
-    final durationLabel = durationMinutesLabel(session);
+    final durationLabel = durationMinutesLabel(
+      session,
+      context.read<LocaleProvider>().t('common.minShort'),
+    );
 
     final enrolled = session.enrolledCount;
 

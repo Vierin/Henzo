@@ -158,13 +158,13 @@ export function LandingStatement() {
 
   return (
     <section
-      className="relative z-[11] flex h-[100svh] items-center justify-center bg-[#FDF6F0]"
+      className="relative z-[11] flex h-[80svh] items-center justify-center bg-[#FDF6F0]"
       aria-labelledby="landing-statement-before-spotlight-heading"
     >
       <h2 id="landing-statement-before-spotlight-heading" className="sr-only">
         {titleText}
       </h2>
-      <div className="mx-auto flex max-w-7xl flex-col sm:flex-row flex-wrap items-baseline justify-center gap-6 text-center sm:gap-12 md:gap-16">
+      <div className="mx-auto flex sm:max-w-4xl flex-col sm:flex-row flex-wrap items-baseline justify-center gap-6 text-center sm:gap-12 md:gap-8 sm:justify-start sm:items-start">
         <p className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal leading-none text-[8vw] sm:text-[4vw]">
           <span className="shrink-0 text-[#3F3F3F]">{phrase1Lead}</span>
           <span className="shrink-0" aria-hidden>

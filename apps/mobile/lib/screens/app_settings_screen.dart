@@ -21,6 +21,7 @@ import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/feedback_sheet.dart';
 import '../widgets/settings/owner_booking_period_sheet.dart';
+import '../widgets/settings/owner_client_reminders_sheet.dart';
 import '../widgets/settings/settings_header_back_button.dart';
 import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
@@ -160,6 +161,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       studio: studio,
       initialDays: _bookingPeriodDays,
     );
+    if (changed == true && mounted) await _loadData();
+  }
+
+  Future<void> _openClientRemindersSheet() async {
+    final studio = _studio;
+    if (studio == null) return;
+    final changed = await showOwnerClientRemindersSheet(context, studio: studio);
     if (changed == true && mounted) await _loadData();
   }
 
@@ -310,6 +318,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         title: locale.t('settings.owner.onlineBooking'),
                         trailingText: bookingTrailing,
                         onTap: _openBookingPeriodSheet,
+                      ),
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-bell.svg',
+                        title: locale.t('settings.owner.clientNotifications'),
+                        trailingText: clientRemindersSummary(_studio, locale),
+                        onTap: _openClientRemindersSheet,
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-train.svg',

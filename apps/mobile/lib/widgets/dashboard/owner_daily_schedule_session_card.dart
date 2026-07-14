@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
@@ -266,7 +268,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      secondaryTimeLabel ?? '$duration min',
+                      secondaryTimeLabel ??
+                          '$duration ${context.read<LocaleProvider>().t('common.minShort')}',
                       style: TextStyle(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,

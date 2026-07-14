@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseAdminService } from './firebase-admin.service';
@@ -8,15 +8,28 @@ import {
   getNotificationText,
 } from './notification-translations';
 
+/** A single per-studio client reminder rule (stored in reminderSettings). */
+type ClientReminderRule =
+  | { mode: 'hoursBefore'; hours: number }
+  | { mode: 'eveningBefore'; time: string };
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  /** Cron runs every 15 min — allow slack around the target offset. */
-  private static readonly REMINDER_1H_MIN_MS = 40 * 60 * 1000;
-  private static readonly REMINDER_1H_MAX_MS = 75 * 60 * 1000;
-  private static readonly REMINDER_24H_MIN_MS = 23 * 60 * 60 * 1000;
-  private static readonly REMINDER_24H_MAX_MS = (24 * 60 + 30) * 60 * 1000;
+  /**
+   * A reminder whose scheduled time is more than this far in the past is
+   * dropped as stale (e.g. the server was down and missed its window). The
+   * cron runs every 15 min, so this only affects genuinely-missed reminders.
+   */
+  private static readonly REMINDER_STALE_GRACE_MS = 2 * 60 * 60 * 1000;
+
+  /** Fallback when a studio has no client-reminder config. */
+  private static readonly DEFAULT_CLIENT_REMINDERS: ClientReminderRule[] = [
+    { mode: 'hoursBefore', hours: 24 },
+    { mode: 'hoursBefore', hours: 1 },
+  ];
+
   constructor(
     private prisma: PrismaService,
     private firebaseAdmin: FirebaseAdminService,
@@ -200,24 +213,89 @@ export class NotificationsService {
     });
   }
 
-  private isWithinPreClassReminderWindow(
-    type: string,
-    msUntilStart: number,
-  ): boolean {
-    if (type === '24h') {
-      return (
-        msUntilStart >= NotificationsService.REMINDER_24H_MIN_MS &&
-        msUntilStart <= NotificationsService.REMINDER_24H_MAX_MS
-      );
-    }
-    return (
-      msUntilStart >= NotificationsService.REMINDER_1H_MIN_MS &&
-      msUntilStart <= NotificationsService.REMINDER_1H_MAX_MS
-    );
-  }
-
   private formatSessionLocalTime(startsAt: Date, timezone: string): string {
     return formatInTimeZone(startsAt, timezone, 'HH:mm');
+  }
+
+  /** Reads a studio's client-reminder rules; falls back to the 24h + 1h default. */
+  private parseClientReminderRules(
+    reminderSettings: unknown,
+  ): ClientReminderRule[] {
+    const raw =
+      reminderSettings &&
+      typeof reminderSettings === 'object' &&
+      !Array.isArray(reminderSettings)
+        ? (reminderSettings as Record<string, unknown>)['clientReminders']
+        : undefined;
+    // No config at all → default. An explicit (possibly empty) array is
+    // respected as the owner's choice.
+    if (!Array.isArray(raw)) {
+      return NotificationsService.DEFAULT_CLIENT_REMINDERS;
+    }
+    const rules: ClientReminderRule[] = [];
+    for (const entry of raw.slice(0, 2)) {
+      if (!entry || typeof entry !== 'object') continue;
+      const e = entry as Record<string, unknown>;
+      if (e.enabled === false) continue;
+      if (e.mode === 'eveningBefore') {
+        const time = typeof e.time === 'string' ? e.time : '';
+        if (/^\d{1,2}:\d{2}$/.test(time)) {
+          rules.push({ mode: 'eveningBefore', time });
+        }
+      } else {
+        const hours = Number(e.hours);
+        if (Number.isFinite(hours) && hours > 0 && hours <= 48) {
+          rules.push({ mode: 'hoursBefore', hours });
+        }
+      }
+    }
+    return rules;
+  }
+
+  private reminderType(rule: ClientReminderRule): string {
+    return rule.mode === 'eveningBefore'
+      ? `eve${rule.time.replace(':', '')}`
+      : `h${rule.hours}`;
+  }
+
+  /** Absolute send instant for the "evening before at HH:MM" mode (studio tz). */
+  private eveningBeforeInstant(
+    startsAt: Date,
+    timezone: string,
+    time: string,
+  ): Date {
+    const [hh, mm] = time.split(':').map((n) => parseInt(n, 10));
+    const zoned = toZonedTime(startsAt, timezone);
+    zoned.setDate(zoned.getDate() - 1);
+    zoned.setHours(hh, mm, 0, 0);
+    return fromZonedTime(zoned, timezone);
+  }
+
+  private computeReminderSchedules(
+    startsAt: Date,
+    timezone: string,
+    rules: ClientReminderRule[],
+  ): Array<{ type: string; scheduledFor: Date }> {
+    const out: Array<{ type: string; scheduledFor: Date }> = [];
+    const seen = new Set<string>();
+    for (const rule of rules) {
+      const type = this.reminderType(rule);
+      if (seen.has(type)) continue;
+      seen.add(type);
+      const scheduledFor =
+        rule.mode === 'eveningBefore'
+          ? this.eveningBeforeInstant(startsAt, timezone, rule.time)
+          : new Date(startsAt.getTime() - rule.hours * 3600 * 1000);
+      out.push({ type, scheduledFor });
+    }
+    return out;
+  }
+
+  /** Whole-day difference (in the studio tz) between two instants. */
+  private tzDayDiff(from: Date, to: Date, timezone: string): number {
+    const f = formatInTimeZone(from, timezone, 'yyyy-MM-dd');
+    const t = formatInTimeZone(to, timezone, 'yyyy-MM-dd');
+    return Math.round((Date.parse(t) - Date.parse(f)) / 86400000);
   }
 
   private clientSessionPushData(params: {
@@ -725,7 +803,7 @@ export class NotificationsService {
     }
   }
 
-  /** Schedule 24h and 1h pre-class push reminders for an enrollment. */
+  /** Schedule pre-class push reminders for an enrollment per the studio config. */
   async schedulePreClassReminders(
     enrollmentId: string,
     userId: string,
@@ -734,24 +812,29 @@ export class NotificationsService {
       where: { id: enrollmentId, userId, status: 'ACTIVE' },
       select: {
         sessionId: true,
-        TrainingSession: { select: { startsAt: true } },
+        TrainingSession: {
+          select: {
+            startsAt: true,
+            Studio: { select: { timezone: true, reminderSettings: true } },
+          },
+        },
       },
     });
     if (!enrollment?.TrainingSession?.startsAt) return;
 
     const startsAt = enrollment.TrainingSession.startsAt;
+    const timezone =
+      enrollment.TrainingSession.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
+    const rules = this.parseClientReminderRules(
+      enrollment.TrainingSession.Studio?.reminderSettings,
+    );
     const now = new Date();
 
-    const reminders = [
-      {
-        type: '24h',
-        scheduledFor: new Date(startsAt.getTime() - 24 * 60 * 60 * 1000),
-      },
-      {
-        type: '1h',
-        scheduledFor: new Date(startsAt.getTime() - 60 * 60 * 1000),
-      },
-    ].filter((r) => r.scheduledFor > now);
+    const reminders = this.computeReminderSchedules(
+      startsAt,
+      timezone,
+      rules,
+    ).filter((r) => r.scheduledFor > now);
 
     if (reminders.length === 0) {
       await this.prisma.scheduledPushReminder.deleteMany({
@@ -794,6 +877,39 @@ export class NotificationsService {
     await this.prisma.scheduledPushReminder.deleteMany({
       where: { sessionId, sentAt: null },
     });
+  }
+
+  /**
+   * Re-applies the studio's current reminder config to every active enrollment
+   * of its upcoming active sessions. Called when the owner changes the reminder
+   * settings so the change affects already-enrolled clients too (not just new
+   * enrollments). Already-sent reminders are left untouched.
+   */
+  async rescheduleStudioClientReminders(studioId: string): Promise<void> {
+    const now = new Date();
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        status: 'ACTIVE',
+        TrainingSession: {
+          studioId,
+          status: 'ACTIVE',
+          startsAt: { gt: now },
+        },
+      },
+      select: { id: true, userId: true },
+      take: 2000,
+    });
+    for (const e of enrollments) {
+      try {
+        await this.schedulePreClassReminders(e.id, e.userId);
+      } catch (err) {
+        console.error(
+          '[Notifications] Failed to reschedule reminders for enrollment',
+          e.id,
+          err,
+        );
+      }
+    }
   }
 
   /** Called by RemindersScheduler — sends all due push reminders. */
@@ -847,10 +963,11 @@ export class NotificationsService {
           continue;
         }
 
-        if (!this.isWithinPreClassReminderWindow(reminder.type, msUntilStart)) {
+        const lateMs = now.getTime() - reminder.scheduledFor.getTime();
+        if (lateMs > NotificationsService.REMINDER_STALE_GRACE_MS) {
           this.logger.debug(
             `Dropping stale ${reminder.type} reminder ${reminder.id} ` +
-              `(${Math.round(msUntilStart / 60000)} min until class)`,
+              `(${Math.round(lateMs / 60000)} min late)`,
           );
           await this.prisma.scheduledPushReminder.delete({
             where: { id: reminder.id },
@@ -869,20 +986,37 @@ export class NotificationsService {
           session.startsAt,
           sessionTz,
         );
-        const titleKey =
-          reminder.type === '24h' ? 'reminder24hTitle' : 'reminder1hTitle';
-        const bodyKey =
-          reminder.type === '24h' ? 'reminder24hBody' : 'reminder1hBody';
+        const className = session.Training?.name || 'class';
+        const studioName = session.Studio?.name || 'studio';
+        const dayDiff = this.tzDayDiff(now, session.startsAt, sessionTz);
 
-        const title = getNotificationText(lang, titleKey as any);
-        const body = formatNotificationTemplate(
-          getNotificationText(lang, bodyKey as any),
-          {
-            class: session.Training?.name || 'class',
-            studio: session.Studio?.name || 'studio',
-            time: timeStr,
-          },
-        );
+        const title = getNotificationText(lang, 'reminderUpcomingTitle' as any);
+        let body: string;
+        if (dayDiff <= 0) {
+          // Class is later the same calendar day → "starts at {time}".
+          body = formatNotificationTemplate(
+            getNotificationText(lang, 'reminder1hBody' as any),
+            { class: className, studio: studioName, time: timeStr },
+          );
+        } else {
+          // Class is on a later day → include the date.
+          const localeTag =
+            lang === 'ru' ? 'ru-RU' : lang === 'vi' ? 'vi-VN' : 'en-GB';
+          const dateStr = session.startsAt.toLocaleDateString(localeTag, {
+            day: 'numeric',
+            month: 'short',
+            timeZone: sessionTz,
+          });
+          body = formatNotificationTemplate(
+            getNotificationText(lang, 'reminderDayBody' as any),
+            {
+              class: className,
+              studio: studioName,
+              date: dateStr,
+              time: timeStr,
+            },
+          );
+        }
 
         const pushData = this.clientSessionPushData({
           type: 'PRE_CLASS_REMINDER',
@@ -941,7 +1075,12 @@ export class NotificationsService {
    */
   async notifySessionCancelled(
     sessionId: string,
-    sessionInfo: { className: string; studioName: string; startsAt: Date },
+    sessionInfo: {
+      className: string;
+      studioName: string;
+      startsAt: Date;
+      note?: string | null;
+    },
   ): Promise<void> {
     try {
       await this.clearPreClassRemindersForSession(sessionId);
@@ -962,6 +1101,7 @@ export class NotificationsService {
       ]);
       if (enrollments.length === 0) return;
 
+      const cancelNote = sessionInfo.note?.trim() || '';
       const cancelledTz =
         cancelledSession?.Studio?.timezone ?? 'Asia/Ho_Chi_Minh';
       const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
@@ -979,7 +1119,7 @@ export class NotificationsService {
 
         const lang = tokens[0]?.language || 'en';
         const title = getNotificationText(lang, 'sessionCancelledTitle' as any);
-        const body = formatNotificationTemplate(
+        let body = formatNotificationTemplate(
           getNotificationText(lang, 'sessionCancelledBody' as any),
           {
             class: sessionInfo.className,
@@ -987,6 +1127,12 @@ export class NotificationsService {
             date: dateStr,
           },
         );
+        if (cancelNote) {
+          body += `\n${formatNotificationTemplate(
+            getNotificationText(lang, 'sessionCancelledNote' as any),
+            { note: cancelNote },
+          )}`;
+        }
         const pushData = this.clientSessionPushData({
           type: 'SESSION_CANCELLED',
           sessionId,
@@ -997,6 +1143,7 @@ export class NotificationsService {
           studioName: cancelledSession?.Studio?.name || sessionInfo.studioName,
           timezone: cancelledTz,
         });
+        if (cancelNote) pushData.note = cancelNote;
 
         try {
           const inAppId = await this.createInAppNotification({
@@ -1161,7 +1308,12 @@ export class NotificationsService {
           studio: params.studioName,
         },
       );
-      const pushData = { type: 'NEW_REVIEW', studioId: params.studioId };
+      const pushData = {
+        type: 'NEW_REVIEW',
+        studioId: params.studioId,
+        clientName: params.clientName,
+        rating: String(params.rating),
+      };
 
       const notificationId = await this.createInAppNotification({
         userId: studio.ownerId,
