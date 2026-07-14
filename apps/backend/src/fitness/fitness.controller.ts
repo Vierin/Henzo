@@ -227,12 +227,17 @@ export class FitnessController {
   async updateOwnerTrainingSessionStatus(
     @Headers('authorization') authHeader: string,
     @Param('id') id: string,
-    @Body() body: { status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED' },
+    @Body()
+    body: {
+      status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
+      note?: string;
+    },
   ) {
     return this.fitnessSessionsService.updateOwnerSessionStatus(
       authHeader,
       id,
       body.status,
+      body.note,
     );
   }
 

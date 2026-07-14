@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ClassScheduleCard extends StatelessWidget {
@@ -59,7 +61,7 @@ class ClassScheduleCard extends StatelessWidget {
                 ),
                 if (durationMin != null)
                   Text(
-                    '($durationMin min)',
+                    '($durationMin ${context.read<LocaleProvider>().t('common.minShort')})',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
               ],

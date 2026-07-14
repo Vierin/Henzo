@@ -319,8 +319,10 @@ class _OwnerTrainingSessionDetailScreenState
     final session = _session;
     if (!_canCancelOwnerSession(session)) return;
 
-    final scope = await showOwnerSessionCancelScopeDialog(context);
-    if (!mounted || scope == null) return;
+    final result = await showOwnerSessionCancelScopeDialog(context);
+    if (!mounted || result == null) return;
+    final scope = result.scope;
+    final note = result.note;
 
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
@@ -330,13 +332,18 @@ class _OwnerTrainingSessionDetailScreenState
         await DashboardApiService.patchOwnerTrainingSession(
           token,
           session.sessionId,
-          {'status': 'CANCELLED', 'applyToFollowing': true},
+          {
+            'status': 'CANCELLED',
+            'applyToFollowing': true,
+            if (note != null) 'note': note,
+          },
         );
       } else {
         await DashboardApiService.updateOwnerTrainingSessionStatus(
           token,
           session.sessionId,
           'CANCELLED',
+          note: note,
         );
       }
       if (!mounted) return;
@@ -484,6 +491,8 @@ class _OwnerTrainingSessionDetailScreenState
     final cap = session.capacity;
     final now = DateTime.now();
     final sessionEnded = !session.effectiveEndsAt.isAfter(now);
+    // Past (already-started) sessions can't be edited or take new clients.
+    final isUpcoming = session.startsAt.isAfter(now);
     final canCancelSession = _canCancelOwnerSession(session);
     final attendanceTogglesVisible = !session.startsAt
         .subtract(const Duration(hours: 1))
@@ -737,7 +746,7 @@ class _OwnerTrainingSessionDetailScreenState
                       enrolled: enrolled,
                       capacity: cap,
                       waitlistCount: waitlistCount,
-                      onAddPressed: session.sessionId.isEmpty
+                      onAddPressed: (session.sessionId.isEmpty || !isUpcoming)
                           ? null
                           : _showAddParticipantSheet,
                     ),
@@ -746,7 +755,8 @@ class _OwnerTrainingSessionDetailScreenState
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: _session.sessionId.isNotEmpty
+                            onPressed:
+                                (_session.sessionId.isNotEmpty && isUpcoming)
                                 ? _handleEditSession
                                 : null,
                             style: FilledButton.styleFrom(

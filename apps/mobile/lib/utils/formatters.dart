@@ -173,9 +173,9 @@ List<String> calendarWeekdayHeaders(String localeCode) {
 String formatCalendarWeekdayShort(DateTime day, String localeCode) =>
     DateFormat('EEE', localeCode).format(day).toUpperCase();
 
-/// Month + year header (`JUN 2026` / `ИЮН 2026` / …).
+/// Month + year header (`JULY 2026` / `ИЮЛЬ 2026` / …).
 String formatCalendarMonthYearUpper(DateTime day, String localeCode) =>
-    DateFormat('MMM yyyy', localeCode).format(day).toUpperCase();
+    DateFormat('MMMM yyyy', localeCode).format(day).toUpperCase();
 
 /// Month, day, year (`JUN 9, 2026`).
 String formatCalendarMonthDayYearUpper(DateTime day, String localeCode) {

@@ -590,6 +590,7 @@ export class FitnessSessionsService {
       const beingCancelled =
         status === TrainingSessionStatus.CANCELLED &&
         session.status !== TrainingSessionStatus.CANCELLED;
+      const cancelNote = dto.note?.trim() || null;
 
       await this.prisma.trainingSession.update({
         where: { id: sessionId },
@@ -599,6 +600,7 @@ export class FitnessSessionsService {
           trainerId,
           locationId,
           status,
+          ...(beingCancelled ? { cancelNote } : {}),
         },
       });
 
@@ -608,6 +610,7 @@ export class FitnessSessionsService {
             className: session.Training?.name || 'class',
             studioName: session.Studio?.name || 'studio',
             startsAt: session.startsAt,
+            note: cancelNote,
           });
         } else if (timeChanged) {
           void this.notificationsService.notifySessionRescheduled(sessionId, {
@@ -714,7 +717,15 @@ export class FitnessSessionsService {
     const beingCancelledBulk =
       dto.status === 'CANCELLED' &&
       session.status !== TrainingSessionStatus.CANCELLED;
+    const cancelNote = dto.note?.trim() || null;
     const timeChangedBulk = timeDeltaMs !== null && timeDeltaMs !== 0;
+
+    if (beingCancelledBulk && cancelNote) {
+      await this.prisma.trainingSession.updateMany({
+        where: { id: { in: rows.map((r) => r.id) } },
+        data: { cancelNote },
+      });
+    }
 
     for (const row of rows) {
       const p = planned.find((x) => x.id === row.id);
@@ -724,6 +735,7 @@ export class FitnessSessionsService {
           className,
           studioName,
           startsAt: row.startsAt,
+          note: cancelNote,
         });
       } else if (timeChangedBulk && p.status === TrainingSessionStatus.ACTIVE) {
         void this.notificationsService.notifySessionRescheduled(row.id, {
@@ -741,6 +753,7 @@ export class FitnessSessionsService {
     authHeader: string,
     sessionId: string,
     status: SessionStatus,
+    note?: string,
   ) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     if (currentUser.user.role !== 'OWNER') {
@@ -759,18 +772,24 @@ export class FitnessSessionsService {
     }
 
     const wasCancelled = session.status === TrainingSessionStatus.CANCELLED;
+    const beingCancelled = status === 'CANCELLED' && !wasCancelled;
+    const cancelNote = note?.trim() || null;
 
     await this.prisma.trainingSession.update({
       where: { id: sessionId },
-      data: { status },
+      data: {
+        status,
+        ...(beingCancelled ? { cancelNote } : {}),
+      },
     });
 
     // Notify enrolled clients when owner cancels a session
-    if (status === 'CANCELLED' && !wasCancelled) {
+    if (beingCancelled) {
       void this.notificationsService.notifySessionCancelled(sessionId, {
         className: session.Training?.name || 'class',
         studioName: session.Studio?.name || 'studio',
         startsAt: session.startsAt,
+        note: cancelNote,
       });
     }
 

@@ -33,6 +33,16 @@ List<String> extractStudioCategoryLabels(
     out.add(t);
   }
 
+  // Raw string labels from the payload (name maps / free-text). The backend
+  // sends these in English even for ru/vi users, so they are only used when a
+  // category cannot be resolved to a localized label via [categoryOptions].
+  final rawLabels = <String>[];
+  void addRaw(String label) {
+    final t = label.trim();
+    if (t.isEmpty || rawLabels.contains(t)) return;
+    rawLabels.add(t);
+  }
+
   String? labelFromMap(Map<String, dynamic> m) {
     switch (localeCode) {
       case 'vi':
@@ -60,9 +70,9 @@ List<String> extractStudioCategoryLabels(
     for (final c in raw) {
       if (c is Map) {
         final label = labelFromMap(Map<String, dynamic>.from(c));
-        if (label != null) addUnique(label);
+        if (label != null) addRaw(label);
       } else if (!isCategoryId(c)) {
-        addUnique(c.toString());
+        addRaw(c.toString());
       }
     }
   }
@@ -97,23 +107,39 @@ List<String> extractStudioCategoryLabels(
       final tc = m['trainingCategory'] ?? m['training_category'];
       if (tc is Map) {
         final label = labelFromMap(Map<String, dynamic>.from(tc));
-        if (label != null) addUnique(label);
+        if (label != null) addRaw(label);
       }
       addId(m['trainingCategoryId'] ?? m['training_category_id']);
     }
   }
 
-  if (categoryOptions != null && categoryOptions.isNotEmpty) {
+  // Resolve category ids to labels localized for the active locale. These are
+  // preferred over [rawLabels] because the payload's raw category strings are
+  // English-only.
+  final resolvedOptions = <TrainingCategoryOption>[];
+  if (categoryOptions != null && categoryOptions.isNotEmpty && ids.isNotEmpty) {
     final sortedIds = TrainingCategoryOption.sortIdsWithOtherLast(
       ids,
       categoryOptions,
     );
     for (final id in sortedIds) {
       final opt = TrainingCategoryOption.findById(id, categoryOptions);
-      if (opt != null) {
-        addUnique(opt.label(localeCode));
-      }
+      if (opt != null) resolvedOptions.add(opt);
     }
+  }
+
+  for (final opt in resolvedOptions) {
+    addUnique(opt.label(localeCode));
+  }
+
+  // Add any raw label that isn't already covered by a resolved (localized)
+  // category, so free-text categories without a matching id are not dropped.
+  final coveredEn = resolvedOptions
+      .map((o) => o.nameEn.trim().toLowerCase())
+      .toSet();
+  for (final label in rawLabels) {
+    if (coveredEn.contains(label.trim().toLowerCase())) continue;
+    addUnique(label);
   }
 
   return TrainingCategoryOption.sortLabelsWithOtherLast(

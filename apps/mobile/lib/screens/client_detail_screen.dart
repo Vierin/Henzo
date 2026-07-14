@@ -19,6 +19,7 @@ import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/synthetic_guest.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import '../../widgets/client/client_detail_skeleton.dart';
 import 'book_client_session_screen.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -478,9 +479,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       body: _loading
           ? const ColoredBox(
               color: _kClientPageBg,
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary500),
-              ),
+              child: ClientDetailSkeleton(),
             )
           : RefreshIndicator(
               onRefresh: _loadData,

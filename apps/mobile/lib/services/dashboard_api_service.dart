@@ -1005,12 +1005,16 @@ class DashboardApiService {
   static Future<void> updateOwnerTrainingSessionStatus(
     String accessToken,
     String sessionId,
-    String status,
-  ) async {
+    String status, {
+    String? note,
+  }) async {
     await ApiClient.put(
       '/fitness/owner/training-sessions/$sessionId/status',
       accessToken,
-      body: {'status': status},
+      body: {
+        'status': status,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
     );
   }
 

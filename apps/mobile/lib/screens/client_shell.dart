@@ -30,10 +30,34 @@ class _ClientShellState extends State<ClientShell> {
   final GlobalKey<ClientSearchScreenState> _exploreScreenKey =
       GlobalKey<ClientSearchScreenState>();
 
+  LocaleProvider? _localeProvider;
+  String? _registeredLanguage;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _registerPushToken());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _localeProvider = context.read<LocaleProvider>()
+        ..addListener(_onLocaleChanged);
+      _registerPushToken();
+    });
+  }
+
+  @override
+  void dispose() {
+    _localeProvider?.removeListener(_onLocaleChanged);
+    super.dispose();
+  }
+
+  /// Re-register the push token whenever the app language changes so the
+  /// backend stores/sends notifications (and the inbox record) in the current
+  /// language.
+  void _onLocaleChanged() {
+    final lang = _localeProvider?.localeCode;
+    if (lang != null && lang != _registeredLanguage) {
+      _registerPushToken();
+    }
   }
 
   Future<void> _registerPushToken() async {
@@ -43,6 +67,7 @@ class _ClientShellState extends State<ClientShell> {
     final locale = context.read<LocaleProvider>();
     await PushNotificationService.requestNotificationPermission();
     if (!mounted) return;
+    _registeredLanguage = locale.localeCode;
     PushNotificationService.registerToken(
       accessToken: token,
       language: locale.localeCode,

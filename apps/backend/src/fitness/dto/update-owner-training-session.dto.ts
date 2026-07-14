@@ -1,4 +1,11 @@
-import { IsBoolean, IsIn, IsISO8601, IsOptional } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 /** PATCH body — все поля опциональны; непереданное поле не меняется. */
 export class UpdateOwnerTrainingSessionDto {
@@ -27,4 +34,13 @@ export class UpdateOwnerTrainingSessionDto {
   @IsOptional()
   @IsBoolean()
   applyToFollowing?: boolean;
+
+  /**
+   * Optional free-text note shown to enrolled clients when the session is
+   * cancelled (status = CANCELLED). Ignored for non-cancel updates.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }

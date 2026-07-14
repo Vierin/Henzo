@@ -195,6 +195,7 @@ model TrainingSession {
   bookedCount   Int                 @default(0)
   waitlistCount Int                 @default(0)
   status        TrainingSessionStatus @default(ACTIVE)
+  cancelNote    String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   Studio        Studio              @relation(fields: [studioId], references: [id], onDelete: Cascade)

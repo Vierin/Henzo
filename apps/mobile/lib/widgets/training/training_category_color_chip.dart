@@ -78,6 +78,9 @@ class TrainingCategoryColorChip extends StatelessWidget {
               letterSpacing: -0.3,
               fontSize: 13.sp,
               height: lineHeight,
+              // Split the extra line-height evenly above/below the glyphs so
+              // descenders (g, y, p, q, j) aren't clipped at the bottom.
+              leadingDistribution: TextLeadingDistribution.even,
             ),
           ),
         ),

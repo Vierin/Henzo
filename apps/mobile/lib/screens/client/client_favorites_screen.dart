@@ -140,7 +140,7 @@ class _ClientFavoritesScreenState extends State<ClientFavoritesScreen> {
                   ),
                 ],
               )
-            : ListView.builder(
+            : GridView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
                   kScreenPaddingHorizontal,
@@ -148,35 +148,36 @@ class _ClientFavoritesScreenState extends State<ClientFavoritesScreen> {
                   kScreenPaddingHorizontal,
                   24,
                 ),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      mainAxisExtent: 210,
+                    ),
                 itemCount: favorites.length,
                 itemBuilder: (_, index) {
                   final studio = _studioPreview(
                     favorites[index],
                     locale.localeCode,
                   );
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: SizedBox(
-                      height: 190,
-                      child: TopStudioCard(
-                        homeLayout: true,
-                        studio: studio,
-                        categoryOptions: _trainingCategories,
-                        isFavorite: favoritesStore.isFavorite(studio.id),
-                        isFavoriteLoading: _favoriteLoadingIds.contains(
-                          studio.id,
-                        ),
-                        onToggleFavorite: () => _toggleFavorite(studio),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  PublicStudioDetailScreen(studioId: studio.id),
-                            ),
-                          );
-                        },
-                      ),
+                  return TopStudioCard(
+                    gridLayout: true,
+                    studio: studio,
+                    categoryOptions: _trainingCategories,
+                    isFavorite: favoritesStore.isFavorite(studio.id),
+                    isFavoriteLoading: _favoriteLoadingIds.contains(
+                      studio.id,
                     ),
+                    onToggleFavorite: () => _toggleFavorite(studio),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              PublicStudioDetailScreen(studioId: studio.id),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
