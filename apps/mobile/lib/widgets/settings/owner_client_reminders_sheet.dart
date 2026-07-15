@@ -67,41 +67,38 @@ ClientReminderRule _ruleFromJson(Map<String, dynamic> j) {
   );
 }
 
-/// Reads the studio's two reminder slots (defaults: 24h + 1h, both on).
+/// Reads the studio's two reminder slots. Slot 0 is always "day before"
+/// (evening at HH:MM, default 20:00), slot 1 is always "hours before" (default
+/// 1h). Both default to enabled.
 List<ClientReminderRule> extractClientReminders(Studio? studio) {
-  final defaults = [
-    ClientReminderRule(
-      enabled: true,
-      mode: 'hoursBefore',
-      hours: 24,
-      time: const TimeOfDay(hour: 20, minute: 0),
-    ),
-    ClientReminderRule(
-      enabled: true,
-      mode: 'hoursBefore',
-      hours: 1,
-      time: const TimeOfDay(hour: 20, minute: 0),
-    ),
-  ];
-  final raw = studio?.reminderSettings?['clientReminders'];
-  if (raw is! List || raw.isEmpty) return defaults;
+  final evening = ClientReminderRule(
+    enabled: true,
+    mode: 'eveningBefore',
+    hours: 1,
+    time: const TimeOfDay(hour: 20, minute: 0),
+  );
+  final hoursBefore = ClientReminderRule(
+    enabled: true,
+    mode: 'hoursBefore',
+    hours: 1,
+    time: const TimeOfDay(hour: 20, minute: 0),
+  );
 
-  final rules = <ClientReminderRule>[];
-  for (final e in raw.take(2)) {
-    if (e is Map) rules.add(_ruleFromJson(Map<String, dynamic>.from(e)));
+  final raw = studio?.reminderSettings?['clientReminders'];
+  if (raw is List) {
+    for (final e in raw) {
+      if (e is! Map) continue;
+      final r = _ruleFromJson(Map<String, dynamic>.from(e));
+      if (r.mode == 'eveningBefore') {
+        evening.enabled = r.enabled;
+        evening.time = r.time;
+      } else {
+        hoursBefore.enabled = r.enabled;
+        hoursBefore.hours = r.hours;
+      }
+    }
   }
-  while (rules.length < 2) {
-    final d = defaults[rules.length];
-    rules.add(
-      ClientReminderRule(
-        enabled: false,
-        mode: d.mode,
-        hours: d.hours,
-        time: d.time,
-      ),
-    );
-  }
-  return rules;
+  return [evening, hoursBefore];
 }
 
 /// Short summary of enabled reminders for the settings row trailing text.
@@ -188,44 +185,11 @@ Future<bool?> showOwnerClientRemindersSheet(
             if (ok) Navigator.of(sheetContext).pop(true);
           }
 
-          Widget modeButton({
-            required String label,
-            required bool selected,
-            required VoidCallback onTap,
-          }) {
-            return Expanded(
-              child: GestureDetector(
-                onTap: applying ? null : onTap,
-                child: Container(
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary500
-                        : AppColors.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.primary500
-                          : AppColors.borderPrimary,
-                    ),
-                  ),
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }
-
           Widget ruleEditor(int index) {
             final rule = rules[index];
+            final title = index == 0
+                ? locale.t('settings.owner.reminderDayBeforeTitle')
+                : locale.t('settings.owner.reminderBeforeClassTitle');
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
@@ -240,9 +204,7 @@ Future<bool?> showOwnerClientRemindersSheet(
                     children: [
                       Expanded(
                         child: Text(
-                          locale
-                              .t('settings.owner.reminderSlot')
-                              .replaceAll('{n}', '${index + 1}'),
+                          title,
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w700,
@@ -260,24 +222,6 @@ Future<bool?> showOwnerClientRemindersSheet(
                     ],
                   ),
                   if (rule.enabled) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        modeButton(
-                          label: locale.t('settings.owner.reminderModeHours'),
-                          selected: rule.mode == 'hoursBefore',
-                          onTap: () =>
-                              setModalState(() => rule.mode = 'hoursBefore'),
-                        ),
-                        const SizedBox(width: 8),
-                        modeButton(
-                          label: locale.t('settings.owner.reminderModeEvening'),
-                          selected: rule.mode == 'eveningBefore',
-                          onTap: () =>
-                              setModalState(() => rule.mode = 'eveningBefore'),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 12),
                     if (rule.mode == 'hoursBefore')
                       Row(

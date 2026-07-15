@@ -13,6 +13,7 @@ import { StripeCheckoutService } from './stripe-checkout.service';
 import { RevenueCatService } from './revenuecat.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
+import { PlanLimitsService } from './plan-limits.service';
 
 /** ISO 4217 zero-decimal currencies (Stripe `unit_amount` is whole major units). */
 const ZERO_DECIMAL_CURRENCIES = new Set([
@@ -52,6 +53,7 @@ export class SubscriptionsService {
     private readonly revenueCat: RevenueCatService,
     private readonly adminEventLog: AdminEventLogService,
     private readonly analytics: AnalyticsService,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   private async logSubscriptionFailed(
@@ -84,6 +86,22 @@ export class SubscriptionsService {
       where: { studioId: studio.id },
     });
     return sub ? this.toCurrentPayload(sub) : null;
+  }
+
+  /**
+   * Current plan usage (sessions this month, trainers) for the owner's studio.
+   * Unlike analytics, this is not gated behind Pro so Solo owners see their
+   * real usage against the cap.
+   */
+  async getUsageForOwner(userId: string) {
+    const studio = await this.prisma.studio.findFirst({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    if (!studio) {
+      return null;
+    }
+    return this.planLimits.getStudioUsage(studio.id);
   }
 
   async syncCheckoutSession(userId: string, sessionId: string) {

@@ -94,25 +94,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     final studioCache = context.read<StudioCache>();
     final staffCache = context.read<ServicesStaffCache>();
     try {
-      final now = DateTime.now();
-      final monthStart = DateTime(now.year, now.month, 1);
-      final monthEnd = DateTime(
-        now.year,
-        now.month + 1,
-        1,
-      ).subtract(const Duration(seconds: 1));
       final results = await Future.wait([
         studioCache.getStudio(token),
         DashboardApiService.getCurrentSubscription(token),
-        DashboardApiService.getCurrentStudioAnalytics(
-          token,
-          fromIso: monthStart.toIso8601String(),
-          toIso: monthEnd.toIso8601String(),
-        ),
+        DashboardApiService.getSubscriptionUsage(token),
       ]);
       final studio = results[0] as Studio?;
       final sub = results[1] as Subscription?;
-      final analytics = results[2] as StudioAnalytics?;
+      final usage = results[2] as PlanUsage?;
       final services = studio != null
           ? await staffCache.getServicesForStudio(token, studio.id)
           : const [];
@@ -128,7 +117,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         _servicesCount = services.length;
         _staffCount = _teamDisplayCount(staff, owner);
         _subscription = sub;
-        _monthlySessionsCount = analytics?.trainingSessionsScheduled ?? 0;
+        _monthlySessionsCount = usage?.sessionsUsed ?? 0;
         _statsLoading = false;
         _subscriptionLoading = false;
       });
@@ -321,6 +310,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-bell.svg',
+                        svgIconSize: 16,
                         title: locale.t('settings.owner.clientNotifications'),
                         trailingText: clientRemindersSummary(_studio, locale),
                         onTap: _openClientRemindersSheet,

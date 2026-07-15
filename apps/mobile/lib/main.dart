@@ -27,6 +27,7 @@ import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
+import 'screens/registration_role_screen.dart';
 import 'screens/trainer/trainer_shell.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
@@ -42,6 +43,7 @@ import 'services/push_notification_service.dart';
 import 'services/revenuecat_service.dart';
 import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
+import 'utils/auth_entry_prefs.dart';
 import 'utils/owner_image_picker.dart';
 
 @pragma('vm:entry-point')
@@ -127,6 +129,7 @@ Future<void> main() async {
         url: AppConfig.supabaseUrl,
         anonKey: AppConfig.supabaseAnonKey,
       );
+      await AuthEntryPrefs.load();
       await RevenueCatService.configure();
       runApp(
         MyApp(
@@ -356,39 +359,48 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthService>(
-      builder: (context, auth, _) {
-        if (!auth.isInitialSessionReady) {
-          final hasStoredSession =
-              Supabase.instance.client.auth.currentSession != null;
-          return Scaffold(
-            body: hasStoredSession
-                ? const WorkspaceLoadingView()
-                : const Center(child: CircularProgressIndicator()),
-          );
-        }
+    return ValueListenableBuilder<bool?>(
+      valueListenable: AuthEntryPrefs.completed,
+      builder: (context, introCompleted, _) {
+        return Consumer<AuthService>(
+          builder: (context, auth, _) {
+            if (!auth.isInitialSessionReady || introCompleted == null) {
+              final hasStoredSession =
+                  Supabase.instance.client.auth.currentSession != null;
+              return Scaffold(
+                body: hasStoredSession
+                    ? const WorkspaceLoadingView()
+                    : const Center(child: CircularProgressIndicator()),
+              );
+            }
 
-        final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
-        final currentUserId = auth.user?.id;
-        final sessionKey = ValueKey<String?>(currentUserId);
+            final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
+            final currentUserId = auth.user?.id;
+            final sessionKey = ValueKey<String?>(currentUserId);
 
-        if (ownerAllowed) {
-          return MainShell(key: sessionKey);
-        }
+            if (ownerAllowed) {
+              return MainShell(key: sessionKey);
+            }
 
-        if (auth.isAuthenticated && auth.isTrainer) {
-          return TrainerShell(key: sessionKey);
-        }
+            if (auth.isAuthenticated && auth.isTrainer) {
+              return TrainerShell(key: sessionKey);
+            }
 
-        if (auth.isAuthenticated && auth.isClient) {
-          return ClientShell(key: sessionKey);
-        }
+            if (auth.isAuthenticated && auth.isClient) {
+              return ClientShell(key: sessionKey);
+            }
 
-        if (auth.isAuthenticated) {
-          return const NonOwnerGateScreen();
-        }
+            if (auth.isAuthenticated) {
+              return const NonOwnerGateScreen();
+            }
 
-        return const LoginScreen();
+            if (!introCompleted) {
+              return const RegistrationRoleScreen(isRootEntry: true);
+            }
+
+            return const LoginScreen();
+          },
+        );
       },
     );
   }

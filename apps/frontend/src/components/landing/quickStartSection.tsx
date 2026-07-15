@@ -1,8 +1,9 @@
 'use client';
 
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { scheduleScrollTriggerRefresh } from '@/utils/viewport';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
@@ -190,6 +191,7 @@ function parseSteps(raw: unknown): Step[] {
 }
 
 export function QuickStartSection() {
+  const { language } = useLanguage();
   const t = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const desktopWrapRef = useRef<HTMLDivElement>(null);
@@ -208,13 +210,19 @@ export function QuickStartSection() {
   const line2Accent = String(t(`${BASE}.line2Accent`));
 
   const rawSteps = t(`${BASE}.steps`);
-  const steps = useMemo(() => parseSteps(rawSteps), [rawSteps]);
+  const steps = useMemo(() => parseSteps(rawSteps), [language, rawSteps]);
+
+  useEffect(() => {
+    setDesktopActiveStep(0);
+    setMobileActiveStep(0);
+  }, [language, line1, line2Before, line2Accent]);
 
   useLayoutEffect(() => {
     if (steps.length === 0) {
       return;
     }
     gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
 
     const labels = labelRefs.current.filter(
       (el): el is HTMLSpanElement => el !== null,
@@ -373,10 +381,19 @@ export function QuickStartSection() {
       };
     }, sectionRef);
 
+    scheduleScrollTriggerRefresh();
+
     return () => {
       ctx.revert();
     };
-  }, [steps]);
+  }, [language, steps, line1, line2Before, line2Accent]);
+
+  useEffect(() => {
+    if (steps.length === 0) {
+      return;
+    }
+    scheduleScrollTriggerRefresh();
+  }, [language, steps, line1, line2Before, line2Accent]);
 
   useEffect(() => {
     const stepEl = mobileStepRef.current;

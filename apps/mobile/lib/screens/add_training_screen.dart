@@ -1489,73 +1489,87 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
     setState(() => _saving = true);
     try {
-      final created = await ServicesApiService.create(
-        token,
-        studioId: studioId,
-        name: name,
-        duration: duration,
-        price: price,
-        trainingCategoryId: _selectedCategoryId,
-        description: _descriptionController.text.trim(),
-        language: _selectedLanguage,
-      );
-      if (!mounted) return;
-      if (created != null) {
-        final sessionDay = _sessionDayOnly;
-        final recurringResult =
-            await DashboardApiService.createRecurringTrainingSessions(
-              token,
-              studioId: studioId,
-              trainingId: created.id,
-              trainerId: _isProPlan ? _selectedTrainerId : null,
-              locationId: _selectedLocationId,
-              capacity: capacity,
-              daysOfWeek: _isRecurring ? null : recurringDays,
-              startTime: _isRecurring ? null : _timeToHm(_sessionTime),
-              slots: _isRecurring
-                  ? recurringDays
-                        .map(
-                          (d) => RecurringSlot(
-                            day: d,
-                            startTime: _timeToHm(
-                              _recurringDayTimes[d] ?? _sessionTime,
-                            ),
-                          ),
-                        )
-                        .toList()
-                  : null,
-              weeksCount: _isRecurring ? _weeksCountForRecurringApi() : 1,
-              startsFromDate: sessionDay,
-              endsOnDate: _isRecurring ? _recurringEndDayOnly : sessionDay,
-            );
-        if (!mounted) return;
-        final skippedText = recurringResult.skippedCount > 0
-            ? ', пропущено из-за конфликтов: ${recurringResult.skippedCount}'
-            : '';
-        final createdN = recurringResult.createdCount;
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(
-              _isRecurring
-                  ? 'Тренировка добавлена. Создано занятий: $createdN$skippedText'
-                  : createdN == 1
-                  ? 'Тренировка и занятие добавлены$skippedText'
-                  : 'Тренировка добавлена. Создано занятий: $createdN$skippedText',
-            ),
-          ),
-        );
-        context.read<ServicesStaffCache>().invalidateServices(studioId);
-        context.read<OwnerSessionsCache>().invalidate();
-        Navigator.of(context).pop(true);
-      } else {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(
-              context.read<LocaleProvider>().t('common.errorGeneric'),
-            ),
-          ),
-        );
+      // A training name is unique per studio. If one with this name already
+      // exists (e.g. picked from search to extend it with more sessions), reuse
+      // it instead of creating a duplicate (which would fail).
+      String? trainingId;
+      for (final e in _existing) {
+        if (e.name.trim() == name) {
+          trainingId = e.id;
+          break;
+        }
       }
+      if (trainingId == null) {
+        final created = await ServicesApiService.create(
+          token,
+          studioId: studioId,
+          name: name,
+          duration: duration,
+          price: price,
+          trainingCategoryId: _selectedCategoryId,
+          description: _descriptionController.text.trim(),
+          language: _selectedLanguage,
+        );
+        if (!mounted) return;
+        if (created == null) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(
+                context.read<LocaleProvider>().t('common.errorGeneric'),
+              ),
+            ),
+          );
+          return;
+        }
+        trainingId = created.id;
+      }
+
+      final sessionDay = _sessionDayOnly;
+      final recurringResult =
+          await DashboardApiService.createRecurringTrainingSessions(
+            token,
+            studioId: studioId,
+            trainingId: trainingId,
+            trainerId: _isProPlan ? _selectedTrainerId : null,
+            locationId: _selectedLocationId,
+            capacity: capacity,
+            daysOfWeek: _isRecurring ? null : recurringDays,
+            startTime: _isRecurring ? null : _timeToHm(_sessionTime),
+            slots: _isRecurring
+                ? recurringDays
+                      .map(
+                        (d) => RecurringSlot(
+                          day: d,
+                          startTime: _timeToHm(
+                            _recurringDayTimes[d] ?? _sessionTime,
+                          ),
+                        ),
+                      )
+                      .toList()
+                : null,
+            weeksCount: _isRecurring ? _weeksCountForRecurringApi() : 1,
+            startsFromDate: sessionDay,
+            endsOnDate: _isRecurring ? _recurringEndDayOnly : sessionDay,
+          );
+      if (!mounted) return;
+      final skippedText = recurringResult.skippedCount > 0
+          ? ', пропущено из-за конфликтов: ${recurringResult.skippedCount}'
+          : '';
+      final createdN = recurringResult.createdCount;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            _isRecurring
+                ? 'Тренировка добавлена. Создано занятий: $createdN$skippedText'
+                : createdN == 1
+                ? 'Тренировка и занятие добавлены$skippedText'
+                : 'Тренировка добавлена. Создано занятий: $createdN$skippedText',
+          ),
+        ),
+      );
+      context.read<ServicesStaffCache>().invalidateServices(studioId);
+      context.read<OwnerSessionsCache>().invalidate();
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       if (isSessionPlanLimitError(e)) {
