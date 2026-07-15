@@ -84,8 +84,8 @@ class ClientBrowseFilterSheets {
                         SizedBox(
                           width: double.infinity,
                           child: TextButton(
-                            onPressed: () =>
-                                setModalState(() => tempSelection = -1),
+                            // Reset clears the filter and closes immediately.
+                            onPressed: () => Navigator.of(ctx).pop(-1),
                             style: browseFilterResetButtonStyle(),
                             child: Text(
                               context.read<LocaleProvider>().t('common.reset'),
@@ -171,8 +171,9 @@ class ClientBrowseFilterSheets {
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
+                          // Reset clears the filter and closes immediately.
                           onPressed: () =>
-                              setModalState(() => tempLanguages.clear()),
+                              Navigator.of(ctx).pop(const <String>[]),
                           style: browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
@@ -364,12 +365,12 @@ class ClientBrowseFilterSheets {
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
-                          onPressed: () {
-                            setModalState(() {
-                              tempPeriods.clear();
-                              tempRange = kExploreDefaultTimeRange;
-                            });
-                          },
+                          // Reset clears the filter and closes immediately.
+                          onPressed: () => Navigator.of(ctx).pop({
+                            'periods': const <String>[],
+                            'start': kExploreDefaultTimeRange.start,
+                            'end': kExploreDefaultTimeRange.end,
+                          }),
                           style: browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
@@ -464,8 +465,9 @@ class ClientBrowseFilterSheets {
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
+                          // Reset clears the filter and closes immediately.
                           onPressed: () =>
-                              setModalState(() => temp = 'recommended'),
+                              Navigator.of(ctx).pop('recommended'),
                           style: browseFilterResetButtonStyle(),
                           child: Text(
                             context.read<LocaleProvider>().t('common.reset'),
@@ -537,8 +539,8 @@ class ClientBrowseFilterSheets {
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
-                          onPressed: () =>
-                              setModalState(() => tempDistance = 'auto'),
+                          // Reset clears the filter and closes immediately.
+                          onPressed: () => Navigator.of(ctx).pop('auto'),
                           style: browseFilterResetButtonStyle(),
                           child: Text(tr('common.reset')),
                         ),
@@ -804,15 +806,15 @@ class ClientBrowseFilterSheets {
                         SizedBox(
                           width: double.infinity,
                           child: TextButton(
-                            onPressed: () {
-                              setModalState(() {
-                                tempSort = 'recommended';
-                                tempDistance = 'auto';
-                                tempPeriods.clear();
-                                tempLanguages.clear();
-                                tempRange = kExploreDefaultTimeRange;
-                              });
-                            },
+                            // Reset clears all filters and closes immediately.
+                            onPressed: () => Navigator.of(ctx).pop({
+                              'sort': 'recommended',
+                              'distance': 'auto',
+                              'periods': const <String>[],
+                              'languages': const <String>[],
+                              'start': kExploreDefaultTimeRange.start,
+                              'end': kExploreDefaultTimeRange.end,
+                            }),
                             style: browseFilterResetButtonStyle(),
                             child: Text(tr('common.reset')),
                           ),
