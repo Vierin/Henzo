@@ -740,7 +740,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       return timeRange;
     }
-    return '$timeRange · With ${_displayTrainer(s)}';
+    final withTrainer = loc
+        .t('dashboard.featuredWith')
+        .replaceAll('{name}', _displayTrainer(s));
+    return '$timeRange · $withTrainer';
   }
 
   Widget _featuredCard(
@@ -801,8 +804,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(width: 6),
                           Text(
                             isToday
-                                ? 'TODAY'
-                                : 'NEXT · ${_formatNextDate(s, loc.localeCode)}',
+                                ? loc.t('dashboard.featuredToday')
+                                : '${loc.t('dashboard.featuredNext')} · ${_formatNextDate(s, loc.localeCode)}',
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w700,

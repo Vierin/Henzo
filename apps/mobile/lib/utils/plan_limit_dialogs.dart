@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config/plan_limits.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/common/henzo_modal.dart';
@@ -96,6 +97,18 @@ Future<void> showSessionPlanLimitDialog(
   final locale = context.read<LocaleProvider>();
   final code = error is ApiException ? error.errorCode : null;
   final isStudio = _isStudioLimitCode(code);
+  final limit = isStudio
+      ? PlanLimits.studioSessionsPerMonth
+      : PlanLimits.soloSessionsPerMonth;
+  // The cap is hit when used >= limit, so at this point used equals the limit.
+  final body = locale
+      .t(
+        isStudio
+            ? 'subscription.studioClassLimitBody'
+            : 'subscription.soloClassLimitBody',
+      )
+      .replaceAll('{used}', '$limit')
+      .replaceAll('{limit}', '$limit');
   await showHenzoDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -106,13 +119,7 @@ Future<void> showSessionPlanLimitDialog(
               : 'subscription.soloClassLimitTitle',
         ),
       ),
-      content: Text(
-        locale.t(
-          isStudio
-              ? 'subscription.studioClassLimitBody'
-              : 'subscription.soloClassLimitBody',
-        ),
-      ),
+      content: Text(body),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),

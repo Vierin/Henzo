@@ -56,14 +56,7 @@ export class PlanLimitsService {
     }
   }
 
-  /**
-   * Throws 403 if the studio reached its plan monthly session cap (Solo / Studio).
-   */
-  async assertMonthlySessionsLimit(studioId: string): Promise<void> {
-    const tier = await this.subscriptionTypeForStudio(studioId);
-    const quota = planQuotaForType(tier);
-    if (!quota) return;
-
+  private monthWindow(): { monthStart: Date; monthEnd: Date } {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(
@@ -75,14 +68,57 @@ export class PlanLimitsService {
       59,
       999,
     );
+    return { monthStart, monthEnd };
+  }
 
-    const count = await this.prisma.trainingSession.count({
+  /** Sessions created this month that count toward the plan cap. */
+  private async monthlySessionsCount(studioId: string): Promise<number> {
+    const { monthStart, monthEnd } = this.monthWindow();
+    return this.prisma.trainingSession.count({
       where: {
         studioId,
         startsAt: { gte: monthStart, lte: monthEnd },
         status: { not: 'CANCELLED' },
       },
     });
+  }
+
+  /**
+   * Current usage vs. plan caps for a studio, regardless of tier. Powers the
+   * settings usage counter and the "12/12" limit dialog. A `null` limit means
+   * the tier is uncapped (Enterprise).
+   */
+  async getStudioUsage(studioId: string): Promise<{
+    tier: SubscriptionType;
+    sessionsUsed: number;
+    sessionsLimit: number | null;
+    trainersUsed: number;
+    trainersLimit: number | null;
+  }> {
+    const tier = await this.subscriptionTypeForStudio(studioId);
+    const quota = planQuotaForType(tier);
+    const [sessionsUsed, trainersUsed] = await Promise.all([
+      this.monthlySessionsCount(studioId),
+      this.prisma.trainer.count({ where: { studioId } }),
+    ]);
+    return {
+      tier,
+      sessionsUsed,
+      sessionsLimit: quota ? quota.sessionsPerMonth : null,
+      trainersUsed,
+      trainersLimit: quota ? quota.trainerLimit : null,
+    };
+  }
+
+  /**
+   * Throws 403 if the studio reached its plan monthly session cap (Solo / Studio).
+   */
+  async assertMonthlySessionsLimit(studioId: string): Promise<void> {
+    const tier = await this.subscriptionTypeForStudio(studioId);
+    const quota = planQuotaForType(tier);
+    if (!quota) return;
+
+    const count = await this.monthlySessionsCount(studioId);
 
     if (count >= quota.sessionsPerMonth) {
       const isStudio = tier === SubscriptionType.STUDIO;

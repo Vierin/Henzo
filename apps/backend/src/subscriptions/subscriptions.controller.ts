@@ -71,6 +71,22 @@ export class SubscriptionsController {
   }
 
   /**
+   * Current plan usage (monthly sessions, trainers) vs. caps for the owner's
+   * studio. Powers the settings usage counter and the limit dialog.
+   */
+  @Get('usage')
+  async getUsage(@Headers('authorization') authHeader: string) {
+    const { user } = await this.authService.getCurrentUser(authHeader);
+    if (user.role !== 'OWNER') {
+      throw new ForbiddenException(
+        'Only studio owners have subscriptions here',
+      );
+    }
+    const data = await this.subscriptions.getUsageForOwner(user.id);
+    return { success: true, data };
+  }
+
+  /**
    * After Stripe Checkout redirect: pull session + subscription from Stripe and persist Pro in DB.
    */
   @Post('sync-checkout-session')

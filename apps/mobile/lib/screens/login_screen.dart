@@ -5,6 +5,7 @@ import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../l10n/auth_error_keys.dart';
 import '../l10n/locale_provider.dart';
 import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
@@ -79,16 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isGoogleLoading = false);
 
-    final locale = context.read<LocaleProvider>();
-    if (result.success) {
-    } else {
-      final msg = resolveAuthUiMessage(locale, result);
-      if (msg.isNotEmpty) {
-        showApiError(context, msg);
-      } else {
-        showApiError(context, locale.t('auth.signInError'));
-      }
-    }
+    _handleOAuthResult(result);
   }
 
   Future<void> _submitApple() async {
@@ -101,16 +93,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isAppleLoading = false);
 
+    _handleOAuthResult(result);
+  }
+
+  /// Google/Apple sign-in landed a Supabase session but no account exists in our
+  /// system yet (`ACCOUNT_NOT_FOUND`). Rather than dead-ending on an error —
+  /// which would also leave an orphaned Supabase auth user that later blocks
+  /// email registration — send the new user to the role picker, where the
+  /// "Sign up with Google/Apple" button provisions the account with the role
+  /// they choose (OWNER or CLIENT).
+  void _handleOAuthResult(AuthUiResult result) {
+    if (!mounted) return;
+    if (result.success) return;
+
     final locale = context.read<LocaleProvider>();
-    if (result.success) {
-    } else {
-      final msg = resolveAuthUiMessage(locale, result);
-      if (msg.isNotEmpty) {
-        showApiError(context, msg);
-      } else {
-        showApiError(context, locale.t('auth.signInError'));
-      }
+    if (result.errorL10nKey == AuthErrorKeys.accountNotFoundForEmail) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('auth.noAccountChooseRegistration'))),
+      );
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()),
+      );
+      return;
     }
+
+    final msg = resolveAuthUiMessage(locale, result);
+    showApiError(
+      context,
+      msg.isNotEmpty ? msg : locale.t('auth.signInError'),
+    );
   }
 
   Future<void> _openRegister() async {

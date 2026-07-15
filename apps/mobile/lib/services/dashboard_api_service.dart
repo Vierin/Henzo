@@ -313,6 +313,34 @@ class RecurringSlot {
   Map<String, dynamic> toJson() => {'day': day, 'startTime': startTime};
 }
 
+/// Current plan usage vs. caps. A `null` limit means the tier is uncapped.
+class PlanUsage {
+  final String tier;
+  final int sessionsUsed;
+  final int? sessionsLimit;
+  final int trainersUsed;
+  final int? trainersLimit;
+
+  const PlanUsage({
+    required this.tier,
+    required this.sessionsUsed,
+    required this.sessionsLimit,
+    required this.trainersUsed,
+    required this.trainersLimit,
+  });
+
+  factory PlanUsage.fromJson(Map<String, dynamic> json) {
+    int? asIntOrNull(dynamic v) => v == null ? null : (v as num).toInt();
+    return PlanUsage(
+      tier: (json['tier'] ?? 'SOLO').toString(),
+      sessionsUsed: (json['sessionsUsed'] as num?)?.toInt() ?? 0,
+      sessionsLimit: asIntOrNull(json['sessionsLimit']),
+      trainersUsed: (json['trainersUsed'] as num?)?.toInt() ?? 0,
+      trainersLimit: asIntOrNull(json['trainersLimit']),
+    );
+  }
+}
+
 class OwnerSessionEnrollment {
   final String enrollmentId;
   final String userId;
@@ -663,6 +691,22 @@ class DashboardApiService {
       return null;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[DashboardAPI] getCurrentSubscription: $e');
+      return null;
+    }
+  }
+
+  /// GET /subscriptions/usage — реальное использование квоты (не зависит от Pro).
+  static Future<PlanUsage?> getSubscriptionUsage(String accessToken) async {
+    try {
+      final body = await ApiClient.get('/subscriptions/usage', accessToken);
+      if (body is! Map<String, dynamic>) return null;
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return PlanUsage.fromJson(Map<String, dynamic>.from(data));
+      }
+      return null;
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[DashboardAPI] getSubscriptionUsage: $e');
       return null;
     }
   }
