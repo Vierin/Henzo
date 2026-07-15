@@ -13,6 +13,7 @@ import '../config/app_config.dart';
 import '../l10n/auth_error_keys.dart';
 import '../models/trainer_info.dart';
 import '../models/user_model.dart';
+import '../utils/auth_entry_prefs.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/owner_navigation_restore.dart';
 import '../utils/trainer_invite_pending.dart';
@@ -304,6 +305,7 @@ class AuthService extends ChangeNotifier {
           debugPrint('[Auth] User loaded: ${_user?.email} role=${_user?.role}');
         }
         if (_user != null) {
+          unawaited(AuthEntryPrefs.markCompleted());
           unawaited(
             AnalyticsService.instance.setUser(_user!.id, role: _user!.role),
           );

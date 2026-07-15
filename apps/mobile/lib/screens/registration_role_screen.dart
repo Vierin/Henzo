@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../utils/auth_entry_prefs.dart';
 import '../utils/legal_web_links.dart';
 import '../widgets/chaotic_underline.dart';
 import '../widgets/common/henzo_header_back_button.dart';
@@ -13,13 +14,26 @@ import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
 
 class RegistrationRoleScreen extends StatelessWidget {
-  const RegistrationRoleScreen({super.key});
+  const RegistrationRoleScreen({
+    super.key,
+    this.isRootEntry = false,
+  });
+
+  /// Cold-start first-run: no back, "Already have account" → Login.
+  final bool isRootEntry;
 
   static const Map<String, String> _languageLabels = {
     'en': 'English',
     'ru': 'Русский',
     'vi': 'Tiếng Việt',
   };
+
+  Future<void> _goToLogin(BuildContext context) async {
+    await AuthEntryPrefs.markCompleted();
+    if (!isRootEntry && context.mounted) {
+      Navigator.of(context).maybePop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +48,12 @@ class RegistrationRoleScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    HenzoHeaderBackButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
+                    if (!isRootEntry)
+                      HenzoHeaderBackButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      )
+                    else
+                      SizedBox(width: 40.w, height: 40.h),
                     const Spacer(),
                     InkWell(
                       onTap: () => showLanguageSelectorModal(context, locale),
@@ -110,6 +127,13 @@ class RegistrationRoleScreen extends StatelessWidget {
                   ),
                 ),
 
+                const SizedBox(height: 24),
+
+                _AlreadyHaveAccountLink(
+                  locale: locale,
+                  onSignIn: () => _goToLogin(context),
+                ),
+
                 const Spacer(),
 
                 // Terms
@@ -118,6 +142,41 @@ class RegistrationRoleScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AlreadyHaveAccountLink extends StatelessWidget {
+  const _AlreadyHaveAccountLink({
+    required this.locale,
+    required this.onSignIn,
+  });
+
+  final LocaleProvider locale;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: 14.sp,
+          color: AppColors.textSecondary,
+          height: 1.3,
+        ),
+        children: [
+          TextSpan(text: '${locale.t('auth.alreadyHaveAccountPrefix')} '),
+          TextSpan(
+            text: locale.t('auth.signIn'),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary500,
+            ),
+            recognizer: TapGestureRecognizer()..onTap = onSignIn,
+          ),
+        ],
       ),
     );
   }

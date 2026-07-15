@@ -148,6 +148,8 @@
     "termsAnd": "и",
     "termsOfService": "Условиями использования",
     "noAccountRegister": "Нет аккаунта? Зарегистрируйтесь",
+    "alreadyHaveAccount": "Уже есть аккаунт? Войти",
+    "alreadyHaveAccountPrefix": "Уже есть аккаунт?",
     "phone": "Телефон",
     "createAccount": "Создать аккаунт"
   },

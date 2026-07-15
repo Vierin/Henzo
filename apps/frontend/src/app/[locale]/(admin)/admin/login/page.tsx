@@ -41,10 +41,14 @@ export default function AdminLoginPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
       if (msg === 'Failed to fetch') {
+        const url = publicEnv.supabaseUrl || 'no Supabase URL';
         setError(
-          `Network error (${publicEnv.supabaseUrl || 'no Supabase URL'}). ` +
-            'VPN/firewall may block supabase.co, or dev cache is stale — ' +
-            'delete .henzo-next-dev-cache and restart pnpm dev.',
+          process.env.NODE_ENV === 'development'
+            ? `Network error (${url}). Check VPN/firewall, or clear ` +
+                'apps/frontend/.henzo-next-dev-cache and restart pnpm dev.'
+            : `Cannot reach Supabase (${url}). Hostname may be down ` +
+                '(DNS NXDOMAIN / paused project) or blocked. Check the ' +
+                'Supabase project status and NEXT_PUBLIC_SUPABASE_URL on Vercel.',
         );
       } else {
         setError(msg);

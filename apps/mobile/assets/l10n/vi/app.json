@@ -148,6 +148,8 @@
     "termsAnd": "và",
     "termsOfService": "Điều khoản dịch vụ",
     "noAccountRegister": "Chưa có tài khoản? Đăng ký",
+    "alreadyHaveAccount": "Đã có tài khoản? Đăng nhập",
+    "alreadyHaveAccountPrefix": "Đã có tài khoản?",
     "phone": "Điện thoại",
     "createAccount": "Tạo tài khoản"
   },

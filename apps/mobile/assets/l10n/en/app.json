@@ -148,6 +148,8 @@
     "termsAnd": "and",
     "termsOfService": "Terms of Service",
     "noAccountRegister": "No account? Register",
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "alreadyHaveAccountPrefix": "Already have an account?",
     "phone": "Phone",
     "createAccount": "Create account"
   },
