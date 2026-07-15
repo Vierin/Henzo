@@ -15,7 +15,8 @@ import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/client_location_store.dart';
 import '../../services/health_service.dart';
-import '../../services/workout_service.dart';
+// Temporarily unused while the "Start workout" button is hidden.
+// import '../../services/workout_service.dart';
 import '../../utils/nearby_payload.dart';
 import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/client/client_profile_sections.dart';
@@ -402,9 +403,11 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   caloriesLabel: t('caloriesToday'),
                   workoutsLabel: t('workoutsWeek'),
                   health: _health,
-                  onStartWorkout: Platform.isIOS
-                      ? () => WorkoutService.sendToWatch(workoutType: 'yoga')
-                      : null,
+                  // "Start workout" button temporarily hidden. To restore:
+                  // onStartWorkout: Platform.isIOS
+                  //     ? () => WorkoutService.sendToWatch(workoutType: 'yoga')
+                  //     : null,
+                  onStartWorkout: null,
                 ),
                 const SizedBox(height: 24),
                 ClientSectionHeader(
