@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LanguageOption } from '@/components/landing/languageDropdown';
@@ -18,18 +18,24 @@ export function usePublicHeaderState() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { setLanguage } = useLanguage();
 
   const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 
   const handleLanguageSelect = (lang: LanguageOption) => {
+    if (lang.code === currentLocale) {
+      setIsLanguageDropdownOpen(false);
+      return;
+    }
+
     setLanguage(lang.code);
     const basePath = withLocale(pathname, lang.code);
     const query = searchParams.toString();
     const target = query ? `${basePath}?${query}` : basePath;
     setIsLanguageDropdownOpen(false);
-    router.replace(target);
+    // Soft client nav leaves GSAP ScrollTrigger pins/spacers stale.
+    // Full reload reinits all scroll animations cleanly.
+    window.location.assign(target);
   };
 
   useEffect(() => {

@@ -164,7 +164,8 @@
 		},
 		"pricing": {
 			"titleLine1": "Simple pricing",
-			"titleLine2": "Real results",
+			"titleLine2Before": "Real ",
+			"titleLine2Accent": "results",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
 			"plans": [

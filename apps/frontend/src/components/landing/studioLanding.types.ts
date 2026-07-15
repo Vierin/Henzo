@@ -47,7 +47,9 @@ export type StudioLandingContent = {
   };
   pricing: {
     titleLine1: string;
-    titleLine2: string;
+    titleLine2Before?: string;
+    titleLine2Accent: string;
+    titleLine2After?: string;
     storeAppStore: string;
     storeGooglePlay: string;
     plans: Array<{

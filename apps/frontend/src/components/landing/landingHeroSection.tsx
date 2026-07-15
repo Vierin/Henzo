@@ -41,7 +41,7 @@ export function LandingHeroSection() {
               {line1Lead}{' '}
               <span className="relative inline-block px-0.5">
                 {line1Highlight}
-                <ChaoticUnderline className="pointer-events-none absolute -bottom-0.5 left-[6%] w-[100%] -translate-x-[4%]" />
+                <ChaoticUnderline className="pointer-events-none absolute -bottom-1.5 left-[6%] w-[100%] -translate-x-[4%]" />
               </span>
               {line1Trail ? `\u00a0${line1Trail}` : ''}
             </span>

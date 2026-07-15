@@ -156,7 +156,8 @@
     },
     "pricing": {
       "titleLine1": "Простые тарифы",
-      "titleLine2": "Реальные результаты",
+      "titleLine2Before": "Реальные ",
+      "titleLine2Accent": "результаты",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
       "plans": [

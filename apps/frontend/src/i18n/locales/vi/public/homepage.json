@@ -164,7 +164,8 @@
 		},
 		"pricing": {
 			"titleLine1": "Giá đơn giản",
-			"titleLine2": "Kết quả thực tế",
+			"titleLine2Accent": "Kết quả",
+			"titleLine2After": " thực tế",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
 			"plans": [

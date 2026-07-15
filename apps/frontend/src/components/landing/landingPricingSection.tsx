@@ -4,9 +4,13 @@ import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
 import { useTranslation } from '@/contexts/LanguageContext';
 import Image from 'next/image';
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const BASE = 'homepage.studio.pricing';
+/** ChaoticUnderline viewBox width / height — SVG height scales with word width. */
+const UNDERLINE_ASPECT = 251 / 12;
+/** Push stroke below baseline as a fraction of computed SVG height. */
+const UNDERLINE_DROP_RATIO = 0.42;
 
 type PricingPlan = {
   name: string;
@@ -40,11 +44,45 @@ function parsePlans(raw: unknown): PricingPlan[] {
 
 export function LandingPricingSection() {
   const t = useTranslation();
+  const accentRef = useRef<HTMLSpanElement>(null);
+  const [underlineBottomPx, setUnderlineBottomPx] = useState(4);
+
   const titleLine1 = String(t(`${BASE}.titleLine1`));
-  const titleLine2 = String(t(`${BASE}.titleLine2`));
+  // Empty i18n values fall back to the key path — treat that as ''.
+  const resolveOptional = (key: string) => {
+    const raw = t(key);
+    return typeof raw === 'string' && raw !== key ? raw : '';
+  };
+  const titleLine2Before = resolveOptional(`${BASE}.titleLine2Before`);
+  const titleLine2Accent = String(t(`${BASE}.titleLine2Accent`));
+  const titleLine2After = resolveOptional(`${BASE}.titleLine2After`);
   const appStoreLabel = String(t(`${BASE}.storeAppStore`));
   const googlePlayLabel = String(t(`${BASE}.storeGooglePlay`));
   const plans = useMemo(() => parsePlans(t(`${BASE}.plans`)), [t]);
+
+  useLayoutEffect(() => {
+    const el = accentRef.current;
+    if (!el) {
+      return;
+    }
+
+    const update = () => {
+      const wordWidth = el.offsetWidth;
+      if (wordWidth <= 0) {
+        return;
+      }
+      // SVG is w-[103%] of the accent span → taller for longer locales (ru).
+      const svgHeight = (wordWidth * 1.03) / UNDERLINE_ASPECT;
+      setUnderlineBottomPx(
+        Math.max(2, Math.round(svgHeight * UNDERLINE_DROP_RATIO)),
+      );
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [titleLine2Accent]);
 
   if (plans.length === 0) {
     return null;
@@ -60,12 +98,19 @@ export function LandingPricingSection() {
           <span className="block text-[2.4rem] sm:text-[4.4rem] tracking-tight leading-[1]">
             {titleLine1}
           </span>
-          <span className="relative inline-block text-[2.4rem] sm:text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
-            {titleLine2}
-            <ChaoticUnderline
-              color="#4D39A8"
-              className="pointer-events-none absolute -bottom-1 left-[43%] w-[58%] -translate-x-[4%]"
-            />
+          <span className="block text-[2.4rem] sm:text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
+            {titleLine2Before}
+            <span ref={accentRef} className="relative inline-block px-0.5">
+              {titleLine2Accent}
+              <span
+                className="pointer-events-none absolute left-[3%] w-[103%] -translate-x-[4%]"
+                style={{ bottom: `-${underlineBottomPx}px` }}
+                aria-hidden
+              >
+                <ChaoticUnderline color="#4D39A8" className="block w-full" />
+              </span>
+            </span>
+            {titleLine2After}
           </span>
         </h2>
 

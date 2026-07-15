@@ -1,7 +1,24 @@
 'use client';
 
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 let stableViewportHeight = 0;
 let stableViewportWidth = 0;
+let scrollTriggerRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Debounced global ScrollTrigger.refresh — use after locale/layout shifts. */
+export function scheduleScrollTriggerRefresh(delayMs = 300) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (scrollTriggerRefreshTimer !== null) {
+    clearTimeout(scrollTriggerRefreshTimer);
+  }
+  scrollTriggerRefreshTimer = setTimeout(() => {
+    scrollTriggerRefreshTimer = null;
+    ScrollTrigger.refresh();
+  }, delayMs);
+}
 
 /**
  * Returns a stable viewport height similar to CSS 100svh.
