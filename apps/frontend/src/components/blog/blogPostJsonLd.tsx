@@ -1,4 +1,4 @@
-import type { BlogPost } from '@/lib/blog';
+import type { BlogPost } from '@/lib/blog.types';
 import type { Locale } from '@/i18n/routing';
 import { localizedPath, siteBaseUrl } from '@/seo';
 

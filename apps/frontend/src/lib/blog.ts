@@ -3,26 +3,14 @@ import 'server-only';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import type { Locale } from '@/i18n/routing';
+import {
+  BLOG_LOCALE,
+  type BlogPost,
+  type BlogSitemapEntry,
+} from '@/lib/blog.types';
 
-/** Blog content is English-only for now. */
-export const BLOG_LOCALE = 'en' as const satisfies Locale;
-
-export type BlogPost = {
-  slug: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-  coverImage?: string;
-  tags: string[];
-  content: string;
-  readingTimeMinutes: number;
-};
-
-export type BlogSitemapEntry = {
-  slug: string;
-  publishedAt: string;
-};
+export type { BlogPost, BlogSitemapEntry };
+export { BLOG_LOCALE };
 
 const CONTENT_DIR = path.join(process.cwd(), 'src/content/blog', BLOG_LOCALE);
 

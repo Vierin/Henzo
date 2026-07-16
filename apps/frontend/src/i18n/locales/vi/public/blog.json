@@ -1,6 +1,11 @@
 {
 	"title": "Blog",
 	"subtitle": "Meo thuc te de van hanh studio fitness",
+	"badge": "Blog",
+	"heroTitleBefore": "Goc nhin de phat trien ",
+	"heroTitleAccent": "studio",
+	"heroTitleAfter": ".",
+	"heroSubtitle": "Meo, chien luoc va cam hung giup ban van hanh studio hieu qua hon va xay dung cong dong manh hon.",
 	"readMore": "Doc bai viet",
 	"backToList": "Quay lai blog",
 	"minRead": "phut doc",
