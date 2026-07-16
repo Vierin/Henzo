@@ -1,5 +1,5 @@
 ---
-title: 'How to Fill Your Fitness Studio Schedule Faster (Class Utilization Guide)'
+title: 'Fill Your Studio Schedule Faster'
 description: 'Five proven tactics to increase fitness class utilization: early schedule publishing, waitlists, coach promotion, and studio booking software. For boutique gym and group training owners.'
 slug: fill-studio-schedule
 publishedAt: '2026-05-28'

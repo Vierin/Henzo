@@ -422,7 +422,6 @@ class ClientProfileHealthSection extends StatelessWidget {
     required this.onRefresh,
     required this.stepsLabel,
     required this.caloriesLabel,
-    required this.workoutsLabel,
     required this.health,
     this.onStartWorkout,
   });
@@ -440,7 +439,6 @@ class ClientProfileHealthSection extends StatelessWidget {
   final VoidCallback onRefresh;
   final String stepsLabel;
   final String caloriesLabel;
-  final String workoutsLabel;
   final HealthData? health;
   final VoidCallback? onStartWorkout;
 
@@ -551,16 +549,6 @@ class ClientProfileHealthSection extends StatelessWidget {
                     icon: Icons.local_fire_department_outlined,
                     value: formatProfileCount(health!.calories),
                     label: caloriesLabel,
-                  ),
-                  const VerticalDivider(
-                    width: 1,
-                    thickness: 1,
-                    color: Colors.white24,
-                  ),
-                  _HealthMetric(
-                    icon: Icons.fitness_center_outlined,
-                    value: '${health!.workouts}',
-                    label: workoutsLabel,
                   ),
                 ],
               ),

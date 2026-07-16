@@ -1,5 +1,5 @@
 ---
-title: 'Fitness Studio Profile Tips: Convert Visitors into Class Bookings'
+title: 'Studio Profile Tips That Convert'
 description: 'Optimize your fitness studio profile for SEO and conversions. Photos, coach bios, booking CTAs, and keywords that help boutique gyms get found and booked online.'
 slug: studio-profile-tips
 publishedAt: '2026-06-10'
