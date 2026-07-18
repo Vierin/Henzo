@@ -111,7 +111,7 @@ export default function AdminMfaPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
       <section className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-[#3F3287]">
+        <h1 className="text-2xl font-semibold text-primary">
           Two-factor authentication
         </h1>
 
@@ -173,7 +173,7 @@ export default function AdminMfaPage() {
             <button
               type="submit"
               disabled={isSubmitting || code.length !== 6}
-              className="mt-5 w-full rounded-lg bg-[#3F3287] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+              className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
             >
               {isSubmitting ? 'Verifying…' : 'Verify and continue'}
             </button>

@@ -21,6 +21,7 @@ import { PatchAdminSubscriptionDto } from './dto/patch-admin-subscription.dto';
 import { CreateAdminTrainerDto } from './dto/create-admin-trainer.dto';
 import { PatchAdminFeedbackDto } from './dto/patch-admin-feedback.dto';
 import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
+import { CreateAdminBroadcastDto } from './dto/create-admin-broadcast.dto';
 
 function parsePage(v?: string): number {
   const n = Number(v ?? '1');
@@ -74,6 +75,7 @@ export class AdminController {
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('activityTier') activityTier?: string,
+    @Query('onboardingIncomplete') onboardingIncomplete?: string,
   ) {
     try {
       return {
@@ -84,6 +86,7 @@ export class AdminController {
           status,
           search,
           activityTier,
+          onboardingIncomplete === 'true',
         ),
       };
     } catch (e) {
@@ -270,6 +273,135 @@ export class AdminController {
           id,
           body,
         ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('studios/:id/clients')
+  async studioClients(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listStudioClients(
+          authHeader,
+          id,
+          parsePage(page),
+          parseLimit(limit),
+          search,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('studios/:id/visits')
+  async studioVisits(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listStudioVisits(
+          authHeader,
+          id,
+          parsePage(page),
+          parseLimit(limit),
+          status,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('studios/:id/payment-events')
+  async studioPaymentEvents(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.getStudioPaymentEvents(
+          authHeader,
+          id,
+          parseLimit(limit),
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('no-show-clients')
+  async noShowClients(
+    @Headers('authorization') authHeader: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('minNoShows') minNoShows?: string,
+    @Query('days') days?: string,
+  ) {
+    try {
+      const min = Number(minNoShows ?? '3');
+      const windowDays = Number(days ?? '90');
+      return {
+        data: await this.adminService.listNoShowClients(
+          authHeader,
+          parsePage(page),
+          parseLimit(limit),
+          Number.isFinite(min) && min >= 1 ? Math.floor(min) : 3,
+          Number.isFinite(windowDays) && windowDays >= 1
+            ? Math.min(365, Math.floor(windowDays))
+            : 90,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('payments')
+  async payments(
+    @Headers('authorization') authHeader: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listPaymentEvents(
+          authHeader,
+          parsePage(page),
+          parseLimit(limit),
+          from,
+          to,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('broadcasts')
+  async broadcast(
+    @Headers('authorization') authHeader: string,
+    @Body() body: CreateAdminBroadcastDto,
+  ) {
+    try {
+      return {
+        data: await this.adminService.sendBroadcast(authHeader, body),
       };
     } catch (e) {
       this.handleError(e);

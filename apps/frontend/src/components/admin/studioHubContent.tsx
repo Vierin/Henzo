@@ -7,6 +7,7 @@ import {
   ActivityTierBadge,
   formatLastActive,
 } from '@/components/admin/activityTierBadge';
+import { AdminTable } from '@/components/admin/admin-table';
 import {
   createAdminRecurringSessions,
   createAdminStudioTrainer,
@@ -14,24 +15,38 @@ import {
   fetchAdminStudio,
   fetchAdminStudioActivity,
   fetchAdminStudioAnalytics,
+  fetchAdminStudioClients,
+  fetchAdminStudioPaymentEvents,
   fetchAdminStudioTrainers,
   fetchAdminStudioTrainings,
+  fetchAdminStudioVisits,
   patchAdminStudioProfile,
   patchAdminSubscription,
 } from '@/lib/admin/api';
 import type {
+  AdminPaymentEventRow,
+  AdminStudioClientRow,
   AdminStudioDetail,
   AdminTrainer,
   AdminTraining,
+  AdminVisitRow,
   StudioAnalyticsData,
   StudioActivityResponse,
 } from '@/lib/admin/types';
 
-type Tab = 'overview' | 'analytics' | 'edit' | 'subscription';
+type Tab =
+  | 'overview'
+  | 'analytics'
+  | 'clients'
+  | 'visits'
+  | 'edit'
+  | 'subscription';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'analytics', label: 'Analytics' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'visits', label: 'Visits' },
   { id: 'edit', label: 'Edit' },
   { id: 'subscription', label: 'Subscription' },
 ];
@@ -46,7 +61,14 @@ function defaultPeriod() {
 export function StudioHubContent({ studioId }: { studioId: string }) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
-  const validTabs: Tab[] = ['overview', 'analytics', 'edit', 'subscription'];
+  const validTabs: Tab[] = [
+    'overview',
+    'analytics',
+    'clients',
+    'visits',
+    'edit',
+    'subscription',
+  ];
   const [tab, setTab] = useState<Tab>(
     validTabs.includes(initialTab as Tab) ? (initialTab as Tab) : 'overview',
   );
@@ -147,7 +169,7 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 text-sm font-medium ${
               tab === t.id
-                ? 'border-b-2 border-[#3F3287] text-[#3F3287]'
+                ? 'border-b-2 border-primary text-primary'
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
@@ -172,6 +194,10 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
       ) : null}
 
       {tab === 'analytics' ? <AnalyticsTab analytics={analytics} /> : null}
+
+      {tab === 'clients' ? <ClientsTab studioId={studioId} /> : null}
+
+      {tab === 'visits' ? <VisitsTab studioId={studioId} /> : null}
 
       {tab === 'edit' ? (
         <EditTab
@@ -263,6 +289,10 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
 
       {tab === 'subscription' && !sub ? (
         <p className="mt-6 text-sm text-zinc-500">No subscription record.</p>
+      ) : null}
+
+      {tab === 'subscription' ? (
+        <StudioPaymentEvents studioId={studioId} />
       ) : null}
     </div>
   );
@@ -379,7 +409,7 @@ function OverviewTab({
             <button
               type="button"
               onClick={onGoToEdit}
-              className="text-sm text-[#3F3287] hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               Fix in Edit →
             </button>
@@ -408,7 +438,7 @@ function OverviewTab({
                 <button
                   type="button"
                   onClick={onGoToEdit}
-                  className="text-left hover:text-[#3F3287]"
+                  className="text-left hover:text-primary"
                 >
                   {stepLabels[key] ?? key}
                 </button>
@@ -640,7 +670,7 @@ function EditTab({
                 .filter(Boolean),
             })
           }
-          className="mt-4 rounded-lg bg-[#3F3287] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           Save profile
         </button>
@@ -913,10 +943,334 @@ function SubscriptionTab({
             manualOverride: true,
           })
         }
-        className="rounded-lg bg-[#3F3287] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         Save subscription
       </button>
+    </div>
+  );
+}
+
+function StudioPaymentEvents({ studioId }: { studioId: string }) {
+  const [events, setEvents] = useState<AdminPaymentEventRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAdminStudioPaymentEvents(studioId, 10)
+      .then(setEvents)
+      .catch((e) =>
+        setError(
+          e instanceof Error ? e.message : 'Failed to load payment events',
+        ),
+      );
+  }, [studioId]);
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Payment history (last 10 events)
+      </h3>
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      {!error && events.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          No payment events recorded.
+        </p>
+      ) : null}
+      {events.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {events.map((e) => (
+            <li
+              key={e.id}
+              className="rounded-lg border border-border bg-white px-4 py-3 text-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span
+                  className={
+                    e.severity === 'error'
+                      ? 'font-medium text-red-600'
+                      : 'font-medium text-foreground'
+                  }
+                >
+                  {e.type}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(e.createdAt).toLocaleString()}
+                </span>
+              </div>
+              {e.message ? (
+                <p className="mt-1 text-muted-foreground">{e.message}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function ClientsTab({ studioId }: { studioId: string }) {
+  const [rows, setRows] = useState<AdminStudioClientRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchAdminStudioClients(studioId, {
+          page,
+          limit: 20,
+          search: search || undefined,
+        });
+        if (cancelled) return;
+        setRows(res.items);
+        setTotal(res.total);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to load clients');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [studioId, page, search]);
+
+  return (
+    <div className="mt-6">
+      <input
+        type="search"
+        placeholder="Search name, email, phone"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
+        className="rounded-lg border border-border px-3 py-2 text-sm"
+      />
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+      {loading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Loading clients…</p>
+      ) : null}
+      {!loading && rows.length === 0 && !error ? (
+        <p className="mt-4 text-sm text-muted-foreground">No clients found.</p>
+      ) : null}
+      {rows.length > 0 ? (
+        <div className="mt-4">
+          <AdminTable
+            rows={rows}
+            columns={[
+              {
+                key: 'client',
+                header: 'Client',
+                render: (r) => (
+                  <div>
+                    <p className="font-medium">{r.name ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.email}
+                      {r.phone ? ` · ${r.phone}` : ''}
+                      {r.isGuest ? ' · guest' : ''}
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                key: 'source',
+                header: 'Source',
+                render: (r) => r.source,
+              },
+              {
+                key: 'visits',
+                header: 'Visits',
+                render: (r) => r.visitsCount,
+              },
+              {
+                key: 'noShows',
+                header: 'No-shows',
+                render: (r) =>
+                  r.noShowCount > 0 ? (
+                    <span className="font-semibold text-red-600">
+                      {r.noShowCount}
+                    </span>
+                  ) : (
+                    '0'
+                  ),
+              },
+              {
+                key: 'lastVisit',
+                header: 'Last visit',
+                render: (r) =>
+                  r.lastVisitAt
+                    ? new Date(r.lastVisitAt).toLocaleDateString()
+                    : '—',
+              },
+              {
+                key: 'added',
+                header: 'Added',
+                render: (r) => new Date(r.rosterCreatedAt).toLocaleDateString(),
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+      <Pagination page={page} total={total} limit={20} onChange={setPage} />
+    </div>
+  );
+}
+
+function VisitsTab({ studioId }: { studioId: string }) {
+  const [rows, setRows] = useState<AdminVisitRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchAdminStudioVisits(studioId, {
+          page,
+          limit: 20,
+          status: status || undefined,
+        });
+        if (cancelled) return;
+        setRows(res.items);
+        setTotal(res.total);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to load visits');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [studioId, page, status]);
+
+  return (
+    <div className="mt-6">
+      <select
+        value={status}
+        onChange={(e) => {
+          setStatus(e.target.value);
+          setPage(1);
+        }}
+        className="rounded-lg border border-border px-3 py-2 text-sm"
+      >
+        <option value="">All statuses</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="CONFIRMED">Confirmed</option>
+        <option value="PENDING">Pending</option>
+        <option value="ACTIVE">Active (enrollment)</option>
+        <option value="NO_SHOW">No-show</option>
+        <option value="CANCELLED">Cancelled</option>
+      </select>
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+      {loading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Loading visits…</p>
+      ) : null}
+      {!loading && rows.length === 0 && !error ? (
+        <p className="mt-4 text-sm text-muted-foreground">No visits found.</p>
+      ) : null}
+      {rows.length > 0 ? (
+        <div className="mt-4">
+          <AdminTable
+            rows={rows}
+            columns={[
+              {
+                key: 'date',
+                header: 'Date',
+                render: (r) => new Date(r.startsAt).toLocaleString(),
+              },
+              {
+                key: 'client',
+                header: 'Client',
+                render: (r) => (
+                  <div>
+                    <p className="font-medium">{r.clientName ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.clientEmail}
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                key: 'training',
+                header: 'Training',
+                render: (r) => r.trainingName,
+              },
+              {
+                key: 'kind',
+                header: 'Type',
+                render: (r) =>
+                  r.kind === 'booking' ? 'Booking' : 'Group session',
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                render: (r) =>
+                  r.status === 'NOSHOW' || r.status === 'NO_SHOW' ? (
+                    <span className="font-semibold text-red-600">NO-SHOW</span>
+                  ) : (
+                    r.status
+                  ),
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+      <Pagination page={page} total={total} limit={20} onChange={setPage} />
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  total,
+  limit,
+  onChange,
+}: {
+  page: number;
+  total: number;
+  limit: number;
+  onChange: (updater: (p: number) => number) => void;
+}) {
+  return (
+    <div className="mt-4 flex items-center gap-2">
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onChange((p) => p - 1)}
+        className="rounded border border-border px-3 py-1 text-sm disabled:opacity-40"
+      >
+        Prev
+      </button>
+      <button
+        type="button"
+        disabled={page * limit >= total}
+        onClick={() => onChange((p) => p + 1)}
+        className="rounded border border-border px-3 py-1 text-sm disabled:opacity-40"
+      >
+        Next
+      </button>
+      <span className="text-sm text-muted-foreground">
+        {total} total · page {page}
+      </span>
     </div>
   );
 }
