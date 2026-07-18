@@ -25,10 +25,14 @@ export default function AdminLoginPage() {
       // Remove a possible owner/client/password session before starting the
       // privileged Google OAuth flow.
       await supabase.auth.signOut({ scope: 'local' });
+
+      // Prefer the current origin so PKCE cookies stay on the same host
+      // (henzo.app vs www.henzo.app). Both must be in Supabase Redirect URLs.
+      const redirectTo = `${window.location.origin}/en/admin/auth/callback`;
       const { error: signError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/en/admin/auth/callback`,
+          redirectTo,
           queryParams: {
             prompt: 'select_account',
           },
