@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/next';
 import { Suspense } from 'react';
 import { Instrument_Serif, Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -123,6 +124,7 @@ export default async function RootLayout({
 						gtag('config', 'G-KBLFJ1533R');
 					`}
         </Script>
+        <Analytics />
       </body>
     </html>
   );
