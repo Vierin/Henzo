@@ -68,6 +68,21 @@ export async function middleware(req: NextRequest) {
   }
 
   const pathWithoutLocale = stripLocaleFromPath(pathname);
+  const activeLocale = (urlLocale ?? defaultLocale) as Locale;
+
+  // Supabase OAuth may fall back to Site URL (/en?code=...) instead of the
+  // admin callback when redirect allowlists drift. Forward the auth code into
+  // the admin exchange route so login never dumps onto the landing page.
+  const oauthCode = req.nextUrl.searchParams.get('code');
+  const oauthError = req.nextUrl.searchParams.get('error');
+  if (
+    (pathWithoutLocale === '/' || pathWithoutLocale === '') &&
+    (oauthCode || oauthError)
+  ) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = `/${activeLocale}/admin/auth/callback`;
+    return NextResponse.redirect(redirectUrl);
+  }
 
   // Blog is English-only for now.
   if (pathWithoutLocale === '/blog' || pathWithoutLocale.startsWith('/blog/')) {
@@ -132,7 +147,6 @@ export async function middleware(req: NextRequest) {
 
   // Web is landing-only now: no auth gating in middleware.
   // Allow routing to continue and let Next.js handle missing pages (404).
-  const activeLocale = (urlLocale ?? defaultLocale) as Locale;
   return withLocaleHeader(res, activeLocale);
 }
 
