@@ -58,6 +58,11 @@ export class AdminService {
     private readonly fitnessSessions: FitnessSessionsService,
   ) {}
 
+  async verifySession(authHeader: string | undefined) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    return { authenticated: true as const, email: admin.email };
+  }
+
   async getOverview(authHeader: string | undefined) {
     await assertAdmin(this.authService, authHeader);
 

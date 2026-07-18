@@ -15,6 +15,17 @@ import type {
 
 type ApiWrap<T> = { data: T };
 
+export async function verifyAdminSession(): Promise<{
+  authenticated: true;
+  email: string;
+}> {
+  const res =
+    await apiClient.get<ApiWrap<{ authenticated: true; email: string }>>(
+      '/admin/session',
+    );
+  return res.data;
+}
+
 export async function fetchAdminOverview(): Promise<AdminOverview> {
   const res = await apiClient.get<ApiWrap<AdminOverview>>('/admin/overview');
   return res.data;

@@ -3,11 +3,18 @@ import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 const jwksRsa = require('jwks-rsa');
 
+interface AuthMethodReference {
+  method: string;
+  timestamp: number;
+}
+
 interface DecodedToken {
   sub: string; // user id
   email?: string;
   app_metadata?: {
     role?: string;
+    provider?: string;
+    providers?: string[];
   };
   user_metadata?: {
     role?: string;
@@ -18,6 +25,8 @@ interface DecodedToken {
   exp: number;
   iat: number;
   iss: string;
+  aal?: 'aal1' | 'aal2';
+  amr?: AuthMethodReference[];
 }
 
 @Injectable()
@@ -187,5 +196,21 @@ export class JwtVerifierService implements OnModuleInit {
    */
   getUserIdFromToken(token: DecodedToken): string {
     return token.sub;
+  }
+
+  getAuthenticationContextFromToken(token: DecodedToken): {
+    provider: string | null;
+    providers: string[];
+    methods: AuthMethodReference[];
+    assuranceLevel: string | null;
+  } {
+    return {
+      provider: token.app_metadata?.provider ?? null,
+      providers: Array.isArray(token.app_metadata?.providers)
+        ? token.app_metadata.providers
+        : [],
+      methods: Array.isArray(token.amr) ? token.amr : [],
+      assuranceLevel: token.aal ?? null,
+    };
   }
 }

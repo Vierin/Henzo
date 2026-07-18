@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentUserRole } from './api';
+import { verifyAdminSession } from './api';
 
 export function useAdminAuth(options?: { requireAdmin?: boolean }) {
   const router = useRouter();
@@ -22,16 +22,16 @@ export function useAdminAuth(options?: { requireAdmin?: boolean }) {
         setIsAdmin(false);
         return false;
       }
-      const role = await fetchCurrentUserRole();
-      const ok = role === 'ADMIN';
-      setIsAdmin(ok);
-      if (!ok && options?.requireAdmin) {
-        setError('Admin access required');
-      }
-      return ok;
+      await verifyAdminSession();
+      setIsAdmin(true);
+      return true;
     } catch (e) {
       setIsAdmin(false);
       setError(e instanceof Error ? e.message : 'Auth check failed');
+      const status = (e as { status?: number })?.status;
+      if (status === 401 || status === 403) {
+        await supabase.auth.signOut({ scope: 'local' });
+      }
       return false;
     } finally {
       setLoading(false);
