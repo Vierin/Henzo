@@ -114,7 +114,7 @@ function SubscriptionsContent() {
                 return studio?.id ? (
                   <a
                     href={`/en/admin/studios/${studio.id}?tab=subscription`}
-                    className="text-sm text-[#3F3287] hover:underline"
+                    className="text-sm text-primary hover:underline"
                   >
                     Open
                   </a>
