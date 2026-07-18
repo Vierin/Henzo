@@ -5,13 +5,17 @@ import { AuthService } from './auth.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 describe('JwtAuthGuard', () => {
-  const makeContext = (authHeader?: string): ExecutionContext =>
+  const makeContext = (
+    authHeader?: string,
+    query?: Record<string, string | string[] | undefined>,
+  ): ExecutionContext =>
     ({
       getHandler: () => ({}),
       getClass: () => ({}),
       switchToHttp: () => ({
         getRequest: () => ({
           headers: { authorization: authHeader },
+          query: query ?? {},
         }),
       }),
     }) as ExecutionContext;
@@ -53,6 +57,44 @@ describe('JwtAuthGuard', () => {
     const ctx = makeContext('Bearer token');
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
-    expect(authService.getCurrentUser).toHaveBeenCalledWith('Bearer token');
+    expect(authService.getCurrentUser).toHaveBeenCalledWith('Bearer token', {
+      syncIfMissing: false,
+    });
+  });
+
+  it('forwards syncIfMissing=true from query to getCurrentUser', async () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue(false),
+    } as unknown as Reflector;
+    const authService = {
+      getCurrentUser: jest.fn().mockResolvedValue({ user: { id: 'u1' } }),
+    } as unknown as AuthService;
+    const guard = new JwtAuthGuard(reflector, authService);
+    const ctx = makeContext('Bearer token', { syncIfMissing: 'true' });
+
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(authService.getCurrentUser).toHaveBeenCalledWith('Bearer token', {
+      syncIfMissing: true,
+    });
+  });
+
+  it('surfaces ACCOUNT_NOT_FOUND instead of generic invalid token', async () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue(false),
+    } as unknown as Reflector;
+    const authService = {
+      getCurrentUser: jest
+        .fn()
+        .mockRejectedValue(new Error('ACCOUNT_NOT_FOUND')),
+    } as unknown as AuthService;
+    const guard = new JwtAuthGuard(reflector, authService);
+
+    await expect(
+      guard.canActivate(makeContext('Bearer token')),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'ACCOUNT_NOT_FOUND',
+      }),
+    );
   });
 });

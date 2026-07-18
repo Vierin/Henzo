@@ -15,7 +15,8 @@ import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/client_location_store.dart';
 import '../../services/health_service.dart';
-import '../../services/workout_service.dart';
+// Temporarily unused while the "Start workout" button is hidden.
+// import '../../services/workout_service.dart';
 import '../../utils/nearby_payload.dart';
 import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/client/client_profile_sections.dart';
@@ -58,12 +59,16 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
   List<TrainingCategoryOption> _trainingCategories = [];
 
+  static bool get _isHealthEnabled => Platform.isIOS;
+
   @override
   void initState() {
     super.initState();
     _loadStats();
     _loadTrainingCategories();
-    _restoreHealthIfAlreadyAuthorized();
+    if (_isHealthEnabled) {
+      _restoreHealthIfAlreadyAuthorized();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ClientFavoritesStore>().sync(
@@ -204,7 +209,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   Future<void> _refreshAll() async {
     await Future.wait([
       _loadStats(force: true),
-      _refreshHealth(),
+      if (_isHealthEnabled) _refreshHealth(),
       context.read<ClientFavoritesStore>().sync(
         context.read<AuthService>().accessToken,
         force: true,
@@ -334,10 +339,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       ),
     ];
 
-    final healthSubtitle = Platform.isIOS
-        ? t('connectHealthSubtitle')
-        : t('connectHealthSubtitleAndroid');
-
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
@@ -381,31 +382,33 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 ),
                 const SizedBox(height: 20),
                 ClientProfileStatsCard(items: stats),
-                const SizedBox(height: 24),
-                ClientProfileHealthSection(
-                  title: '',
-                  connectTitle: t('connectHealthTitle'),
-                  connectSubtitle: healthSubtitle,
-                  connectLabel: t('connect'),
-                  secureLabel: t('dataSecure'),
-                  isLoading: _loadingHealth,
-                  isConnected: !_healthPermissionDenied,
-                  isFullySynced: _healthFullySynced,
-                  needsInstall: _healthNeedsInstall,
-                  onConnect: _connectHealth,
-                  onRefresh: () {
-                    _cachedHealth = null;
-                    _healthCachedAt = null;
-                    _fetchHealthData();
-                  },
-                  stepsLabel: t('stepsToday'),
-                  caloriesLabel: t('caloriesToday'),
-                  workoutsLabel: t('workoutsWeek'),
-                  health: _health,
-                  onStartWorkout: Platform.isIOS
-                      ? () => WorkoutService.sendToWatch(workoutType: 'yoga')
-                      : null,
-                ),
+                if (_isHealthEnabled) ...[
+                  const SizedBox(height: 24),
+                  ClientProfileHealthSection(
+                    title: '',
+                    connectTitle: t('connectHealthTitle'),
+                    connectSubtitle: t('connectHealthSubtitle'),
+                    connectLabel: t('connect'),
+                    secureLabel: t('dataSecure'),
+                    isLoading: _loadingHealth,
+                    isConnected: !_healthPermissionDenied,
+                    isFullySynced: _healthFullySynced,
+                    needsInstall: _healthNeedsInstall,
+                    onConnect: _connectHealth,
+                    onRefresh: () {
+                      _cachedHealth = null;
+                      _healthCachedAt = null;
+                      _fetchHealthData();
+                    },
+                    stepsLabel: t('stepsToday'),
+                    caloriesLabel: t('caloriesToday'),
+                    health: _health,
+                    // "Start workout" button temporarily hidden. To restore:
+                    // onStartWorkout: () =>
+                    //     WorkoutService.sendToWatch(workoutType: 'yoga'),
+                    onStartWorkout: null,
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ClientSectionHeader(
                   title: locale.t('clientActivity.favorites'),

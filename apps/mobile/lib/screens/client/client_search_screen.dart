@@ -143,6 +143,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   }
 
   void _setBrowseShowClasses(bool showClasses) {
+    // Dismiss the search keyboard when switching mode via the toggler.
+    _searchFocusNode.unfocus();
     if (_browseShowClasses.value == showClasses &&
         !_browseModeController.isAnimating) {
       return;
@@ -157,6 +159,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   }
 
   void _applyExploreDay(DateTime day) {
+    // Dismiss the search keyboard when a day is picked (strip or calendar).
+    _searchFocusNode.unfocus();
     final normalized = calendarDateOnly(day);
     _stripDayNotifier.value = normalized;
     _stripPagerDayNotifier.value = normalized;
@@ -1382,24 +1386,36 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     LocaleProvider locale,
     double t,
   ) {
+    // The compact bar is painted on top and overlaps the bottom of the
+    // expanded chrome (its filter chips row). `Opacity` does NOT stop hit
+    // testing, so without gating each layer's pointers by `t` the invisible
+    // compact bar would swallow drags on the chips — breaking their horizontal
+    // swipe. Only the currently-relevant layer receives pointers.
+    final expanded = t < 0.5;
     return Stack(
       clipBehavior: Clip.hardEdge,
       fit: StackFit.expand,
       children: [
-        ClipRect(
-          child: Align(
-            alignment: Alignment.topCenter,
-            heightFactor: (1 - t).clamp(0.0, 1.0),
-            child: _buildBrowseExpandedChrome(context, locale),
+        IgnorePointer(
+          ignoring: !expanded,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: (1 - t).clamp(0.0, 1.0),
+              child: _buildBrowseExpandedChrome(context, locale),
+            ),
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Opacity(
-            opacity: t.clamp(0.0, 1.0),
-            child: SizedBox(
-              height: kBrowseCollapsedHeaderHeight,
-              child: _buildBrowseCompactStickyBar(locale),
+        IgnorePointer(
+          ignoring: expanded,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Opacity(
+              opacity: t.clamp(0.0, 1.0),
+              child: SizedBox(
+                height: kBrowseCollapsedHeaderHeight,
+                child: _buildBrowseCompactStickyBar(locale),
+              ),
             ),
           ),
         ),

@@ -24,6 +24,9 @@ class ClientHomeCategoryChip extends StatelessWidget {
       label: label,
       selected: selected,
       onTap: onTap,
+      // Shave the bottom padding to re-center the label after the line-height
+      // change left it looking slightly high on the home pills.
+      bottomPadding: 6,
     );
   }
 }

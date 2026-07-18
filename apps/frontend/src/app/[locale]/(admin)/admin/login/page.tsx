@@ -1,108 +1,70 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentUserRole } from '@/lib/admin/api';
-import { isSupabaseConfigured, publicEnv } from '@/lib/public-env';
+import { isSupabaseConfigured } from '@/lib/public-env';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const message = new URLSearchParams(window.location.search).get('error');
+    if (message) setError(message);
+  }, []);
+
+  const signInWithGoogle = async () => {
     setLoading(true);
     setError(null);
-    if (!isSupabaseConfigured()) {
-      setError(
-        'Supabase env not loaded in the browser bundle. ' +
-          'Stop dev server, delete apps/frontend/.henzo-next-dev-cache, ' +
-          'run pnpm dev again.',
-      );
-      setLoading(false);
-      return;
-    }
+
     try {
-      const { error: signError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase is not configured');
+      }
+
+      // Remove a possible owner/client/password session before starting the
+      // privileged Google OAuth flow.
+      await supabase.auth.signOut({ scope: 'local' });
+      const { error: signError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/en/admin/auth/callback`,
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
       });
       if (signError) throw signError;
-      const role = await fetchCurrentUserRole();
-      if (role !== 'ADMIN') {
-        await supabase.auth.signOut();
-        throw new Error('This account is not an admin');
-      }
-      router.replace('/en/admin');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Login failed';
-      if (msg === 'Failed to fetch') {
-        const url = publicEnv.supabaseUrl || 'no Supabase URL';
-        setError(
-          process.env.NODE_ENV === 'development'
-            ? `Network error (${url}). Check VPN/firewall, or clear ` +
-                'apps/frontend/.henzo-next-dev-cache and restart pnpm dev.'
-            : `Cannot reach Supabase (${url}). Hostname may be down ` +
-                '(DNS NXDOMAIN / paused project) or blocked. Check the ' +
-                'Supabase project status and NEXT_PUBLIC_SUPABASE_URL on Vercel.',
-        );
-      } else {
-        setError(msg);
-      }
-    } finally {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed');
       setLoading(false);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm"
-      >
+      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-[#3F3287]">Henzo Admin</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Sign in with your admin account
+          Restricted access for approved administrators
         </p>
-        {process.env.NODE_ENV === 'development' && !isSupabaseConfigured() ? (
-          <p className="mt-2 text-xs text-amber-700">
-            Dev: NEXT_PUBLIC_SUPABASE_* not in bundle — restart after .env
-            change and clear .henzo-next-dev-cache
-          </p>
-        ) : null}
-        <label className="mt-6 block text-sm font-medium text-zinc-700">
-          Email
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2"
-          />
-        </label>
-        <label className="mt-4 block text-sm font-medium text-zinc-700">
-          Password
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2"
-          />
-        </label>
         {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
         <button
-          type="submit"
+          type="button"
+          onClick={() => void signInWithGoogle()}
           disabled={loading}
-          className="mt-6 w-full rounded-lg bg-[#3F3287] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+          className="mt-6 flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
         >
-          {loading ? 'Signing in…' : 'Sign in'}
+          <span aria-hidden="true" className="text-base font-semibold">
+            G
+          </span>
+          {loading ? 'Redirecting…' : 'Continue with Google'}
         </button>
-      </form>
+        <p className="mt-4 text-xs leading-5 text-zinc-500">
+          Your Google account must be on the server allowlist and have the ADMIN
+          role. Password sessions are rejected.
+        </p>
+      </div>
     </div>
   );
 }

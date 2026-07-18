@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isGoogleLoading = false);
 
-    _handleOAuthResult(result);
+    _handleOAuthResult(result, OAuthEntryProvider.google);
   }
 
   Future<void> _submitApple() async {
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isAppleLoading = false);
 
-    _handleOAuthResult(result);
+    _handleOAuthResult(result, OAuthEntryProvider.apple);
   }
 
   /// Google/Apple sign-in landed a Supabase session but no account exists in our
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /// email registration — send the new user to the role picker, where the
   /// "Sign up with Google/Apple" button provisions the account with the role
   /// they choose (OWNER or CLIENT).
-  void _handleOAuthResult(AuthUiResult result) {
+  void _handleOAuthResult(AuthUiResult result, OAuthEntryProvider provider) {
     if (!mounted) return;
     if (result.success) return;
 
@@ -112,16 +112,15 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text(locale.t('auth.noAccountChooseRegistration'))),
       );
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()),
+        MaterialPageRoute(
+          builder: (_) => RegistrationRoleScreen(oauthProvider: provider),
+        ),
       );
       return;
     }
 
     final msg = resolveAuthUiMessage(locale, result);
-    showApiError(
-      context,
-      msg.isNotEmpty ? msg : locale.t('auth.signInError'),
-    );
+    showApiError(context, msg.isNotEmpty ? msg : locale.t('auth.signInError'));
   }
 
   Future<void> _openRegister() async {
@@ -156,18 +155,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decorationBuilder: ({required invalid}) =>
                     AuthFormStyles.fieldDecoration(
-                  hintText: locale.t('auth.email'),
-                  prefixWidget: SvgPicture.asset(
-                    'assets/icons/icon-mail.svg',
-                    width: 13.5,
-                    height: 13.5,
-                    colorFilter: const ColorFilter.mode(
-                      AuthFormStyles.accentIcon,
-                      BlendMode.srcIn,
+                      hintText: locale.t('auth.email'),
+                      prefixWidget: SvgPicture.asset(
+                        'assets/icons/icon-mail.svg',
+                        width: 13.5,
+                        height: 13.5,
+                        colorFilter: const ColorFilter.mode(
+                          AuthFormStyles.accentIcon,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      invalid: invalid,
                     ),
-                  ),
-                  invalid: invalid,
-                ),
                 style: AuthFormStyles.fieldTextStyle,
                 validator: (v) => validateEmailNullable(locale.t, v),
               ),
@@ -280,18 +279,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     decorationBuilder: ({required invalid}) =>
                         AuthFormStyles.fieldDecoration(
-                      hintText: locale.t('auth.email'),
-                      prefixWidget: SvgPicture.asset(
-                        'assets/icons/icon-mail.svg',
-                        width: 13.5,
-                        height: 13.5,
-                        colorFilter: const ColorFilter.mode(
-                          AuthFormStyles.accentIcon,
-                          BlendMode.srcIn,
+                          hintText: locale.t('auth.email'),
+                          prefixWidget: SvgPicture.asset(
+                            'assets/icons/icon-mail.svg',
+                            width: 13.5,
+                            height: 13.5,
+                            colorFilter: const ColorFilter.mode(
+                              AuthFormStyles.accentIcon,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          invalid: invalid,
                         ),
-                      ),
-                      invalid: invalid,
-                    ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) => validateEmailNullable(locale.t, v),
                   ),
@@ -303,33 +302,35 @@ class _LoginScreenState extends State<LoginScreen> {
                     onFieldSubmitted: (_) => _submit(),
                     decorationBuilder: ({required invalid}) =>
                         AuthFormStyles.fieldDecoration(
-                      hintText: locale.t('auth.password'),
-                      prefixWidget: SvgPicture.asset(
-                        'assets/icons/icon-password.svg',
-                        width: 16,
-                        height: 16,
-                        colorFilter: const ColorFilter.mode(
-                          AuthFormStyles.accentIcon,
-                          BlendMode.srcIn,
+                          hintText: locale.t('auth.password'),
+                          prefixWidget: SvgPicture.asset(
+                            'assets/icons/icon-password.svg',
+                            width: 16,
+                            height: 16,
+                            colorFilter: const ColorFilter.mode(
+                              AuthFormStyles.accentIcon,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: AuthFormStyles.hintMuted,
+                              size: 22,
+                            ),
+                            padding: const EdgeInsets.only(right: 12),
+                            splashColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
+                            onPressed: () {
+                              setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              );
+                            },
+                          ),
+                          invalid: invalid,
                         ),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          color: AuthFormStyles.hintMuted,
-                          size: 22,
-                        ),
-                        padding: const EdgeInsets.only(right: 12),
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        onPressed: () {
-                          setState(() => _obscurePassword = !_obscurePassword);
-                        },
-                      ),
-                      invalid: invalid,
-                    ),
                     style: AuthFormStyles.fieldTextStyle,
                     validator: (v) => validatePasswordNullable(locale.t, v),
                   ),

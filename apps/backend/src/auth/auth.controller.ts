@@ -191,6 +191,10 @@ export class AuthController {
     }
   }
 
+  /// Must stay `@Public`: global JwtAuthGuard calls getCurrentUser without
+  /// `syncIfMissing`, which blocks Google/Apple client registration before
+  /// this handler can auto-provision. Auth is enforced inside getCurrentUser.
+  @Public()
   @Get('user')
   async getUser(
     @Headers('authorization') authHeader: string,

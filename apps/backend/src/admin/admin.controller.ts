@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { UpdateStudioDto } from '../studios/dto/update-studio.dto';
@@ -37,11 +38,23 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   private handleError(error: unknown): never {
+    if (error instanceof UnauthorizedException) {
+      throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
+    }
     if (error instanceof ForbiddenException) {
       throw new HttpException(error.message, HttpStatus.FORBIDDEN);
     }
     const msg = error instanceof Error ? error.message : 'Request failed';
     throw new HttpException(msg, HttpStatus.BAD_REQUEST);
+  }
+
+  @Get('session')
+  async session(@Headers('authorization') authHeader: string) {
+    try {
+      return { data: await this.adminService.verifySession(authHeader) };
+    } catch (e) {
+      this.handleError(e);
+    }
   }
 
   @Get('overview')

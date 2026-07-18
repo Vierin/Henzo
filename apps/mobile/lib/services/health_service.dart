@@ -18,15 +18,13 @@ void _healthLog(
 class HealthData {
   final int steps;
   final int calories;
-  final int workouts;
 
   const HealthData({
     required this.steps,
     required this.calories,
-    required this.workouts,
   });
 
-  bool get hasAnyMetrics => steps > 0 || calories > 0 || workouts > 0;
+  bool get hasAnyMetrics => steps > 0 || calories > 0;
 }
 
 enum HealthConnectIssue {
@@ -58,8 +56,6 @@ class HealthService {
   static const _readTypes = [
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
-    HealthDataType.TOTAL_CALORIES_BURNED,
-    HealthDataType.WORKOUT,
   ];
 
   static final _permissions = List<HealthDataAccess>.filled(
@@ -221,17 +217,15 @@ class HealthService {
     await _ensureConfigured();
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
 
     final steps = await _readSteps(startOfDay, now);
     final calories = await _readCalories(startOfDay, now);
-    final workouts = await _readWorkoutCount(sevenDaysAgo, now);
 
     _healthLog(
-      'HealthService.fetchData steps=$steps cal=$calories workouts=$workouts',
+      'HealthService.fetchData steps=$steps cal=$calories',
     );
 
-    return HealthData(steps: steps, calories: calories, workouts: workouts);
+    return HealthData(steps: steps, calories: calories);
   }
 
   static Future<int> _readSteps(DateTime start, DateTime end) async {
@@ -255,14 +249,7 @@ class HealthService {
     // On iOS, ACTIVE_ENERGY_BURNED covers calories from movement/exercise.
     // Watch data syncs to HealthKit via Bluetooth — there may be a small delay.
     // We sum WITHOUT removeDuplicates to avoid dropping real distinct records.
-    for (final type in [
-      HealthDataType.ACTIVE_ENERGY_BURNED,
-      HealthDataType.TOTAL_CALORIES_BURNED,
-    ]) {
-      final kcal = await _sumCaloriesRaw(start, end, type);
-      if (kcal > 0) return kcal;
-    }
-    return 0;
+    return _sumCaloriesRaw(start, end, HealthDataType.ACTIVE_ENERGY_BURNED);
   }
 
   /// Sums calorie data points using source-aware deduplication.
@@ -299,22 +286,6 @@ class HealthService {
       return total;
     } catch (e) {
       _healthLog('_sumCaloriesRaw $type: $e');
-      return 0;
-    }
-  }
-
-  static Future<int> _readWorkoutCount(DateTime start, DateTime end) async {
-    try {
-      final points = await _health.getHealthDataFromTypes(
-        startTime: start,
-        endTime: end,
-        types: [HealthDataType.WORKOUT],
-      );
-      final unique = _health.removeDuplicates(points);
-      _healthLog('workout points: ${unique.length}');
-      return unique.length;
-    } catch (e) {
-      _healthLog('workouts read: $e');
       return 0;
     }
   }

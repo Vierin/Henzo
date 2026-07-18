@@ -164,6 +164,11 @@ export class EnvironmentVariables {
   @IsOptional()
   ADMIN_ALLOWED_EMAILS?: string;
 
+  /** Maximum age of the original Google OAuth login for admin requests. */
+  @IsNumberString()
+  @IsOptional()
+  ADMIN_SESSION_MAX_AGE_SECONDS?: string;
+
   @IsString()
   @IsOptional()
   METRICS_SECRET?: string;

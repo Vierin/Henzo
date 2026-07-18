@@ -122,46 +122,47 @@ class AuthService extends ChangeNotifier {
 
   void _ensureAuthSubscription() {
     if (_authSub != null) return;
-    _authSub = _supabase.auth.onAuthStateChange.listen((data) async {
-      final event = data.event;
-      final session = data.session;
+    _authSub = _supabase.auth.onAuthStateChange.listen(
+      (data) async {
+        final event = data.event;
+        final session = data.session;
 
-      if (event == AuthChangeEvent.initialSession) return;
+        if (event == AuthChangeEvent.initialSession) return;
 
-      if (event == AuthChangeEvent.signedOut || session == null) {
-        if (_user != null ||
-            _trainerInfo != null ||
-            _isAuthenticated) {
+        if (event == AuthChangeEvent.signedOut || session == null) {
+          if (_user != null || _trainerInfo != null || _isAuthenticated) {
+            _user = null;
+            _trainerInfo = null;
+            _isAuthenticated = false;
+            notifyListeners();
+          }
+          return;
+        }
+
+        if (event == AuthChangeEvent.tokenRefreshed) {
+          await _fetchUser(session.accessToken);
+          notifyListeners();
+          return;
+        }
+
+        if (event == AuthChangeEvent.userUpdated) {
+          await _fetchUser(session.accessToken);
+          notifyListeners();
+        }
+      },
+      onError: (Object error) {
+        // Auth stream errors (e.g. a failed token refresh) surface here. The
+        // session is already invalid at this point; drop local auth state so the
+        // app routes to login instead of leaving a stale, broken session.
+        if (kDebugMode) debugPrint('[Auth] auth stream error: $error');
+        if (_user != null || _trainerInfo != null || _isAuthenticated) {
           _user = null;
           _trainerInfo = null;
           _isAuthenticated = false;
           notifyListeners();
         }
-        return;
-      }
-
-      if (event == AuthChangeEvent.tokenRefreshed) {
-        await _fetchUser(session.accessToken);
-        notifyListeners();
-        return;
-      }
-
-      if (event == AuthChangeEvent.userUpdated) {
-        await _fetchUser(session.accessToken);
-        notifyListeners();
-      }
-    }, onError: (Object error) {
-      // Auth stream errors (e.g. a failed token refresh) surface here. The
-      // session is already invalid at this point; drop local auth state so the
-      // app routes to login instead of leaving a stale, broken session.
-      if (kDebugMode) debugPrint('[Auth] auth stream error: $error');
-      if (_user != null || _trainerInfo != null || _isAuthenticated) {
-        _user = null;
-        _trainerInfo = null;
-        _isAuthenticated = false;
-        notifyListeners();
-      }
-    });
+      },
+    );
   }
 
   String? _authConflictL10nKey(String msg) {
@@ -224,11 +225,7 @@ class AuthService extends ChangeNotifier {
         fetch.errorL10nKey ??
         _fetchErrorL10nKey(fetch.errorRaw ?? '') ??
         AuthErrorKeys.accountNotFoundForEmail;
-    return (
-      success: false,
-      errorL10nKey: l10nKey,
-      errorRaw: null,
-    );
+    return (success: false, errorL10nKey: l10nKey, errorRaw: null);
   }
 
   Future<void> _signOutAfterFailedLogin() async {
@@ -330,11 +327,7 @@ class AuthService extends ChangeNotifier {
         }
       } catch (_) {}
       if (kDebugMode) debugPrint('[Auth] /auth/user failed: $msg');
-      return (
-        ok: false,
-        errorL10nKey: _fetchErrorL10nKey(msg),
-        errorRaw: msg,
-      );
+      return (ok: false, errorL10nKey: _fetchErrorL10nKey(msg), errorRaw: msg);
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[Auth] Fetch user error: $e');
@@ -367,14 +360,12 @@ class AuthService extends ChangeNotifier {
       return (ok: false, errorRaw: 'Google account has no email');
     }
     final meta = supaUser.userMetadata;
-    final metaName =
-        (meta?['name'] ?? meta?['full_name'] ?? _user?.name)
-            ?.toString()
-            .trim();
-    final name =
-        (overrideName != null && overrideName.isNotEmpty)
-            ? overrideName
-            : metaName;
+    final metaName = (meta?['name'] ?? meta?['full_name'] ?? _user?.name)
+        ?.toString()
+        .trim();
+    final name = (overrideName != null && overrideName.isNotEmpty)
+        ? overrideName
+        : metaName;
 
     try {
       final url = Uri.parse('${AppConfig.apiUrl}/auth/register');
@@ -393,9 +384,7 @@ class AuthService extends ChangeNotifier {
         }),
       );
       if (kDebugMode) {
-        debugPrint(
-          '[Auth] POST /auth/register status=${response.statusCode}',
-        );
+        debugPrint('[Auth] POST /auth/register status=${response.statusCode}');
       }
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return (ok: true, errorRaw: null);
@@ -559,7 +548,9 @@ class AuthService extends ChangeNotifier {
         );
       }
       if (kDebugMode) {
-        debugPrint('[Auth] Got Apple idToken, calling Supabase signInWithIdToken');
+        debugPrint(
+          '[Auth] Got Apple idToken, calling Supabase signInWithIdToken',
+        );
       }
       await _supabase.auth.signInWithIdToken(
         provider: OAuthProvider.apple,
@@ -568,9 +559,10 @@ class AuthService extends ChangeNotifier {
       );
       final givenName = credential.givenName?.trim() ?? '';
       final familyName = credential.familyName?.trim() ?? '';
-      final appleFullName = [givenName, familyName]
-          .where((s) => s.isNotEmpty)
-          .join(' ');
+      final appleFullName = [
+        givenName,
+        familyName,
+      ].where((s) => s.isNotEmpty).join(' ');
       return _finalizeOAuthSignIn(
         logTag: 'login.apple',
         registerAsOwner: registerAsOwner,
@@ -630,11 +622,7 @@ class AuthService extends ChangeNotifier {
         'No Supabase session after signInWithIdToken',
       );
       notifyListeners();
-      return (
-        success: false,
-        errorL10nKey: noSessionL10nKey,
-        errorRaw: null,
-      );
+      return (success: false, errorL10nKey: noSessionL10nKey, errorRaw: null);
     }
     if (kDebugMode) {
       debugPrint('[Auth] Session OK, registerAsOwner=$registerAsOwner');
@@ -657,13 +645,25 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     if (!fetch.ok || !_isAuthenticated || _user == null) {
-      await _signOutAfterFailedLogin();
+      final failure = _loginFetchFailure(fetch);
+      // Plain login (not an explicit register/sync) into a Supabase identity
+      // that has no app account yet: keep the session alive so the role picker
+      // can finish sign-up through it — no second native provider prompt. Any
+      // other failure (network/server), or a no-account result during an actual
+      // registration attempt, still tears the session down.
+      final keepForRolePick =
+          !registerAsOwner &&
+          !syncIfMissing &&
+          failure.errorL10nKey == AuthErrorKeys.accountNotFoundForEmail;
+      if (!keepForRolePick) {
+        await _signOutAfterFailedLogin();
+      }
       notifyListeners();
       AppConfig.logIfDevelopment(
         logTag,
         'GET /auth/user after OAuth failed: l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
       );
-      return _loginFetchFailure(fetch);
+      return failure;
     }
 
     if (registerAsOwner && !isStudioOperator) {
@@ -678,6 +678,58 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     return (success: true, errorL10nKey: null, errorRaw: null);
+  }
+
+  /// Finishes OAuth sign-up when a Supabase session is already live from an
+  /// earlier [loginWithGoogle]/[loginWithApple] that returned
+  /// [AuthErrorKeys.accountNotFoundForEmail]. Assigns OWNER (when [asOwner]) or
+  /// the default CLIENT role and loads the user — WITHOUT a second native
+  /// provider prompt. Tears the session down on failure.
+  Future<AuthUiResult> provisionOAuthRole({required bool asOwner}) async {
+    final session = _supabase.auth.currentSession;
+    if (session == null) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.googleNoSessionAfterSignIn,
+        errorRaw: null,
+      );
+    }
+    if (asOwner) {
+      final reg = await _registerOwnerAfterOAuth();
+      if (!reg.ok) {
+        return (success: false, errorL10nKey: null, errorRaw: reg.errorRaw);
+      }
+      try {
+        await _supabase.auth.refreshSession();
+      } catch (_) {}
+    }
+    final token =
+        _supabase.auth.currentSession?.accessToken ?? session.accessToken;
+    final fetch = await _fetchUser(token, syncIfMissing: true);
+    notifyListeners();
+    if (!fetch.ok || !_isAuthenticated || _user == null) {
+      await _signOutAfterFailedLogin();
+      notifyListeners();
+      return _loginFetchFailure(fetch);
+    }
+    if (asOwner && !isStudioOperator) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.userNotFoundInSystem,
+        errorRaw: 'Owner role was not applied',
+      );
+    }
+    await _tryFinishPendingTrainerInvite(token);
+    notifyListeners();
+    return (success: true, errorL10nKey: null, errorRaw: null);
+  }
+
+  /// Drops a session that was retained for role selection but never used (user
+  /// left the role picker without choosing). No-op once authenticated.
+  Future<void> discardPendingOAuthSession() async {
+    if (_isAuthenticated || _supabase.auth.currentSession == null) return;
+    await _signOutAfterFailedLogin();
+    notifyListeners();
   }
 
   String _generateNonce([int length = 32]) {
@@ -876,9 +928,9 @@ class AuthService extends ChangeNotifier {
             _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg),
         errorRaw:
             (_authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg)) ==
-                    null
-                ? msg
-                : null,
+                null
+            ? msg
+            : null,
       );
     } catch (e) {
       return (
@@ -927,9 +979,9 @@ class AuthService extends ChangeNotifier {
             _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg),
         errorRaw:
             (_authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg)) ==
-                    null
-                ? msg
-                : null,
+                null
+            ? msg
+            : null,
       );
     } catch (e) {
       return (
@@ -989,9 +1041,9 @@ class AuthService extends ChangeNotifier {
             _authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg),
         errorRaw:
             (_authConflictL10nKey(msg) ?? AuthErrorKeys.mapRawToL10nKey(msg)) ==
-                    null
-                ? msg
-                : null,
+                null
+            ? msg
+            : null,
       );
     } catch (e) {
       return (
@@ -1026,14 +1078,18 @@ class AuthService extends ChangeNotifier {
     if (token == null || token.isEmpty) return;
     try {
       final url = Uri.parse('${AppConfig.apiUrl}/trainers/me/profile');
-      final response = await http.get(url, headers: {
-        'Content-Type': 'application/json',
-        'authorization': 'Bearer $token',
-      });
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': 'Bearer $token',
+        },
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         _trainerInfo = TrainerInfo.fromJson(data);
-        if (kDebugMode) debugPrint('[Auth] Trainer loaded: ${_trainerInfo?.name}');
+        if (kDebugMode)
+          debugPrint('[Auth] Trainer loaded: ${_trainerInfo?.name}');
       } else {
         _trainerInfo = null;
       }

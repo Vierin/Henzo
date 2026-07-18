@@ -17,6 +17,8 @@ class TrainingCategoryColorChip extends StatelessWidget {
     this.staticBorder = false,
     this.fontWeight = FontWeight.w600,
     this.lineHeight = 1.2,
+    this.verticalPadding = 10,
+    this.bottomPadding,
   });
 
   final TrainingCategoryOption? category;
@@ -29,6 +31,11 @@ class TrainingCategoryColorChip extends StatelessWidget {
   final VoidCallback onTap;
   final FontWeight fontWeight;
   final double lineHeight;
+  /// Top (and default bottom) vertical padding inside the pill.
+  final double verticalPadding;
+  /// Overrides the bottom padding when set; used to re-center the label after
+  /// the line-height change (e.g. client home pills shave 2px off the bottom).
+  final double? bottomPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +76,12 @@ class TrainingCategoryColorChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: borderColor, width: borderW),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: verticalPadding,
+            bottom: bottomPadding ?? verticalPadding,
+          ),
           child: Text(
             label,
             style: TextStyle(

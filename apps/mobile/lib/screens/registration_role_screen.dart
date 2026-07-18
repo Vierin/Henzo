@@ -4,143 +4,232 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../l10n/auth_error_keys.dart';
 import '../l10n/locale_provider.dart';
+import '../services/auth_service.dart';
 import '../utils/auth_entry_prefs.dart';
+import '../utils/auth_ui_result.dart';
 import '../utils/legal_web_links.dart';
+import '../utils/show_api_error.dart';
 import '../widgets/chaotic_underline.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/language_selector_modal.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
 
-class RegistrationRoleScreen extends StatelessWidget {
+/// Which OAuth provider the user authenticated with before landing here.
+/// When set, picking a role finishes sign-up via that provider (reusing the
+/// identity already returned by Google/Apple) instead of a manual form.
+enum OAuthEntryProvider { google, apple }
+
+class RegistrationRoleScreen extends StatefulWidget {
   const RegistrationRoleScreen({
     super.key,
     this.isRootEntry = false,
+    this.oauthProvider,
   });
 
   /// Cold-start first-run: no back, "Already have account" → Login.
   final bool isRootEntry;
 
+  /// Set when the user reached this screen after a successful OAuth sign-in
+  /// that had no matching account. Role selection then provisions the account
+  /// through this provider directly, skipping the registration form.
+  final OAuthEntryProvider? oauthProvider;
+
+  @override
+  State<RegistrationRoleScreen> createState() => _RegistrationRoleScreenState();
+}
+
+class _RegistrationRoleScreenState extends State<RegistrationRoleScreen> {
   static const Map<String, String> _languageLabels = {
     'en': 'English',
     'ru': 'Русский',
     'vi': 'Tiếng Việt',
   };
 
-  Future<void> _goToLogin(BuildContext context) async {
+  bool _isProvisioning = false;
+  AuthService? _authRef;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _authRef = context.read<AuthService>();
+  }
+
+  Future<void> _goToLogin() async {
     await AuthEntryPrefs.markCompleted();
-    if (!isRootEntry && context.mounted) {
+    if (!widget.isRootEntry && mounted) {
       Navigator.of(context).maybePop();
     }
   }
 
+  /// Client card → CLIENT, Manager card → OWNER.
+  /// Without a pending OAuth provider we open the matching registration form.
+  /// With one, we finish sign-up through that provider using the identity the
+  /// user already granted, so they don't re-enter data.
+  Future<void> _selectRole({required bool asOwner}) async {
+    final provider = widget.oauthProvider;
+    if (provider == null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => asOwner
+              ? const BusinessRegistrationScreen()
+              : const ClientRegistrationScreen(),
+        ),
+      );
+      return;
+    }
+
+    if (_isProvisioning) return;
+    setState(() => _isProvisioning = true);
+    final auth = context.read<AuthService>();
+    final locale = context.read<LocaleProvider>();
+    // Reuse the session already established on the login screen — OWNER →
+    // register as owner, CLIENT → default role — so there's no second native
+    // provider prompt.
+    var result = await auth.provisionOAuthRole(asOwner: asOwner);
+    // Retained session expired/lost: fall back to a fresh provider sign-in.
+    if (result.errorL10nKey == AuthErrorKeys.googleNoSessionAfterSignIn) {
+      result = provider == OAuthEntryProvider.google
+          ? await auth.loginWithGoogle(
+              registerAsOwner: asOwner,
+              syncIfMissing: !asOwner,
+            )
+          : await auth.loginWithApple(
+              registerAsOwner: asOwner,
+              syncIfMissing: !asOwner,
+            );
+    }
+    if (!mounted) return;
+    setState(() => _isProvisioning = false);
+    if (result.success) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    showApiError(context, resolveAuthUiMessage(locale, result));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      body: SafeArea(
-        child: Consumer<LocaleProvider>(
-          builder: (context, locale, _) => Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    if (!isRootEntry)
-                      HenzoHeaderBackButton(
-                        onPressed: () => Navigator.of(context).maybePop(),
-                      )
-                    else
-                      SizedBox(width: 40.w, height: 40.h),
-                    const Spacer(),
-                    InkWell(
-                      onTap: () => showLanguageSelectorModal(context, locale),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.language,
-                              size: 16,
-                              color: AppColors.textPrimary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _languageLabels[locale.localeCode] ??
-                                  locale.localeCode.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                color: AppColors.textPrimary,
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop && widget.oauthProvider != null) {
+          // Left the picker without finishing sign-up — drop the retained
+          // session so it doesn't linger (no-op once authenticated).
+          _authRef?.discardPendingOAuthSession();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundSecondary,
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Consumer<LocaleProvider>(
+                builder: (context, locale, _) => Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          if (!widget.isRootEntry)
+                            HenzoHeaderBackButton(
+                              onPressed: () => Navigator.of(context).maybePop(),
+                            )
+                          else
+                            SizedBox(width: 40.w, height: 40.h),
+                          const Spacer(),
+                          InkWell(
+                            onTap: () =>
+                                showLanguageSelectorModal(context, locale),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.language,
+                                    size: 16,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _languageLabels[locale.localeCode] ??
+                                        locale.localeCode.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                // Heading
-                _ScreenHeading(locale: locale),
+                      // Heading
+                      _ScreenHeading(locale: locale),
 
-                const SizedBox(height: 28),
+                      const SizedBox(height: 28),
 
-                // Client card — image on left
-                _RoleCard(
-                  locale: locale,
-                  roleWord: locale.t('auth.roleClientWord'),
-                  description: locale.t('auth.roleClientDesc'),
-                  imageAssetPath: 'assets/public/client.webp',
-                  accentColor: AppColors.primary500,
-                  imageOnLeft: true,
-                  underlineWidthFactor: 0.45,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ClientRegistrationScreen(),
-                    ),
+                      // Client card — image on left
+                      _RoleCard(
+                        locale: locale,
+                        roleWord: locale.t('auth.roleClientWord'),
+                        description: locale.t('auth.roleClientDesc'),
+                        imageAssetPath: 'assets/public/client.webp',
+                        accentColor: AppColors.primary500,
+                        imageOnLeft: true,
+                        underlineWidthFactor: 0.45,
+                        onTap: () => _selectRole(asOwner: false),
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // Manager card — image on right
+                      _RoleCard(
+                        locale: locale,
+                        roleWord: locale.t('auth.roleManagerWord'),
+                        description: locale.t('auth.roleOwnerDesc'),
+                        imageAssetPath: 'assets/public/manager.webp',
+                        accentColor: const Color(0xFFC2F600),
+                        imageOnLeft: false,
+                        onTap: () => _selectRole(asOwner: true),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _AlreadyHaveAccountLink(
+                        locale: locale,
+                        onSignIn: _goToLogin,
+                      ),
+
+                      const Spacer(),
+
+                      // Terms
+                      _TermsText(locale: locale),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 22),
-
-                // Manager card — image on right
-                _RoleCard(
-                  locale: locale,
-                  roleWord: locale.t('auth.roleManagerWord'),
-                  description: locale.t('auth.roleOwnerDesc'),
-                  imageAssetPath: 'assets/public/manager.webp',
-                  accentColor: const Color(0xFFC2F600),
-                  imageOnLeft: false,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const BusinessRegistrationScreen(),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                _AlreadyHaveAccountLink(
-                  locale: locale,
-                  onSignIn: () => _goToLogin(context),
-                ),
-
-                const Spacer(),
-
-                // Terms
-                _TermsText(locale: locale),
-              ],
+              ),
             ),
-          ),
+            if (_isProvisioning)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x66000000),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -148,10 +237,7 @@ class RegistrationRoleScreen extends StatelessWidget {
 }
 
 class _AlreadyHaveAccountLink extends StatelessWidget {
-  const _AlreadyHaveAccountLink({
-    required this.locale,
-    required this.onSignIn,
-  });
+  const _AlreadyHaveAccountLink({required this.locale, required this.onSignIn});
 
   final LocaleProvider locale;
   final VoidCallback onSignIn;
@@ -339,7 +425,11 @@ class _RoleCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                ChaoticUnderline(height: 5, color: accentColor, widthFactor: underlineWidthFactor),
+                                ChaoticUnderline(
+                                  height: 5,
+                                  color: accentColor,
+                                  widthFactor: underlineWidthFactor,
+                                ),
                               ],
                             ),
                           ),

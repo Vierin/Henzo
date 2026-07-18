@@ -1,5 +1,5 @@
 ---
-title: 'How to Reduce No-Shows at Your Fitness Studio (Booking & Reminder Guide)'
+title: 'Reduce Studio No-Shows'
 description: 'Learn how fitness studio owners reduce no-shows with cancellation policies, automated class reminders, waitlists, and mobile booking software. Practical guide for boutique gyms and group class studios.'
 slug: reduce-no-shows
 publishedAt: '2026-05-15'
