@@ -312,8 +312,11 @@ class AuthService extends ChangeNotifier {
               isOwner: isStudioOperator,
             ),
           );
-          // Detect trainer account — non-blocking
-          unawaited(_fetchTrainerInfo(accessToken));
+          // Must finish before AuthWrapper routes: trainers are CLIENT users
+          // with a Trainer row. If this stays unawaited, ClientShell mounts
+          // briefly and triggers the unused location permission prompt.
+          await _fetchTrainerInfo(accessToken);
+          _syncTrainerInfoFromUserProfile();
         }
         return (ok: true, errorL10nKey: null, errorRaw: null);
       }
@@ -1075,7 +1078,10 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _fetchTrainerInfo(String? token) async {
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      _trainerInfo = null;
+      return;
+    }
     try {
       final url = Uri.parse('${AppConfig.apiUrl}/trainers/me/profile');
       final response = await http.get(
@@ -1088,12 +1094,12 @@ class AuthService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         _trainerInfo = TrainerInfo.fromJson(data);
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('[Auth] Trainer loaded: ${_trainerInfo?.name}');
+        }
       } else {
         _trainerInfo = null;
       }
-      notifyListeners();
     } catch (_) {
       _trainerInfo = null;
     }

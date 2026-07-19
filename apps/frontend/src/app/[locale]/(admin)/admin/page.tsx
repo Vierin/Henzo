@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { KpiCard } from '@/components/admin/kpi-card';
 import { fetchAdminOverview } from '@/lib/admin/api';
 import type { AdminOverview } from '@/lib/admin/types';
 
-function OverviewContent() {
+export default function AdminOverviewPage() {
   const [data, setData] = useState<AdminOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,39 +74,25 @@ function OverviewContent() {
           label="Active owners (7d)"
           value={data.ownersActive7d}
           hint="Booking or session activity in last 7 days"
+          href="/en/admin/studios?activityTier=active"
         />
-        <KpiCard label="Warming (8–30d)" value={data.ownersWarming30d} />
+        <KpiCard
+          label="Warming (8–30d)"
+          value={data.ownersWarming30d}
+          href="/en/admin/studios?activityTier=warming"
+        />
         <KpiCard
           label="Sleeping (30d+)"
           value={data.ownersSleeping30d}
           hint="Published studio, no recent activity"
+          href="/en/admin/studios?activityTier=sleeping"
         />
         <KpiCard
           label="Never used"
           value={data.ownersNeverUsed}
           hint="ACTIVE but zero bookings/sessions"
-        />
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/en/admin/studios?activityTier=active"
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-        >
-          View active →
-        </Link>
-        <Link
-          href="/en/admin/studios?activityTier=sleeping"
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-        >
-          View sleeping →
-        </Link>
-        <Link
           href="/en/admin/studios?activityTier=never_used"
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-        >
-          View never used →
-        </Link>
+        />
       </div>
 
       <h2 className="mt-10 text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -179,13 +164,5 @@ function OverviewContent() {
         ) : null}
       </div>
     </div>
-  );
-}
-
-export default function AdminOverviewPage() {
-  return (
-    <AdminGuard>
-      <OverviewContent />
-    </AdminGuard>
   );
 }

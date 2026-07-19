@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { fetchAdminStudios, sendAdminBroadcast } from '@/lib/admin/api';
 import type {
   AdminBroadcastPayload,
@@ -12,7 +11,7 @@ import type {
 type Audience = AdminBroadcastPayload['audience'];
 type Channel = AdminBroadcastPayload['channels'];
 
-function BroadcastContent() {
+export default function BroadcastContent() {
   const [channels, setChannels] = useState<Channel>('push');
   const [audience, setAudience] = useState<Audience>('all_owners');
   const [activityTier, setActivityTier] = useState('sleeping');
@@ -312,13 +311,5 @@ function BroadcastContent() {
         ) : null}
       </form>
     </div>
-  );
-}
-
-export default function AdminBroadcastPage() {
-  return (
-    <AdminGuard>
-      <BroadcastContent />
-    </AdminGuard>
   );
 }

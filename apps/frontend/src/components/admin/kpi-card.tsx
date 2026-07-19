@@ -1,3 +1,7 @@
+'use client';
+
+import Link from 'next/link';
+
 type KpiCardProps = {
   label: string;
   value: string | number;
@@ -21,8 +25,8 @@ export function KpiCard({ label, value, hint, href }: KpiCardProps) {
   if (!href) return card;
 
   return (
-    <a href={href} className="block">
+    <Link href={href} className="block">
       {card}
-    </a>
+    </Link>
   );
 }

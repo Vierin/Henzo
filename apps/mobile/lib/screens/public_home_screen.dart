@@ -111,6 +111,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
   Future<void> _bootstrapHomeData() async {
     if (!mounted) return;
+    // Trainers briefly used to land here via CLIENT role before trainerInfo
+    // loaded; never prompt for GPS on a shell that doesn't need it.
+    if (context.read<AuthService>().isTrainer) return;
     final loc = context.read<ClientLocationStore>();
     await _loadTopStudiosNearby();
     if (!loc.hasCity && !_locationModalShown) {

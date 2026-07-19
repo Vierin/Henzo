@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { fetchAdminSettings } from '@/lib/admin/api';
 import type { AdminSettings } from '@/lib/admin/types';
 
-function SettingsContent() {
+export default function SettingsContent() {
   const [data, setData] = useState<AdminSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,13 +73,5 @@ function SettingsContent() {
         ) : null}
       </div>
     </div>
-  );
-}
-
-export default function AdminSettingsPage() {
-  return (
-    <AdminGuard>
-      <SettingsContent />
-    </AdminGuard>
   );
 }

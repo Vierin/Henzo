@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminPaymentEvents } from '@/lib/admin/api';
 import type { AdminPaymentEventRow } from '@/lib/admin/types';
@@ -12,7 +11,7 @@ const typeLabels: Record<string, string> = {
   revenuecat_webhook_error: 'Webhook error',
 };
 
-function PaymentsContent() {
+export default function PaymentsContent() {
   const [rows, setRows] = useState<AdminPaymentEventRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -186,13 +185,5 @@ function PaymentsContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-export default function AdminPaymentsPage() {
-  return (
-    <AdminGuard>
-      <PaymentsContent />
-    </AdminGuard>
   );
 }
