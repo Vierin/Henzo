@@ -45,6 +45,7 @@ describe('AuthService email flows', () => {
       emailService as any,
       configService as any,
       jwtVerifier as any,
+      { notifyStudioClosed: jest.fn() } as any,
     );
 
     return { service, prisma, emailService };
@@ -227,6 +228,7 @@ describe('AuthService getCurrentUser cache', () => {
       emailService as any,
       configService as any,
       jwtVerifier as any,
+      { notifyStudioClosed: jest.fn() } as any,
     );
 
     return { service, prisma, jwtVerifier };
@@ -283,6 +285,7 @@ describe('resolveAutoProvisionRole', () => {
       {} as any,
       { get: jest.fn() } as any,
       {} as any,
+      { notifyStudioClosed: jest.fn() } as any,
     );
     return service;
   };
@@ -338,6 +341,7 @@ describe('deleteUserAccount', () => {
       { sendEmail: jest.fn() } as any,
       { get: jest.fn() } as any,
       { verifyToken: jest.fn() } as any,
+      { notifyStudioClosed: jest.fn().mockResolvedValue(undefined) } as any,
     );
     jest
       .spyOn(service as any, 'cleanupOwnerStorage')

@@ -25,6 +25,9 @@ export const notificationTranslations = {
     sessionCancelledTitle: 'Class cancelled',
     sessionCancelledBody: '{class} at {studio} on {date} has been cancelled.',
     sessionCancelledNote: 'Note: {note}',
+    studioClosedTitle: 'Studio update',
+    studioClosedBody:
+      '{studio} has temporarily paused classes. Your upcoming bookings there were cancelled.',
     sessionRescheduledTitle: 'Class time changed',
     sessionRescheduledBody: '{class} at {studio} moved to {date}.',
     newReviewTitle: 'New review ⭐',
@@ -61,6 +64,9 @@ export const notificationTranslations = {
     sessionCancelledTitle: 'Занятие отменено',
     sessionCancelledBody: '{class} в {studio} {date} отменено.',
     sessionCancelledNote: 'Причина: {note}',
+    studioClosedTitle: 'Обновление студии',
+    studioClosedBody:
+      '{studio} временно приостановила занятия. Ваши предстоящие записи туда отменены.',
     sessionRescheduledTitle: 'Время занятия изменено',
     sessionRescheduledBody: '{class} в {studio} перенесено на {date}.',
     newReviewTitle: 'Новый отзыв ⭐',
@@ -97,6 +103,9 @@ export const notificationTranslations = {
     sessionCancelledTitle: 'Lớp học đã bị hủy',
     sessionCancelledBody: '{class} tại {studio} ngày {date} đã bị hủy.',
     sessionCancelledNote: 'Lý do: {note}',
+    studioClosedTitle: 'Cập nhật studio',
+    studioClosedBody:
+      '{studio} tạm dừng các lớp học. Các đặt chỗ sắp tới của bạn tại đó đã bị hủy.',
     sessionRescheduledTitle: 'Thay đổi thời gian lớp học',
     sessionRescheduledBody: '{class} tại {studio} đã được dời sang {date}.',
     newReviewTitle: 'Đánh giá mới ⭐',

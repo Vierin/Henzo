@@ -255,6 +255,7 @@ bool _isClientSessionNotification(AppNotification n) {
       type == 'WAITLIST_SPOT_OPENED' ||
       type == 'SESSION_CANCELLED' ||
       type == 'SESSION_RESCHEDULED' ||
+      type == 'STUDIO_CLOSED' ||
       (n.data['sessionId']?.trim().isNotEmpty ?? false);
 }
 
@@ -263,7 +264,7 @@ _NotificationKind _notificationKind(AppNotification n, bool forClient) {
   final text = '${n.title} ${n.body}'.toLowerCase();
 
   if (forClient && (_isReminder(n) || _isClientSessionNotification(n))) {
-    if (type.contains('cancel')) {
+    if (type.contains('cancel') || type == 'studio_closed') {
       return _NotificationKind.bookingCancelled;
     }
     return _NotificationKind.booking;

@@ -4,6 +4,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   Logger,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { supabase } from '../lib/supabase';
@@ -16,6 +17,7 @@ import { renderOtpEmailHtml } from '../email/templates/transactional-email-templ
 import { OTP_EMAIL_STRINGS } from '../email/copy/otp-email.strings';
 import { resolveClientEmailLocale } from '../email/copy/client-email-locale';
 import { Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type RegistrationOtpKind = 'client' | 'owner';
 
@@ -41,6 +43,8 @@ export class AuthService {
     private emailService: EmailService,
     private configService: ConfigService,
     private jwtVerifier: JwtVerifierService,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
   ) {}
 
   private generateOtpCode() {
@@ -2024,26 +2028,30 @@ export class AuthService {
     const bucket =
       this.configService.get<string>('SUPABASE_STUDIO_PHOTOS_BUCKET') ||
       'studio-photos';
-    const prefix = `owners/${userId}`;
+    const root = `owners/${userId}`;
+    // Gallery/logo assets live in nested folders — list each known prefix.
+    const prefixes = [root, `${root}/gallery`, `${root}/logo`];
 
     try {
-      const { data: files, error } = await supabase.storage
-        .from(bucket)
-        .list(prefix, { limit: 1000 });
+      const paths: string[] = [];
+      for (const prefix of prefixes) {
+        const { data: files, error } = await supabase.storage
+          .from(bucket)
+          .list(prefix, { limit: 1000 });
 
-      if (error) {
-        this.authWarn(
-          `⚠️ Failed to list owner storage for ${userId}:`,
-          error.message,
-        );
-        return;
+        if (error) {
+          this.authWarn(
+            `⚠️ Failed to list owner storage for ${prefix}:`,
+            error.message,
+          );
+          continue;
+        }
+
+        for (const file of files ?? []) {
+          if (!file.name || file.name.endsWith('/')) continue;
+          paths.push(`${prefix}/${file.name}`);
+        }
       }
-
-      if (!files?.length) return;
-
-      const paths = files
-        .filter((file) => file.name && !file.name.endsWith('/'))
-        .map((file) => `${prefix}/${file.name}`);
 
       if (paths.length === 0) return;
 
@@ -2091,6 +2099,14 @@ export class AuthService {
         bookingsCount: user.Booking.length,
         reviewsCount: user.Review.length,
       });
+
+      // Notify affected clients before cascade wipe (best-effort).
+      for (const studio of user.Studio ?? []) {
+        await this.notificationsService.notifyStudioClosed({
+          id: studio.id,
+          name: studio.name,
+        });
+      }
 
       await this.prisma.$transaction(async (tx: any) => {
         for (const studio of user.Studio ?? []) {
