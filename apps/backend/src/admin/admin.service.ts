@@ -20,6 +20,7 @@ import { StudioAnalyticsService } from '../fitness/studio-analytics.service';
 import { FitnessSessionsService } from '../fitness/fitness-sessions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailService } from '../email/email.service';
+import { renderBroadcastEmail } from '../email/templates/broadcast-email.template';
 import { CreateAdminBroadcastDto } from './dto/create-admin-broadcast.dto';
 import { UpdateStudioDto } from '../studios/dto/update-studio.dto';
 import { CreateServiceDto } from '../trainings/dto/create-service.dto';
@@ -31,15 +32,6 @@ import { PatchAdminFeedbackDto } from './dto/patch-admin-feedback.dto';
 import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
 
 const ADMIN_TZ = 'Asia/Ho_Chi_Minh';
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function startOfTodayInTz(): Date {
   const now = new Date();
@@ -1454,9 +1446,9 @@ export class AdminService {
     }
 
     if (wantEmail) {
-      const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#3f3f3f;line-height:1.6"><h2 style="color:#3f3f3f">${escapeHtml(
-        dto.title,
-      )}</h2><p>${escapeHtml(dto.body).replace(/\n/g, '<br/>')}</p><p style="margin-top:24px;color:#9ca3af;font-size:12px">Henzo · henzo.app</p></div>`;
+      // The title is used only as the email subject below — not repeated in the
+      // body — and the template adds the signature + logo footer.
+      const html = renderBroadcastEmail({ body: dto.body });
 
       const CHUNK = 10;
       for (let i = 0; i < owners.length; i += CHUNK) {
