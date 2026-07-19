@@ -166,7 +166,14 @@ export function LanguageProvider({
     publicModules.push('public/homepage');
     publicModules.push('public/categories');
   } else if (pathNoLocale.startsWith('/studio/')) {
-    // Studio share landing — no salon/booking UI
+    // Studio share landing (AppOpenLanding)
+    publicModules.push('public/appOpen');
+  } else if (pathNoLocale.startsWith('/class')) {
+    // Class share landing (AppOpenLanding)
+    publicModules.push('public/appOpen');
+  } else if (pathNoLocale.startsWith('/trainer-invite')) {
+    // Trainer invite landing (AppOpenLanding)
+    publicModules.push('public/appOpen');
   } else if (pathNoLocale.startsWith('/bookings/')) {
     publicModules.push('public/booking');
   } else if (pathNoLocale.startsWith('/booking')) {

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
 import { computeTrainingDisplayColor } from './training-color.util';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { PlanLimitsService } from '../subscriptions/plan-limits.service';
 
 /** Normalize Training payload for JSON (hide Prisma relation names where redundant). */
 function mapTrainingResponse(t: any) {
@@ -27,6 +28,7 @@ export class TrainingsService {
   constructor(
     @Inject(PrismaService) private prisma: any,
     private readonly analytics: AnalyticsService,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   private parseHm(value: string): { hour: number; minute: number } {
@@ -661,6 +663,17 @@ export class TrainingsService {
         status: 'ACTIVE',
       });
       createdCount += 1;
+    }
+
+    if (createRows.length > 0) {
+      await this.planLimits.assertCanCreateSessions(
+        training.studioId,
+        createRows.map((r) => r.startsAt as Date),
+        {
+          // Sessions being removed no longer count toward the month.
+          excludeSessionIds: toDelete,
+        },
+      );
     }
 
     await this.prisma.$transaction(async (tx: any) => {

@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import type {
+  AdminBooking,
   AdminBroadcastPayload,
   AdminBroadcastResult,
   AdminFeedbackRow,
@@ -133,6 +134,18 @@ export async function fetchAdminStudioTrainers(
   return res.data;
 }
 
+export async function fetchAdminStudioBookings(
+  studioId: string,
+  sort?: string,
+): Promise<AdminBooking[]> {
+  const q = new URLSearchParams();
+  if (sort) q.set('sort', sort);
+  const res = await apiClient.get<ApiWrap<AdminBooking[]>>(
+    `/admin/studios/${studioId}/bookings?${q.toString()}`,
+  );
+  return res.data;
+}
+
 export async function createAdminStudioTrainer(
   studioId: string,
   body: {
@@ -218,6 +231,16 @@ export async function patchAdminSubscription(
   const res = await apiClient.patch<ApiWrap<AdminSubscription>>(
     `/admin/subscriptions/${id}`,
     body,
+  );
+  return res.data;
+}
+
+export async function activateFounderProgram(
+  subscriptionId: string,
+): Promise<AdminSubscription> {
+  const res = await apiClient.post<ApiWrap<AdminSubscription>>(
+    `/admin/subscriptions/${subscriptionId}/founder-program`,
+    {},
   );
   return res.data;
 }

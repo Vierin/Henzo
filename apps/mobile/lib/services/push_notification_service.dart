@@ -40,6 +40,11 @@ class PushNotificationService {
   static void Function(String title, String body, Map<String, String> data)?
   onNotificationReceived;
 
+  /// Called only when the user *taps* a push (from background or terminated),
+  /// so the app can route based on the payload's `type` (e.g. open the trainer
+  /// schedule for a TRAINER_ASSIGNED push). Not called for foreground messages.
+  static void Function(Map<String, String> data)? onNotificationTapped;
+
   static String? _pendingAccessToken;
   static String? _pendingLanguage;
 
@@ -48,8 +53,10 @@ class PushNotificationService {
   static Future<void> initialize({
     void Function(String title, String body, Map<String, String> data)?
     onNotificationReceived,
+    void Function(Map<String, String> data)? onNotificationTapped,
   }) async {
     PushNotificationService.onNotificationReceived = onNotificationReceived;
+    PushNotificationService.onNotificationTapped = onNotificationTapped;
     _log('initialize start');
     try {
       final androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -323,11 +330,13 @@ class PushNotificationService {
 
   static void _onMessageOpenedApp(RemoteMessage message) {
     _log('onMessageOpenedApp: ${message.data}');
+    final data = _dataToStringMap(message.data);
     _notifyReceived(
       message.notification?.title ?? 'Henzo',
       message.notification?.body ?? '',
-      _dataToStringMap(message.data),
+      data,
     );
+    onNotificationTapped?.call(data);
   }
 
   /// Keep launcher / home-screen badge aligned with in-app unread count.

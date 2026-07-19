@@ -1455,6 +1455,110 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * Notifies a trainer that the studio owner assigned them to a class/session.
+   * Resolves the trainer's linked user account; if the trainer has not yet
+   * accepted their invite (no linked user), there is nobody to notify.
+   */
+  async sendTrainerAssignedPush(
+    trainerId: string,
+    sessionInfo: {
+      sessionId: string;
+      studioId: string;
+      className: string;
+      studioName: string;
+      startsAt: Date;
+      timezone?: string;
+    },
+  ): Promise<void> {
+    try {
+      const trainer = await this.prisma.trainer.findUnique({
+        where: { id: trainerId },
+        select: { userId: true },
+      });
+      const userId = trainer?.userId;
+      if (!userId) return;
+
+      const tokens = await this.getPushTokensByUserId(userId);
+
+      const tz = sessionInfo.timezone ?? 'Asia/Ho_Chi_Minh';
+      const dateStr = sessionInfo.startsAt.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: tz,
+      });
+
+      const baseLang = tokens[0]?.language || 'en';
+      const buildContent = (lang: string) => {
+        const title = getNotificationText(lang, 'trainerAssignedTitle' as any);
+        const body = formatNotificationTemplate(
+          getNotificationText(lang, 'trainerAssignedBody' as any),
+          {
+            class: sessionInfo.className,
+            studio: sessionInfo.studioName,
+            date: dateStr,
+          },
+        );
+        return { title, body };
+      };
+      const pushData = this.clientSessionPushData({
+        type: 'TRAINER_ASSIGNED',
+        sessionId: sessionInfo.sessionId,
+        studioId: sessionInfo.studioId,
+        startsAt: sessionInfo.startsAt,
+        trainingName: sessionInfo.className,
+        studioName: sessionInfo.studioName,
+        timezone: tz,
+      });
+
+      const { title, body } = buildContent(baseLang);
+      try {
+        const inAppId = await this.createInAppNotification({
+          userId,
+          type: 'TRAINER_ASSIGNED',
+          title,
+          body,
+          data: pushData,
+        });
+        pushData.notificationId = inAppId;
+      } catch (inAppErr) {
+        console.error(
+          '[Notifications] Failed to save trainer-assigned in-app notification:',
+          inAppErr,
+        );
+      }
+
+      if (tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const localized = buildContent(lang);
+        await this.sendPushNotification(
+          langTokens,
+          localized.title,
+          localized.body,
+          pushData,
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error(
+        '[Notifications] Failed to send trainer-assigned push:',
+        err,
+      );
+    }
+  }
+
   async sendWaitlistPromotionPush(
     userId: string,
     sessionInfo: {
@@ -1527,6 +1631,114 @@ export class NotificationsService {
       }
     } catch (err) {
       console.error('[Notifications] Failed to send waitlist push:', err);
+    }
+  }
+
+  /**
+   * Notifies a studio owner that an admin granted/extended their subscription,
+   * or added them to the Founder Program. Saves an in-app (system) notification
+   * with the subscription end date and pushes to the owner's devices.
+   */
+  async sendSubscriptionUpdatePush(
+    studioId: string,
+    info: {
+      plan: string;
+      currentPeriodEnd: Date | null;
+      founder?: boolean;
+      founderDays?: number;
+    },
+  ): Promise<void> {
+    try {
+      const studio = await this.prisma.studio.findUnique({
+        where: { id: studioId },
+        select: { ownerId: true },
+      });
+      if (!studio) return;
+
+      const tokens = await this.getPushTokensByUserId(studio.ownerId);
+      const baseLang = tokens[0]?.language || 'en';
+      const localeMap: Record<string, string> = {
+        en: 'en-GB',
+        ru: 'ru-RU',
+        vi: 'vi-VN',
+      };
+
+      const formatDate = (lang: string) => {
+        if (!info.currentPeriodEnd) return '—';
+        return info.currentPeriodEnd.toLocaleDateString(
+          localeMap[lang] ?? 'en-GB',
+          { day: 'numeric', month: 'short', year: 'numeric' },
+        );
+      };
+
+      const buildContent = (lang: string) => {
+        if (info.founder) {
+          return {
+            title: getNotificationText(lang, 'founderProgramTitle'),
+            body: formatNotificationTemplate(
+              getNotificationText(lang, 'founderProgramBody'),
+              { days: String(info.founderDays ?? 90), date: formatDate(lang) },
+            ),
+          };
+        }
+        return {
+          title: getNotificationText(lang, 'subscriptionUpdatedTitle'),
+          body: formatNotificationTemplate(
+            getNotificationText(lang, 'subscriptionUpdatedBody'),
+            { plan: info.plan, date: formatDate(lang) },
+          ),
+        };
+      };
+
+      const type = info.founder ? 'FOUNDER_PROGRAM' : 'SUBSCRIPTION_UPDATED';
+      const pushData: Record<string, string> = {
+        type,
+        studioId,
+        plan: info.plan,
+        currentPeriodEnd: info.currentPeriodEnd
+          ? info.currentPeriodEnd.toISOString()
+          : '',
+      };
+
+      const base = buildContent(baseLang);
+      try {
+        const inAppId = await this.createInAppNotification({
+          userId: studio.ownerId,
+          type,
+          title: base.title,
+          body: base.body,
+          data: pushData,
+        });
+        pushData.notificationId = inAppId;
+      } catch (inAppErr) {
+        console.error(
+          '[Notifications] Failed to save subscription in-app notification:',
+          inAppErr,
+        );
+      }
+
+      if (tokens.length === 0) return;
+
+      const languageGroups = new Map<string, typeof tokens>();
+      for (const t of tokens) {
+        const lang = t.language || 'en';
+        if (!languageGroups.has(lang)) languageGroups.set(lang, []);
+        languageGroups.get(lang)!.push(t);
+      }
+
+      for (const [lang, langTokens] of languageGroups) {
+        const localized = buildContent(lang);
+        await this.sendPushNotification(
+          langTokens,
+          localized.title,
+          localized.body,
+          pushData,
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (err) {
+      console.error('[Notifications] Failed to send subscription push:', err);
     }
   }
 }

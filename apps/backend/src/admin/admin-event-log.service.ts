@@ -10,6 +10,7 @@ export type AdminEventType =
   | 'crash_free_rate_snapshot'
   | 'admin_action'
   | 'admin_subscription_changed'
+  | 'admin_founder_program_activated'
   | 'admin_studio_edited'
   | 'admin_broadcast';
 

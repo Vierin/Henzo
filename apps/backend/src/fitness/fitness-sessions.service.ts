@@ -196,7 +196,7 @@ export class FitnessSessionsService {
       throw new Error('Training not found');
     }
 
-    await this.planLimits.assertMonthlySessionsLimit(dto.studioId);
+    // Plan limit is enforced per candidate month below (not a single pre-check).
 
     const resolvedTrainerId = studio.User
       ? await resolveTrainerIdForSession(
@@ -291,6 +291,16 @@ export class FitnessSessionsService {
         (slot): slot is { startsAt: Date; endsAt: Date } => slot !== null,
       );
 
+    const { accepted: quotaSafeCandidates, skippedDueToLimit } =
+      await this.planLimits.filterSessionsWithinQuota(dto.studioId, candidates);
+
+    if (quotaSafeCandidates.length === 0 && skippedDueToLimit > 0) {
+      // All candidates blocked by plan cap — surface upgrade dialog on mobile.
+      await this.planLimits.assertCanCreateSessions(dto.studioId, [
+        candidates[0].startsAt,
+      ]);
+    }
+
     const createdSessions: Array<{
       id: string;
       startsAt: string;
@@ -298,9 +308,9 @@ export class FitnessSessionsService {
       status: SessionStatus;
       capacity: number;
     }> = [];
-    let skippedCount = 0;
+    let skippedCount = skippedDueToLimit;
 
-    for (const slot of candidates) {
+    for (const slot of quotaSafeCandidates) {
       const overlap = await this.prisma.trainingSession.findFirst({
         where: {
           studioId: dto.studioId,
@@ -356,6 +366,7 @@ export class FitnessSessionsService {
       data: {
         createdCount: createdSessions.length,
         skippedCount,
+        skippedDueToLimit,
         createdSessions,
         bookingPeriodDays,
       },
@@ -583,6 +594,15 @@ export class FitnessSessionsService {
         }
       }
 
+      const willCountTowardQuota = status !== TrainingSessionStatus.CANCELLED;
+      if (willCountTowardQuota) {
+        await this.planLimits.assertCanCreateSessions(
+          session.studioId,
+          [startsAt],
+          { excludeSessionIds: [sessionId] },
+        );
+      }
+
       const wasActive = session.status === TrainingSessionStatus.ACTIVE;
       const timeChanged =
         dto.startsAt !== undefined &&
@@ -603,6 +623,26 @@ export class FitnessSessionsService {
           ...(beingCancelled ? { cancelNote } : {}),
         },
       });
+
+      // Notify the trainer when they are newly assigned to this session.
+      const assignedTrainerId = trainerId;
+      const trainerNewlyAssigned =
+        dto.trainerId !== undefined &&
+        !!assignedTrainerId &&
+        assignedTrainerId !== session.trainerId &&
+        status !== TrainingSessionStatus.CANCELLED;
+      if (trainerNewlyAssigned && assignedTrainerId) {
+        void this.notificationsService.sendTrainerAssignedPush(
+          assignedTrainerId,
+          {
+            sessionId,
+            studioId: session.studioId,
+            className: session.Training?.name || 'class',
+            studioName: session.Studio?.name || 'studio',
+            startsAt,
+          },
+        );
+      }
 
       if (wasActive) {
         if (beingCancelled) {
@@ -696,6 +736,17 @@ export class FitnessSessionsService {
       }
     }
 
+    const plannedCounting = planned.filter(
+      (p) => p.status !== TrainingSessionStatus.CANCELLED,
+    );
+    if (plannedCounting.length > 0) {
+      await this.planLimits.assertCanCreateSessions(
+        session.studioId,
+        plannedCounting.map((p) => p.startsAt),
+        { excludeSessionIds: batchIds },
+      );
+    }
+
     await this.prisma.$transaction(
       planned.map((p) =>
         this.prisma.trainingSession.update({
@@ -719,6 +770,31 @@ export class FitnessSessionsService {
       session.status !== TrainingSessionStatus.CANCELLED;
     const cancelNote = dto.note?.trim() || null;
     const timeChangedBulk = timeDeltaMs !== null && timeDeltaMs !== 0;
+
+    // Notify the trainer once when they are newly assigned across the series.
+    const assignedTrainerIdBulk = trainerId;
+    if (
+      dto.trainerId !== undefined &&
+      assignedTrainerIdBulk &&
+      assignedTrainerIdBulk !== session.trainerId &&
+      !beingCancelledBulk
+    ) {
+      const firstActive = planned.find(
+        (p) => p.status === TrainingSessionStatus.ACTIVE,
+      );
+      if (firstActive) {
+        void this.notificationsService.sendTrainerAssignedPush(
+          assignedTrainerIdBulk,
+          {
+            sessionId: firstActive.id,
+            studioId: session.studioId,
+            className,
+            studioName,
+            startsAt: firstActive.startsAt,
+          },
+        );
+      }
+    }
 
     if (beingCancelledBulk && cancelNote) {
       await this.prisma.trainingSession.updateMany({
@@ -773,7 +849,15 @@ export class FitnessSessionsService {
 
     const wasCancelled = session.status === TrainingSessionStatus.CANCELLED;
     const beingCancelled = status === 'CANCELLED' && !wasCancelled;
+    const beingReactivated =
+      wasCancelled && status !== TrainingSessionStatus.CANCELLED;
     const cancelNote = note?.trim() || null;
+
+    if (beingReactivated) {
+      await this.planLimits.assertCanCreateSessions(session.studioId, [
+        session.startsAt,
+      ]);
+    }
 
     await this.prisma.trainingSession.update({
       where: { id: sessionId },

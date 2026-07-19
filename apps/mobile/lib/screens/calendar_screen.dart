@@ -127,6 +127,24 @@ class CalendarScreenState extends State<CalendarScreen> {
     _loadData();
   }
 
+  /// Forces a background reload of the schedule. Triggered when the trainer taps
+  /// an assignment push, so the newly assigned session appears without a manual
+  /// pull-to-refresh. This is event-driven (one fetch per tap), not polling.
+  void reloadSessions() {
+    if (!_sessionsLoadStarted) {
+      _sessionsLoadStarted = true;
+      _loadData();
+      return;
+    }
+    if (_sessionsReloadInFlight) return;
+    _sessionsReloadInFlight = true;
+    unawaited(
+      _loadData(showLoading: false).whenComplete(() {
+        _sessionsReloadInFlight = false;
+      }),
+    );
+  }
+
   @override
   void dispose() {
     _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);

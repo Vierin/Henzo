@@ -3,7 +3,6 @@ import type { ClientEmailLocale } from './client-email-locale';
 export type TrainerInviteEmailStrings = {
   pageTitle: string;
   subject: string;
-  badge: string;
   headingBefore: string;
   body: string;
   buttonLabel: string;
@@ -21,7 +20,6 @@ export const TRAINER_INVITE_EMAIL_STRINGS: Record<
   en: {
     pageTitle: 'Trainer invitation — Henzo',
     subject: "You're invited to join {studioName} on Henzo",
-    badge: 'Trainer invite',
     headingBefore: "You've been invited to join",
     body: 'You have been added as a trainer. Click the button below to create your account and get started.',
     buttonLabel: 'Accept invitation',
@@ -34,7 +32,6 @@ export const TRAINER_INVITE_EMAIL_STRINGS: Record<
   ru: {
     pageTitle: 'Приглашение тренера — Henzo',
     subject: 'Приглашение присоединиться к {studioName} в Henzo',
-    badge: 'Приглашение тренера',
     headingBefore: 'Вас пригласили присоединиться к',
     body: 'Вас добавили как тренера. Нажмите кнопку ниже, чтобы создать аккаунт и начать работу.',
     buttonLabel: 'Принять приглашение',
@@ -47,7 +44,6 @@ export const TRAINER_INVITE_EMAIL_STRINGS: Record<
   vi: {
     pageTitle: 'Lời mời huấn luyện viên — Henzo',
     subject: 'Bạn được mời tham gia {studioName} trên Henzo',
-    badge: 'Lời mời huấn luyện viên',
     headingBefore: 'Bạn được mời tham gia',
     body: 'Bạn đã được thêm làm huấn luyện viên. Nhấn nút bên dưới để tạo tài khoản và bắt đầu.',
     buttonLabel: 'Chấp nhận lời mời',

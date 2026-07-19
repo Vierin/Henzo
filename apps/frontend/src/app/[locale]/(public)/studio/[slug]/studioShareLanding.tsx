@@ -2,11 +2,13 @@
 
 import { useParams, useSearchParams } from 'next/navigation';
 import { AppOpenLanding } from '@/components/public/appOpenLanding';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { buildStudioDeepLink } from '@/lib/appOpenFallback';
 
 export function StudioShareLanding() {
   const params = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
+  const t = useTranslation();
 
   const slugOrId = (params.slug ?? '').trim();
   const studioName = searchParams.get('name')?.trim() ?? '';
@@ -17,13 +19,13 @@ export function StudioShareLanding() {
     : 'henzo://studio';
 
   const title = studioName
-    ? `Join ${studioName} on Henzo`
-    : "You're invited to a studio";
+    ? t('appOpen.studioShare.titleNamed').replace('{name}', studioName)
+    : t('appOpen.studioShare.titleGeneric');
 
   return (
     <AppOpenLanding
       title={title}
-      description="Open Henzo to view the studio schedule and book a class."
+      description={t('appOpen.studioShare.description')}
       deepLink={deepLink}
       autoOpenOnMobile={hasValidLink}
       icon="studio"

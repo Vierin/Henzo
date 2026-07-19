@@ -13,6 +13,11 @@ import 'trainer_profile_screen.dart';
 class TrainerShell extends StatefulWidget {
   const TrainerShell({super.key});
 
+  /// The currently mounted trainer shell, if any. Used by the push-notification
+  /// tap handler to open the schedule tab without a global key (which would
+  /// clash with the per-user session key the shell is built with).
+  static TrainerShellState? currentState;
+
   @override
   State<TrainerShell> createState() => TrainerShellState();
 }
@@ -29,6 +34,7 @@ class TrainerShellState extends State<TrainerShell> {
   @override
   void initState() {
     super.initState();
+    TrainerShell.currentState = this;
     _tabs = [
       const DashboardScreen(trainerMode: true),
       CalendarScreen(key: _scheduleCalendarKey, trainerMode: true),
@@ -39,10 +45,28 @@ class TrainerShellState extends State<TrainerShell> {
     });
   }
 
+  @override
+  void dispose() {
+    if (identical(TrainerShell.currentState, this)) {
+      TrainerShell.currentState = null;
+    }
+    super.dispose();
+  }
+
   void openScheduleTabForToday() {
     setState(() => _currentIndex = scheduleTabIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduleCalendarKey.currentState?.ensureSessionsLoaded();
+      _scheduleCalendarKey.currentState?.jumpToToday();
+    });
+  }
+
+  /// Opens the Schedule tab and forces a reload — used when the trainer taps an
+  /// assignment push so the newly assigned session appears right away.
+  void openScheduleAndRefresh() {
+    setState(() => _currentIndex = scheduleTabIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleCalendarKey.currentState?.reloadSessions();
       _scheduleCalendarKey.currentState?.jumpToToday();
     });
   }

@@ -167,6 +167,16 @@ export type AdminTrainer = {
   accessLevel: string;
 };
 
+export type AdminBooking = {
+  id: string;
+  status: string;
+  startsAt: string;
+  createdAt: string;
+  User: { name: string | null; email: string } | null;
+  Training: { name: string } | null;
+  Trainer: { name: string } | null;
+};
+
 export type WeeklyActivityBucket = {
   weekStart: string;
   bookings: number;
