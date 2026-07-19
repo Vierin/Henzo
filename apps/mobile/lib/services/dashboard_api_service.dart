@@ -980,8 +980,9 @@ class DashboardApiService {
     if (serviceId != null && serviceId.isNotEmpty) {
       body['serviceId'] = serviceId;
     }
-    if (trainerId != null && trainerId.isNotEmpty)
+    if (trainerId != null && trainerId.isNotEmpty) {
       body['trainerId'] = trainerId;
+    }
     if (timeIso != null && timeIso.isNotEmpty) body['time'] = timeIso;
     if (notes != null) body['notes'] = notes;
     if (status != null && status.isNotEmpty) body['status'] = status;

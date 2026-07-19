@@ -186,9 +186,11 @@ void _openClassFromPush(Map<String, String> data, [int attempt = 0]) {
     return;
   }
 
-  final startsAt = DateTime.tryParse(
-    data['startsAt'] ?? data['dateTime'] ?? '',
-  )?.toLocal();
+  final startsAt =
+      DateTime.tryParse(
+        data['startsAt'] ?? data['dateTime'] ?? '',
+      )?.toLocal() ??
+      DateTime.now();
   nav.push(
     MaterialPageRoute<void>(
       builder: (_) => PublicClassDetailScreen(

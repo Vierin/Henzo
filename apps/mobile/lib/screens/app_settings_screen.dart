@@ -156,7 +156,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   Future<void> _openClientRemindersSheet() async {
     final studio = _studio;
     if (studio == null) return;
-    final changed = await showOwnerClientRemindersSheet(context, studio: studio);
+    final changed = await showOwnerClientRemindersSheet(
+      context,
+      studio: studio,
+    );
     if (changed == true && mounted) await _loadData();
   }
 
@@ -272,12 +275,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                               builder: (_) => const SubscriptionScreen(),
                             ),
                           );
-                          if (mounted) await _loadData();
-                          if (mounted) {
-                            context
-                                .read<SubscriptionRefreshNotifier>()
-                                .notifySubscriptionMaybeChanged();
-                          }
+                          if (!context.mounted) return;
+                          await _loadData();
+                          if (!context.mounted) return;
+                          context
+                              .read<SubscriptionRefreshNotifier>()
+                              .notifySubscriptionMaybeChanged();
                         },
                       ),
                     ],

@@ -109,8 +109,9 @@ class _OwnerEditTrainingSessionScreenState
       );
       var selectedLocationId = _selectedLocationId;
       if (!locations.any((l) => l.id == selectedLocationId)) {
-        selectedLocationId =
-            locations.isNotEmpty ? locations.first.id : 'default';
+        selectedLocationId = locations.isNotEmpty
+            ? locations.first.id
+            : 'default';
       }
       var selectedTrainerId = _trainerId?.trim();
       if (selectedTrainerId != null && selectedTrainerId.isEmpty) {
@@ -420,10 +421,7 @@ class _OwnerEditTrainingSessionScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  caption.toUpperCase(),
-                  style: _compactCaptionStyle,
-                ),
+                Text(caption.toUpperCase(), style: _compactCaptionStyle),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -546,8 +544,9 @@ class _OwnerEditTrainingSessionScreenState
     final durationMin = base.trainingDurationMinutes ?? 60;
     final loc = _selectedLocation;
     final locName = loc?.name.trim();
-    final resolvedLocName =
-        locName != null && locName.isNotEmpty ? locName : base.locationName;
+    final resolvedLocName = locName != null && locName.isNotEmpty
+        ? locName
+        : base.locationName;
     final trainer = _trainers.where((t) => t.id == _trainerId).firstOrNull;
     final trainerName = trainer?.name.trim().isNotEmpty == true
         ? trainer!.name.trim()
@@ -570,8 +569,7 @@ class _OwnerEditTrainingSessionScreenState
       trainingCategoryNameVn: base.trainingCategoryNameVn,
       trainerName: trainerName,
       trainerId: _trainerId ?? base.trainerId,
-      locationId:
-          _selectedLocationId == 'default' ? null : _selectedLocationId,
+      locationId: _selectedLocationId == 'default' ? null : _selectedLocationId,
       locationName: resolvedLocName,
     );
   }
@@ -622,9 +620,9 @@ class _OwnerEditTrainingSessionScreenState
         body,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(locale.t('common.changesSaved'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(locale.t('common.changesSaved'))));
       context.read<OwnerSessionsCache>().invalidate();
       Navigator.of(context).pop(_buildUpdatedSession());
     } catch (e) {
@@ -644,8 +642,10 @@ class _OwnerEditTrainingSessionScreenState
         session.status.toUpperCase() == 'COMPLETED') {
       return;
     }
-    final scope = await showOwnerSessionCancelScopeDialog(context);
-    if (!mounted || scope == null) return;
+    final result = await showOwnerSessionCancelScopeDialog(context);
+    if (!mounted || result == null) return;
+    final scope = result.scope;
+    final note = result.note;
 
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
@@ -656,13 +656,14 @@ class _OwnerEditTrainingSessionScreenState
         await DashboardApiService.patchOwnerTrainingSession(
           token,
           session.sessionId,
-          {'status': 'CANCELLED', 'applyToFollowing': true},
+          {'status': 'CANCELLED', 'applyToFollowing': true, 'note': ?note},
         );
       } else {
         await DashboardApiService.updateOwnerTrainingSessionStatus(
           token,
           session.sessionId,
           'CANCELLED',
+          note: note,
         );
       }
       if (!mounted) return;
@@ -671,9 +672,9 @@ class _OwnerEditTrainingSessionScreenState
           : locale.t('ownerSession.sessionCancelled');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       context.read<OwnerSessionsCache>().invalidate();
-      Navigator.of(context).pop(
-        _buildUpdatedSession(statusOverride: 'CANCELLED'),
-      );
+      Navigator.of(
+        context,
+      ).pop(_buildUpdatedSession(statusOverride: 'CANCELLED'));
     } catch (e) {
       if (mounted) showApiError(context, e);
     } finally {
@@ -698,7 +699,8 @@ class _OwnerEditTrainingSessionScreenState
 
     final statusUpper = session.status.toUpperCase();
     final nowTs = DateTime.now();
-    final completed = !session.effectiveEndsAt.isAfter(nowTs) &&
+    final completed =
+        !session.effectiveEndsAt.isAfter(nowTs) &&
         !session.startsAt.isAfter(nowTs);
     final canEditSchedule = !completed;
     final canPickLocation =
@@ -831,7 +833,9 @@ class _OwnerEditTrainingSessionScreenState
               : Text(locale.t('common.save')),
         ),
       ),
-      if (!completed && statusUpper != 'CANCELLED' && statusUpper != 'COMPLETED') ...[
+      if (!completed &&
+          statusUpper != 'CANCELLED' &&
+          statusUpper != 'COMPLETED') ...[
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,

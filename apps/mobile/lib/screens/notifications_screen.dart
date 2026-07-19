@@ -789,13 +789,10 @@ class _NotificationCard extends StatelessWidget {
       return [
         TextSpan(text: studio, style: bold),
         TextSpan(text: text.substring(studio.length), style: normal),
-        if (noteSpan != null) noteSpan,
+        ?noteSpan,
       ];
     }
-    return [
-      TextSpan(text: text, style: normal),
-      if (noteSpan != null) noteSpan,
-    ];
+    return [TextSpan(text: text, style: normal), ?noteSpan];
   }
 
   /// Builds a localized message for owner notification cards from the
