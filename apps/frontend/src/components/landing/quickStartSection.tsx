@@ -27,9 +27,12 @@ type Step = { label: string; text: string };
 function QuickStartPhoneMockup({
   activeStep,
   className,
+  gentleReverse = false,
 }: {
   activeStep: number;
   className?: string;
+  /** Softer exit scale/y on reverse step changes (mobile). */
+  gentleReverse?: boolean;
 }) {
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
   const prevStepRef = useRef(activeStep);
@@ -45,6 +48,10 @@ function QuickStartPhoneMockup({
 
     const prev = prevStepRef.current;
     const next = Math.min(Math.max(activeStep, 0), STEP_MOCKUPS.length - 1);
+    const enterScale = gentleReverse ? 1.015 : 1.04;
+    const enterY = gentleReverse ? 4 : 10;
+    const exitScale = gentleReverse ? 1.012 : 1.04;
+    const exitY = gentleReverse ? -3 : -10;
 
     const setVisible = (el: HTMLDivElement, i: number) => {
       gsap.set(el, {
@@ -64,8 +71,8 @@ function QuickStartPhoneMockup({
           return;
         }
         gsap.set(el, {
-          yPercent: 10,
-          scale: 1.04,
+          yPercent: enterY,
+          scale: enterScale,
           opacity: 0,
           filter: 'blur(8px)',
           zIndex: i + 1,
@@ -89,8 +96,8 @@ function QuickStartPhoneMockup({
           gsap.fromTo(
             el,
             {
-              yPercent: 10,
-              scale: 1.04,
+              yPercent: enterY,
+              scale: enterScale,
               opacity: 0,
               filter: 'blur(8px)',
               zIndex: i + 1,
@@ -108,8 +115,8 @@ function QuickStartPhoneMockup({
           return;
         }
         gsap.set(el, {
-          yPercent: 10,
-          scale: 1.04,
+          yPercent: enterY,
+          scale: enterScale,
           opacity: 0,
           filter: 'blur(8px)',
           zIndex: i + 1,
@@ -123,19 +130,19 @@ function QuickStartPhoneMockup({
         }
         if (i === prev) {
           gsap.to(el, {
-            yPercent: -10,
-            scale: 1.04,
+            yPercent: exitY,
+            scale: exitScale,
             opacity: 0,
-            filter: 'blur(6px)',
-            duration: 0.45,
+            filter: gentleReverse ? 'blur(3px)' : 'blur(6px)',
+            duration: gentleReverse ? 0.38 : 0.45,
             ease: 'power2.in',
             overwrite: true,
           });
           return;
         }
         gsap.set(el, {
-          yPercent: 10,
-          scale: 1.04,
+          yPercent: enterY,
+          scale: enterScale,
           opacity: 0,
           filter: 'blur(8px)',
           zIndex: i + 1,
@@ -144,7 +151,7 @@ function QuickStartPhoneMockup({
     }
 
     prevStepRef.current = next;
-  }, [activeStep]);
+  }, [activeStep, gentleReverse]);
 
   return (
     <div
@@ -253,7 +260,6 @@ export function QuickStartSection() {
           return;
         }
 
-        let maxProgress = 0;
         let lastDesktopStep = 0;
 
         labels.forEach((labelEl, i) => {
@@ -284,13 +290,9 @@ export function QuickStartSection() {
             anticipatePin: 1,
             scrub: 1,
             onUpdate: (self: ScrollTrigger) => {
-              if (self.progress >= maxProgress) {
-                maxProgress = self.progress;
-              } else {
-                self.animation?.progress(maxProgress);
-              }
-
-              const time = maxProgress * tl.duration();
+              // Follow actual scroll progress so screenshots reverse on scroll-up
+              // (maxProgress lock previously froze the step index after leaving).
+              const time = self.progress * tl.duration();
               let idx = 0;
               for (let i = itemsCount - 1; i >= 0; i -= 1) {
                 if (time >= (tl.labels[`step-${i}`] ?? 0)) {
@@ -591,6 +593,7 @@ export function QuickStartSection() {
             <div className="flex items-end justify-center">
               <QuickStartPhoneMockup
                 activeStep={mobileActiveStep}
+                gentleReverse
                 className="w-[min(72vw,18rem)]"
               />
             </div>
