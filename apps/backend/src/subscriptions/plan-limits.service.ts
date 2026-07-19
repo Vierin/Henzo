@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { SubscriptionType } from '@prisma/client';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { PrismaService } from '../prisma/prisma.service';
 import { planQuotaForType } from './plan-limits.constants';
 
@@ -9,6 +10,10 @@ export {
   STUDIO_SESSIONS_PER_MONTH,
   STUDIO_TRAINER_LIMIT,
 } from './plan-limits.constants';
+
+const DEFAULT_STUDIO_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
+type MonthKey = string; // YYYY-MM in studio timezone
 
 @Injectable()
 export class PlanLimitsService {
@@ -25,6 +30,45 @@ export class PlanLimitsService {
       return SubscriptionType.SOLO;
     }
     return sub.type;
+  }
+
+  private async studioTimezone(studioId: string): Promise<string> {
+    const studio = await this.prisma.studio.findUnique({
+      where: { id: studioId },
+      select: { timezone: true },
+    });
+    return studio?.timezone?.trim() || DEFAULT_STUDIO_TIMEZONE;
+  }
+
+  /** Calendar month key (YYYY-MM) for a UTC instant in the studio timezone. */
+  monthKeyForDate(date: Date, timezone: string): MonthKey {
+    const zoned = toZonedTime(date, timezone);
+    const y = zoned.getFullYear();
+    const m = String(zoned.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
+  /** Inclusive UTC bounds for a studio-local calendar month. */
+  private monthWindowUtc(
+    year: number,
+    monthIndex0: number,
+    timezone: string,
+  ): { monthStart: Date; monthEnd: Date } {
+    const monthStart = fromZonedTime(
+      new Date(year, monthIndex0, 1, 0, 0, 0, 0),
+      timezone,
+    );
+    const nextMonthStart = fromZonedTime(
+      new Date(year, monthIndex0 + 1, 1, 0, 0, 0, 0),
+      timezone,
+    );
+    const monthEnd = new Date(nextMonthStart.getTime() - 1);
+    return { monthStart, monthEnd };
+  }
+
+  private parseMonthKey(key: MonthKey): { year: number; monthIndex0: number } {
+    const [ys, ms] = key.split('-');
+    return { year: Number(ys), monthIndex0: Number(ms) - 1 };
   }
 
   /**
@@ -56,31 +100,48 @@ export class PlanLimitsService {
     }
   }
 
-  private monthWindow(): { monthStart: Date; monthEnd: Date } {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
+  /** Non-cancelled sessions whose startsAt falls in the given studio-local month. */
+  private async monthlySessionsCount(
+    studioId: string,
+    monthKey: MonthKey,
+    timezone: string,
+    excludeSessionIds: string[] = [],
+  ): Promise<number> {
+    const { year, monthIndex0 } = this.parseMonthKey(monthKey);
+    const { monthStart, monthEnd } = this.monthWindowUtc(
+      year,
+      monthIndex0,
+      timezone,
     );
-    return { monthStart, monthEnd };
-  }
-
-  /** Sessions created this month that count toward the plan cap. */
-  private async monthlySessionsCount(studioId: string): Promise<number> {
-    const { monthStart, monthEnd } = this.monthWindow();
     return this.prisma.trainingSession.count({
       where: {
         studioId,
         startsAt: { gte: monthStart, lte: monthEnd },
         status: { not: 'CANCELLED' },
+        ...(excludeSessionIds.length > 0
+          ? { id: { notIn: excludeSessionIds } }
+          : {}),
       },
     });
+  }
+
+  private throwSessionLimit(
+    tier: SubscriptionType,
+    sessionsPerMonth: number,
+  ): never {
+    const isStudio = tier === SubscriptionType.STUDIO;
+    throw new HttpException(
+      {
+        statusCode: HttpStatus.FORBIDDEN,
+        error: isStudio
+          ? 'STUDIO_SESSION_LIMIT_EXCEEDED'
+          : 'SOLO_SESSION_LIMIT_EXCEEDED',
+        message: isStudio
+          ? `Studio plan allows ${sessionsPerMonth} sessions per month. Upgrade to Enterprise for unlimited sessions.`
+          : `Solo plan allows ${sessionsPerMonth} sessions per month. Upgrade to Studio for a higher limit.`,
+      },
+      HttpStatus.FORBIDDEN,
+    );
   }
 
   /**
@@ -97,8 +158,10 @@ export class PlanLimitsService {
   }> {
     const tier = await this.subscriptionTypeForStudio(studioId);
     const quota = planQuotaForType(tier);
+    const timezone = await this.studioTimezone(studioId);
+    const nowKey = this.monthKeyForDate(new Date(), timezone);
     const [sessionsUsed, trainersUsed] = await Promise.all([
-      this.monthlySessionsCount(studioId),
+      this.monthlySessionsCount(studioId, nowKey, timezone),
       this.prisma.trainer.count({ where: { studioId } }),
     ]);
     return {
@@ -111,29 +174,114 @@ export class PlanLimitsService {
   }
 
   /**
-   * Throws 403 if the studio reached its plan monthly session cap (Solo / Studio).
+   * @deprecated Prefer assertCanCreateSessions / filterSessionsWithinQuota.
+   * Kept for callers that only need "is current month already full?".
    */
   async assertMonthlySessionsLimit(studioId: string): Promise<void> {
+    const timezone = await this.studioTimezone(studioId);
+    const nowKey = this.monthKeyForDate(new Date(), timezone);
+    await this.assertCanCreateSessions(studioId, [
+      // Probe: one synthetic slot in the current studio-local month.
+      // Real enforcement for creates must pass actual candidate startsAt.
+      this.probeDateForMonthKey(nowKey, timezone),
+    ]);
+  }
+
+  private probeDateForMonthKey(monthKey: MonthKey, timezone: string): Date {
+    const { year, monthIndex0 } = this.parseMonthKey(monthKey);
+    return fromZonedTime(new Date(year, monthIndex0, 1, 12, 0, 0, 0), timezone);
+  }
+
+  /**
+   * Hard-check that adding `proposedStartsAt` (and optionally removing
+   * `creditStartsAt` first) keeps every studio-local month within quota.
+   */
+  async assertCanCreateSessions(
+    studioId: string,
+    proposedStartsAt: Date[],
+    opts?: {
+      creditStartsAt?: Date[];
+      excludeSessionIds?: string[];
+    },
+  ): Promise<void> {
+    if (proposedStartsAt.length === 0) return;
+
     const tier = await this.subscriptionTypeForStudio(studioId);
     const quota = planQuotaForType(tier);
     if (!quota) return;
 
-    const count = await this.monthlySessionsCount(studioId);
+    const timezone = await this.studioTimezone(studioId);
+    const excludeSessionIds = opts?.excludeSessionIds ?? [];
 
-    if (count >= quota.sessionsPerMonth) {
-      const isStudio = tier === SubscriptionType.STUDIO;
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.FORBIDDEN,
-          error: isStudio
-            ? 'STUDIO_SESSION_LIMIT_EXCEEDED'
-            : 'SOLO_SESSION_LIMIT_EXCEEDED',
-          message: isStudio
-            ? `Studio plan allows ${quota.sessionsPerMonth} sessions per month. Upgrade to Enterprise for unlimited sessions.`
-            : `Solo plan allows ${quota.sessionsPerMonth} sessions per month. Upgrade to Studio for a higher limit.`,
-        },
-        HttpStatus.FORBIDDEN,
-      );
+    const creditByMonth = new Map<MonthKey, number>();
+    for (const d of opts?.creditStartsAt ?? []) {
+      const key = this.monthKeyForDate(d, timezone);
+      creditByMonth.set(key, (creditByMonth.get(key) ?? 0) + 1);
     }
+
+    const proposedByMonth = new Map<MonthKey, number>();
+    for (const d of proposedStartsAt) {
+      const key = this.monthKeyForDate(d, timezone);
+      proposedByMonth.set(key, (proposedByMonth.get(key) ?? 0) + 1);
+    }
+
+    for (const [monthKey, proposed] of proposedByMonth) {
+      const existing = await this.monthlySessionsCount(
+        studioId,
+        monthKey,
+        timezone,
+        excludeSessionIds,
+      );
+      const credit = creditByMonth.get(monthKey) ?? 0;
+      const after = existing - credit + proposed;
+      if (after > quota.sessionsPerMonth) {
+        this.throwSessionLimit(tier, quota.sessionsPerMonth);
+      }
+    }
+  }
+
+  /**
+   * Keep only candidates that fit remaining monthly capacity (studio TZ).
+   * Earlier startsAt win. Does not throw — empty result means nothing fits.
+   */
+  async filterSessionsWithinQuota<T extends { startsAt: Date }>(
+    studioId: string,
+    candidates: T[],
+  ): Promise<{ accepted: T[]; skippedDueToLimit: number }> {
+    if (candidates.length === 0) {
+      return { accepted: [], skippedDueToLimit: 0 };
+    }
+
+    const tier = await this.subscriptionTypeForStudio(studioId);
+    const quota = planQuotaForType(tier);
+    if (!quota) {
+      return { accepted: candidates, skippedDueToLimit: 0 };
+    }
+
+    const timezone = await this.studioTimezone(studioId);
+    const usedByMonth = new Map<MonthKey, number>();
+    const accepted: T[] = [];
+    let skippedDueToLimit = 0;
+
+    const sorted = [...candidates].sort(
+      (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
+    );
+
+    for (const candidate of sorted) {
+      const key = this.monthKeyForDate(candidate.startsAt, timezone);
+      let used = usedByMonth.get(key);
+      if (used === undefined) {
+        used = await this.monthlySessionsCount(studioId, key, timezone);
+        usedByMonth.set(key, used);
+      }
+      if (used >= quota.sessionsPerMonth) {
+        skippedDueToLimit += 1;
+        continue;
+      }
+      accepted.push(candidate);
+      usedByMonth.set(key, used + 1);
+    }
+
+    return { accepted, skippedDueToLimit };
   }
 }
