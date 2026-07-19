@@ -311,10 +311,10 @@
     "bookClass": "Đặt lớp",
     "joinWaitlist": "Tham gia danh sách chờ",
     "leaveWaitlist": "Rời danh sách chờ",
-    "joinedWaitlist": "Đã thêm vào danh sách chờ — chúng tôi sẽ thông báo khi có chỗ",
+    "joinedWaitlist": "Đã thêm vào danh sách chờ — sẽ thông báo cho mọi người khi có chỗ",
     "leftWaitlist": "Đã rời danh sách chờ",
-    "waitlistError": "Không thể tham gia danh sách chờ. Thử lại.",
-    "waitlistNotifyHint": "Bạn sẽ được thông báo nếu có chỗ trống"
+    "waitlistError": "Không thể cập nhật danh sách chờ. Thử lại.",
+    "waitlistNotifyHint": "Chúng tôi sẽ thông báo khi có chỗ — ai đặt trước sẽ giữ chỗ"
   },
   "clientMap": {
     "nearbyStudios": "Studio gần bạn",
@@ -815,7 +815,8 @@
     "typeAnnouncement": "THÔNG BÁO",
     "sessionDate": "Buổi tập: {date}",
     "msgReminder": "{studio}: sắp diễn ra {class}",
-    "msgWaitlist": "{studio}: đã có chỗ cho {class} — bạn đã được đặt!",
+    "msgWaitlist": "{studio}: đã có chỗ cho {class} — đặt ngay!",
+    "msgWaitlistPromoted": "{studio}: bạn đã được đặt vào {class}",
     "msgCancelled": "{studio}: {class} đã bị hủy",
     "msgRescheduled": "{studio}: {class} đã được dời lịch",
     "cancelNote": "Lý do: {note}",

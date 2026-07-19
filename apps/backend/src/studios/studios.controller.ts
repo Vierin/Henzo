@@ -834,6 +834,20 @@ export class StudiosController {
           );
         }
 
+        // Atomically claim the open seat. Concurrent requests cannot both win.
+        const claimedSeat = await tx.trainingSession.updateMany({
+          where: {
+            id: sessionId,
+            status: 'ACTIVE',
+            startsAt: { gt: new Date() },
+            bookedCount: { lt: session.capacity },
+          },
+          data: { bookedCount: { increment: 1 } },
+        });
+        if (claimedSeat.count !== 1) {
+          throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
+        }
+
         if (existing) {
           await tx.sessionEnrollment.update({
             where: { id: existing.id },
@@ -865,13 +879,22 @@ export class StudiosController {
           }
         }
 
-        return tx.trainingSession.update({
+        // Only the winner leaves waitlist; everyone else stays for future
+        // spot-open notifications until they leave or the session starts.
+        const waitlistEntry = await tx.waitlistEntry.findUnique({
+          where: { sessionId_userId: { sessionId, userId } },
+          select: { id: true },
+        });
+        if (waitlistEntry) {
+          await tx.waitlistEntry.delete({ where: { id: waitlistEntry.id } });
+          await tx.trainingSession.update({
+            where: { id: sessionId },
+            data: { waitlistCount: { decrement: 1 } },
+          });
+        }
+
+        return tx.trainingSession.findUniqueOrThrow({
           where: { id: sessionId },
-          data: {
-            bookedCount: {
-              increment: 1,
-            },
-          },
           select: {
             id: true,
             startsAt: true,
@@ -952,10 +975,22 @@ export class StudiosController {
 
       const session = await this.prisma.trainingSession.findUnique({
         where: { id: sessionId },
-        select: { id: true, status: true, capacity: true, bookedCount: true },
+        select: {
+          id: true,
+          status: true,
+          capacity: true,
+          bookedCount: true,
+          startsAt: true,
+        },
       });
       if (!session || session.status !== 'ACTIVE') {
         throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+      }
+      if (session.startsAt < new Date()) {
+        throw new HttpException(
+          'Session has already started',
+          HttpStatus.BAD_REQUEST,
+        );
       }
       if (session.bookedCount < session.capacity) {
         throw new HttpException(
@@ -964,11 +999,26 @@ export class StudiosController {
         );
       }
 
+      const alreadyBooked = await this.prisma.sessionEnrollment.findFirst({
+        where: { sessionId, userId, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (alreadyBooked) {
+        throw new HttpException(
+          'You are already booked for this class',
+          HttpStatus.CONFLICT,
+        );
+      }
+
       await this.prisma.$transaction(async (tx) => {
-        await tx.waitlistEntry.upsert({
+        const existing = await tx.waitlistEntry.findUnique({
           where: { sessionId_userId: { sessionId, userId } },
-          create: { sessionId, userId },
-          update: {},
+          select: { id: true },
+        });
+        if (existing) return;
+
+        await tx.waitlistEntry.create({
+          data: { sessionId, userId },
         });
         await tx.trainingSession.update({
           where: { id: sessionId },

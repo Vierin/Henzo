@@ -134,7 +134,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         _enrollmentId = null;
         _isOnWaitlist = false;
         if (found == null) {
-          _error = context.read<LocaleProvider>().t('publicClassDetail.notFound');
+          _error = context.read<LocaleProvider>().t(
+            'publicClassDetail.notFound',
+          );
         }
       });
 
@@ -215,7 +217,11 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       addressLongitude: (_studio?['longitude'] as num?)?.toDouble(),
       link: sessionLink.toShareUri(),
     );
-    await Share.share(message, subject: classTitle, sharePositionOrigin: shareOrigin(context));
+    await Share.share(
+      message,
+      subject: classTitle,
+      sharePositionOrigin: shareOrigin(context),
+    );
   }
 
   Future<void> _book() async {
@@ -280,6 +286,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         token,
         body: const <String, dynamic>{},
       );
+      ClientScheduleStore.invalidate();
       if (!mounted) return;
       setState(() => _isOnWaitlist = true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -370,12 +377,18 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         '/studios/sessions/${widget.sessionId}/waitlist',
         token,
       );
+      ClientScheduleStore.invalidate();
       if (!mounted) return;
       setState(() => _isOnWaitlist = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(locale.t('clientClassDetail.leftWaitlist'))),
       );
     } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.waitlistError'))),
+      );
+    } finally {
       if (mounted) setState(() => _waitlistLoading = false);
     }
   }
@@ -396,9 +409,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         : (owner['name'] ?? '').toString().trim();
     final address = (_studio?['address'] ?? '').toString().trim();
     _shareClass(
-      classTitle: (trainingMap['name'] ??
-              context.read<LocaleProvider>().t('common.class'))
-          .toString(),
+      classTitle:
+          (trainingMap['name'] ??
+                  context.read<LocaleProvider>().t('common.class'))
+              .toString(),
       trainerName: instructor.isNotEmpty ? instructor : null,
       startsAt: startsAt,
       addressLine: address,
@@ -423,7 +437,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
             ? const _ClassDetailLoadingView()
             : session == null
             ? _ClassDetailErrorView(
-                message: _error ??
+                message:
+                    _error ??
                     context.read<LocaleProvider>().t(
                       'publicClassDetail.notFound',
                     ),
@@ -556,24 +571,28 @@ Future<void> _openDirections({
               ? (studio!['address'] ?? '').toString().trim()
               : locationLabel.trim())
           .trim();
-  final uri = googleMapsSearchUri(
-    address: q,
-    latitude: lat,
-    longitude: lng,
-  );
+  final uri = googleMapsSearchUri(address: q, latitude: lat, longitude: lng);
   if (uri == null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.noAddressAvailable'))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('common.noAddressAvailable'),
+          ),
+        ),
+      );
     }
     return;
   }
   if (!await canLaunchUrl(uri)) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.read<LocaleProvider>().t('common.couldNotOpenMaps'))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('common.couldNotOpenMaps'),
+          ),
+        ),
+      );
     }
     return;
   }
@@ -643,14 +662,11 @@ class _ClassDetailBody extends StatelessWidget {
     final endsAt = parseApiDateTime(session['endsAt']);
     final cap = (session['capacity'] as num?)?.toInt() ?? 0;
     final booked = (session['bookedCount'] as num?)?.toInt() ?? 0;
-    final waitlist = (session['waitlistCount'] as num?)?.toInt() ?? 0;
-    final classTitle =
-        (training['name'] ?? tr('common.class')).toString();
+    final classTitle = (training['name'] ?? tr('common.class')).toString();
     final catLabel = _categoryLabel(category, localeCode);
     final chipFg = _resolveCategoryLabelColor(category, accent);
     final locName = (session['locationName'] ?? '').toString().trim();
-    final studioName =
-        (studio?['name'] ?? tr('common.studio')).toString();
+    final studioName = (studio?['name'] ?? tr('common.studio')).toString();
     final address = (studio?['address'] ?? '').toString().trim();
     final logoUrl = resolveStudioBrandImageUrl(studio) ?? '';
     final initials = studioName.isEmpty
@@ -728,10 +744,9 @@ class _ClassDetailBody extends StatelessWidget {
                 initials: initials,
                 avgRating: avgRating,
                 reviewsLabel: reviewCount > 0
-                    ? tr('common.reviewsCount').replaceAll(
-                        '{count}',
-                        '$reviewCount',
-                      )
+                    ? tr(
+                        'common.reviewsCount',
+                      ).replaceAll('{count}', '$reviewCount')
                     : null,
                 distanceLabel: distanceLabel,
                 onTap: onOpenStudio,
@@ -757,7 +772,13 @@ class _ClassDetailBody extends StatelessWidget {
                     : () {
                         Clipboard.setData(ClipboardData(text: address));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(context.read<LocaleProvider>().t('common.addressCopied'))),
+                          SnackBar(
+                            content: Text(
+                              context.read<LocaleProvider>().t(
+                                'common.addressCopied',
+                              ),
+                            ),
+                          ),
                         );
                       },
               ),
@@ -766,7 +787,7 @@ class _ClassDetailBody extends StatelessWidget {
                 accent: accent,
                 enrolled: booked,
                 capacity: cap,
-                waitlistCount: waitlist,
+                waitlistCount: 0,
               ),
               if (trainingDescription.isNotEmpty) ...[
                 const SizedBox(height: 28),
@@ -886,11 +907,7 @@ class _ClassDetailTopBar extends StatelessWidget {
 }
 
 class _ShimmerBox extends StatefulWidget {
-  const _ShimmerBox({
-    required this.height,
-    this.width,
-    this.borderRadius = 8,
-  });
+  const _ShimmerBox({required this.height, this.width, this.borderRadius = 8});
 
   final double? width;
   final double height;
@@ -956,10 +973,7 @@ class _ClassDetailLoadingView extends StatelessWidget {
               120,
             ),
             children: [
-              const _ShimmerBox(
-                height: 88,
-                borderRadius: 14,
-              ),
+              const _ShimmerBox(height: 88, borderRadius: 14),
               const SizedBox(height: 15),
               Container(
                 width: double.infinity,
@@ -987,11 +1001,7 @@ class _ClassDetailLoadingView extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _ShimmerBox(height: 28, borderRadius: 6),
                     const SizedBox(height: 10),
-                    const _ShimmerBox(
-                      width: 220,
-                      height: 28,
-                      borderRadius: 6,
-                    ),
+                    const _ShimmerBox(width: 220, height: 28, borderRadius: 6),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -1024,11 +1034,7 @@ class _ClassDetailLoadingView extends StatelessWidget {
                     const SizedBox(height: 12),
                     const _ShimmerBox(height: 10, borderRadius: 4),
                     const SizedBox(height: 8),
-                    const _ShimmerBox(
-                      width: 180,
-                      height: 10,
-                      borderRadius: 4,
-                    ),
+                    const _ShimmerBox(width: 180, height: 10, borderRadius: 4),
                   ],
                 ),
               ),
@@ -1042,10 +1048,7 @@ class _ClassDetailLoadingView extends StatelessWidget {
 }
 
 class _ClassDetailErrorView extends StatelessWidget {
-  const _ClassDetailErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ClassDetailErrorView({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -1365,7 +1368,9 @@ class _ClassInfoCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: Text(context.read<LocaleProvider>().t('common.getDirections')),
+                child: Text(
+                  context.read<LocaleProvider>().t('common.getDirections'),
+                ),
               ),
             ),
           ),
@@ -1400,9 +1405,8 @@ class _StudioAvatarBadge extends StatelessWidget {
                 height: 48,
                 fit: BoxFit.cover,
                 fadeInDuration: const Duration(milliseconds: 180),
-                placeholder: (_, _) => const ColoredBox(
-                  color: AppColors.secondary100,
-                ),
+                placeholder: (_, _) =>
+                    const ColoredBox(color: AppColors.secondary100),
                 errorWidget: (_, _, _) => Text(
                   initials,
                   style: TextStyle(
@@ -1709,13 +1713,88 @@ class _BookBar extends StatelessWidget {
                 ),
               ],
             )
-          : classFull && !started
+          : classFull && !started && !isOnWaitlist
           ? _WaitlistButton(
               isOnWaitlist: isOnWaitlist,
               loading: waitlistLoading,
               onJoin: onJoinWaitlist,
               onLeave: onLeaveWaitlist,
               locale: locale,
+            )
+          : isOnWaitlist && !started
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (canBook) ...[
+                  FilledButton(
+                    onPressed: actionLoading ? null : onBook,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary500,
+                      disabledBackgroundColor: AppColors.primary500.withValues(
+                        alpha: 0.45,
+                      ),
+                      disabledForegroundColor: Colors.white70,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: actionLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            locale.t('clientClassDetail.bookClass'),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 8),
+                ] else ...[
+                  Text(
+                    locale.t('clientClassDetail.waitlistNotifyHint'),
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                OutlinedButton(
+                  onPressed: waitlistLoading ? null : onLeaveWaitlist,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: waitlistLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          locale.t('clientClassDetail.leaveWaitlist'),
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
             )
           : FilledButton(
               onPressed: (!canBook || started || actionLoading) ? null : onBook,

@@ -252,6 +252,7 @@ bool _isClientSessionNotification(AppNotification n) {
   final type = (n.data['type'] ?? n.data['eventType'] ?? '').toUpperCase();
   return type == 'PRE_CLASS_REMINDER' ||
       type == 'WAITLIST_PROMOTED' ||
+      type == 'WAITLIST_SPOT_OPENED' ||
       type == 'SESSION_CANCELLED' ||
       type == 'SESSION_RESCHEDULED' ||
       (n.data['sessionId']?.trim().isNotEmpty ?? false);
@@ -261,8 +262,7 @@ _NotificationKind _notificationKind(AppNotification n, bool forClient) {
   final type = (n.data['type'] ?? n.data['eventType'] ?? '').toLowerCase();
   final text = '${n.title} ${n.body}'.toLowerCase();
 
-  if (forClient &&
-      (_isReminder(n) || _isClientSessionNotification(n))) {
+  if (forClient && (_isReminder(n) || _isClientSessionNotification(n))) {
     if (type.contains('cancel')) {
       return _NotificationKind.bookingCancelled;
     }
@@ -542,8 +542,9 @@ class _NotificationCard extends StatelessWidget {
           extentRatio: 0.18,
           children: [
             _NotificationDeleteAction(
-              onPressed: (_) =>
-                  context.read<NotificationsStore>().deleteById(notification.id),
+              onPressed: (_) => context.read<NotificationsStore>().deleteById(
+                notification.id,
+              ),
             ),
           ],
         ),
@@ -555,118 +556,116 @@ class _NotificationCard extends StatelessWidget {
               onTap: () =>
                   _onNotificationTap(context, notification, kind, isClient),
               child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _TypeIconCircle(
-                      accent: theme.accent,
-                      icon: theme.icon,
-                      svgAsset: theme.svgAsset,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '• ${locale.t(theme.typeLabelKey)}',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                              color: theme.accent,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                        Text.rich(
-                          TextSpan(
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              height: 1.4,
-                              fontWeight: FontWeight.w400,
-                              color: AppColors.textPrimary,
-                            ),
-                            children: _messageSpans(
-                              notification,
-                              kind,
-                              isClient,
-                            ),
-                          ),
-                        ),
-                        if (session != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.schedule_outlined,
-                                size: 14,
-                                color: AppColors.textPrimary,
+                padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _TypeIconCircle(
+                        accent: theme.accent,
+                        icon: theme.icon,
+                        svgAsset: theme.svgAsset,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '• ${locale.t(theme.typeLabelKey)}',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                                color: theme.accent,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                session.time,
+                            ),
+                            const SizedBox(height: 6),
+                            Text.rich(
+                              TextSpan(
                                 style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14.sp,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w400,
                                   color: AppColors.textPrimary,
                                 ),
-                              ),
-                              const SizedBox(width: 14),
-                              SvgPicture.asset(
-                                'assets/icons/icon-calendar.svg',
-                                width: 12,
-                                height: 12,
-                                fit: BoxFit.contain,
-                                excludeFromSemantics: true,
-                                colorFilter: const ColorFilter.mode(
-                                  AppColors.textPrimary,
-                                  BlendMode.srcIn,
+                                children: _messageSpans(
+                                  notification,
+                                  kind,
+                                  isClient,
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                session.date,
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textPrimary,
-                                ),
+                            ),
+                            if (session != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.schedule_outlined,
+                                    size: 14,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    session.time,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  SvgPicture.asset(
+                                    'assets/icons/icon-calendar.svg',
+                                    width: 12,
+                                    height: 12,
+                                    fit: BoxFit.contain,
+                                    excludeFromSemantics: true,
+                                    colorFilter: const ColorFilter.mode(
+                                      AppColors.textPrimary,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    session.date,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
-                          ),
-                        ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          timeStr,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textTertiary,
-                          ),
+                          ],
                         ),
-                        if (isTappable)
-                          const Expanded(
-                            child: Center(
-                              child: _NotificationCardArrow(),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            timeStr,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textTertiary,
                             ),
                           ),
-                      ],
-                    ),
-                  ],
+                          if (isTappable)
+                            const Expanded(
+                              child: Center(child: _NotificationCardArrow()),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -757,7 +756,8 @@ class _NotificationCard extends StatelessWidget {
         .toUpperCase();
     final key = switch (type) {
       'PRE_CLASS_REMINDER' => 'notifications.msgReminder',
-      'WAITLIST_PROMOTED' => 'notifications.msgWaitlist',
+      'WAITLIST_SPOT_OPENED' => 'notifications.msgWaitlist',
+      'WAITLIST_PROMOTED' => 'notifications.msgWaitlistPromoted',
       'SESSION_CANCELLED' => 'notifications.msgCancelled',
       'SESSION_RESCHEDULED' => 'notifications.msgRescheduled',
       'OWNER_BOOKED' => 'notifications.msgOwnerBooked',

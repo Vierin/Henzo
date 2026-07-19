@@ -22,6 +22,7 @@ import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
+import 'screens/public_class_detail_screen.dart';
 import 'utils/session_cache_clear.dart';
 import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
@@ -55,11 +56,13 @@ Future<void> main() async {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarBrightness: Brightness.light,
-        statusBarIconBrightness: Brightness.dark,
-      ));
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+      );
       OwnerImagePicker.configure();
       await Future.wait([
         initializeDateFormatting('en'),
@@ -154,10 +157,47 @@ final GlobalKey<NavigatorState> henzoRootNavigatorKey =
 /// Routes a tapped push notification based on its payload `type`. Runs when the
 /// user opens the app from a push (background or terminated).
 void _handlePushTap(Map<String, String> data) {
-  final type = data['type'] ?? data['eventType'];
+  final type = (data['type'] ?? data['eventType'] ?? '').toUpperCase();
   if (type == 'TRAINER_ASSIGNED') {
     _openTrainerScheduleFromPush();
+    return;
   }
+  if (type == 'WAITLIST_SPOT_OPENED' ||
+      type == 'WAITLIST_PROMOTED' ||
+      type == 'PRE_CLASS_REMINDER' ||
+      type == 'SESSION_RESCHEDULED' ||
+      type == 'OWNER_BOOKED') {
+    _openClassFromPush(data);
+  }
+}
+
+void _openClassFromPush(Map<String, String> data, [int attempt = 0]) {
+  final studioId = (data['studioId'] ?? '').trim();
+  final sessionId = (data['sessionId'] ?? '').trim();
+  if (studioId.isEmpty || sessionId.isEmpty) return;
+
+  final nav = henzoRootNavigatorKey.currentState;
+  if (nav == null) {
+    if (attempt >= 20) return;
+    Future.delayed(
+      const Duration(milliseconds: 500),
+      () => _openClassFromPush(data, attempt + 1),
+    );
+    return;
+  }
+
+  final startsAt = DateTime.tryParse(
+    data['startsAt'] ?? data['dateTime'] ?? '',
+  )?.toLocal();
+  nav.push(
+    MaterialPageRoute<void>(
+      builder: (_) => PublicClassDetailScreen(
+        studioId: studioId,
+        sessionId: sessionId,
+        sessionStartsAtHint: startsAt,
+      ),
+    ),
+  );
 }
 
 /// Switches the trainer to their Schedule tab and reloads it, so a just-assigned
@@ -178,11 +218,7 @@ void _openTrainerScheduleFromPush([int attempt = 0]) {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({
-    super.key,
-    this.notificationsStore,
-    this.clientLocationStore,
-  });
+  const MyApp({super.key, this.notificationsStore, this.clientLocationStore});
 
   final NotificationsStore? notificationsStore;
   final ClientLocationStore? clientLocationStore;
@@ -271,9 +307,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         if (widget.notificationsStore != null)
           ChangeNotifierProvider.value(value: widget.notificationsStore!),
         if (widget.clientLocationStore != null)
-          ChangeNotifierProvider.value(
-            value: widget.clientLocationStore!,
-          ),
+          ChangeNotifierProvider.value(value: widget.clientLocationStore!),
       ],
       child: _L10nHotReload(
         child: henzScreenUtilInit(
