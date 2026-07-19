@@ -449,17 +449,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _todayBookings =>
       _todaySessions.fold<int>(0, (a, s) => a + s.enrolledCount);
 
-  int get _todayWaitlist {
-    int total = 0;
-    for (final s in _todaySessions) {
-      if (widget.trainerMode) {
-        total += s.waitlistCount;
-      } else if (s.capacity > 0 && s.enrolledCount > s.capacity) {
-        total += (s.enrolledCount - s.capacity);
-      }
-    }
-    return total;
-  }
+  int get _todayWaitlist => _todaySessions.fold<int>(0, (total, session) {
+    return total + session.waitlistCount;
+  });
 
   void _openSessionDetail(OwnerTrainingSession s) {
     // Guard against rapid double-taps opening the page 2-3 times.

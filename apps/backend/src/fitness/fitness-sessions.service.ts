@@ -24,7 +24,10 @@ import {
   resolveSessionLocationDisplayName,
   resolveTrainingLocationName,
 } from '../lib/training-locations';
-import { resolveTrainerIdForSession } from './trainer-display.util';
+import {
+  resolveTrainerDisplayName,
+  resolveTrainerIdForSession,
+} from './trainer-display.util';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
@@ -88,18 +91,28 @@ export class FitnessSessionsService {
   ) {}
 
   /**
-   * Marks ACTIVE sessions past endsAt as COMPLETED.
-   * Read endpoints (schedule, analytics) call this for fresh UI; RemindersScheduler
-   * runs it every 15 min as a background fallback when nobody is browsing.
+   * Clears waitlists after session start and marks ended ACTIVE sessions as
+   * COMPLETED. Read endpoints call this for fresh UI; RemindersScheduler runs it
+   * every 15 min as a background fallback when nobody is browsing.
    */
   async completePastTrainingSessions(): Promise<{ updated: number }> {
-    const result = await this.prisma.trainingSession.updateMany({
-      where: {
-        status: TrainingSessionStatus.ACTIVE,
-        endsAt: { lt: new Date() },
-      },
-      data: { status: TrainingSessionStatus.COMPLETED },
-    });
+    const now = new Date();
+    const [, , result] = await this.prisma.$transaction([
+      this.prisma.waitlistEntry.deleteMany({
+        where: { TrainingSession: { startsAt: { lte: now } } },
+      }),
+      this.prisma.trainingSession.updateMany({
+        where: { startsAt: { lte: now }, waitlistCount: { gt: 0 } },
+        data: { waitlistCount: 0 },
+      }),
+      this.prisma.trainingSession.updateMany({
+        where: {
+          status: TrainingSessionStatus.ACTIVE,
+          endsAt: { lt: now },
+        },
+        data: { status: TrainingSessionStatus.COMPLETED },
+      }),
+    ]);
     return { updated: result.count };
   }
 
@@ -399,7 +412,12 @@ export class FitnessSessionsService {
 
     await this.completePastTrainingSessions();
 
-    const where: any = { studioId: studio.id };
+    // Cancelled sessions are deleted by cancellation flows. Keep this filter as
+    // a safeguard for legacy rows created before that behavior was introduced.
+    const where: any = {
+      studioId: studio.id,
+      status: { not: TrainingSessionStatus.CANCELLED },
+    };
     if (fromIso || toIso) {
       where.startsAt = {};
       if (fromIso) where.startsAt.gte = new Date(fromIso);
@@ -428,7 +446,13 @@ export class FitnessSessionsService {
             },
           },
         },
-        Trainer: { select: { id: true, name: true } },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+            User: { select: { name: true } },
+          },
+        },
         Enrollments: {
           select: { status: true },
         },
@@ -458,6 +482,7 @@ export class FitnessSessionsService {
         status: s.status,
         capacity: s.capacity,
         enrolledCount: activeEnrollments,
+        waitlistCount: s.waitlistCount,
         attendanceSummary: { attended: activeEnrollments },
         locationId: s.locationId ?? null,
         locationName,
@@ -485,9 +510,14 @@ export class FitnessSessionsService {
             : null,
         },
         trainer: (() => {
-          const tr = s.Trainer as { id: string; name: string } | null;
-          if (tr?.name && String(tr.name).trim().length > 0) {
-            return { id: tr.id, name: String(tr.name).trim() };
+          const tr = s.Trainer as {
+            id: string;
+            name: string;
+            User?: { name: string | null } | null;
+          } | null;
+          const display = resolveTrainerDisplayName(tr);
+          if (display) {
+            return { id: tr!.id, name: display };
           }
           if (tr?.id) {
             return { id: tr.id, name: ownerDisplayName };
@@ -646,11 +676,14 @@ export class FitnessSessionsService {
 
       if (wasActive) {
         if (beingCancelled) {
-          void this.notificationsService.notifySessionCancelled(sessionId, {
+          await this.notificationsService.notifySessionCancelled(sessionId, {
             className: session.Training?.name || 'class',
             studioName: session.Studio?.name || 'studio',
             startsAt: session.startsAt,
             note: cancelNote,
+          });
+          await this.prisma.trainingSession.delete({
+            where: { id: sessionId },
           });
         } else if (timeChanged) {
           void this.notificationsService.notifySessionRescheduled(sessionId, {
@@ -806,20 +839,33 @@ export class FitnessSessionsService {
     for (const row of rows) {
       const p = planned.find((x) => x.id === row.id);
       if (!p) continue;
-      if (beingCancelledBulk) {
-        void this.notificationsService.notifySessionCancelled(row.id, {
-          className,
-          studioName,
-          startsAt: row.startsAt,
-          note: cancelNote,
-        });
-      } else if (timeChangedBulk && p.status === TrainingSessionStatus.ACTIVE) {
+      if (
+        !beingCancelledBulk &&
+        timeChangedBulk &&
+        p.status === TrainingSessionStatus.ACTIVE
+      ) {
         void this.notificationsService.notifySessionRescheduled(row.id, {
           className,
           studioName,
           newStartsAt: p.startsAt,
         });
       }
+    }
+
+    if (beingCancelledBulk) {
+      await Promise.all(
+        rows.map((row) =>
+          this.notificationsService.notifySessionCancelled(row.id, {
+            className,
+            studioName,
+            startsAt: row.startsAt,
+            note: cancelNote,
+          }),
+        ),
+      );
+      await this.prisma.trainingSession.deleteMany({
+        where: { id: { in: rows.map((row) => row.id) } },
+      });
     }
 
     return { success: true };
@@ -867,13 +913,17 @@ export class FitnessSessionsService {
       },
     });
 
-    // Notify enrolled clients when owner cancels a session
+    // Notify before deleting: notification payloads and recipients are read
+    // through the session and its enrollments, which cascade on deletion.
     if (beingCancelled) {
-      void this.notificationsService.notifySessionCancelled(sessionId, {
+      await this.notificationsService.notifySessionCancelled(sessionId, {
         className: session.Training?.name || 'class',
         studioName: session.Studio?.name || 'studio',
         startsAt: session.startsAt,
         note: cancelNote,
+      });
+      await this.prisma.trainingSession.delete({
+        where: { id: sessionId },
       });
     }
 
@@ -982,6 +1032,7 @@ export class FitnessSessionsService {
       throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
     }
 
+    let didEnroll = false;
     await this.prisma.$transaction(async (tx) => {
       const existingEnrollment = await tx.sessionEnrollment.findFirst({
         where: { sessionId, userId: entry.userId },
@@ -1023,7 +1074,47 @@ export class FitnessSessionsService {
           waitlistCount: { decrement: 1 },
         },
       });
+      didEnroll = true;
     });
+
+    if (didEnroll) {
+      const full = await this.prisma.trainingSession.findUnique({
+        where: { id: sessionId },
+        select: {
+          studioId: true,
+          startsAt: true,
+          Training: { select: { name: true } },
+          Studio: { select: { name: true } },
+        },
+      });
+      if (full) {
+        void this.notificationsService.sendWaitlistPromotionPush(entry.userId, {
+          sessionId,
+          studioId: full.studioId,
+          className: full.Training?.name || 'class',
+          studioName: full.Studio?.name || 'studio',
+          startsAt: full.startsAt,
+        });
+      }
+      const enrollment = await this.prisma.sessionEnrollment.findFirst({
+        where: {
+          sessionId,
+          userId: entry.userId,
+          status: SessionEnrollmentStatus.ACTIVE,
+        },
+        select: { id: true },
+      });
+      if (enrollment) {
+        try {
+          await this.notificationsService.schedulePreClassReminders(
+            enrollment.id,
+            entry.userId,
+          );
+        } catch (e) {
+          console.error('waitlist promote push schedule failed:', e);
+        }
+      }
+    }
 
     return { success: true };
   }
@@ -1236,7 +1327,13 @@ export class FitnessSessionsService {
           },
         },
         Training: { select: { name: true, duration: true, price: true } },
-        Trainer: { select: { name: true } },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+            User: { select: { name: true } },
+          },
+        },
       },
     });
     if (!row?.Studio) {
@@ -1268,7 +1365,7 @@ export class FitnessSessionsService {
         salonName: row.Studio.name,
         salonAddress: row.Studio.address ?? undefined,
         salonPhone: row.Studio.phone ?? undefined,
-        staffName: row.Trainer?.name,
+        staffName: resolveTrainerDisplayName(row.Trainer) ?? row.Trainer?.name,
         dateTime: row.startsAt,
         salonTimezone: salonTz,
         locale,
@@ -1391,6 +1488,7 @@ export class FitnessSessionsService {
         studio_id: enrollment?.TrainingSession?.studioId,
         source: 'owner_cancelled',
       });
+      void this.notifyWaitlistSpotOpened(row.sessionId);
     }
 
     return { success: true };
@@ -1444,8 +1542,8 @@ export class FitnessSessionsService {
       enrollmentId,
     );
 
-    // Auto-promote first waitlist entry if one exists
-    void this.promoteFromWaitlist(row.sessionId);
+    // Notify waitlist: first to book the open spot wins (no auto-enroll).
+    void this.notifyWaitlistSpotOpened(row.sessionId);
 
     const enrollment = await this.prisma.sessionEnrollment.findUnique({
       where: { id: enrollmentId },
@@ -1464,15 +1562,9 @@ export class FitnessSessionsService {
     return { success: true };
   }
 
-  private async promoteFromWaitlist(sessionId: string): Promise<void> {
+  /** Notify-only waitlist: blast all waitlisted clients when a seat opens. */
+  private async notifyWaitlistSpotOpened(sessionId: string): Promise<void> {
     try {
-      const next = await this.prisma.waitlistEntry.findFirst({
-        where: { sessionId },
-        orderBy: { createdAt: 'asc' },
-        select: { id: true, userId: true },
-      });
-      if (!next) return;
-
       const session = await this.prisma.trainingSession.findUnique({
         where: { id: sessionId },
         select: {
@@ -1480,52 +1572,60 @@ export class FitnessSessionsService {
           startsAt: true,
           capacity: true,
           bookedCount: true,
+          status: true,
           Training: { select: { name: true } },
           Studio: { select: { name: true } },
         },
       });
-      if (!session || session.bookedCount >= session.capacity) return;
+      if (
+        !session ||
+        session.status !== TrainingSessionStatus.ACTIVE ||
+        session.bookedCount >= session.capacity
+      ) {
+        return;
+      }
 
-      await this.prisma.$transaction(async (tx) => {
-        await tx.waitlistEntry.delete({ where: { id: next.id } });
-        await tx.trainingSession.update({
-          where: { id: sessionId },
-          data: {
-            bookedCount: { increment: 1 },
-            waitlistCount: { decrement: 1 },
-          },
-        });
-        await tx.sessionEnrollment.upsert({
-          where: { sessionId_userId: { sessionId, userId: next.userId } },
-          create: { sessionId, userId: next.userId, status: 'ACTIVE' },
-          update: { status: 'ACTIVE', cancelledAt: null },
-        });
+      const entries = await this.prisma.waitlistEntry.findMany({
+        where: { sessionId },
+        select: { userId: true },
+        orderBy: { createdAt: 'asc' },
       });
+      if (entries.length === 0) return;
 
-      await this.notificationsService.sendWaitlistPromotionPush(next.userId, {
+      const activeEnrollments = await this.prisma.sessionEnrollment.findMany({
+        where: {
+          sessionId,
+          status: SessionEnrollmentStatus.ACTIVE,
+          userId: { in: entries.map((entry) => entry.userId) },
+        },
+        select: { userId: true },
+      });
+      const activeUserIds = new Set(
+        activeEnrollments.map((enrollment) => enrollment.userId),
+      );
+      const waitingEntries = entries.filter(
+        (entry) => !activeUserIds.has(entry.userId),
+      );
+      if (waitingEntries.length === 0) return;
+
+      const payload = {
         sessionId,
         studioId: session.studioId,
         className: session.Training?.name || 'class',
         studioName: session.Studio?.name || 'studio',
         startsAt: session.startsAt,
-      });
+      };
 
-      const enrollment = await this.prisma.sessionEnrollment.findFirst({
-        where: {
-          sessionId,
-          userId: next.userId,
-          status: SessionEnrollmentStatus.ACTIVE,
-        },
-        select: { id: true },
-      });
-      if (enrollment) {
-        await this.notificationsService.schedulePreClassReminders(
-          enrollment.id,
-          next.userId,
-        );
-      }
+      await Promise.allSettled(
+        waitingEntries.map((entry) =>
+          this.notificationsService.sendWaitlistSpotOpenedPush(
+            entry.userId,
+            payload,
+          ),
+        ),
+      );
     } catch (err) {
-      console.error('[FitnessSessions] Waitlist promote failed:', err);
+      console.error('[FitnessSessions] Waitlist spot notify failed:', err);
     }
   }
 
@@ -1930,7 +2030,13 @@ export class FitnessSessionsService {
         Training: {
           select: { name: true, price: true, duration: true },
         },
-        Trainer: { select: { id: true, name: true } },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+            User: { select: { name: true } },
+          },
+        },
       },
       orderBy: { startsAt: 'desc' },
       take,
@@ -1953,7 +2059,12 @@ export class FitnessSessionsService {
         price: b.Training != null ? Number(b.Training.price) : null,
         duration: b.Training?.duration ?? null,
       },
-      staff: b.Trainer ? { id: b.Trainer.id, name: b.Trainer.name } : null,
+      staff: b.Trainer
+        ? {
+            id: b.Trainer.id,
+            name: resolveTrainerDisplayName(b.Trainer) ?? b.Trainer.name,
+          }
+        : null,
       trainerId: b.trainerId,
       serviceId: b.trainingId,
     }));

@@ -1835,6 +1835,20 @@ export class AuthService {
         },
       });
 
+      // Invite creates Trainer with email-prefix placeholder; keep it in sync
+      // when the linked user updates their profile.
+      const trainerPatch: { name?: string; phone?: string } = {};
+      const name = data.name?.trim();
+      const phone = data.phone?.trim();
+      if (name) trainerPatch.name = name;
+      if (phone) trainerPatch.phone = phone;
+      if (Object.keys(trainerPatch).length > 0) {
+        await this.prisma.trainer.updateMany({
+          where: { userId },
+          data: trainerPatch,
+        });
+      }
+
       return updatedUser;
     } catch (error) {
       throw new Error(`Failed to update user profile: ${error.message}`);

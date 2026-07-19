@@ -444,7 +444,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                       // Match "top studios near you": no clipping so card
                       // shadows/edges aren't cut while scrolling.
                       clipBehavior: Clip.none,
-                      cacheExtent: 400,
                       scrollDirection: Axis.horizontal,
                       itemCount: favorites.length,
                       itemBuilder: (_, index) {

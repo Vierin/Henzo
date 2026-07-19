@@ -12,9 +12,12 @@ export const notificationTranslations = {
     reminder1hBody: '{class} at {studio} starts at {time}',
     reminderUpcomingTitle: 'Class reminder',
     reminderDayBody: '{class} at {studio} on {date} at {time}',
-    waitlistPromotedTitle: 'Spot opened up!',
+    waitlistPromotedTitle: "You're booked",
     waitlistPromotedBody:
-      'A spot opened in {class} at {studio}. You are now booked!',
+      '{studio} moved you from the waitlist into {class}. See you there!',
+    waitlistSpotOpenedTitle: 'Spot opened up!',
+    waitlistSpotOpenedBody:
+      'A spot opened in {class} at {studio}. Book now if you still want it!',
     ownerBookedTitle: "You're booked",
     ownerBookedBody: '{studio} booked you for {class} on {date}.',
     trainerAssignedTitle: 'New class assigned',
@@ -45,9 +48,12 @@ export const notificationTranslations = {
     reminder1hBody: '{class} в {studio} начинается в {time}',
     reminderUpcomingTitle: 'Напоминание о занятии',
     reminderDayBody: '{class} в {studio} {date} в {time}',
-    waitlistPromotedTitle: 'Появилось место!',
+    waitlistPromotedTitle: 'Вас записали',
     waitlistPromotedBody:
-      'Место в {class} в {studio} освободилось. Вы записаны!',
+      '{studio} перевёл(а) вас из waitlist на {class}. Ждём вас!',
+    waitlistSpotOpenedTitle: 'Появилось место!',
+    waitlistSpotOpenedBody:
+      'В {class} в {studio} освободилось место. Запишитесь, пока оно свободно!',
     ownerBookedTitle: 'Вас записали',
     ownerBookedBody: '{studio} записал(а) вас на {class} — {date}.',
     trainerAssignedTitle: 'Вас назначили на занятие',
@@ -78,9 +84,12 @@ export const notificationTranslations = {
     reminder1hBody: '{class} tại {studio} bắt đầu lúc {time}',
     reminderUpcomingTitle: 'Nhắc nhở lớp học',
     reminderDayBody: '{class} tại {studio} ngày {date} lúc {time}',
-    waitlistPromotedTitle: 'Có chỗ trống!',
+    waitlistPromotedTitle: 'Bạn đã được đặt chỗ',
     waitlistPromotedBody:
-      'Có chỗ trống trong {class} tại {studio}. Bạn đã được đặt chỗ!',
+      '{studio} đã chuyển bạn từ danh sách chờ vào {class}. Hẹn gặp bạn!',
+    waitlistSpotOpenedTitle: 'Có chỗ trống!',
+    waitlistSpotOpenedBody:
+      'Có chỗ trống trong {class} tại {studio}. Đặt ngay nếu bạn còn muốn!',
     ownerBookedTitle: 'Bạn đã được đặt chỗ',
     ownerBookedBody: '{studio} đã đặt chỗ cho bạn vào {class} — {date}.',
     trainerAssignedTitle: 'Bạn được phân công lớp học',

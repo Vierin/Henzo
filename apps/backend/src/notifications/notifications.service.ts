@@ -1569,11 +1569,51 @@ export class NotificationsService {
       startsAt?: Date;
     },
   ): Promise<void> {
+    await this.sendWaitlistClientPush(userId, sessionInfo, {
+      type: 'WAITLIST_PROMOTED',
+      titleKey: 'waitlistPromotedTitle',
+      bodyKey: 'waitlistPromotedBody',
+    });
+  }
+
+  /** Notify every waitlisted client that a seat opened (first to book wins). */
+  async sendWaitlistSpotOpenedPush(
+    userId: string,
+    sessionInfo: {
+      sessionId: string;
+      studioId: string;
+      className: string;
+      studioName: string;
+      startsAt?: Date;
+    },
+  ): Promise<void> {
+    await this.sendWaitlistClientPush(userId, sessionInfo, {
+      type: 'WAITLIST_SPOT_OPENED',
+      titleKey: 'waitlistSpotOpenedTitle',
+      bodyKey: 'waitlistSpotOpenedBody',
+    });
+  }
+
+  private async sendWaitlistClientPush(
+    userId: string,
+    sessionInfo: {
+      sessionId: string;
+      studioId: string;
+      className: string;
+      studioName: string;
+      startsAt?: Date;
+    },
+    opts: {
+      type: 'WAITLIST_PROMOTED' | 'WAITLIST_SPOT_OPENED';
+      titleKey: 'waitlistPromotedTitle' | 'waitlistSpotOpenedTitle';
+      bodyKey: 'waitlistPromotedBody' | 'waitlistSpotOpenedBody';
+    },
+  ): Promise<void> {
     try {
       const tokens = await this.getPushTokensByUserId(userId);
 
       const pushData = this.clientSessionPushData({
-        type: 'WAITLIST_PROMOTED',
+        type: opts.type,
         sessionId: sessionInfo.sessionId,
         studioId: sessionInfo.studioId,
         startsAt: sessionInfo.startsAt ?? new Date(),
@@ -1581,18 +1621,16 @@ export class NotificationsService {
         studioName: sessionInfo.studioName,
       });
 
-      // One in-app record (not one per language group) so the inbox has no
-      // duplicates; stamp its id into the push for client-side dedup.
       const baseLang = tokens[0]?.language || 'en';
-      const baseTitle = getNotificationText(baseLang, 'waitlistPromotedTitle');
+      const baseTitle = getNotificationText(baseLang, opts.titleKey);
       const baseBody = formatNotificationTemplate(
-        getNotificationText(baseLang, 'waitlistPromotedBody'),
+        getNotificationText(baseLang, opts.bodyKey),
         { class: sessionInfo.className, studio: sessionInfo.studioName },
       );
       try {
         const inAppId = await this.createInAppNotification({
           userId,
-          type: 'WAITLIST_PROMOTED',
+          type: opts.type,
           title: baseTitle,
           body: baseBody,
           data: pushData,
@@ -1600,7 +1638,7 @@ export class NotificationsService {
         pushData.notificationId = inAppId;
       } catch (inAppErr) {
         console.error(
-          '[Notifications] Failed to save waitlist in-app notification:',
+          `[Notifications] Failed to save ${opts.type} in-app notification:`,
           inAppErr,
         );
       }
@@ -1615,9 +1653,9 @@ export class NotificationsService {
       }
 
       for (const [lang, langTokens] of languageGroups) {
-        const title = getNotificationText(lang, 'waitlistPromotedTitle');
+        const title = getNotificationText(lang, opts.titleKey);
         const body = formatNotificationTemplate(
-          getNotificationText(lang, 'waitlistPromotedBody'),
+          getNotificationText(lang, opts.bodyKey),
           { class: sessionInfo.className, studio: sessionInfo.studioName },
         );
         await this.sendPushNotification(
@@ -1630,7 +1668,7 @@ export class NotificationsService {
         );
       }
     } catch (err) {
-      console.error('[Notifications] Failed to send waitlist push:', err);
+      console.error(`[Notifications] Failed to send ${opts.type} push:`, err);
     }
   }
 

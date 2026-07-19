@@ -332,11 +332,7 @@ class _OwnerTrainingSessionDetailScreenState
         await DashboardApiService.patchOwnerTrainingSession(
           token,
           session.sessionId,
-          {
-            'status': 'CANCELLED',
-            'applyToFollowing': true,
-            if (note != null) 'note': note,
-          },
+          {'status': 'CANCELLED', 'applyToFollowing': true, 'note': ?note},
         );
       } else {
         await DashboardApiService.updateOwnerTrainingSessionStatus(
@@ -1002,173 +998,178 @@ class _OwnerTrainingSessionDetailScreenState
                       },
                     ),
                     if (_hasPaidPlan) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      tr('dashboard.waitlist'),
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (session.capacity - session.enrolledCount <= 0) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 20),
                       Text(
-                        tr('ownerSession.waitlistNoSpots'),
+                        tr('dashboard.waitlist'),
                         style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppColors.textSecondary,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 10),
-                    FutureBuilder<List<OwnerSessionWaitlistEntry>>(
-                      future: _waitlistFuture,
-                      builder: (context, snap) {
-                        if (snap.connectionState == ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primary500,
+                      if (session.capacity - session.enrolledCount <= 0) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          tr('ownerSession.waitlistNoSpots'),
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      FutureBuilder<List<OwnerSessionWaitlistEntry>>(
+                        future: _waitlistFuture,
+                        builder: (context, snap) {
+                          if (snap.connectionState == ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary500,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                        if (snap.hasError) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              tr('ownerSession.participantsLoadError'),
-                              style: const TextStyle(color: AppColors.error500),
-                            ),
-                          );
-                        }
-                        final list = snap.data ?? const [];
-                        if (list.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              tr('ownerSession.noParticipants'),
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          );
-                        }
-                        return Column(
-                          children: List.generate(list.length, (index) {
-                            final entry = list[index];
-                            final displayName =
-                                (entry.name?.trim().isNotEmpty == true
-                                ? entry.name!.trim()
-                                : (entry.email?.trim().isNotEmpty == true
-                                      ? entry.email!.trim()
-                                      : tr('booking.client')));
-                            final subtitle = entry.phone?.isNotEmpty == true
-                                ? entry.phone!
-                                : (entry.email ?? '');
-                            final isBusy = _waitlistActionIds.contains(
-                              entry.entryId,
                             );
-                            final spotsLeft =
-                                session.capacity - session.enrolledCount;
-                            final canPromote = spotsLeft > 0;
+                          }
+                          if (snap.hasError) {
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.backgroundPrimary,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            displayName,
-                                            style: TextStyle(
-                                              fontSize: 15.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                          ),
-                                          if (subtitle.isNotEmpty)
-                                            Text(
-                                              subtitle,
-                                              style: TextStyle(
-                                                fontSize: 13.sp,
-                                                color: AppColors.textSecondary,
-                                              ),
-                                            ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            tr(
-                                              'ownerSession.waitlistPosition',
-                                            ).replaceAll(
-                                              '{position}',
-                                              '${index + 1}',
-                                            ),
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              color: AppColors.textTertiary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    TextButton(
-                                      onPressed: (isBusy || !canPromote)
-                                          ? null
-                                          : () => _promoteWaitlistEntry(entry),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppColors.primary500,
-                                        side: const BorderSide(
-                                          color: AppColors.primary500,
-                                        ),
-                                      ),
-                                      child: isBusy
-                                          ? const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : Text(tr('ownerSession.add')),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    TextButton(
-                                      onPressed: isBusy
-                                          ? null
-                                          : () => _removeWaitlistEntry(entry),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppColors.error500,
-                                        side: const BorderSide(
-                                          color: AppColors.error500,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        tr(
-                                          'ownerSession.actionDeleteParticipant',
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                tr('ownerSession.participantsLoadError'),
+                                style: const TextStyle(
+                                  color: AppColors.error500,
                                 ),
                               ),
                             );
-                          }).toList(),
-                        );
-                      },
-                    ),
+                          }
+                          final list = snap.data ?? const [];
+                          if (list.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                tr('ownerSession.noParticipants'),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14.sp,
+                                ),
+                              ),
+                            );
+                          }
+                          return Column(
+                            children: List.generate(list.length, (index) {
+                              final entry = list[index];
+                              final displayName =
+                                  (entry.name?.trim().isNotEmpty == true
+                                  ? entry.name!.trim()
+                                  : (entry.email?.trim().isNotEmpty == true
+                                        ? entry.email!.trim()
+                                        : tr('booking.client')));
+                              final subtitle = entry.phone?.isNotEmpty == true
+                                  ? entry.phone!
+                                  : (entry.email ?? '');
+                              final isBusy = _waitlistActionIds.contains(
+                                entry.entryId,
+                              );
+                              final spotsLeft =
+                                  session.capacity - session.enrolledCount;
+                              final canPromote = spotsLeft > 0;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.backgroundPrimary,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              displayName,
+                                              style: TextStyle(
+                                                fontSize: 15.sp,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            if (subtitle.isNotEmpty)
+                                              Text(
+                                                subtitle,
+                                                style: TextStyle(
+                                                  fontSize: 13.sp,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                              ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              tr(
+                                                'ownerSession.waitlistPosition',
+                                              ).replaceAll(
+                                                '{position}',
+                                                '${index + 1}',
+                                              ),
+                                              style: TextStyle(
+                                                fontSize: 12.sp,
+                                                color: AppColors.textTertiary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton(
+                                        onPressed: (isBusy || !canPromote)
+                                            ? null
+                                            : () =>
+                                                  _promoteWaitlistEntry(entry),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: AppColors.primary500,
+                                          side: const BorderSide(
+                                            color: AppColors.primary500,
+                                          ),
+                                        ),
+                                        child: isBusy
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : Text(tr('ownerSession.add')),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton(
+                                        onPressed: isBusy
+                                            ? null
+                                            : () => _removeWaitlistEntry(entry),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: AppColors.error500,
+                                          side: const BorderSide(
+                                            color: AppColors.error500,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tr(
+                                            'ownerSession.actionDeleteParticipant',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
                     ],
                   ]),
                 ),

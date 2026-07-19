@@ -311,10 +311,10 @@
     "bookClass": "Book class",
     "joinWaitlist": "Join waitlist",
     "leaveWaitlist": "Leave waitlist",
-    "joinedWaitlist": "Added to waitlist — we will notify you if a spot opens",
+    "joinedWaitlist": "Added to waitlist — we'll notify everyone if a spot opens",
     "leftWaitlist": "Removed from waitlist",
-    "waitlistError": "Could not join waitlist. Try again.",
-    "waitlistNotifyHint": "You will be notified if a spot opens"
+    "waitlistError": "Could not update waitlist. Try again.",
+    "waitlistNotifyHint": "We'll notify you if a spot opens — first to book gets it"
   },
   "clientMap": {
     "nearbyStudios": "Nearby studios",
@@ -815,7 +815,8 @@
     "typeAnnouncement": "ANNOUNCEMENT",
     "sessionDate": "Training: {date}",
     "msgReminder": "{studio}: upcoming {class}",
-    "msgWaitlist": "{studio}: a spot opened for {class} — you're booked!",
+    "msgWaitlist": "{studio}: a spot opened for {class} — book now!",
+    "msgWaitlistPromoted": "{studio}: you're booked for {class}",
     "msgCancelled": "{studio}: {class} was cancelled",
     "msgRescheduled": "{studio}: {class} was rescheduled",
     "cancelNote": "Reason: {note}",

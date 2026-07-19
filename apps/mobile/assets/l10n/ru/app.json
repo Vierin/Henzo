@@ -311,10 +311,10 @@
     "bookClass": "Записаться",
     "joinWaitlist": "Встать в очередь",
     "leaveWaitlist": "Покинуть очередь",
-    "joinedWaitlist": "Вы в очереди — уведомим, если появится место",
-    "leftWaitlist": "Вы вышли из очереди",
-    "waitlistError": "Не удалось встать в очередь. Попробуйте снова.",
-    "waitlistNotifyHint": "Уведомим вас, если появится место"
+    "joinedWaitlist": "Вы в waitlist — уведомим всех, если появится место",
+    "leftWaitlist": "Вы вышли из waitlist",
+    "waitlistError": "Не удалось обновить waitlist. Попробуйте снова.",
+    "waitlistNotifyHint": "Уведомим, если появится место — кто первый запишется, тот и займёт"
   },
   "clientMap": {
     "nearbyStudios": "Студии рядом",
@@ -815,7 +815,8 @@
     "typeAnnouncement": "ОБЪЯВЛЕНИЕ",
     "sessionDate": "Тренировка: {date}",
     "msgReminder": "{studio}: скоро {class}",
-    "msgWaitlist": "{studio}: освободилось место на {class} — вы записаны!",
+    "msgWaitlist": "{studio}: освободилось место на {class} — запишитесь!",
+    "msgWaitlistPromoted": "{studio}: вас записали на {class}",
     "msgCancelled": "{studio}: {class} отменено",
     "msgRescheduled": "{studio}: {class} перенесено",
     "cancelNote": "Причина: {note}",

@@ -1029,6 +1029,15 @@ class AuthService extends ChangeNotifier {
           );
         }
         await _tryFinishPendingTrainerInvite(accessToken);
+        // Password registration already has User.name; re-push after link so
+        // Trainer.name is never left as the invite email-prefix placeholder.
+        final linkedName = _user?.name?.trim();
+        if (linkedName != null && linkedName.isNotEmpty) {
+          await updateProfile(
+            name: linkedName,
+            phone: _user?.phone?.trim() ?? '',
+          );
+        }
         return (success: true, errorL10nKey: null, errorRaw: null);
       }
       String msg = 'HTTP ${response.statusCode}';
