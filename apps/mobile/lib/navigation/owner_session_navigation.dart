@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../screens/owner_edit_training_session_screen.dart';
-import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../widgets/training/owner_session_edit_scope_dialog.dart';
-import 'owner_session_refresh.dart';
 
 /// Opens scope picker, then pushes [OwnerEditTrainingSessionScreen] on the
 /// same [Navigator] as [context] (must be the session detail route).
