@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminFeedback, patchAdminFeedback } from '@/lib/admin/api';
 import type { AdminFeedbackRow } from '@/lib/admin/types';
@@ -14,7 +13,7 @@ const statusOptions = [
   { value: 'resolved', label: 'Resolved' },
 ];
 
-function FeedbackContent() {
+export default function FeedbackContent() {
   const searchParams = useSearchParams();
   const [rows, setRows] = useState<AdminFeedbackRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -150,13 +149,5 @@ function FeedbackContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-export default function AdminFeedbackPage() {
-  return (
-    <AdminGuard>
-      <FeedbackContent />
-    </AdminGuard>
   );
 }

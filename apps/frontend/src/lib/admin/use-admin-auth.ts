@@ -1,12 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { verifyAdminSession } from './api';
 
 export function useAdminAuth(options?: { requireAdmin?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = extractLocaleFromPath(pathname) ?? 'en';
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export function useAdminAuth(options?: { requireAdmin?: boolean }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    router.push('/en/admin/login');
+    router.push(withLocale('/admin/login', locale));
   };
 
   return { loading, isAdmin, error, check, signOut };

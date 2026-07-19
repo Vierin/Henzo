@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminNoShowClients } from '@/lib/admin/api';
 import type { AdminNoShowClientRow } from '@/lib/admin/types';
 
-function NoShowsContent() {
+export default function NoShowsContent() {
   const [rows, setRows] = useState<AdminNoShowClientRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -167,13 +166,5 @@ function NoShowsContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-export default function AdminNoShowsPage() {
-  return (
-    <AdminGuard>
-      <NoShowsContent />
-    </AdminGuard>
   );
 }

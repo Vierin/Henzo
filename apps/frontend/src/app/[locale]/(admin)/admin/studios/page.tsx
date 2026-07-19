@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { AdminTable } from '@/components/admin/admin-table';
 import {
   ActivityTierBadge,
@@ -12,7 +11,7 @@ import {
 import { fetchAdminStudios } from '@/lib/admin/api';
 import type { AdminStudioRow } from '@/lib/admin/types';
 
-function StudiosContent() {
+export default function StudiosContent() {
   const searchParams = useSearchParams();
   const [rows, setRows] = useState<AdminStudioRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -199,13 +198,5 @@ function StudiosContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-export default function AdminStudiosPage() {
-  return (
-    <AdminGuard>
-      <StudiosContent />
-    </AdminGuard>
   );
 }

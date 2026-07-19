@@ -1,11 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { AdminGuard } from '@/components/admin/admin-guard';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminSubscriptions } from '@/lib/admin/api';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
-function SubscriptionsContent() {
+export default function AdminSubscriptionsPage() {
+  const pathname = usePathname();
+  const locale = extractLocaleFromPath(pathname) ?? 'en';
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -74,8 +78,22 @@ function SubscriptionsContent() {
               key: 'studio',
               header: 'Studio',
               render: (r) => {
-                const s = r.Studio as { name?: string } | undefined;
-                return s?.name ?? '—';
+                const studio = r.Studio as
+                  | { id?: string; name?: string }
+                  | undefined;
+                if (!studio?.name) return '—';
+                if (!studio.id) return studio.name;
+                return (
+                  <Link
+                    href={withLocale(
+                      `/admin/studios/${studio.id}?tab=subscription`,
+                      locale,
+                    )}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {studio.name}
+                  </Link>
+                );
               },
             },
             {
@@ -106,23 +124,6 @@ function SubscriptionsContent() {
                   '—'
                 ),
             },
-            {
-              key: 'link',
-              header: '',
-              render: (r) => {
-                const studio = r.Studio as { id?: string } | undefined;
-                return studio?.id ? (
-                  <a
-                    href={`/en/admin/studios/${studio.id}?tab=subscription`}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Open
-                  </a>
-                ) : (
-                  '—'
-                );
-              },
-            },
           ]}
         />
       </div>
@@ -148,13 +149,5 @@ function SubscriptionsContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-export default function AdminSubscriptionsPage() {
-  return (
-    <AdminGuard>
-      <SubscriptionsContent />
-    </AdminGuard>
   );
 }

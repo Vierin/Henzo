@@ -1,11 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { AdminGuard } from '@/components/admin/admin-guard';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminNotifications } from '@/lib/admin/api';
 
-function NotificationsContent() {
+export default function NotificationsContent() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -115,13 +114,5 @@ function NotificationsContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-export default function AdminNotificationsPage() {
-  return (
-    <AdminGuard>
-      <NotificationsContent />
-    </AdminGuard>
   );
 }
