@@ -32,12 +32,42 @@ function OverviewContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-zinc-900">Overview</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
         Owner engagement & platform health
       </p>
 
-      <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+      <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Needs attention
+      </h2>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="Sleeping studios"
+          value={data.ownersSleeping30d}
+          hint="Published, no activity 30d+"
+          href="/en/admin/studios?activityTier=sleeping"
+        />
+        <KpiCard
+          label="Onboarding incomplete"
+          value={data.onboardingIncomplete}
+          hint="Missing training or photo"
+          href="/en/admin/studios?onboardingIncomplete=true"
+        />
+        <KpiCard
+          label="Failed payments (24h)"
+          value={data.failedPayments24h}
+          hint="RevenueCat webhook errors"
+          href="/en/admin/payments"
+        />
+        <KpiCard
+          label="Subs expiring (7d)"
+          value={data.expiringSubscriptions7d}
+          hint="Active subscriptions ending soon"
+          href="/en/admin/subscriptions?status=ACTIVE"
+        />
+      </div>
+
+      <h2 className="mt-10 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Owner activity
       </h2>
       <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -95,7 +125,7 @@ function OverviewContent() {
       {data.openFeedbackCount > 0 ? (
         <Link
           href="/en/admin/feedback?status=open"
-          className="mt-3 inline-block text-sm text-[#3F3287] hover:underline"
+          className="mt-3 inline-block text-sm text-primary hover:underline"
         >
           View open feedback →
         </Link>

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAdminAuth } from '@/lib/admin/use-admin-auth';
@@ -8,6 +9,9 @@ const nav = [
   { href: '/en/admin', label: 'Overview', exact: true },
   { href: '/en/admin/studios', label: 'Studios' },
   { href: '/en/admin/subscriptions', label: 'Subscriptions' },
+  { href: '/en/admin/payments', label: 'Payments' },
+  { href: '/en/admin/broadcast', label: 'Broadcast' },
+  { href: '/en/admin/no-shows', label: 'No-shows' },
   { href: '/en/admin/notifications', label: 'Events' },
   { href: '/en/admin/feedback', label: 'Feedback' },
   { href: '/en/admin/settings', label: 'Settings' },
@@ -18,10 +22,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { signOut } = useAdminAuth();
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
-        <aside className="w-56 shrink-0 border-r border-zinc-200 bg-white px-4 py-6">
-          <p className="text-lg font-semibold text-[#3F3287]">Henzo Admin</p>
+        <aside className="w-56 shrink-0 border-r border-border bg-white px-4 py-6">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="Henzo"
+              width={88}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
+            <span className="text-sm font-medium text-muted-foreground">
+              Admin
+            </span>
+          </div>
           <nav className="mt-8 flex flex-col gap-1">
             {nav.map((item) => {
               const active = item.exact
@@ -33,8 +49,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active
-                      ? 'bg-[#3F3287] text-white'
-                      : 'text-zinc-600 hover:bg-zinc-100'
+                      ? 'bg-primary text-white'
+                      : 'text-muted-foreground hover:bg-secondary'
                   }`}
                 >
                   {item.label}
@@ -45,7 +61,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void signOut()}
-            className="mt-8 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
+            className="mt-8 w-full rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-secondary"
           >
             Sign out
           </button>

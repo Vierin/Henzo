@@ -1,20 +1,37 @@
 import { apiClient } from '@/lib/api-client';
 import type {
   AdminBooking,
+  AdminBroadcastPayload,
+  AdminBroadcastResult,
   AdminFeedbackRow,
+  AdminNoShowClientRow,
   AdminOverview,
+  AdminPaymentEventRow,
   AdminSettings,
+  AdminStudioClientRow,
   AdminStudioDetail,
   AdminStudioRow,
   AdminSubscription,
   AdminTrainer,
   AdminTraining,
+  AdminVisitRow,
   Paginated,
   StudioActivityResponse,
   StudioAnalyticsData,
 } from './types';
 
 type ApiWrap<T> = { data: T };
+
+export async function verifyAdminSession(): Promise<{
+  authenticated: true;
+  email: string;
+}> {
+  const res =
+    await apiClient.get<ApiWrap<{ authenticated: true; email: string }>>(
+      '/admin/session',
+    );
+  return res.data;
+}
 
 export async function fetchAdminOverview(): Promise<AdminOverview> {
   const res = await apiClient.get<ApiWrap<AdminOverview>>('/admin/overview');
@@ -27,6 +44,7 @@ export async function fetchAdminStudios(params: {
   status?: string;
   search?: string;
   activityTier?: string;
+  onboardingIncomplete?: boolean;
 }): Promise<Paginated<AdminStudioRow>> {
   const q = new URLSearchParams();
   if (params.page) q.set('page', String(params.page));
@@ -34,6 +52,7 @@ export async function fetchAdminStudios(params: {
   if (params.status) q.set('status', params.status);
   if (params.search) q.set('search', params.search);
   if (params.activityTier) q.set('activityTier', params.activityTier);
+  if (params.onboardingIncomplete) q.set('onboardingIncomplete', 'true');
   const res = await apiClient.get<ApiWrap<Paginated<AdminStudioRow>>>(
     `/admin/studios?${q.toString()}`,
   );
@@ -269,6 +288,92 @@ export async function patchAdminFeedback(
 
 export async function fetchAdminSettings(): Promise<AdminSettings> {
   const res = await apiClient.get<ApiWrap<AdminSettings>>('/admin/settings');
+  return res.data;
+}
+
+export async function fetchAdminStudioClients(
+  studioId: string,
+  params: { page?: number; limit?: number; search?: string },
+): Promise<Paginated<AdminStudioClientRow>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.search) q.set('search', params.search);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminStudioClientRow>>>(
+    `/admin/studios/${studioId}/clients?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminStudioVisits(
+  studioId: string,
+  params: { page?: number; limit?: number; status?: string },
+): Promise<Paginated<AdminVisitRow>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.status) q.set('status', params.status);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminVisitRow>>>(
+    `/admin/studios/${studioId}/visits?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminStudioPaymentEvents(
+  studioId: string,
+  limit = 10,
+): Promise<AdminPaymentEventRow[]> {
+  const res = await apiClient.get<ApiWrap<AdminPaymentEventRow[]>>(
+    `/admin/studios/${studioId}/payment-events?limit=${limit}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminNoShowClients(params: {
+  page?: number;
+  limit?: number;
+  minNoShows?: number;
+  days?: number;
+}): Promise<
+  Paginated<AdminNoShowClientRow> & { minNoShows: number; days: number }
+> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.minNoShows) q.set('minNoShows', String(params.minNoShows));
+  if (params.days) q.set('days', String(params.days));
+  const res = await apiClient.get<
+    ApiWrap<
+      Paginated<AdminNoShowClientRow> & { minNoShows: number; days: number }
+    >
+  >(`/admin/no-show-clients?${q.toString()}`);
+  return res.data;
+}
+
+export async function fetchAdminPaymentEvents(params: {
+  page?: number;
+  limit?: number;
+  from?: string;
+  to?: string;
+}): Promise<Paginated<AdminPaymentEventRow>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.from) q.set('from', params.from);
+  if (params.to) q.set('to', params.to);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminPaymentEventRow>>>(
+    `/admin/payments?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function sendAdminBroadcast(
+  body: AdminBroadcastPayload,
+): Promise<AdminBroadcastResult> {
+  const res = await apiClient.post<ApiWrap<AdminBroadcastResult>>(
+    '/admin/broadcasts',
+    body,
+  );
   return res.data;
 }
 

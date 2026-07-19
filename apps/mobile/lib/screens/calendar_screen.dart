@@ -120,11 +120,17 @@ class CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  /// Called when the Schedule tab is shown. Loads on first open (avoids a fetch
-  /// on app cold start) and does a silent background refresh on every subsequent
-  /// open, so sessions the owner just assigned appear without needing a manual
-  /// pull-to-refresh.
+  /// Called when the Schedule tab is first shown (avoids fetch on app cold start).
   void ensureSessionsLoaded() {
+    if (_sessionsLoadStarted) return;
+    _sessionsLoadStarted = true;
+    _loadData();
+  }
+
+  /// Forces a background reload of the schedule. Triggered when the trainer taps
+  /// an assignment push, so the newly assigned session appears without a manual
+  /// pull-to-refresh. This is event-driven (one fetch per tap), not polling.
+  void reloadSessions() {
     if (!_sessionsLoadStarted) {
       _sessionsLoadStarted = true;
       _loadData();

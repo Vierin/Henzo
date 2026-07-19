@@ -101,6 +101,7 @@ Future<void> main() async {
         firebaseReady = true;
         await PushNotificationService.initialize(
           onNotificationReceived: notificationsStore.addFromPush,
+          onNotificationTapped: _handlePushTap,
         );
         await PushNotificationService.syncAppBadge(
           notificationsStore.unreadCount,
@@ -149,6 +150,32 @@ Future<void> main() async {
 /// Корневой [Navigator] для deep links (например `henzo://class`).
 final GlobalKey<NavigatorState> henzoRootNavigatorKey =
     GlobalKey<NavigatorState>();
+
+/// Routes a tapped push notification based on its payload `type`. Runs when the
+/// user opens the app from a push (background or terminated).
+void _handlePushTap(Map<String, String> data) {
+  final type = data['type'] ?? data['eventType'];
+  if (type == 'TRAINER_ASSIGNED') {
+    _openTrainerScheduleFromPush();
+  }
+}
+
+/// Switches the trainer to their Schedule tab and reloads it, so a just-assigned
+/// session shows immediately. On a cold start the trainer shell may not be
+/// mounted yet, so retry briefly until it is (only trainers mount it, which also
+/// naturally scopes this to trainer accounts).
+void _openTrainerScheduleFromPush([int attempt = 0]) {
+  final state = TrainerShell.currentState;
+  if (state != null) {
+    state.openScheduleAndRefresh();
+    return;
+  }
+  if (attempt >= 20) return; // give up after ~10s
+  Future.delayed(
+    const Duration(milliseconds: 500),
+    () => _openTrainerScheduleFromPush(attempt + 1),
+  );
+}
 
 class MyApp extends StatefulWidget {
   const MyApp({

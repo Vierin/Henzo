@@ -17,19 +17,22 @@ export function AdminTable<T extends { id?: string }>({
 }: AdminTableProps<T>) {
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500">
+      <p className="rounded-lg border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
         {emptyMessage}
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+    <div className="overflow-x-auto rounded-xl border border-border bg-white">
       <table className="min-w-full text-left text-sm">
-        <thead className="border-b border-zinc-100 bg-zinc-50">
+        <thead className="border-b border-border bg-secondary/40">
           <tr>
             {columns.map((c) => (
-              <th key={c.key} className="px-4 py-3 font-medium text-zinc-600">
+              <th
+                key={c.key}
+                className="px-4 py-3 font-medium text-muted-foreground"
+              >
                 {c.header}
               </th>
             ))}
@@ -39,10 +42,10 @@ export function AdminTable<T extends { id?: string }>({
           {rows.map((row, i) => (
             <tr
               key={(row as { id?: string }).id ?? i}
-              className="border-b border-zinc-50 last:border-0"
+              className="border-b border-border/50 last:border-0"
             >
               {columns.map((c) => (
-                <td key={c.key} className="px-4 py-3 text-zinc-800">
+                <td key={c.key} className="px-4 py-3 text-foreground">
                   {c.render(row)}
                 </td>
               ))}

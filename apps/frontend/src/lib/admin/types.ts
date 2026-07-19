@@ -7,6 +7,8 @@ export type ActivityTier =
 
 export type AdminOverview = {
   activeStudios: number;
+  onboardingIncomplete: number;
+  expiringSubscriptions7d: number;
   publishedStudios: number;
   ownersActive7d: number;
   ownersWarming30d: number;
@@ -33,6 +35,7 @@ export type AdminStudioRow = {
   bookingsLast30d: number;
   sessionsLast30d: number;
   clientsCount: number;
+  onboardingGaps: string[];
   User: { id: string; email: string; name: string | null };
   Subscription: {
     id?: string;
@@ -183,6 +186,80 @@ export type WeeklyActivityBucket = {
 export type StudioActivityResponse = {
   timeline: WeeklyActivityBucket[];
   onboardingGaps: string[];
+};
+
+export type AdminStudioClientRow = {
+  id: string;
+  userId: string;
+  source: string;
+  notes: string | null;
+  rosterCreatedAt: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  isGuest: boolean;
+  visitsCount: number;
+  noShowCount: number;
+  lastVisitAt: string | null;
+  lastNoShowAt: string | null;
+};
+
+export type AdminVisitRow = {
+  id: string;
+  kind: 'booking' | 'enrollment';
+  status: string;
+  startsAt: string;
+  clientId: string;
+  clientName: string | null;
+  clientEmail: string;
+  trainingName: string;
+};
+
+export type AdminNoShowClientRow = {
+  id: string;
+  userId: string;
+  studioId: string;
+  studioName: string;
+  clientName: string | null;
+  clientEmail: string;
+  clientPhone: string | null;
+  noShowCount: number;
+  lastNoShowAt: string;
+};
+
+export type AdminPaymentEventRow = {
+  id: string;
+  type: string;
+  severity: string;
+  message: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  studioId: string | null;
+  studioName: string | null;
+  ownerEmail: string | null;
+};
+
+export type AdminBroadcastPayload = {
+  channels: 'push' | 'email' | 'both';
+  title: string;
+  body: string;
+  audience:
+    | 'all_owners'
+    | 'activity_tier'
+    | 'onboarding_incomplete'
+    | 'studio_ids';
+  activityTier?: ActivityTier;
+  studioIds?: string[];
+  dryRun?: boolean;
+};
+
+export type AdminBroadcastResult = {
+  dryRun: boolean;
+  studioCount: number;
+  ownerCount: number;
+  pushTokens?: number;
+  emailsSent?: number;
+  emailsFailed?: number;
 };
 
 export type AdminFeedbackRow = {

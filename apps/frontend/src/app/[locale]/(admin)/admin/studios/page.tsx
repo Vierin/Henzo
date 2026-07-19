@@ -22,6 +22,9 @@ function StudiosContent() {
   const [activityTier, setActivityTier] = useState(
     searchParams.get('activityTier') ?? '',
   );
+  const [onboardingIncomplete, setOnboardingIncomplete] = useState(
+    searchParams.get('onboardingIncomplete') === 'true',
+  );
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -33,13 +36,14 @@ function StudiosContent() {
         search: search || undefined,
         status: status || undefined,
         activityTier: activityTier || undefined,
+        onboardingIncomplete: onboardingIncomplete || undefined,
       });
       setRows(res.items);
       setTotal(res.total);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load studios');
     }
-  }, [page, search, status, activityTier]);
+  }, [page, search, status, activityTier, onboardingIncomplete]);
 
   useEffect(() => {
     void load();
@@ -87,6 +91,17 @@ function StudiosContent() {
           <option value="never_used">Never used</option>
           <option value="draft">Draft / Ready</option>
         </select>
+        <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            checked={onboardingIncomplete}
+            onChange={(e) => {
+              setOnboardingIncomplete(e.target.checked);
+              setPage(1);
+            }}
+          />
+          Onboarding incomplete
+        </label>
       </div>
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <div className="mt-6">
@@ -99,7 +114,7 @@ function StudiosContent() {
               render: (r) => (
                 <Link
                   href={`/en/admin/studios/${r.id}`}
-                  className="font-medium text-[#3F3287] hover:underline"
+                  className="font-medium text-primary hover:underline"
                 >
                   {r.name}
                 </Link>
@@ -129,6 +144,22 @@ function StudiosContent() {
               key: 'clients',
               header: 'Clients',
               render: (r) => r.clientsCount,
+            },
+            {
+              key: 'onboarding',
+              header: 'Onboarding',
+              render: (r) =>
+                r.onboardingGaps.length === 0 ? (
+                  <span className="text-emerald-600">Complete</span>
+                ) : (
+                  <span className="text-amber-600">
+                    {r.onboardingGaps
+                      .map((g) =>
+                        g === 'hasTraining' ? 'No training' : 'No photo',
+                      )
+                      .join(', ')}
+                  </span>
+                ),
             },
             {
               key: 'usage',

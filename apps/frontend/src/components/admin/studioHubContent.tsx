@@ -10,6 +10,7 @@ import {
 } from '@/components/admin/activityTierBadge';
 import { AdminModal } from '@/components/admin/adminModal';
 import { WeekdayPills } from '@/components/admin/weekdayPills';
+import { AdminTable } from '@/components/admin/admin-table';
 import {
   activateFounderProgram,
   createAdminRecurringSessions,
@@ -18,26 +19,38 @@ import {
   fetchAdminStudio,
   fetchAdminStudioActivity,
   fetchAdminStudioAnalytics,
-  fetchAdminStudioBookings,
+  fetchAdminStudioClients,
+  fetchAdminStudioPaymentEvents,
   fetchAdminStudioTrainers,
   fetchAdminStudioTrainings,
+  fetchAdminStudioVisits,
   patchAdminStudioProfile,
   patchAdminSubscription,
 } from '@/lib/admin/api';
 import type {
-  AdminBooking,
+  AdminPaymentEventRow,
+  AdminStudioClientRow,
   AdminStudioDetail,
   AdminTrainer,
   AdminTraining,
+  AdminVisitRow,
   StudioAnalyticsData,
   StudioActivityResponse,
 } from '@/lib/admin/types';
 
-type Tab = 'overview' | 'analytics' | 'edit' | 'visits' | 'subscription';
+type Tab =
+  | 'overview'
+  | 'analytics'
+  | 'clients'
+  | 'visits'
+  | 'edit'
+  | 'subscription';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'analytics', label: 'Analytics' },
+  { id: 'clients', label: 'Clients' },
+  { id: 'visits', label: 'Visits' },
   { id: 'edit', label: 'Edit' },
   { id: 'visits', label: 'Visits' },
   { id: 'subscription', label: 'Subscription' },
@@ -56,8 +69,9 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
   const validTabs: Tab[] = [
     'overview',
     'analytics',
-    'edit',
+    'clients',
     'visits',
+    'edit',
     'subscription',
   ];
   const [tab, setTab] = useState<Tab>(
@@ -68,8 +82,6 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
   const [analytics, setAnalytics] = useState<StudioAnalyticsData | null>(null);
   const [trainings, setTrainings] = useState<AdminTraining[]>([]);
   const [trainers, setTrainers] = useState<AdminTrainer[]>([]);
-  const [bookings, setBookings] = useState<AdminBooking[]>([]);
-  const [bookingsSort, setBookingsSort] = useState('startsAt_desc');
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -107,15 +119,6 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
     }
   }, [studioId]);
 
-  const loadBookings = useCallback(async () => {
-    try {
-      const data = await fetchAdminStudioBookings(studioId, bookingsSort);
-      setBookings(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load visits');
-    }
-  }, [studioId, bookingsSort]);
-
   const loadActivity = useCallback(async () => {
     try {
       const data = await fetchAdminStudioActivity(studioId);
@@ -133,8 +136,7 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
     if (tab === 'overview') void loadActivity();
     if (tab === 'analytics') void loadAnalytics();
     if (tab === 'edit') void loadEditData();
-    if (tab === 'visits') void loadBookings();
-  }, [tab, loadAnalytics, loadEditData, loadActivity, loadBookings]);
+  }, [tab, loadAnalytics, loadEditData, loadActivity]);
 
   if (error && !studio) {
     return <p className="text-sm text-red-600">{error}</p>;
@@ -172,7 +174,7 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 text-sm font-medium ${
               tab === t.id
-                ? 'border-b-2 border-[#3F3287] text-[#3F3287]'
+                ? 'border-b-2 border-primary text-primary'
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
@@ -197,6 +199,10 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
       ) : null}
 
       {tab === 'analytics' ? <AnalyticsTab analytics={analytics} /> : null}
+
+      {tab === 'clients' ? <ClientsTab studioId={studioId} /> : null}
+
+      {tab === 'visits' ? <VisitsTab studioId={studioId} /> : null}
 
       {tab === 'edit' ? (
         <EditTab
@@ -268,14 +274,6 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
         />
       ) : null}
 
-      {tab === 'visits' ? (
-        <VisitsTab
-          bookings={bookings}
-          sort={bookingsSort}
-          onSortChange={setBookingsSort}
-        />
-      ) : null}
-
       {tab === 'subscription' && sub ? (
         <SubscriptionTab
           subscription={sub}
@@ -313,6 +311,10 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
 
       {tab === 'subscription' && !sub ? (
         <p className="mt-6 text-sm text-zinc-500">No subscription record.</p>
+      ) : null}
+
+      {tab === 'subscription' ? (
+        <StudioPaymentEvents studioId={studioId} />
       ) : null}
     </div>
   );
@@ -429,7 +431,7 @@ function OverviewTab({
             <button
               type="button"
               onClick={onGoToEdit}
-              className="text-sm text-[#3F3287] hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               Fix in Edit →
             </button>
@@ -458,7 +460,7 @@ function OverviewTab({
                 <button
                   type="button"
                   onClick={onGoToEdit}
-                  className="text-left hover:text-[#3F3287]"
+                  className="text-left hover:text-primary"
                 >
                   {stepLabels[key] ?? key}
                 </button>
@@ -756,7 +758,7 @@ function EditTab({
                 .filter(Boolean),
             })
           }
-          className="mt-4 rounded-lg bg-[#3F3287] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           Save profile
         </button>
@@ -979,105 +981,6 @@ function ModalActions({
   );
 }
 
-const VISIT_SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: 'startsAt_desc', label: 'Date — newest first' },
-  { value: 'startsAt_asc', label: 'Date — oldest first' },
-  { value: 'createdAt_desc', label: 'Booked — newest first' },
-  { value: 'createdAt_asc', label: 'Booked — oldest first' },
-  { value: 'status', label: 'Status' },
-];
-
-const VISIT_STATUS_STYLES: Record<string, string> = {
-  CONFIRMED: 'bg-emerald-50 text-emerald-700',
-  COMPLETED: 'bg-emerald-50 text-emerald-700',
-  PENDING: 'bg-amber-50 text-amber-700',
-  CANCELED: 'bg-zinc-100 text-zinc-500',
-  NOSHOW: 'bg-red-50 text-red-700',
-};
-
-function formatVisitDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function VisitsTab({
-  bookings,
-  sort,
-  onSortChange,
-}: {
-  bookings: AdminBooking[];
-  sort: string;
-  onSortChange: (value: string) => void;
-}) {
-  return (
-    <div className="mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-medium">Visits ({bookings.length})</h2>
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-zinc-500">Sort by</span>
-          <select
-            value={sort}
-            onChange={(e) => onSortChange(e.target.value)}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          >
-            {VISIT_SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <section className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-white">
-        {bookings.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-500">No visits yet</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-zinc-500">
-                <th className="px-4 py-2">Client</th>
-                <th className="px-4 py-2">Training</th>
-                <th className="px-4 py-2">Trainer</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((b) => (
-                <tr key={b.id} className="border-t border-zinc-100">
-                  <td className="px-4 py-2">
-                    {b.User?.name ?? b.User?.email ?? '—'}
-                  </td>
-                  <td className="px-4 py-2">{b.Training?.name ?? '—'}</td>
-                  <td className="px-4 py-2">{b.Trainer?.name ?? '—'}</td>
-                  <td className="px-4 py-2">{formatVisitDate(b.startsAt)}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        VISIT_STATUS_STYLES[b.status] ??
-                        'bg-zinc-100 text-zinc-600'
-                      }`}
-                    >
-                      {b.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-    </div>
-  );
-}
-
 function SubscriptionTab({
   subscription,
   saving,
@@ -1221,10 +1124,334 @@ function SubscriptionTab({
             manualOverride: true,
           })
         }
-        className="rounded-lg bg-[#3F3287] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         Save subscription
       </button>
+    </div>
+  );
+}
+
+function StudioPaymentEvents({ studioId }: { studioId: string }) {
+  const [events, setEvents] = useState<AdminPaymentEventRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAdminStudioPaymentEvents(studioId, 10)
+      .then(setEvents)
+      .catch((e) =>
+        setError(
+          e instanceof Error ? e.message : 'Failed to load payment events',
+        ),
+      );
+  }, [studioId]);
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Payment history (last 10 events)
+      </h3>
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      {!error && events.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          No payment events recorded.
+        </p>
+      ) : null}
+      {events.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {events.map((e) => (
+            <li
+              key={e.id}
+              className="rounded-lg border border-border bg-white px-4 py-3 text-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span
+                  className={
+                    e.severity === 'error'
+                      ? 'font-medium text-red-600'
+                      : 'font-medium text-foreground'
+                  }
+                >
+                  {e.type}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(e.createdAt).toLocaleString()}
+                </span>
+              </div>
+              {e.message ? (
+                <p className="mt-1 text-muted-foreground">{e.message}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function ClientsTab({ studioId }: { studioId: string }) {
+  const [rows, setRows] = useState<AdminStudioClientRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchAdminStudioClients(studioId, {
+          page,
+          limit: 20,
+          search: search || undefined,
+        });
+        if (cancelled) return;
+        setRows(res.items);
+        setTotal(res.total);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to load clients');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [studioId, page, search]);
+
+  return (
+    <div className="mt-6">
+      <input
+        type="search"
+        placeholder="Search name, email, phone"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
+        className="rounded-lg border border-border px-3 py-2 text-sm"
+      />
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+      {loading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Loading clients…</p>
+      ) : null}
+      {!loading && rows.length === 0 && !error ? (
+        <p className="mt-4 text-sm text-muted-foreground">No clients found.</p>
+      ) : null}
+      {rows.length > 0 ? (
+        <div className="mt-4">
+          <AdminTable
+            rows={rows}
+            columns={[
+              {
+                key: 'client',
+                header: 'Client',
+                render: (r) => (
+                  <div>
+                    <p className="font-medium">{r.name ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.email}
+                      {r.phone ? ` · ${r.phone}` : ''}
+                      {r.isGuest ? ' · guest' : ''}
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                key: 'source',
+                header: 'Source',
+                render: (r) => r.source,
+              },
+              {
+                key: 'visits',
+                header: 'Visits',
+                render: (r) => r.visitsCount,
+              },
+              {
+                key: 'noShows',
+                header: 'No-shows',
+                render: (r) =>
+                  r.noShowCount > 0 ? (
+                    <span className="font-semibold text-red-600">
+                      {r.noShowCount}
+                    </span>
+                  ) : (
+                    '0'
+                  ),
+              },
+              {
+                key: 'lastVisit',
+                header: 'Last visit',
+                render: (r) =>
+                  r.lastVisitAt
+                    ? new Date(r.lastVisitAt).toLocaleDateString()
+                    : '—',
+              },
+              {
+                key: 'added',
+                header: 'Added',
+                render: (r) => new Date(r.rosterCreatedAt).toLocaleDateString(),
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+      <Pagination page={page} total={total} limit={20} onChange={setPage} />
+    </div>
+  );
+}
+
+function VisitsTab({ studioId }: { studioId: string }) {
+  const [rows, setRows] = useState<AdminVisitRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchAdminStudioVisits(studioId, {
+          page,
+          limit: 20,
+          status: status || undefined,
+        });
+        if (cancelled) return;
+        setRows(res.items);
+        setTotal(res.total);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to load visits');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [studioId, page, status]);
+
+  return (
+    <div className="mt-6">
+      <select
+        value={status}
+        onChange={(e) => {
+          setStatus(e.target.value);
+          setPage(1);
+        }}
+        className="rounded-lg border border-border px-3 py-2 text-sm"
+      >
+        <option value="">All statuses</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="CONFIRMED">Confirmed</option>
+        <option value="PENDING">Pending</option>
+        <option value="ACTIVE">Active (enrollment)</option>
+        <option value="NO_SHOW">No-show</option>
+        <option value="CANCELLED">Cancelled</option>
+      </select>
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+      {loading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Loading visits…</p>
+      ) : null}
+      {!loading && rows.length === 0 && !error ? (
+        <p className="mt-4 text-sm text-muted-foreground">No visits found.</p>
+      ) : null}
+      {rows.length > 0 ? (
+        <div className="mt-4">
+          <AdminTable
+            rows={rows}
+            columns={[
+              {
+                key: 'date',
+                header: 'Date',
+                render: (r) => new Date(r.startsAt).toLocaleString(),
+              },
+              {
+                key: 'client',
+                header: 'Client',
+                render: (r) => (
+                  <div>
+                    <p className="font-medium">{r.clientName ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.clientEmail}
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                key: 'training',
+                header: 'Training',
+                render: (r) => r.trainingName,
+              },
+              {
+                key: 'kind',
+                header: 'Type',
+                render: (r) =>
+                  r.kind === 'booking' ? 'Booking' : 'Group session',
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                render: (r) =>
+                  r.status === 'NOSHOW' || r.status === 'NO_SHOW' ? (
+                    <span className="font-semibold text-red-600">NO-SHOW</span>
+                  ) : (
+                    r.status
+                  ),
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+      <Pagination page={page} total={total} limit={20} onChange={setPage} />
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  total,
+  limit,
+  onChange,
+}: {
+  page: number;
+  total: number;
+  limit: number;
+  onChange: (updater: (p: number) => number) => void;
+}) {
+  return (
+    <div className="mt-4 flex items-center gap-2">
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onChange((p) => p - 1)}
+        className="rounded border border-border px-3 py-1 text-sm disabled:opacity-40"
+      >
+        Prev
+      </button>
+      <button
+        type="button"
+        disabled={page * limit >= total}
+        onClick={() => onChange((p) => p + 1)}
+        className="rounded border border-border px-3 py-1 text-sm disabled:opacity-40"
+      >
+        Next
+      </button>
+      <span className="text-sm text-muted-foreground">
+        {total} total · page {page}
+      </span>
     </div>
   );
 }

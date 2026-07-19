@@ -1687,6 +1687,47 @@ export class AuthService {
   }
 
   /**
+   * Verifies the exact session used for a privileged request.
+   * This deliberately bypasses the user cache: two sessions belonging to the
+   * same account can have different authentication methods.
+   */
+  async getVerifiedAuthenticationContext(authHeader: string): Promise<{
+    userId: string;
+    provider: string | null;
+    providers: string[];
+    methods: { method: string; timestamp: number }[];
+    assuranceLevel: string | null;
+  }> {
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Authorization required');
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+
+    try {
+      decoded = await this.jwtVerifier.verifyToken(token);
+    } catch {
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data.user) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
+
+      decoded = this.jwtVerifier.decodeToken(token);
+      if (!decoded || decoded.sub !== data.user.id) {
+        throw new UnauthorizedException('Invalid token claims');
+      }
+    }
+
+    const context = this.jwtVerifier.getAuthenticationContextFromToken(decoded);
+
+    return {
+      userId: this.jwtVerifier.getUserIdFromToken(decoded),
+      ...context,
+    };
+  }
+
+  /**
    * Синхронизировать роль в app_metadata Supabase (в фоне)
    */
   private async syncRoleToAppMetadata(
