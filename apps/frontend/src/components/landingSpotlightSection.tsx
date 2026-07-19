@@ -552,7 +552,7 @@ export function LandingSpotlightSection() {
 
       <div
         ref={mobilePinRef}
-        className="mx-auto w-full max-w-md overflow-hidden px-4 pb-4 sm:hidden"
+        className="mx-auto w-full max-w-md overflow-hidden px-4 pb-12 sm:hidden"
       >
         <div className="flex h-[100svh] flex-col items-center pt-12 justify-center gap-4 sm:py-3">
           <div
