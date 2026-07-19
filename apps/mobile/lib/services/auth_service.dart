@@ -15,6 +15,7 @@ import '../models/trainer_info.dart';
 import '../models/user_model.dart';
 import '../utils/auth_entry_prefs.dart';
 import '../utils/auth_ui_result.dart';
+import '../utils/operator_shell_prefs.dart';
 import '../utils/owner_navigation_restore.dart';
 import '../utils/trainer_invite_pending.dart';
 import 'analytics_service.dart';
@@ -76,10 +77,27 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// After accepting a trainer invite: reload trainer row and prefer trainer shell.
+  /// Does not depend on Supabase token refresh succeeding.
+  Future<void> activateTrainerShellAfterInvite() async {
+    final token = accessToken;
+    if (token == null || token.isEmpty) {
+      throw StateError('No access token after invite accept');
+    }
+    await _fetchTrainerInfo(token);
+    if (_trainerInfo == null) {
+      throw StateError('Trainer profile not available after invite accept');
+    }
+    await OperatorShellPrefs.preferTrainer();
+    notifyListeners();
+  }
+
   Future<void> _tryFinishPendingTrainerInvite(String accessToken) async {
     final accepted = await TrainerInvitePending.tryAccept(accessToken);
     if (accepted) {
+      await OperatorShellPrefs.preferTrainer();
       await _fetchTrainerInfo(accessToken);
+      notifyListeners();
     }
   }
 
@@ -1135,6 +1153,7 @@ class AuthService extends ChangeNotifier {
     _trainerInfo = null;
     _isAuthenticated = false;
     notifyListeners();
+    unawaited(OperatorShellPrefs.preferOwner());
     unawaited(AnalyticsService.instance.setUser(null));
     unawaited(
       RevenueCatService.onAuthUserChanged(userId: null, isOwner: false),

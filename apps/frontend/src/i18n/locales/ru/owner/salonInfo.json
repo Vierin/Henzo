@@ -85,9 +85,6 @@
 	"geolocationTimeout": "Превышено время ожидания геолокации",
 	"geolocationError": "Не удалось определить местоположение",
 	"addressPlaceholder": "Выберите адрес",
-	"qrCode": "QR-код",
-	"salonQRCode": "QR-код салона",
-	"qrCodeDescription": "Отсканируйте QR-код, чтобы открыть страницу салона",
 	"copyLink": "Копировать ссылку",
 	"sharedSuccessfully": "Ссылка успешно отправлена",
 	"unsavedChangesConfirm": "У вас есть несохраненные изменения. Выйти со страницы без сохранения?"

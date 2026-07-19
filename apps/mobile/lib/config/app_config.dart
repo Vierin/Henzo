@@ -23,15 +23,6 @@ abstract final class AppConfig {
           .trim()
           .replaceAll(RegExp(r'/$'), '');
 
-  /// Страница регистрации владельца (можно переопределить `EXPO_PUBLIC_OWNER_REGISTER_URL`).
-  static String get ownerRegisterUrl {
-    final custom = (dotenv.env['EXPO_PUBLIC_OWNER_REGISTER_URL'] ?? '').trim();
-    if (custom.isNotEmpty) {
-      return custom.replaceAll(RegExp(r'/$'), '');
-    }
-    return '$webUrl/register';
-  }
-
   /// Web Client ID из Google Cloud (тот же, что в Supabase → Auth → Google).
   static String get googleWebClientId =>
       (dotenv.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'] ?? '').trim();

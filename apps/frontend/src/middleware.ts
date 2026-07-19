@@ -119,7 +119,6 @@ export async function middleware(req: NextRequest) {
     '/owner-dashboard',
     '/calendar',
     '/services',
-    '/marketing',
     '/staff',
     '/salon-info',
     '/billing',

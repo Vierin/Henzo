@@ -4,6 +4,17 @@ type TrainingLocationJson = {
   address?: string;
 };
 
+/** Name + street address required before publish. */
+export function hasCompleteStudioDetails(studio: {
+  name: string | null;
+  address: string | null;
+}): boolean {
+  return (
+    (studio.name?.trim() ?? '').length > 0 &&
+    (studio.address?.trim() ?? '').length > 0
+  );
+}
+
 export function countTrainingLocations(reminderSettings: unknown): number {
   let count = 1;
   if (!reminderSettings || typeof reminderSettings !== 'object') {

@@ -21,6 +21,7 @@ import '../../widgets/schedule/calendar_day_pill.dart';
 import '../../widgets/schedule/schedule_calendar_header.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
+import 'studio_details_screen.dart';
 import 'trainer/trainer_session_enrollments_screen.dart';
 import '../services/trainer_api_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -375,7 +376,26 @@ class CalendarScreenState extends State<CalendarScreen> {
     return null;
   }
 
+  Future<void> _openStudioDetailsForSetup() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const StudioDetailsScreen()),
+    );
+    if (saved == true && mounted) {
+      context.read<StudioCache>().invalidate();
+      context.read<OwnerSessionsCache>().invalidate();
+      await _loadData(showLoading: true);
+    }
+  }
+
   void _openCreateTraining() {
+    if (_studio == null) {
+      final locale = context.read<LocaleProvider>();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('common.setupSalonFirst'))),
+      );
+      unawaited(_openStudioDetailsForSetup());
+      return;
+    }
     final shell = context.findAncestorStateOfType<MainShellState>();
     if (shell != null) {
       shell.navigateToTab0Route('/trainings/new');

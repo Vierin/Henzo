@@ -15,6 +15,7 @@ import '../services/dashboard_api_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/subscription_refresh_notifier.dart';
 import '../utils/legal_web_links.dart';
+import '../utils/operator_shell_prefs.dart';
 import '../config/plan_limits.dart';
 import '../utils/subscription_tier.dart';
 import '../widgets/language_selector_modal.dart';
@@ -75,8 +76,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
 
     if (!context.mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(
-        content: Text('Приложение перезапустилось. Выберите фото ещё раз.'),
+      SnackBar(
+        content: Text(
+          context
+              .read<LocaleProvider>()
+              .t('accountSettings.photoSelectionInterrupted'),
+        ),
       ),
     );
   }
@@ -258,6 +263,19 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       ),
                     ),
                   ),
+                  if (context.watch<AuthService>().isTrainer) ...[
+                    const SizedBox(height: 16),
+                    SettingsGroupCard(
+                      children: [
+                        SettingsListTile(
+                          icon: Icons.swap_horiz_rounded,
+                          materialIconSize: 18,
+                          title: locale.t('settings.switchToTrainerPanel'),
+                          onTap: () => OperatorShellPrefs.preferTrainer(),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   SettingsSectionLabel(
                     title: locale.t('settings.owner.sectionPayments'),

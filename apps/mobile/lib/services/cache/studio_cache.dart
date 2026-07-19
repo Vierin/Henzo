@@ -17,12 +17,21 @@ class StudioCache extends ChangeNotifier {
     return DateTime.now().difference(_fetchedAt!) > _ttl;
   }
 
-  Future<Studio?> getStudio(String? accessToken) async {
+  /// Fetches current studio. [force] bypasses TTL.
+  /// Legitimate "no studio" clears cache. Transient API errors keep last good
+  /// value when available, then rethrow so UI can show a real error.
+  Future<Studio?> getStudio(
+    String? accessToken, {
+    bool force = false,
+  }) async {
     if (accessToken == null || accessToken.isEmpty) {
       _clear();
       return null;
     }
-    if (_studio != null && _tokenHint == accessToken && !isStale) {
+    if (_studio != null &&
+        _tokenHint == accessToken &&
+        !isStale &&
+        !force) {
       return _studio;
     }
     try {
@@ -36,7 +45,13 @@ class StudioCache extends ChangeNotifier {
         _clear();
       }
       return _studio;
-    } catch (_) {
+    } catch (e) {
+      if (_studio != null && _tokenHint == accessToken) {
+        if (kDebugMode) {
+          debugPrint('[StudioCache] keep stale studio after error: $e');
+        }
+        return _studio;
+      }
       rethrow;
     }
   }

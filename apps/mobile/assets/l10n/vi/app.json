@@ -100,9 +100,6 @@
     "sendResetLink": "Gửi liên kết đặt lại",
     "resetEmailSent": "Nếu có tài khoản với email này, bạn sẽ nhận được liên kết đặt lại mật khẩu.",
     "resetPasswordHint": "Nhập email tài khoản. Chúng tôi sẽ gửi liên kết nếu tài khoản tồn tại.",
-    "registerOnWebsite": "Tạo tài khoản business",
-    "ownerRequiredTitle": "Cần tài khoản business",
-    "ownerRequiredBody": "Ứng dụng này dành cho đơn vị vận hành (studio fitness, yoga, trường học). Hãy tạo tài khoản business rồi đăng nhập bằng cùng email.",
     "businessRegisterTitle": "Đăng ký business",
     "businessRegisterSubtitle": "Tạo tài khoản business để quản lý booking trên Henzo.",
     "businessName": "Tên business",
@@ -118,7 +115,6 @@
     "createBusinessAccount": "Tạo tài khoản business",
     "businessRegisterSuccess": "Hãy kiểm tra email để xác nhận đăng ký business.",
     "businessRegisterError": "Không thể bắt đầu đăng ký business.",
-    "openWebsite": "Mở trang web",
     "signOut": "Đăng xuất",
     "verificationCodeTitle": "Mã xác minh",
     "verificationCodeSubtitle": "Nhập mã 6 chữ số chúng tôi đã gửi đến email của bạn",
@@ -861,6 +857,8 @@
     },
     "version": "Phiên bản 1.0.0",
     "logOut": "Đăng xuất",
+    "switchToTrainerPanel": "Chuyển sang bảng huấn luyện viên",
+    "switchToOwnerPanel": "Chuyển sang bảng chủ studio",
     "howToBooking": "Cách tạo đặt chỗ",
     "howToStaff": "Cách thêm nhân viên",
     "howToService": "Cách thêm dịch vụ",
@@ -902,9 +900,7 @@
       "classesThisMonth": "Lớp",
       "trainers": "Huấn luyện viên",
       "upgradeHint": "Nâng cấp lên Studio để mở rộng"
-    },
-    "studioQrCode": "Mã QR Studio",
-    "studioQrCodeSubtitle": "Chia sẻ trang studio"
+    }
   },
   "calendar": {
     "scheduleTitle": "Lịch",
@@ -1227,7 +1223,8 @@
   "accountSettings": {
     "reloginToUploadPhoto": "Đăng nhập lại để tải ảnh",
     "uploadPhotoFailed": "Không thể tải ảnh",
-    "uploadError": "Lỗi tải lên"
+    "uploadError": "Lỗi tải lên",
+    "photoSelectionInterrupted": "Ứng dụng đã khởi động lại. Vui lòng chọn lại ảnh."
   },
   "clientBooking": {
     "confirmed": "Đã xác nhận",

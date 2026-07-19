@@ -72,7 +72,7 @@ class _TrainerInviteAcceptScreenState
     try {
       await TrainerApiService.acceptInvite(token, widget.token);
       await TrainerInvitePending.clear();
-      await auth.refreshSession();
+      await auth.activateTrainerShellAfterInvite();
       if (!mounted) return;
       Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (e) {

@@ -262,7 +262,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     if (!widget.trainerMode) {
       context.read<OwnerSessionsCache>().invalidate();
-      context.read<StudioCache>().invalidate();
+      // Force refetch without wipe — keeps last studio if network fails.
+      final token = context.read<AuthService>().accessToken;
+      if (token != null && token.isNotEmpty) {
+        try {
+          await context.read<StudioCache>().getStudio(token, force: true);
+        } catch (_) {}
+      }
     }
     await _loadData();
   }
@@ -347,7 +353,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context.read<StudioCache>().invalidate();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Studio is now active')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('dashboard.studioNowActive'),
+          ),
+        ),
+      );
       await _loadData();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -970,6 +982,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _checklistBlock() {
     if (!_dataLoaded) return const SizedBox.shrink();
+    // Network/API failure with no studio must not look like empty onboarding.
+    if (_sessionsLoadError != null && _studio == null) {
+      return const SizedBox.shrink();
+    }
 
     final studio = _studio;
     final c = _checklist;
@@ -977,9 +993,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (!status.showsOnboarding) return const SizedBox.shrink();
 
-    final studioDetails = _studioDetailsCompleted(studio);
+    final studioDetails = c != null && c.includesStudioDetailsStep
+        ? c.hasStudioDetails.completed
+        : _studioDetailsCompleted(studio);
     final hasTraining = c?.hasTraining.completed ?? false;
     final hasPhoto = c?.hasPhoto.completed ?? false;
+    final hasName = (studio?.name?.trim().isNotEmpty ?? false);
+    // Belt: never show Activate if name/address incomplete (old API gap).
+    final canPublish = (c?.canPublish ?? false) && studioDetails;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -992,10 +1013,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         studioDetailsCompleted: studioDetails,
         hasTraining: hasTraining,
         hasPhoto: hasPhoto,
-        canPublish: c?.canPublish ?? false,
+        canPublish: canPublish,
         isStudioActive: status.isActive,
         isPublishing: _isPublishing,
-        showPreviewButton: studio != null,
+        showPreviewButton: studio != null && hasName,
         onStudioDetailsTap: _openStudioDetails,
         onCreateTrainingTap: _openTrainingSetup,
         onAddPhotoTap: _openStudioProfileSettings,
@@ -1006,6 +1027,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openCreateTraining() {
+    if (_studio == null) {
+      final locale = context.read<LocaleProvider>();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('common.setupSalonFirst'))),
+      );
+      unawaited(_openStudioDetails());
+      return;
+    }
     final shell = context.findAncestorStateOfType<MainShellState>();
     if (shell != null) {
       shell.navigateToTab0Route('/trainings/new');

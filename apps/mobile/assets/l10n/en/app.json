@@ -100,9 +100,6 @@
     "sendResetLink": "Send reset link",
     "resetEmailSent": "If an account exists for this email, you will receive a password reset link.",
     "resetPasswordHint": "Enter your account email. We will send a reset link if the account exists.",
-    "registerOnWebsite": "Create business account",
-    "ownerRequiredTitle": "Business account required",
-    "ownerRequiredBody": "This app is for business operators (fitness studios, yoga spaces, schools). Create a business account, then sign in with the same email.",
     "businessRegisterTitle": "Business registration",
     "businessRegisterSubtitle": "Create your business account to manage bookings in Henzo.",
     "businessName": "Business name",
@@ -118,7 +115,6 @@
     "createBusinessAccount": "Create business account",
     "businessRegisterSuccess": "Check your email to confirm business registration.",
     "businessRegisterError": "Failed to start business registration.",
-    "openWebsite": "Open website",
     "signOut": "Sign out",
     "verificationCodeTitle": "Verification code",
     "verificationCodeSubtitle": "Enter the 6-digit code we sent to your email",
@@ -861,6 +857,8 @@
     },
     "version": "Version 1.0.0",
     "logOut": "Log out",
+    "switchToTrainerPanel": "Switch to trainer panel",
+    "switchToOwnerPanel": "Switch to owner panel",
     "howToBooking": "How to create a booking",
     "howToStaff": "How to add staff",
     "howToService": "How to add a service",
@@ -902,9 +900,7 @@
       "classesThisMonth": "Classes",
       "trainers": "Trainers",
       "upgradeHint": "Upgrade to Studio for more"
-    },
-    "studioQrCode": "Studio QR Code",
-    "studioQrCodeSubtitle": "Share your studio page"
+    }
   },
   "calendar": {
     "scheduleTitle": "Schedule",
@@ -1227,7 +1223,8 @@
   "accountSettings": {
     "reloginToUploadPhoto": "Please log in again to upload a photo",
     "uploadPhotoFailed": "Failed to upload photo",
-    "uploadError": "Upload error"
+    "uploadError": "Upload error",
+    "photoSelectionInterrupted": "The app restarted. Please select the photo again."
   },
   "clientBooking": {
     "confirmed": "Confirmed",

@@ -23,11 +23,12 @@ import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/public_class_detail_screen.dart';
+import 'utils/auth_entry_prefs.dart';
+import 'utils/operator_shell_prefs.dart';
 import 'utils/session_cache_clear.dart';
 import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
-import 'screens/non_owner_gate_screen.dart';
 import 'screens/registration_role_screen.dart';
 import 'screens/trainer/trainer_shell.dart';
 import 'services/analytics_service.dart';
@@ -44,7 +45,6 @@ import 'services/push_notification_service.dart';
 import 'services/revenuecat_service.dart';
 import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
-import 'utils/auth_entry_prefs.dart';
 import 'utils/owner_image_picker.dart';
 
 @pragma('vm:entry-point')
@@ -134,6 +134,7 @@ Future<void> main() async {
         anonKey: AppConfig.supabaseAnonKey,
       );
       await AuthEntryPrefs.load();
+      await OperatorShellPrefs.load();
       await RevenueCatService.configure();
       runApp(
         MyApp(
@@ -379,6 +380,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   AuthService? _authService;
   bool _wasAuthenticated = false;
+  bool _recoveringUnknownRole = false;
   String? _lastUserId;
 
   @override
@@ -438,14 +440,27 @@ class _AuthWrapperState extends State<AuthWrapper> {
             }
 
             final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
+            final trainerAllowed = auth.isAuthenticated && auth.isTrainer;
             final currentUserId = auth.user?.id;
             final sessionKey = ValueKey<String?>(currentUserId);
+
+            if (ownerAllowed && trainerAllowed) {
+              return ValueListenableBuilder<OperatorShell>(
+                valueListenable: OperatorShellPrefs.preferred,
+                builder: (context, shell, _) {
+                  if (shell == OperatorShell.trainer) {
+                    return TrainerShell(key: sessionKey);
+                  }
+                  return MainShell(key: sessionKey);
+                },
+              );
+            }
 
             if (ownerAllowed) {
               return MainShell(key: sessionKey);
             }
 
-            if (auth.isAuthenticated && auth.isTrainer) {
+            if (trainerAllowed) {
               return TrainerShell(key: sessionKey);
             }
 
@@ -453,8 +468,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return ClientShell(key: sessionKey);
             }
 
+            // Authenticated but not owner/client/trainer — recover to login.
             if (auth.isAuthenticated) {
-              return const NonOwnerGateScreen();
+              if (!_recoveringUnknownRole) {
+                _recoveringUnknownRole = true;
+                unawaited(
+                  auth.logout().whenComplete(() {
+                    if (mounted) _recoveringUnknownRole = false;
+                  }),
+                );
+              }
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
 
             if (!introCompleted) {
