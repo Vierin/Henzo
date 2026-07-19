@@ -604,6 +604,26 @@ export class FitnessSessionsService {
         },
       });
 
+      // Notify the trainer when they are newly assigned to this session.
+      const assignedTrainerId = trainerId;
+      const trainerNewlyAssigned =
+        dto.trainerId !== undefined &&
+        !!assignedTrainerId &&
+        assignedTrainerId !== session.trainerId &&
+        status !== TrainingSessionStatus.CANCELLED;
+      if (trainerNewlyAssigned && assignedTrainerId) {
+        void this.notificationsService.sendTrainerAssignedPush(
+          assignedTrainerId,
+          {
+            sessionId,
+            studioId: session.studioId,
+            className: session.Training?.name || 'class',
+            studioName: session.Studio?.name || 'studio',
+            startsAt,
+          },
+        );
+      }
+
       if (wasActive) {
         if (beingCancelled) {
           void this.notificationsService.notifySessionCancelled(sessionId, {
@@ -719,6 +739,31 @@ export class FitnessSessionsService {
       session.status !== TrainingSessionStatus.CANCELLED;
     const cancelNote = dto.note?.trim() || null;
     const timeChangedBulk = timeDeltaMs !== null && timeDeltaMs !== 0;
+
+    // Notify the trainer once when they are newly assigned across the series.
+    const assignedTrainerIdBulk = trainerId;
+    if (
+      dto.trainerId !== undefined &&
+      assignedTrainerIdBulk &&
+      assignedTrainerIdBulk !== session.trainerId &&
+      !beingCancelledBulk
+    ) {
+      const firstActive = planned.find(
+        (p) => p.status === TrainingSessionStatus.ACTIVE,
+      );
+      if (firstActive) {
+        void this.notificationsService.sendTrainerAssignedPush(
+          assignedTrainerIdBulk,
+          {
+            sessionId: firstActive.id,
+            studioId: session.studioId,
+            className,
+            studioName,
+            startsAt: firstActive.startsAt,
+          },
+        );
+      }
+    }
 
     if (beingCancelledBulk && cancelNote) {
       await this.prisma.trainingSession.updateMany({

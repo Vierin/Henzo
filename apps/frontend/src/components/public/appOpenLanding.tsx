@@ -180,7 +180,9 @@ export function AppOpenLanding({
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
           >
             <AppleStoreIcon className="h-5 w-5" />
-            <span className="text-sm font-medium text-gray-800">App Store</span>
+            <span className="text-sm font-medium text-gray-800">
+              {t('appOpen.appStore')}
+            </span>
           </a>
           <a
             href={playStoreUrl}
@@ -190,7 +192,7 @@ export function AppOpenLanding({
           >
             <GooglePlayIcon className="h-5 w-5" />
             <span className="text-sm font-medium text-gray-800">
-              Google Play
+              {t('appOpen.googlePlay')}
             </span>
           </a>
         </div>

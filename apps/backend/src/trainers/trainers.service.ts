@@ -388,26 +388,31 @@ export class TrainersService {
     }
 
     const trainer = invite.Trainer;
+
+    // The name/phone the coach entered during registration lives on the User
+    // record. The Trainer row was created with a placeholder (email prefix) at
+    // invite time, so sync User -> Trainer here (not the other way around),
+    // otherwise the studio owner keeps seeing the email prefix as the name.
+    const acceptingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, phone: true },
+    });
+    const userName = acceptingUser?.name?.trim();
+    const userPhone = acceptingUser?.phone?.trim();
+
     await this.prisma.$transaction([
       this.prisma.trainer.update({
         where: { id: invite.trainerId },
-        data: { userId },
+        data: {
+          userId,
+          ...(userName ? { name: userName } : {}),
+          ...(userPhone ? { phone: userPhone } : {}),
+        },
       }),
       this.prisma.trainerInvite.update({
         where: { id: invite.id },
         data: { status: 'ACCEPTED' },
       }),
-      ...(trainer?.name || trainer?.phone
-        ? [
-            this.prisma.user.update({
-              where: { id: userId },
-              data: {
-                ...(trainer.name ? { name: trainer.name } : {}),
-                ...(trainer.phone ? { phone: trainer.phone } : {}),
-              },
-            }),
-          ]
-        : []),
     ]);
 
     return {

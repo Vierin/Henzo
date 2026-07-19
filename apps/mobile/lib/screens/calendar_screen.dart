@@ -120,11 +120,23 @@ class CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  /// Called when the Schedule tab is first shown (avoids fetch on app cold start).
+  /// Called when the Schedule tab is shown. Loads on first open (avoids a fetch
+  /// on app cold start) and does a silent background refresh on every subsequent
+  /// open, so sessions the owner just assigned appear without needing a manual
+  /// pull-to-refresh.
   void ensureSessionsLoaded() {
-    if (_sessionsLoadStarted) return;
-    _sessionsLoadStarted = true;
-    _loadData();
+    if (!_sessionsLoadStarted) {
+      _sessionsLoadStarted = true;
+      _loadData();
+      return;
+    }
+    if (_sessionsReloadInFlight) return;
+    _sessionsReloadInFlight = true;
+    unawaited(
+      _loadData(showLoading: false).whenComplete(() {
+        _sessionsReloadInFlight = false;
+      }),
+    );
   }
 
   @override

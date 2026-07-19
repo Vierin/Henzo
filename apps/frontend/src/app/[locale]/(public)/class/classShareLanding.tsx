@@ -2,10 +2,12 @@
 
 import { useSearchParams } from 'next/navigation';
 import { AppOpenLanding } from '@/components/public/appOpenLanding';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { buildClassDeepLink } from '@/lib/appOpenFallback';
 
 export function ClassShareLanding() {
   const searchParams = useSearchParams();
+  const t = useTranslation();
   const studioId = searchParams.get('studioId')?.trim() ?? '';
   const sessionId = searchParams.get('sessionId')?.trim() ?? '';
   const startsAt = searchParams.get('startsAt')?.trim() ?? '';
@@ -19,8 +21,8 @@ export function ClassShareLanding() {
 
   return (
     <AppOpenLanding
-      title="You're invited to a class"
-      description="Open Henzo to view the class details and book your spot."
+      title={t('appOpen.classInvite.title')}
+      description={t('appOpen.classInvite.description')}
       deepLink={deepLink}
       autoOpenOnMobile={hasValidLink}
       icon="class"
