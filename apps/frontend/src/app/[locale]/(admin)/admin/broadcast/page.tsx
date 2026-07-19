@@ -18,6 +18,7 @@ function BroadcastContent() {
   const [activityTier, setActivityTier] = useState('sleeping');
   const [studioSearch, setStudioSearch] = useState('');
   const [studioOptions, setStudioOptions] = useState<AdminStudioRow[]>([]);
+  const [studioSuggestionsOpen, setStudioSuggestionsOpen] = useState(false);
   const [selectedStudios, setSelectedStudios] = useState<
     { id: string; name: string }[]
   >([]);
@@ -169,9 +170,11 @@ function BroadcastContent() {
                 placeholder="Search studios to add"
                 value={studioSearch}
                 onChange={(e) => setStudioSearch(e.target.value)}
+                onFocus={() => setStudioSuggestionsOpen(true)}
+                onBlur={() => setStudioSuggestionsOpen(false)}
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               />
-              {studioOptions.length > 0 ? (
+              {studioSuggestionsOpen && studioOptions.length > 0 ? (
                 <ul className="mt-2 max-h-44 overflow-auto rounded-lg border border-border bg-white">
                   {studioOptions
                     .filter((o) => !selectedStudios.some((s) => s.id === o.id))
@@ -179,12 +182,15 @@ function BroadcastContent() {
                       <li key={o.id}>
                         <button
                           type="button"
-                          onClick={() =>
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
                             setSelectedStudios((prev) => [
                               ...prev,
                               { id: o.id, name: o.name },
-                            ])
-                          }
+                            ]);
+                            setStudioSearch('');
+                            setStudioSuggestionsOpen(false);
+                          }}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-secondary"
                         >
                           {o.name}
