@@ -11,15 +11,33 @@ export type StudioOwnerRef = {
 export type AssignedTrainerRef = {
   id: string;
   name: string | null;
+  User?: { name: string | null } | null;
 } | null;
+
+/**
+ * Prefer linked User.name over Trainer.name.
+ * Invite flow seeds Trainer.name with the email local-part; the real name
+ * lives on User after registration / profile update.
+ */
+export function resolveTrainerDisplayName(
+  trainer: AssignedTrainerRef,
+): string | null {
+  if (!trainer) return null;
+  const fromUser = trainer.User?.name?.trim();
+  if (fromUser) return fromUser;
+  const fromTrainer = trainer.name?.trim();
+  if (fromTrainer) return fromTrainer;
+  return null;
+}
 
 /** Display name for clients when session has no Trainer row or empty name. */
 export function buildPublicTrainerPayload(
   trainer: AssignedTrainerRef,
   owner: StudioOwnerRef,
 ): PublicTrainerDto {
-  if (trainer?.name && String(trainer.name).trim().length > 0) {
-    return { id: trainer.id, name: String(trainer.name).trim() };
+  const linkedName = resolveTrainerDisplayName(trainer);
+  if (linkedName) {
+    return { id: trainer!.id, name: linkedName };
   }
   if (!owner) return null;
 
@@ -87,4 +105,23 @@ export async function resolveTrainerIdForSession(
     select: { id: true },
   });
   return created.id;
+}
+
+/** Push User profile fields onto the linked Trainer row (invite placeholder fix). */
+export async function syncLinkedTrainerFromUser(
+  prisma: PrismaClient,
+  userId: string,
+  data: { name?: string | null; phone?: string | null },
+): Promise<void> {
+  const patch: { name?: string; phone?: string } = {};
+  const name = data.name?.trim();
+  const phone = data.phone?.trim();
+  if (name) patch.name = name;
+  if (phone) patch.phone = phone;
+  if (Object.keys(patch).length === 0) return;
+
+  await prisma.trainer.updateMany({
+    where: { userId },
+    data: patch,
+  });
 }

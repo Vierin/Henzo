@@ -85,6 +85,20 @@ class _TrainerRegistrationScreenState extends State<TrainerRegistrationScreen> {
       showApiError(context, locale.t('trainer.acceptFailed'));
       return;
     }
+    // OAuth skips the form payload — push typed name/phone onto User + Trainer.
+    final formName = _fullNameController.text.trim();
+    final formPhone = _phoneController.text.trim();
+    if (formName.isNotEmpty || formPhone.isNotEmpty) {
+      await auth.updateProfile(
+        name: formName.isNotEmpty
+            ? formName
+            : (auth.user?.name?.trim() ?? ''),
+        phone: formPhone.isNotEmpty
+            ? formPhone
+            : (auth.user?.phone?.trim() ?? ''),
+      );
+    }
+    if (!mounted) return;
     showSuccess(context, locale.t('auth.signInSuccess'));
     if (!mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);

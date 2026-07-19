@@ -24,7 +24,10 @@ import {
   resolveSessionLocationDisplayName,
   resolveTrainingLocationName,
 } from '../lib/training-locations';
-import { resolveTrainerIdForSession } from './trainer-display.util';
+import {
+  resolveTrainerDisplayName,
+  resolveTrainerIdForSession,
+} from './trainer-display.util';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
@@ -399,7 +402,12 @@ export class FitnessSessionsService {
 
     await this.completePastTrainingSessions();
 
-    const where: any = { studioId: studio.id };
+    // Cancelled sessions are deleted by cancellation flows. Keep this filter as
+    // a safeguard for legacy rows created before that behavior was introduced.
+    const where: any = {
+      studioId: studio.id,
+      status: { not: TrainingSessionStatus.CANCELLED },
+    };
     if (fromIso || toIso) {
       where.startsAt = {};
       if (fromIso) where.startsAt.gte = new Date(fromIso);
@@ -428,7 +436,13 @@ export class FitnessSessionsService {
             },
           },
         },
-        Trainer: { select: { id: true, name: true } },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+            User: { select: { name: true } },
+          },
+        },
         Enrollments: {
           select: { status: true },
         },
@@ -485,9 +499,14 @@ export class FitnessSessionsService {
             : null,
         },
         trainer: (() => {
-          const tr = s.Trainer as { id: string; name: string } | null;
-          if (tr?.name && String(tr.name).trim().length > 0) {
-            return { id: tr.id, name: String(tr.name).trim() };
+          const tr = s.Trainer as {
+            id: string;
+            name: string;
+            User?: { name: string | null } | null;
+          } | null;
+          const display = resolveTrainerDisplayName(tr);
+          if (display) {
+            return { id: tr!.id, name: display };
           }
           if (tr?.id) {
             return { id: tr.id, name: ownerDisplayName };
@@ -646,11 +665,14 @@ export class FitnessSessionsService {
 
       if (wasActive) {
         if (beingCancelled) {
-          void this.notificationsService.notifySessionCancelled(sessionId, {
+          await this.notificationsService.notifySessionCancelled(sessionId, {
             className: session.Training?.name || 'class',
             studioName: session.Studio?.name || 'studio',
             startsAt: session.startsAt,
             note: cancelNote,
+          });
+          await this.prisma.trainingSession.delete({
+            where: { id: sessionId },
           });
         } else if (timeChanged) {
           void this.notificationsService.notifySessionRescheduled(sessionId, {
@@ -806,20 +828,33 @@ export class FitnessSessionsService {
     for (const row of rows) {
       const p = planned.find((x) => x.id === row.id);
       if (!p) continue;
-      if (beingCancelledBulk) {
-        void this.notificationsService.notifySessionCancelled(row.id, {
-          className,
-          studioName,
-          startsAt: row.startsAt,
-          note: cancelNote,
-        });
-      } else if (timeChangedBulk && p.status === TrainingSessionStatus.ACTIVE) {
+      if (
+        !beingCancelledBulk &&
+        timeChangedBulk &&
+        p.status === TrainingSessionStatus.ACTIVE
+      ) {
         void this.notificationsService.notifySessionRescheduled(row.id, {
           className,
           studioName,
           newStartsAt: p.startsAt,
         });
       }
+    }
+
+    if (beingCancelledBulk) {
+      await Promise.all(
+        rows.map((row) =>
+          this.notificationsService.notifySessionCancelled(row.id, {
+            className,
+            studioName,
+            startsAt: row.startsAt,
+            note: cancelNote,
+          }),
+        ),
+      );
+      await this.prisma.trainingSession.deleteMany({
+        where: { id: { in: rows.map((row) => row.id) } },
+      });
     }
 
     return { success: true };
@@ -867,13 +902,17 @@ export class FitnessSessionsService {
       },
     });
 
-    // Notify enrolled clients when owner cancels a session
+    // Notify before deleting: notification payloads and recipients are read
+    // through the session and its enrollments, which cascade on deletion.
     if (beingCancelled) {
-      void this.notificationsService.notifySessionCancelled(sessionId, {
+      await this.notificationsService.notifySessionCancelled(sessionId, {
         className: session.Training?.name || 'class',
         studioName: session.Studio?.name || 'studio',
         startsAt: session.startsAt,
         note: cancelNote,
+      });
+      await this.prisma.trainingSession.delete({
+        where: { id: sessionId },
       });
     }
 
@@ -1236,7 +1275,13 @@ export class FitnessSessionsService {
           },
         },
         Training: { select: { name: true, duration: true, price: true } },
-        Trainer: { select: { name: true } },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+            User: { select: { name: true } },
+          },
+        },
       },
     });
     if (!row?.Studio) {
@@ -1268,7 +1313,7 @@ export class FitnessSessionsService {
         salonName: row.Studio.name,
         salonAddress: row.Studio.address ?? undefined,
         salonPhone: row.Studio.phone ?? undefined,
-        staffName: row.Trainer?.name,
+        staffName: resolveTrainerDisplayName(row.Trainer) ?? row.Trainer?.name,
         dateTime: row.startsAt,
         salonTimezone: salonTz,
         locale,
@@ -1930,7 +1975,13 @@ export class FitnessSessionsService {
         Training: {
           select: { name: true, price: true, duration: true },
         },
-        Trainer: { select: { id: true, name: true } },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+            User: { select: { name: true } },
+          },
+        },
       },
       orderBy: { startsAt: 'desc' },
       take,
@@ -1953,7 +2004,12 @@ export class FitnessSessionsService {
         price: b.Training != null ? Number(b.Training.price) : null,
         duration: b.Training?.duration ?? null,
       },
-      staff: b.Trainer ? { id: b.Trainer.id, name: b.Trainer.name } : null,
+      staff: b.Trainer
+        ? {
+            id: b.Trainer.id,
+            name: resolveTrainerDisplayName(b.Trainer) ?? b.Trainer.name,
+          }
+        : null,
       trainerId: b.trainerId,
       serviceId: b.trainingId,
     }));

@@ -38,6 +38,7 @@ export class TrainersService {
     accessLevel: true,
     studioId: true,
     userId: true,
+    User: { select: { name: true, phone: true } },
     TrainerInvite: {
       select: {
         status: true,
@@ -63,6 +64,7 @@ export class TrainersService {
       accessLevel: string;
       studioId: string;
       userId: string | null;
+      User?: { name: string | null; phone: string | null } | null;
       TrainerInvite: { status: string; expiresAt: Date } | null;
       Training?: {
         id: string;
@@ -74,11 +76,13 @@ export class TrainersService {
     includePrivateFields: boolean,
   ) {
     const invite = row.TrainerInvite;
+    const displayName = row.User?.name?.trim() || row.name;
+    const displayPhone = row.User?.phone?.trim() || row.phone;
     return {
       id: row.id,
-      name: row.name,
+      name: displayName,
       email: includePrivateFields ? row.email : null,
-      phone: includePrivateFields ? row.phone : null,
+      phone: includePrivateFields ? displayPhone : null,
       accessLevel: row.accessLevel,
       studioId: row.studioId,
       userId: includePrivateFields ? row.userId : null,
@@ -432,6 +436,7 @@ export class TrainersService {
         phone: true,
         accessLevel: true,
         studioId: true,
+        User: { select: { name: true, phone: true } },
         Studio: { select: { id: true, name: true, logoUrl: true } },
         Training: {
           select: { id: true, name: true },
@@ -443,9 +448,9 @@ export class TrainersService {
       throw new HttpException('Not a trainer', HttpStatus.NOT_FOUND);
     return {
       id: trainer.id,
-      name: trainer.name,
+      name: trainer.User?.name?.trim() || trainer.name,
       email: trainer.email,
-      phone: trainer.phone,
+      phone: trainer.User?.phone?.trim() || trainer.phone,
       accessLevel: trainer.accessLevel,
       studioId: trainer.studioId,
       studioName: trainer.Studio?.name,
