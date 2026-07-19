@@ -35,7 +35,6 @@ export type TranslationModule =
   | 'owner/services'
   | 'owner/staff'
   | 'owner/calendar'
-  | 'owner/marketing'
   | 'owner/staffNew'
   | 'owner/servicesNew'
   | 'owner/feedback'
@@ -108,7 +107,6 @@ export const moduleDependencies: Record<
   'owner/services': ['core/common'],
   'owner/staff': ['core/common'],
   'owner/calendar': ['core/common', 'core/weekdays', 'core/months'],
-  'owner/marketing': ['core/common'],
   'owner/staffNew': ['core/common', 'shared/forms'],
   'owner/servicesNew': ['core/common', 'shared/forms'],
   'owner/feedback': ['core/common', 'shared/forms'],

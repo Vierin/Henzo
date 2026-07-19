@@ -85,9 +85,6 @@
 	"geolocationTimeout": "Location request timed out",
 	"geolocationError": "Could not get your location",
 	"addressPlaceholder": "Select address",
-	"qrCode": "QR Code",
-	"salonQRCode": "Salon QR Code",
-	"qrCodeDescription": "Scan the QR code to open the salon page",
 	"copyLink": "Copy Link",
 	"sharedSuccessfully": "Link shared successfully",
 	"unsavedChangesConfirm": "You have unsaved changes. Leave this page without saving?"

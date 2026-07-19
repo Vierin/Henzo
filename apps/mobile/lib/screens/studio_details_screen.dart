@@ -185,20 +185,21 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
       if (mounted) Navigator.of(context).pop();
       return;
     }
+    final locale = context.read<LocaleProvider>();
     final leave = await showHenzoDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Изменения не сохранены'),
-          content: const Text('Вы уверены, что хотите выйти без сохранения?'),
+          title: Text(locale.t('profileForm.unsavedChanges')),
+          content: Text(locale.t('profileForm.confirmDiscardChanges')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Остаться'),
+              child: Text(locale.t('common.stay')),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Выйти'),
+              child: Text(locale.t('common.exit')),
             ),
           ],
         );

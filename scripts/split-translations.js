@@ -93,7 +93,6 @@ const NESTED_MODULES = {
 	'owner/services': (obj) => obj.owner?.services || {},
 	'owner/staff': (obj) => obj.owner?.staff || {},
 	'owner/calendar': (obj) => obj.owner?.calendarPage || {},
-	'owner/marketing': (obj) => obj.owner?.marketingPage || {},
 	'owner/staffNew': (obj) => obj.owner?.staffNew || {},
 	'owner/servicesNew': (obj) => obj.owner?.servicesNew || {},
 };

@@ -8,6 +8,7 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/legal_web_links.dart';
+import '../../utils/operator_shell_prefs.dart';
 import '../../widgets/client/client_profile_sections.dart';
 import '../../widgets/language_selector_modal.dart';
 import '../../widgets/settings/feedback_sheet.dart';
@@ -101,6 +102,12 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen>
                       );
                     },
                   ),
+                  if (auth.isStudioOperator)
+                    SettingsListTile(
+                      icon: Icons.swap_horiz_rounded,
+                      title: locale.t('settings.switchToOwnerPanel'),
+                      onTap: () => OperatorShellPrefs.preferOwner(),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),

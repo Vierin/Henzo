@@ -1447,7 +1447,17 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final priceInt = _parsePriceDigits();
     final price = priceInt.toDouble();
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
-    if (token == null || token.isEmpty || studioId == null) return;
+    if (token == null || token.isEmpty || studioId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('common.setupSalonFirst'),
+          ),
+        ),
+      );
+      return;
+    }
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(

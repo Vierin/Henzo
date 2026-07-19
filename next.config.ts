@@ -65,18 +65,12 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { dev }) => {
     // P1: Tree shaking для неиспользуемого кода
     // usedExports удалено - конфликтует с cacheUnaffected в Next.js 15
     // Next.js уже включает usedExports по умолчанию
     // Do not set optimization.sideEffects: false — it can break CSS extraction
     // on client navigations between route groups (Tailwind / global styles).
-
-    // P1: Lazy load puppeteer только на сервере
-    if (isServer) {
-      config.externals = config.externals || [];
-      config.externals.push('puppeteer');
-    }
 
     // P1: Ускорение dev компиляции
     if (dev) {

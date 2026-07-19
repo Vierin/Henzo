@@ -141,8 +141,6 @@ export function LanguageProvider({
     publicModules.push('public/homepage');
     // Core weekdays module needed for calendar weekday translations
     publicModules.push('core/weekdays');
-  } else if (pathNoLocale.startsWith('/marketing')) {
-    ownerModule = 'owner/marketing';
   } else if (pathNoLocale.startsWith('/subscription')) {
     ownerModule = 'owner/subscription';
   } else if (pathNoLocale.startsWith('/clients')) {

@@ -22,7 +22,7 @@ Run on a **release** build (`flutter run --release` or TestFlight / Internal Tes
 - [ ] Create training; calendar session; attendance
 - [ ] Clients list; add client
 - [ ] Staff list
-- [ ] Settings: booking link & QR; reviews list
+- [ ] Settings: booking link; reviews list
 - [ ] Pro: IAP purchase + restore (RevenueCat)
 - [ ] Push on new booking (owner)
 

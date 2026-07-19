@@ -1559,6 +1559,125 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * Notify clients who still have upcoming enrollments, waitlist entries, or
+   * bookings at a studio that is about to be deleted (owner account removal).
+   * One message per user — not one per session.
+   */
+  async notifyStudioClosed(studio: {
+    id: string;
+    name: string;
+  }): Promise<void> {
+    try {
+      const now = new Date();
+      const studioName = studio.name?.trim() || 'Studio';
+
+      const [enrollments, waitlist, bookings] = await Promise.all([
+        this.prisma.sessionEnrollment.findMany({
+          where: {
+            status: 'ACTIVE',
+            TrainingSession: {
+              studioId: studio.id,
+              status: 'ACTIVE',
+              startsAt: { gt: now },
+            },
+          },
+          select: { userId: true },
+        }),
+        this.prisma.waitlistEntry.findMany({
+          where: {
+            TrainingSession: {
+              studioId: studio.id,
+              status: 'ACTIVE',
+              startsAt: { gt: now },
+            },
+          },
+          select: { userId: true },
+        }),
+        this.prisma.sessionBooking.findMany({
+          where: {
+            studioId: studio.id,
+            startsAt: { gt: now },
+            status: { in: ['CONFIRMED', 'PENDING'] },
+          },
+          select: { userId: true },
+        }),
+      ]);
+
+      const userIds = [
+        ...new Set(
+          [...enrollments, ...waitlist, ...bookings].map((row) => row.userId),
+        ),
+      ];
+      if (userIds.length === 0) return;
+
+      await Promise.allSettled(
+        userIds.map(async (userId) => {
+          const tokens = await this.getPushTokensByUserId(userId);
+          const lang = tokens[0]?.language || 'en';
+          const title = getNotificationText(lang, 'studioClosedTitle');
+          const body = formatNotificationTemplate(
+            getNotificationText(lang, 'studioClosedBody'),
+            { studio: studioName },
+          );
+          const pushData: Record<string, string> = {
+            type: 'STUDIO_CLOSED',
+            studioId: studio.id,
+            studioName,
+          };
+
+          try {
+            const inAppId = await this.createInAppNotification({
+              userId,
+              type: 'STUDIO_CLOSED',
+              title,
+              body,
+              data: pushData,
+            });
+            pushData.notificationId = inAppId;
+          } catch (inAppErr) {
+            console.error(
+              '[Notifications] Failed to save studio-closed in-app:',
+              inAppErr,
+            );
+          }
+
+          if (tokens.length === 0) return;
+
+          const languageGroups = new Map<string, typeof tokens>();
+          for (const t of tokens) {
+            const groupLang = t.language || 'en';
+            if (!languageGroups.has(groupLang)) {
+              languageGroups.set(groupLang, []);
+            }
+            languageGroups.get(groupLang)!.push(t);
+          }
+
+          for (const [groupLang, langTokens] of languageGroups) {
+            const groupTitle = getNotificationText(
+              groupLang,
+              'studioClosedTitle',
+            );
+            const groupBody = formatNotificationTemplate(
+              getNotificationText(groupLang, 'studioClosedBody'),
+              { studio: studioName },
+            );
+            await this.sendPushNotification(
+              langTokens,
+              groupTitle,
+              groupBody,
+              pushData,
+              undefined,
+              'henzo_default',
+            );
+          }
+        }),
+      );
+    } catch (err) {
+      console.error('[Notifications] notifyStudioClosed failed:', err);
+    }
+  }
+
   async sendWaitlistPromotionPush(
     userId: string,
     sessionInfo: {

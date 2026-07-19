@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../utils/formatters.dart';
+import '../utils/owner_studio_setup_errors.dart';
 import '../utils/subscription_tier.dart';
 import 'api_client.dart';
 import '../models/booking.dart';
@@ -546,6 +547,8 @@ class DashboardApiService {
       e.statusCode == 404 && e.message.contains('Cannot GET');
 
   /// GET /fitness/studios/current — студия владельца.
+  /// Returns null only for legitimate "no studio yet" states.
+  /// Network / server errors rethrow so callers don't treat them as empty setup.
   static Future<Studio?> getCurrentStudio(String accessToken) async {
     try {
       final body = await ApiClient.get('/fitness/studios/current', accessToken);
@@ -580,16 +583,12 @@ class DashboardApiService {
           }
           return null;
         } on ApiException catch (legacyError) {
-          if (kDebugMode) {
-            debugPrint(
-              '[DashboardAPI] getCurrentStudio legacy failed: $legacyError',
-            );
-          }
-          return null;
+          if (isOwnerStudioNotReadyError(legacyError)) return null;
+          rethrow;
         }
       }
-      if (kDebugMode) debugPrint('[DashboardAPI] getCurrentStudio: $e');
-      return null;
+      if (isOwnerStudioNotReadyError(e)) return null;
+      rethrow;
     }
   }
 
@@ -1322,11 +1321,13 @@ class StudioOnboardingChecklist {
     required this.requiredCompleted,
     required this.canPublish,
     required this.missingRequiredSteps,
+    required this.hasStudioDetails,
     required this.hasTraining,
     required this.hasPhoto,
     required this.hasLogo,
     required this.hasDescription,
     required this.contactsConfigured,
+    this.includesStudioDetailsStep = false,
   });
 
   final String studioId;
@@ -1334,11 +1335,15 @@ class StudioOnboardingChecklist {
   final bool requiredCompleted;
   final bool canPublish;
   final List<String> missingRequiredSteps;
+  final StudioOnboardingStep hasStudioDetails;
   final StudioOnboardingStep hasTraining;
   final StudioOnboardingStep hasPhoto;
   final StudioOnboardingStep hasLogo;
   final StudioOnboardingStep hasDescription;
   final StudioOnboardingStep contactsConfigured;
+
+  /// True when API returned `steps.hasStudioDetails` (new backend).
+  final bool includesStudioDetailsStep;
 
   factory StudioOnboardingChecklist.fromJson(Map<String, dynamic> json) {
     final rawSteps = json['steps'];
@@ -1369,11 +1374,13 @@ class StudioOnboardingChecklist {
       requiredCompleted: json['requiredCompleted'] == true,
       canPublish: json['canPublish'] == true,
       missingRequiredSteps: missing,
+      hasStudioDetails: parseStep('hasStudioDetails', true),
       hasTraining: parseStep('hasTraining', true),
       hasPhoto: parseStep('hasPhoto', true),
       hasLogo: parseStep('hasLogo', false),
       hasDescription: parseStep('hasDescription', false),
       contactsConfigured: parseStep('contactsConfigured', false),
+      includesStudioDetailsStep: steps['hasStudioDetails'] is Map,
     );
   }
 }

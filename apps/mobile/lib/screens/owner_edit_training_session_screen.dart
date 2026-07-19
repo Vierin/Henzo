@@ -54,6 +54,7 @@ class _OwnerEditTrainingSessionScreenState
   bool _loadingTrainers = true;
   bool _saving = false;
   bool _isPaidPlan = false;
+  bool _applyToFollowing = false;
 
   DateTime get _startsAt => DateTime(
     _sessionDate.year,
@@ -72,6 +73,7 @@ class _OwnerEditTrainingSessionScreenState
       try {
         final m = Map<String, dynamic>.from(raw);
         _initial = OwnerTrainingSession.fromRouteArgs(m);
+        _applyToFollowing = m['applyToFollowing'] == true;
         final local = _initial!.startsAt.toLocal();
         _sessionDate = DateTime(local.year, local.month, local.day);
         _sessionTime = TimeOfDay.fromDateTime(local);
@@ -611,6 +613,9 @@ class _OwnerEditTrainingSessionScreenState
       if (mounted) Navigator.of(context).pop();
       return;
     }
+    if (_applyToFollowing) {
+      body['applyToFollowing'] = true;
+    }
 
     setState(() => _saving = true);
     try {
@@ -710,7 +715,11 @@ class _OwnerEditTrainingSessionScreenState
       backgroundColor: AppColors.backgroundSecondary,
       appBar: buildBrandedSettingsAppBar(
         context,
-        title: locale.t('ownerSession.editScopeThisOnly'),
+        title: locale.t(
+          _applyToFollowing
+              ? 'ownerSession.editScopeFollowing'
+              : 'ownerSession.editScopeThisOnly',
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -738,6 +747,23 @@ class _OwnerEditTrainingSessionScreenState
     required String statusUpper,
   }) {
     return [
+      if (_applyToFollowing)
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            locale.t('ownerSession.editBulkSessionsBanner'),
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13.sp,
+              height: 1.35,
+            ),
+          ),
+        ),
       if (completed)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),

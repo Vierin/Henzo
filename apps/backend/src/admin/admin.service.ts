@@ -13,6 +13,7 @@ import {
   ActivityTier,
   AdminOwnerActivityService,
 } from './admin-owner-activity.service';
+import { hasCompleteStudioDetails } from '../lib/training-locations';
 import { StudiosService } from '../studios/studios.service';
 import { TrainingsService } from '../trainings/trainings.service';
 import { TrainersService } from '../trainers/trainers.service';
@@ -92,7 +93,13 @@ export class AdminService {
       this.prisma.studio.count({ where: { status: 'ACTIVE' } }),
       this.prisma.studio.count({
         where: {
-          OR: [{ Training: { none: {} } }, { photos: { isEmpty: true } }],
+          OR: [
+            { name: '' },
+            { address: null },
+            { address: '' },
+            { Training: { none: {} } },
+            { photos: { isEmpty: true } },
+          ],
         },
       }),
       this.prisma.subscription.count({
@@ -205,6 +212,7 @@ export class AdminService {
         name: true,
         slug: true,
         status: true,
+        address: true,
         createdAt: true,
         photos: true,
         _count: { select: { Training: true } },
@@ -242,7 +250,9 @@ export class AdminService {
     const filtered = onboardingIncomplete
       ? tierFiltered.filter(
           (studio) =>
-            studio._count.Training === 0 || studio.photos.length === 0,
+            !hasCompleteStudioDetails(studio) ||
+            studio._count.Training === 0 ||
+            studio.photos.length === 0,
         )
       : tierFiltered;
 
@@ -261,6 +271,7 @@ export class AdminService {
         User: s.User,
         Subscription: s.Subscription,
         onboardingGaps: [
+          ...(!hasCompleteStudioDetails(s) ? ['hasStudioDetails'] : []),
           ...(s._count.Training === 0 ? ['hasTraining'] : []),
           ...(s.photos.length === 0 ? ['hasPhoto'] : []),
         ],

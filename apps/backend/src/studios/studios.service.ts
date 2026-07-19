@@ -11,6 +11,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   countTrainingLocations,
+  hasCompleteStudioDetails,
   resolveBrowseStudioLocationName,
   resolveStudioBrandNameForDiscovery,
   resolveSessionLocationDisplayName,
@@ -400,6 +401,8 @@ export class StudiosService {
       select: {
         id: true,
         status: true,
+        name: true,
+        address: true,
         logoUrl: true,
         photos: true,
         photoGallery: true,
@@ -421,10 +424,12 @@ export class StudiosService {
       throw new Error('Studio not found');
     }
 
+    const hasStudioDetails = hasCompleteStudioDetails(studio);
     const hasTraining = (studio._count?.Training ?? 0) > 0;
     const hasPhoto = this.hasAtLeastOnePhoto(studio.photos);
 
     const missingRequiredSteps: string[] = [];
+    if (!hasStudioDetails) missingRequiredSteps.push('hasStudioDetails');
     if (!hasTraining) missingRequiredSteps.push('hasTraining');
     if (!hasPhoto) missingRequiredSteps.push('hasPhoto');
 
@@ -437,6 +442,10 @@ export class StudiosService {
       canPublish: requiredCompleted,
       missingRequiredSteps,
       steps: {
+        hasStudioDetails: {
+          required: true,
+          completed: hasStudioDetails,
+        },
         hasTraining: {
           required: true,
           completed: hasTraining,

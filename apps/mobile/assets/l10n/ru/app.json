@@ -100,9 +100,6 @@
     "sendResetLink": "Отправить ссылку",
     "resetEmailSent": "Если аккаунт с таким email есть, мы отправим ссылку для сброса пароля.",
     "resetPasswordHint": "Укажите email аккаунта. Мы отправим ссылку для сброса, если аккаунт существует.",
-    "registerOnWebsite": "Создать бизнес-аккаунт",
-    "ownerRequiredTitle": "Нужен бизнес-аккаунт",
-    "ownerRequiredBody": "Это приложение для операторов бизнеса (фитнес-студии, йога-пространства, школы). Создайте бизнес-аккаунт и войдите с тем же email.",
     "businessRegisterTitle": "Регистрация бизнеса",
     "businessRegisterSubtitle": "Создайте бизнес-аккаунт, чтобы управлять записями в Henzo.",
     "businessName": "Название бизнеса",
@@ -118,7 +115,6 @@
     "createBusinessAccount": "Создать бизнес-аккаунт",
     "businessRegisterSuccess": "Проверьте email для подтверждения регистрации бизнеса.",
     "businessRegisterError": "Не удалось запустить регистрацию бизнеса.",
-    "openWebsite": "Открыть сайт",
     "signOut": "Выйти",
     "verificationCodeTitle": "Код подтверждения",
     "verificationCodeSubtitle": "Введите 6-значный код, который мы отправили на ваш email",
@@ -861,6 +857,8 @@
     },
     "version": "Версия 1.0.0",
     "logOut": "Выход",
+    "switchToTrainerPanel": "Перейти в панель тренера",
+    "switchToOwnerPanel": "Перейти в панель владельца",
     "howToBooking": "Как создать запись",
     "howToStaff": "Как добавить сотрудника",
     "howToService": "Как добавить услугу",
@@ -902,9 +900,7 @@
       "classesThisMonth": "Занятия",
       "trainers": "Тренеры",
       "upgradeHint": "Перейдите на Studio для расширения"
-    },
-    "studioQrCode": "QR-код студии",
-    "studioQrCodeSubtitle": "Поделитесь страницей студии"
+    }
   },
   "calendar": {
     "scheduleTitle": "Расписание",
@@ -1227,7 +1223,8 @@
   "accountSettings": {
     "reloginToUploadPhoto": "Войдите снова, чтобы загрузить фото",
     "uploadPhotoFailed": "Не удалось загрузить фото",
-    "uploadError": "Ошибка загрузки"
+    "uploadError": "Ошибка загрузки",
+    "photoSelectionInterrupted": "Приложение перезапустилось. Выберите фото ещё раз."
   },
   "clientBooking": {
     "confirmed": "Запись подтверждена",
