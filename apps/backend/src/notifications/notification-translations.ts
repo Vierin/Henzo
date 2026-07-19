@@ -24,6 +24,11 @@ export const notificationTranslations = {
     sessionRescheduledBody: '{class} at {studio} moved to {date}.',
     newReviewTitle: 'New review ⭐',
     newReviewBody: '{client} left a {rating}★ review for {studio}',
+    subscriptionUpdatedTitle: 'Subscription updated',
+    subscriptionUpdatedBody: 'Your {plan} plan is active until {date}.',
+    founderProgramTitle: 'Welcome to the Founder Program 🎉',
+    founderProgramBody:
+      "Congratulations! You've been added to the Founder Program — the STUDIO plan is now free for you for {days} days, until {date}.",
   },
   ru: {
     newBookingConfirmed: 'Новая запись',
@@ -50,6 +55,11 @@ export const notificationTranslations = {
     sessionRescheduledBody: '{class} в {studio} перенесено на {date}.',
     newReviewTitle: 'Новый отзыв ⭐',
     newReviewBody: '{client} оставил(а) отзыв {rating}★ о студии {studio}',
+    subscriptionUpdatedTitle: 'Подписка обновлена',
+    subscriptionUpdatedBody: 'Ваш тариф {plan} активен до {date}.',
+    founderProgramTitle: 'Добро пожаловать в Founder Program 🎉',
+    founderProgramBody:
+      'Поздравляем! Вы были добавлены в Founder Program — пакет STUDIO теперь доступен вам бесплатно на {days} дней, до {date}.',
   },
   vi: {
     newBookingConfirmed: 'Đặt lịch mới',
@@ -76,6 +86,11 @@ export const notificationTranslations = {
     sessionRescheduledBody: '{class} tại {studio} đã được dời sang {date}.',
     newReviewTitle: 'Đánh giá mới ⭐',
     newReviewBody: '{client} đã để lại đánh giá {rating}★ cho {studio}',
+    subscriptionUpdatedTitle: 'Gói đăng ký đã cập nhật',
+    subscriptionUpdatedBody: 'Gói {plan} của bạn có hiệu lực đến {date}.',
+    founderProgramTitle: 'Chào mừng đến với Founder Program 🎉',
+    founderProgramBody:
+      'Chúc mừng! Bạn đã được thêm vào Founder Program — gói STUDIO hiện miễn phí cho bạn trong {days} ngày, đến {date}.',
   },
 };
 

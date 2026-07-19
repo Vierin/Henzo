@@ -263,18 +263,7 @@ export function renderTrainerInviteHtml(
         <!-- Main card -->
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" style="max-width:560px;width:100%;margin:0 auto;background-color:#ffffff;border-radius:28px;overflow:hidden;box-shadow:0 4px 24px rgba(63,63,63,0.06);">
           <tr>
-            <td style="padding:40px 36px 36px;">
-
-              <!-- Badge -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
-                <tr>
-                  <td align="center">
-                    <span style="display:inline-block;background-color:#FFF0EB;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;color:#F15942;line-height:1;">
-                      ${renderEmailIcon('profile-large', 22, '', true, 24)}&nbsp;&nbsp;${L.badge}
-                    </span>
-                  </td>
-                </tr>
-              </table>
+            <td style="padding:40px 24px 36px;">
 
               <!-- Heading -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:12px;">

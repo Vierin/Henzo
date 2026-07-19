@@ -1,25 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { Plus } from 'lucide-react';
 import {
   ActivityTierBadge,
   formatLastActive,
 } from '@/components/admin/activityTierBadge';
+import { AdminModal } from '@/components/admin/adminModal';
+import { WeekdayPills } from '@/components/admin/weekdayPills';
 import {
+  activateFounderProgram,
   createAdminRecurringSessions,
   createAdminStudioTrainer,
   createAdminStudioTraining,
   fetchAdminStudio,
   fetchAdminStudioActivity,
   fetchAdminStudioAnalytics,
+  fetchAdminStudioBookings,
   fetchAdminStudioTrainers,
   fetchAdminStudioTrainings,
   patchAdminStudioProfile,
   patchAdminSubscription,
 } from '@/lib/admin/api';
 import type {
+  AdminBooking,
   AdminStudioDetail,
   AdminTrainer,
   AdminTraining,
@@ -27,12 +33,13 @@ import type {
   StudioActivityResponse,
 } from '@/lib/admin/types';
 
-type Tab = 'overview' | 'analytics' | 'edit' | 'subscription';
+type Tab = 'overview' | 'analytics' | 'edit' | 'visits' | 'subscription';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'analytics', label: 'Analytics' },
   { id: 'edit', label: 'Edit' },
+  { id: 'visits', label: 'Visits' },
   { id: 'subscription', label: 'Subscription' },
 ];
 
@@ -46,7 +53,13 @@ function defaultPeriod() {
 export function StudioHubContent({ studioId }: { studioId: string }) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
-  const validTabs: Tab[] = ['overview', 'analytics', 'edit', 'subscription'];
+  const validTabs: Tab[] = [
+    'overview',
+    'analytics',
+    'edit',
+    'visits',
+    'subscription',
+  ];
   const [tab, setTab] = useState<Tab>(
     validTabs.includes(initialTab as Tab) ? (initialTab as Tab) : 'overview',
   );
@@ -55,6 +68,8 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
   const [analytics, setAnalytics] = useState<StudioAnalyticsData | null>(null);
   const [trainings, setTrainings] = useState<AdminTraining[]>([]);
   const [trainers, setTrainers] = useState<AdminTrainer[]>([]);
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  const [bookingsSort, setBookingsSort] = useState('startsAt_desc');
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -92,6 +107,15 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
     }
   }, [studioId]);
 
+  const loadBookings = useCallback(async () => {
+    try {
+      const data = await fetchAdminStudioBookings(studioId, bookingsSort);
+      setBookings(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load visits');
+    }
+  }, [studioId, bookingsSort]);
+
   const loadActivity = useCallback(async () => {
     try {
       const data = await fetchAdminStudioActivity(studioId);
@@ -109,7 +133,8 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
     if (tab === 'overview') void loadActivity();
     if (tab === 'analytics') void loadAnalytics();
     if (tab === 'edit') void loadEditData();
-  }, [tab, loadAnalytics, loadEditData, loadActivity]);
+    if (tab === 'visits') void loadBookings();
+  }, [tab, loadAnalytics, loadEditData, loadActivity, loadBookings]);
 
   if (error && !studio) {
     return <p className="text-sm text-red-600">{error}</p>;
@@ -206,6 +231,7 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               await loadStudio();
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Create failed');
+              throw e;
             } finally {
               setSaving(false);
             }
@@ -220,6 +246,7 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               await loadStudio();
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Create failed');
+              throw e;
             } finally {
               setSaving(false);
             }
@@ -233,10 +260,19 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               await loadStudio();
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Create failed');
+              throw e;
             } finally {
               setSaving(false);
             }
           }}
+        />
+      ) : null}
+
+      {tab === 'visits' ? (
+        <VisitsTab
+          bookings={bookings}
+          sort={bookingsSort}
+          onSortChange={setBookingsSort}
         />
       ) : null}
 
@@ -254,6 +290,20 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               await loadStudio();
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Update failed');
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onFounder={async () => {
+            setSaving(true);
+            setMsg(null);
+            setError(null);
+            try {
+              await activateFounderProgram(sub.id);
+              setMsg('Founder Program activated — owner notified');
+              await loadStudio();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Activation failed');
             } finally {
               setSaving(false);
             }
@@ -437,7 +487,10 @@ function AnalyticsTab({
 
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <StatCard label="Revenue (30d)" value={analytics.revenueTotal} />
+      <StatCard
+        label="Revenue (30d)"
+        value={formatCompactAmount(analytics.revenueTotal)}
+      />
       <StatCard label="Bookings" value={analytics.bookingCount} />
       <StatCard
         label="Sessions scheduled"
@@ -492,6 +545,16 @@ function AnalyticsTab({
   );
 }
 
+// Compact amount like the mobile app: thousands → k, millions → M.
+function formatCompactAmount(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  const v = Math.abs(value);
+  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  if (v >= 1_000_000) return `${fmt(v / 1_000_000)}M`;
+  if (v >= 1_000) return `${fmt(v / 1_000)}k`;
+  return String(Math.round(v));
+}
+
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -538,17 +601,70 @@ function EditTab({
   const [instagram, setInstagram] = useState(studio.instagram ?? '');
   const [photos, setPhotos] = useState((studio.photos ?? []).join('\n'));
 
+  const [trainingModalOpen, setTrainingModalOpen] = useState(false);
   const [trName, setTrName] = useState('');
   const [trDuration, setTrDuration] = useState('60');
   const [trPrice, setTrPrice] = useState('0');
 
+  const [trainerModalOpen, setTrainerModalOpen] = useState(false);
   const [trainerName, setTrainerName] = useState('');
   const [trainerEmail, setTrainerEmail] = useState('');
 
+  const [sessionModalOpen, setSessionModalOpen] = useState(false);
   const [sessTrainingId, setSessTrainingId] = useState('');
-  const [sessDays, setSessDays] = useState('1,3,5');
+  const [sessDays, setSessDays] = useState<number[]>([1, 3, 5]);
   const [sessTime, setSessTime] = useState('09:00');
   const [sessCapacity, setSessCapacity] = useState('10');
+
+  // On failure the parent handler surfaces the error banner and rethrows; we
+  // swallow here so the modal stays open (fields intact) with no unhandled
+  // rejection.
+  const submitTraining = async () => {
+    try {
+      await onCreateTraining({
+        name: trName.trim(),
+        duration: Number(trDuration) || 60,
+        price: Number(trPrice) || 0,
+      });
+      setTrainingModalOpen(false);
+      setTrName('');
+      setTrDuration('60');
+      setTrPrice('0');
+    } catch {
+      /* error surfaced by parent */
+    }
+  };
+
+  const submitTrainer = async () => {
+    try {
+      await onCreateTrainer({
+        name: trainerName.trim(),
+        email: trainerEmail.trim() || undefined,
+        accessLevel: 'EMPLOYEE',
+      });
+      setTrainerModalOpen(false);
+      setTrainerName('');
+      setTrainerEmail('');
+    } catch {
+      /* error surfaced by parent */
+    }
+  };
+
+  const submitSessions = async () => {
+    try {
+      await onCreateSessions({
+        studioId: studio.id,
+        trainingId: sessTrainingId,
+        capacity: Number(sessCapacity) || 10,
+        daysOfWeek: sessDays,
+        startTime: sessTime,
+        weeksCount: 4,
+      });
+      setSessionModalOpen(false);
+    } catch {
+      /* error surfaced by parent */
+    }
+  };
 
   return (
     <div className="mt-6 space-y-8">
@@ -647,7 +763,10 @@ function EditTab({
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="font-medium">Trainings ({trainings.length})</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">Trainings ({trainings.length})</h2>
+          <AddButton onClick={() => setTrainingModalOpen(true)} />
+        </div>
         <ul className="mt-2 space-y-1 text-sm">
           {trainings.map((t) => (
             <li key={t.id}>
@@ -655,44 +774,13 @@ function EditTab({
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <input
-            placeholder="Name"
-            value={trName}
-            onChange={(e) => setTrName(e.target.value)}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Duration (min)"
-            value={trDuration}
-            onChange={(e) => setTrDuration(e.target.value)}
-            className="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Price"
-            value={trPrice}
-            onChange={(e) => setTrPrice(e.target.value)}
-            className="w-24 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            disabled={saving || !trName.trim()}
-            onClick={() =>
-              void onCreateTraining({
-                name: trName.trim(),
-                duration: Number(trDuration) || 60,
-                price: Number(trPrice) || 0,
-              })
-            }
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
-          >
-            Add training
-          </button>
-        </div>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="font-medium">Trainers ({trainers.length})</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">Trainers ({trainers.length})</h2>
+          <AddButton onClick={() => setTrainerModalOpen(true)} />
+        </div>
         <ul className="mt-2 space-y-1 text-sm">
           {trainers.map((t) => (
             <li key={t.id}>
@@ -701,94 +789,290 @@ function EditTab({
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <input
-            placeholder="Name"
-            value={trainerName}
-            onChange={(e) => setTrainerName(e.target.value)}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Email (optional)"
-            value={trainerEmail}
-            onChange={(e) => setTrainerEmail(e.target.value)}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            disabled={saving || !trainerName.trim()}
-            onClick={() =>
-              void onCreateTrainer({
-                name: trainerName.trim(),
-                email: trainerEmail.trim() || undefined,
-                accessLevel: 'EMPLOYEE',
-              })
-            }
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
-          >
-            Add trainer
-          </button>
-        </div>
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="font-medium">Recurring sessions</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">Recurring sessions</h2>
+          <AddButton onClick={() => setSessionModalOpen(true)} />
+        </div>
         <p className="mt-1 text-xs text-zinc-500">
           Create weekly class slots for a training
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+      </section>
+
+      <AdminModal
+        open={trainingModalOpen}
+        title="Add training"
+        onClose={() => setTrainingModalOpen(false)}
+      >
+        <div className="space-y-3">
+          <Field label="Name">
+            <input
+              value={trName}
+              onChange={(e) => setTrName(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Duration (min)">
+              <input
+                type="number"
+                value={trDuration}
+                onChange={(e) => setTrDuration(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Price">
+              <input
+                type="number"
+                value={trPrice}
+                onChange={(e) => setTrPrice(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+            </Field>
+          </div>
+        </div>
+        <ModalActions
+          disabled={saving || !trName.trim()}
+          onCancel={() => setTrainingModalOpen(false)}
+          onSubmit={() => void submitTraining()}
+          submitLabel="Add training"
+        />
+      </AdminModal>
+
+      <AdminModal
+        open={trainerModalOpen}
+        title="Add trainer"
+        onClose={() => setTrainerModalOpen(false)}
+      >
+        <div className="space-y-3">
+          <Field label="Name">
+            <input
+              value={trainerName}
+              onChange={(e) => setTrainerName(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </Field>
+          <Field label="Email (optional)">
+            <input
+              value={trainerEmail}
+              onChange={(e) => setTrainerEmail(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </Field>
+        </div>
+        <ModalActions
+          disabled={saving || !trainerName.trim()}
+          onCancel={() => setTrainerModalOpen(false)}
+          onSubmit={() => void submitTrainer()}
+          submitLabel="Add trainer"
+        />
+      </AdminModal>
+
+      <AdminModal
+        open={sessionModalOpen}
+        title="Add recurring sessions"
+        onClose={() => setSessionModalOpen(false)}
+      >
+        <div className="space-y-3">
+          <Field label="Training">
+            <select
+              value={sessTrainingId}
+              onChange={(e) => setSessTrainingId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            >
+              <option value="">Select training</option>
+              {trainings.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Days of week">
+            <div className="mt-1">
+              <WeekdayPills value={sessDays} onChange={setSessDays} />
+            </div>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Start time">
+              <input
+                type="time"
+                value={sessTime}
+                onChange={(e) => setSessTime(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Capacity">
+              <input
+                type="number"
+                value={sessCapacity}
+                onChange={(e) => setSessCapacity(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+            </Field>
+          </div>
+        </div>
+        <ModalActions
+          disabled={saving || !sessTrainingId || sessDays.length === 0}
+          onCancel={() => setSessionModalOpen(false)}
+          onSubmit={() => void submitSessions()}
+          submitLabel="Create sessions"
+        />
+      </AdminModal>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block text-sm">
+      <span className="text-zinc-500">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function AddButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-[#3F3287] hover:bg-zinc-50"
+    >
+      <Plus className="h-4 w-4" />
+      Add
+    </button>
+  );
+}
+
+function ModalActions({
+  disabled,
+  onCancel,
+  onSubmit,
+  submitLabel,
+}: {
+  disabled: boolean;
+  onCancel: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <div className="mt-5 flex justify-end gap-2">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="rounded-lg border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onSubmit}
+        className="rounded-lg bg-[#3F3287] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+      >
+        {submitLabel}
+      </button>
+    </div>
+  );
+}
+
+const VISIT_SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'startsAt_desc', label: 'Date — newest first' },
+  { value: 'startsAt_asc', label: 'Date — oldest first' },
+  { value: 'createdAt_desc', label: 'Booked — newest first' },
+  { value: 'createdAt_asc', label: 'Booked — oldest first' },
+  { value: 'status', label: 'Status' },
+];
+
+const VISIT_STATUS_STYLES: Record<string, string> = {
+  CONFIRMED: 'bg-emerald-50 text-emerald-700',
+  COMPLETED: 'bg-emerald-50 text-emerald-700',
+  PENDING: 'bg-amber-50 text-amber-700',
+  CANCELED: 'bg-zinc-100 text-zinc-500',
+  NOSHOW: 'bg-red-50 text-red-700',
+};
+
+function formatVisitDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function VisitsTab({
+  bookings,
+  sort,
+  onSortChange,
+}: {
+  bookings: AdminBooking[];
+  sort: string;
+  onSortChange: (value: string) => void;
+}) {
+  return (
+    <div className="mt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-medium">Visits ({bookings.length})</h2>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-zinc-500">Sort by</span>
           <select
-            value={sessTrainingId}
-            onChange={(e) => setSessTrainingId(e.target.value)}
+            value={sort}
+            onChange={(e) => onSortChange(e.target.value)}
             className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
           >
-            <option value="">Select training</option>
-            {trainings.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            {VISIT_SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
-          <input
-            placeholder="Days 1=Mon (1,3,5)"
-            value={sessDays}
-            onChange={(e) => setSessDays(e.target.value)}
-            className="w-40 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Start time"
-            value={sessTime}
-            onChange={(e) => setSessTime(e.target.value)}
-            className="w-24 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Capacity"
-            value={sessCapacity}
-            onChange={(e) => setSessCapacity(e.target.value)}
-            className="w-20 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            disabled={saving || !sessTrainingId}
-            onClick={() => {
-              const daysOfWeek = sessDays
-                .split(',')
-                .map((d) => Number(d.trim()))
-                .filter((d) => d >= 1 && d <= 7);
-              void onCreateSessions({
-                studioId: studio.id,
-                trainingId: sessTrainingId,
-                capacity: Number(sessCapacity) || 10,
-                daysOfWeek,
-                startTime: sessTime,
-                weeksCount: 4,
-              });
-            }}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
-          >
-            Create sessions
-          </button>
-        </div>
+        </label>
+      </div>
+
+      <section className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-white">
+        {bookings.length === 0 ? (
+          <p className="p-4 text-sm text-zinc-500">No visits yet</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-zinc-500">
+                <th className="px-4 py-2">Client</th>
+                <th className="px-4 py-2">Training</th>
+                <th className="px-4 py-2">Trainer</th>
+                <th className="px-4 py-2">Date</th>
+                <th className="px-4 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map((b) => (
+                <tr key={b.id} className="border-t border-zinc-100">
+                  <td className="px-4 py-2">
+                    {b.User?.name ?? b.User?.email ?? '—'}
+                  </td>
+                  <td className="px-4 py-2">{b.Training?.name ?? '—'}</td>
+                  <td className="px-4 py-2">{b.Trainer?.name ?? '—'}</td>
+                  <td className="px-4 py-2">{formatVisitDate(b.startsAt)}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        VISIT_STATUS_STYLES[b.status] ??
+                        'bg-zinc-100 text-zinc-600'
+                      }`}
+                    >
+                      {b.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );
@@ -798,6 +1082,7 @@ function SubscriptionTab({
   subscription,
   saving,
   onSave,
+  onFounder,
 }: {
   subscription: NonNullable<AdminStudioDetail['Subscription']>;
   saving: boolean;
@@ -807,6 +1092,7 @@ function SubscriptionTab({
     currentPeriodEnd?: string | null;
     manualOverride?: boolean;
   }) => Promise<void>;
+  onFounder: () => Promise<void>;
 }) {
   const [type, setType] = useState(subscription.type);
   const [status, setStatus] = useState(subscription.status);
@@ -881,6 +1167,28 @@ function SubscriptionTab({
           className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-50"
         >
           Grant STUDIO +30d
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => {
+            if (
+              !window.confirm(
+                'Add this studio to the Founder Program? This grants the STUDIO plan free for 90 days and sends a push notification to the owner.',
+              )
+            ) {
+              return;
+            }
+            setType('STUDIO');
+            setStatus('ACTIVE');
+            const end = new Date();
+            end.setDate(end.getDate() + 90);
+            setPeriodEnd(end.toISOString().slice(0, 10));
+            void onFounder();
+          }}
+          className="rounded-full border border-[#3F3287] bg-[#3F3287]/5 px-3 py-1.5 text-sm font-medium text-[#3F3287] hover:bg-[#3F3287]/10 disabled:opacity-50"
+        >
+          + Add Founder Program (STUDIO 90 days)
         </button>
         <button
           type="button"

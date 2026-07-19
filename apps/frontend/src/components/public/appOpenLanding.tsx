@@ -6,6 +6,12 @@ import {
   AppleStoreIcon,
   GooglePlayIcon,
 } from '@/components/landing/storeIcons';
+import { LanguageDropdown } from '@/components/landing/languageDropdown';
+import {
+  publicHeaderLanguages,
+  usePublicHeaderState,
+} from '@/components/usePublicHeaderState';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
 import {
   getMobilePlatform,
@@ -77,6 +83,14 @@ export function AppOpenLanding({
   footer,
   icon = 'invite',
 }: AppOpenLandingProps) {
+  const t = useTranslation();
+  const {
+    dropdownRef,
+    isLanguageDropdownOpen,
+    setIsLanguageDropdownOpen,
+    selectedLanguage,
+    handleLanguageSelect,
+  } = usePublicHeaderState();
   const [platform, setPlatform] = useState<MobilePlatform>('other');
   const [attempted, setAttempted] = useState(false);
 
@@ -101,7 +115,19 @@ export function AppOpenLanding({
   const storeUrl = storeUrlForPlatform(platform);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
+      <div className="absolute right-4 top-4 z-50">
+        <LanguageDropdown
+          dropdownRef={dropdownRef}
+          isOpen={isLanguageDropdownOpen}
+          selectedLanguage={selectedLanguage}
+          languages={publicHeaderLanguages}
+          onToggle={() => setIsLanguageDropdownOpen((v) => !v)}
+          onSelect={handleLanguageSelect}
+          buttonClassName="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        />
+      </div>
+
       <div className="mb-10">
         <Image src="/logo.png" alt="Henzo" width={160} height={56} priority />
       </div>
@@ -121,26 +147,28 @@ export function AppOpenLanding({
           onClick={handleOpenApp}
           className="w-full rounded-xl bg-[#ff5b5b] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#e54f4f]"
         >
-          Open Henzo App
+          {t('appOpen.openApp')}
         </button>
 
         {attempted && (
           <p className="text-xs text-gray-400">
-            App didn&apos;t open?{' '}
+            {t('appOpen.didntOpen')}{' '}
             <a
               href={storeUrl}
               className="font-medium text-[#ff5b5b] underline"
               target="_blank"
               rel="noopener noreferrer"
             >
-              Download Henzo
+              {t('appOpen.download')}
             </a>
           </p>
         )}
 
         <div className="flex w-full items-center gap-3">
           <div className="h-px flex-1 bg-gray-100" />
-          <span className="text-xs text-gray-400">or download the app</span>
+          <span className="text-xs text-gray-400">
+            {t('appOpen.orDownload')}
+          </span>
           <div className="h-px flex-1 bg-gray-100" />
         </div>
 

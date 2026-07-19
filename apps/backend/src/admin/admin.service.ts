@@ -18,6 +18,7 @@ import { TrainingsService } from '../trainings/trainings.service';
 import { TrainersService } from '../trainers/trainers.service';
 import { StudioAnalyticsService } from '../fitness/studio-analytics.service';
 import { FitnessSessionsService } from '../fitness/fitness-sessions.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { UpdateStudioDto } from '../studios/dto/update-studio.dto';
 import { CreateServiceDto } from '../trainings/dto/create-service.dto';
 import { UpdateServiceDto } from '../trainings/dto/update-service.dto';
@@ -56,6 +57,7 @@ export class AdminService {
     private readonly trainersService: TrainersService,
     private readonly studioAnalytics: StudioAnalyticsService,
     private readonly fitnessSessions: FitnessSessionsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async getOverview(authHeader: string | undefined) {
@@ -562,6 +564,82 @@ export class AdminService {
       },
     });
 
+    // Notify the studio owner when the admin grants or extends a paid plan
+    // (not on revoke-to-SOLO or plain status edits).
+    const paidTiers = ['STUDIO', 'ENTERPRISE'];
+    const prevEnd = existing.currentPeriodEnd?.getTime() ?? 0;
+    const nextEnd = updated.currentPeriodEnd?.getTime() ?? 0;
+    const extended = nextEnd > prevEnd;
+    const upgraded =
+      paidTiers.includes(updated.type) && !paidTiers.includes(existing.type);
+    if (
+      updated.status === 'ACTIVE' &&
+      updated.type !== 'SOLO' &&
+      (extended || upgraded)
+    ) {
+      await this.notifications.sendSubscriptionUpdatePush(updated.studioId, {
+        plan: updated.type,
+        currentPeriodEnd: updated.currentPeriodEnd,
+      });
+    }
+
+    return updated;
+  }
+
+  async activateFounderProgram(
+    authHeader: string | undefined,
+    subscriptionId: string,
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const existing = await this.prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    const FOUNDER_DAYS = 90;
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setDate(periodEnd.getDate() + FOUNDER_DAYS);
+    periodEnd.setHours(23, 59, 59, 999);
+
+    const updated = await this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        type: 'STUDIO',
+        status: 'ACTIVE',
+        currentPeriodEnd: periodEnd,
+        manualOverride: true,
+        manualOverrideAt: now,
+        manualOverrideBy: admin.email,
+        updatedAt: now,
+      },
+      include: {
+        Studio: { select: { id: true, name: true } },
+      },
+    });
+
+    await this.eventLog.log({
+      type: 'admin_founder_program_activated',
+      severity: 'info',
+      message: `Founder Program activated for ${updated.Studio.name}`,
+      studioId: updated.studioId,
+      metadata: {
+        adminEmail: admin.email,
+        subscriptionId,
+        founderDays: FOUNDER_DAYS,
+        currentPeriodEnd: periodEnd.toISOString(),
+      },
+    });
+
+    await this.notifications.sendSubscriptionUpdatePush(updated.studioId, {
+      plan: 'STUDIO',
+      currentPeriodEnd: periodEnd,
+      founder: true,
+      founderDays: FOUNDER_DAYS,
+    });
+
     return updated;
   }
 
@@ -667,6 +745,46 @@ export class AdminService {
         email: true,
         phone: true,
         accessLevel: true,
+      },
+    });
+  }
+
+  async listStudioBookings(
+    authHeader: string | undefined,
+    studioId: string,
+    sort?: string,
+  ) {
+    await assertAdmin(this.authService, authHeader);
+    await this.assertStudioExists(studioId);
+
+    const orderBy = (() => {
+      switch (sort) {
+        case 'startsAt_asc':
+          return { startsAt: 'asc' as const };
+        case 'createdAt_desc':
+          return { createdAt: 'desc' as const };
+        case 'createdAt_asc':
+          return { createdAt: 'asc' as const };
+        case 'status':
+          return { status: 'asc' as const };
+        case 'startsAt_desc':
+        default:
+          return { startsAt: 'desc' as const };
+      }
+    })();
+
+    return this.prisma.sessionBooking.findMany({
+      where: { studioId },
+      orderBy,
+      take: 200,
+      select: {
+        id: true,
+        status: true,
+        startsAt: true,
+        createdAt: true,
+        User: { select: { name: true, email: true } },
+        Training: { select: { name: true } },
+        Trainer: { select: { name: true } },
       },
     });
   }

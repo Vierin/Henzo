@@ -1,0 +1,25 @@
+{
+  "appOpen": {
+    "openApp": "Открыть приложение Henzo",
+    "orDownload": "или скачайте приложение",
+    "didntOpen": "Приложение не открылось?",
+    "download": "Скачать Henzo",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "language": "Язык",
+    "trainerInvite": {
+      "title": "Вас пригласили!",
+      "description": "Вас добавили как тренера в Henzo. Откройте приложение, чтобы завершить регистрацию.",
+      "expiry": "Приглашение действует 7 дней."
+    },
+    "studioShare": {
+      "titleNamed": "Присоединяйтесь к {name} в Henzo",
+      "titleGeneric": "Вас пригласили в студию",
+      "description": "Откройте Henzo, чтобы посмотреть расписание студии и записаться на занятие."
+    },
+    "classInvite": {
+      "title": "Вас пригласили на занятие",
+      "description": "Откройте Henzo, чтобы посмотреть детали занятия и забронировать место."
+    }
+  }
+}

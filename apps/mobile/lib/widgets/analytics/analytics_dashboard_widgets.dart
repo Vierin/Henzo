@@ -299,13 +299,16 @@ class AnalyticsMetricCard extends StatelessWidget {
     final hasSubtitle = subtitle != null && subtitle!.isNotEmpty;
 
     return Container(
-      height: compact ? kAnalyticsGridCardHeight : null,
+      constraints: compact
+          ? const BoxConstraints(minHeight: kAnalyticsGridCardHeight)
+          : null,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(kAnalyticsCardRadius),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _analyticsCardLabel(label),
@@ -315,6 +318,7 @@ class AnalyticsMetricCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -391,13 +395,16 @@ class AnalyticsOccupancyCard extends StatelessWidget {
     final percentLabel = '${(clamped * 100).round()}%';
 
     return Container(
-      height: compact ? kAnalyticsGridCardHeight : null,
+      constraints: compact
+          ? const BoxConstraints(minHeight: kAnalyticsGridCardHeight)
+          : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(kAnalyticsCardRadius),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _analyticsCardLabel(label),
@@ -600,6 +607,10 @@ class _RevenueTrendPainter extends CustomPainter {
   final double maxY;
 
   static const double _verticalPadding = 6;
+  static const double _strokeWidth = 2.5;
+  // Keep the clip a little wider than the line so its rounded caps aren't cut
+  // off where the curve touches the top (peak) or the baseline (zero values).
+  static const double _clipPadding = _strokeWidth;
 
   double get _yRange {
     final range = maxY - minY;
@@ -662,7 +673,14 @@ class _RevenueTrendPainter extends CustomPainter {
     final topY = _valueToY(maxY, size.height);
 
     canvas.save();
-    canvas.clipRect(Rect.fromLTRB(0, topY, size.width, baselineY));
+    canvas.clipRect(
+      Rect.fromLTRB(
+        0,
+        topY - _clipPadding,
+        size.width,
+        baselineY + _clipPadding,
+      ),
+    );
 
     final linePath = Path();
     _appendSmoothCurve(linePath, offsets);
@@ -686,7 +704,7 @@ class _RevenueTrendPainter extends CustomPainter {
     final linePaint = Paint()
       ..color = AppColors.primary500
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
+      ..strokeWidth = _strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(linePath, linePaint);

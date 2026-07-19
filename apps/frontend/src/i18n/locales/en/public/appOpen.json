@@ -1,0 +1,25 @@
+{
+  "appOpen": {
+    "openApp": "Open Henzo App",
+    "orDownload": "or download the app",
+    "didntOpen": "App didn't open?",
+    "download": "Download Henzo",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "language": "Language",
+    "trainerInvite": {
+      "title": "You've been invited!",
+      "description": "You've been added as a trainer on Henzo. Open the app to complete your registration.",
+      "expiry": "This invitation expires in 7 days."
+    },
+    "studioShare": {
+      "titleNamed": "Join {name} on Henzo",
+      "titleGeneric": "You're invited to a studio",
+      "description": "Open Henzo to view the studio schedule and book a class."
+    },
+    "classInvite": {
+      "title": "You're invited to a class",
+      "description": "Open Henzo to view the class details and book your spot."
+    }
+  }
+}

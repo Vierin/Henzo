@@ -208,6 +208,21 @@ export class AdminController {
     }
   }
 
+  @Get('studios/:id/bookings')
+  async studioBookings(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Query('sort') sort?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listStudioBookings(authHeader, id, sort),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
   @Post('studios/:id/trainers')
   async createStudioTrainer(
     @Headers('authorization') authHeader: string,
@@ -295,6 +310,20 @@ export class AdminController {
     try {
       return {
         data: await this.adminService.patchSubscription(authHeader, id, body),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('subscriptions/:id/founder-program')
+  async activateFounderProgram(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.activateFounderProgram(authHeader, id),
       };
     } catch (e) {
       this.handleError(e);
