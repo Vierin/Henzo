@@ -1,12 +1,14 @@
 'use client';
 
 import { useTranslation } from '@/contexts/LanguageContext';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const BASE = 'homepage.studio.statementBeforeSpotlight';
 
 const ROTATE_MS = 3000;
 const ROTATOR_STAGGER_MS = 20;
+/** Room for ascenders + descenders inside the clip mask. */
+const LINE_EM = 1.25;
 
 function PhraseAccentRotator({
   words,
@@ -23,14 +25,6 @@ function PhraseAccentRotator({
   const n = safeWords.length;
   const loopWords = n > 1 ? [...safeWords, safeWords[0]] : safeWords;
   const wordsKey = safeWords.join('\u0001');
-  const longestWord = useMemo(
-    () =>
-      safeWords.reduce(
-        (best, word) => (word.length > best.length ? word : best),
-        '',
-      ),
-    [wordsKey],
-  );
 
   const [index, setIndex] = useState(0);
   const [noTransition, setNoTransition] = useState(false);
@@ -109,36 +103,42 @@ function PhraseAccentRotator({
 
   return (
     <span
-      className={`inline-block h-[1em] shrink-0 overflow-hidden align-middle text-left leading-none ${maskClassName ?? ''}`}
+      className={`relative inline-grid shrink-0 text-left ${maskClassName ?? ''}`}
+      style={{ lineHeight: LINE_EM }}
       aria-live="polite"
       aria-atomic="true"
     >
-      {/* Width sizer — keeps mask wide enough for the longest phrase */}
-      <span
-        className="invisible block h-0 overflow-hidden whitespace-nowrap leading-none"
-        aria-hidden
-      >
-        {longestWord}
-      </span>
+      {/* All phrases in one cell → width = widest glyph run (not string.length). */}
+      {safeWords.map((w) => (
+        <span
+          key={`size-${w}`}
+          className="invisible col-start-1 row-start-1 whitespace-nowrap pr-[0.2em]"
+          aria-hidden
+        >
+          {w}
+        </span>
+      ))}
       <span className="sr-only">{currentWord}</span>
-      <span
-        className={`inline-flex flex-col items-start text-left leading-none ${noTransition ? '' : 'transition-transform duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none'}`}
-        style={{
-          transform: reduceMotion
-            ? 'translateY(0%)'
-            : `translateY(${transformPct}%)`,
-        }}
-        onTransitionEnd={onTransitionEnd}
-        aria-hidden
-      >
-        {(reduceMotion ? loopWords.slice(0, 1) : loopWords).map((w, i) => (
-          <span
-            key={`${i}-${w}`}
-            className="block h-[1em] shrink-0 whitespace-nowrap text-left font-normal leading-none text-[#FF6B4A]"
-          >
-            {w}
-          </span>
-        ))}
+      <span className="absolute inset-0 overflow-hidden" aria-hidden>
+        <span
+          className={`flex w-full flex-col items-start text-left ${noTransition ? '' : 'transition-transform duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none'}`}
+          style={{
+            transform: reduceMotion
+              ? 'translateY(0%)'
+              : `translateY(${transformPct}%)`,
+          }}
+          onTransitionEnd={onTransitionEnd}
+        >
+          {(reduceMotion ? loopWords.slice(0, 1) : loopWords).map((w, i) => (
+            <span
+              key={`${i}-${w}`}
+              className="block w-full shrink-0 whitespace-nowrap text-left font-normal text-[#FF6B4A]"
+              style={{ height: `${LINE_EM}em`, lineHeight: LINE_EM }}
+            >
+              {w}
+            </span>
+          ))}
+        </span>
       </span>
     </span>
   );
@@ -170,15 +170,21 @@ export function LandingStatement() {
       <h2 id="landing-statement-before-spotlight-heading" className="sr-only">
         {titleText}
       </h2>
-      <div className="mx-auto flex w-full max-w-4xl flex-col flex-wrap items-center justify-center gap-6 px-4 text-center sm:flex-row sm:items-start sm:justify-start sm:gap-12 md:gap-8 xl:max-w-5xl min-[1800px]:max-w-7xl min-[1800px]:gap-16">
-        <p className="inline-flex max-w-full flex-nowrap items-center justify-center font-normal leading-none text-[8vw] sm:text-[4vw]">
+      <div className="mx-auto flex w-full max-w-4xl flex-col flex-wrap items-baseline justify-center gap-6 px-4 text-center sm:flex-row sm:items-start sm:justify-start sm:gap-12 md:gap-8 xl:max-w-5xl min-[1800px]:max-w-7xl min-[1800px]:gap-16">
+        <p
+          className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal text-[8vw] sm:text-[4vw]"
+          style={{ lineHeight: LINE_EM }}
+        >
           <span className="shrink-0 text-[#3F3F3F]">{phrase1Lead}</span>
           <span className="shrink-0" aria-hidden>
             &nbsp;
           </span>
           <PhraseAccentRotator words={rotating1} />
         </p>
-        <p className="inline-flex max-w-full flex-nowrap items-center justify-center font-normal leading-none text-[8vw] sm:text-[4vw]">
+        <p
+          className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal text-[8vw] sm:text-[4vw]"
+          style={{ lineHeight: LINE_EM }}
+        >
           <span className="shrink-0 text-[#3F3F3F]">{phrase2Lead}</span>
           <span className="shrink-0" aria-hidden>
             &nbsp;
