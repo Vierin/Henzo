@@ -27,12 +27,9 @@ type Step = { label: string; text: string };
 function QuickStartPhoneMockup({
   activeStep,
   className,
-  gentleReverse = false,
 }: {
   activeStep: number;
   className?: string;
-  /** Softer exit scale/y on reverse step changes (mobile). */
-  gentleReverse?: boolean;
 }) {
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
   const prevStepRef = useRef(activeStep);
@@ -48,17 +45,10 @@ function QuickStartPhoneMockup({
 
     const prev = prevStepRef.current;
     const next = Math.min(Math.max(activeStep, 0), STEP_MOCKUPS.length - 1);
-    const enterScale = gentleReverse ? 1.015 : 1.04;
-    const enterY = gentleReverse ? 4 : 10;
-    const exitScale = gentleReverse ? 1.012 : 1.04;
-    const exitY = gentleReverse ? -3 : -10;
 
     const setVisible = (el: HTMLDivElement, i: number) => {
       gsap.set(el, {
-        yPercent: 0,
-        scale: 1,
         opacity: 1,
-        filter: 'blur(0px)',
         zIndex: i + 1,
       });
     };
@@ -71,10 +61,7 @@ function QuickStartPhoneMockup({
           return;
         }
         gsap.set(el, {
-          yPercent: enterY,
-          scale: enterScale,
           opacity: 0,
-          filter: 'blur(8px)',
           zIndex: i + 1,
         });
       });
@@ -96,29 +83,20 @@ function QuickStartPhoneMockup({
           gsap.fromTo(
             el,
             {
-              yPercent: enterY,
-              scale: enterScale,
               opacity: 0,
-              filter: 'blur(8px)',
               zIndex: i + 1,
             },
             {
-              yPercent: 0,
-              scale: 1,
               opacity: 1,
-              filter: 'blur(0px)',
-              duration: 0.58,
-              ease: 'power3.out',
+              duration: 0.45,
+              ease: 'power2.out',
               overwrite: true,
             },
           );
           return;
         }
         gsap.set(el, {
-          yPercent: enterY,
-          scale: enterScale,
           opacity: 0,
-          filter: 'blur(8px)',
           zIndex: i + 1,
         });
       });
@@ -130,28 +108,22 @@ function QuickStartPhoneMockup({
         }
         if (i === prev) {
           gsap.to(el, {
-            yPercent: exitY,
-            scale: exitScale,
             opacity: 0,
-            filter: gentleReverse ? 'blur(3px)' : 'blur(6px)',
-            duration: gentleReverse ? 0.38 : 0.45,
-            ease: 'power2.in',
+            duration: 0.4,
+            ease: 'power2.out',
             overwrite: true,
           });
           return;
         }
         gsap.set(el, {
-          yPercent: enterY,
-          scale: enterScale,
           opacity: 0,
-          filter: 'blur(8px)',
           zIndex: i + 1,
         });
       });
     }
 
     prevStepRef.current = next;
-  }, [activeStep, gentleReverse]);
+  }, [activeStep]);
 
   return (
     <div
@@ -164,7 +136,7 @@ function QuickStartPhoneMockup({
           ref={(el) => {
             slideRefs.current[i] = el;
           }}
-          className="absolute inset-0 will-change-[transform,opacity,filter]"
+          className="absolute inset-0 will-change-[opacity]"
           style={{ zIndex: i + 1, opacity: i === 0 ? 1 : 0 }}
         >
           <Image
@@ -593,7 +565,6 @@ export function QuickStartSection() {
             <div className="flex items-end justify-center">
               <QuickStartPhoneMockup
                 activeStep={mobileActiveStep}
-                gentleReverse
                 className="w-[min(72vw,18rem)]"
               />
             </div>

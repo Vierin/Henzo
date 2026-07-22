@@ -116,7 +116,7 @@ function PhraseAccentRotator({
 
   return (
     <span
-      className={`inline-grid shrink-0 align-baseline ${maskClassName ?? ''}`}
+      className={`inline-grid shrink-0 align-baseline text-left ${maskClassName ?? ''}`}
       style={lineStyle}
       aria-live="polite"
       aria-atomic="true"
@@ -131,12 +131,12 @@ function PhraseAccentRotator({
       </span>
       <span className="sr-only">{currentWord}</span>
       <span
-        className="col-start-1 row-start-1 overflow-hidden"
+        className="col-start-1 row-start-1 w-full overflow-hidden text-left"
         style={{ ...lineStyle, maxHeight: `${LINE_EM}em` }}
         aria-hidden
       >
         <span
-          className={`inline-flex flex-col ${noTransition ? '' : 'transition-transform duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none'}`}
+          className={`inline-flex w-full flex-col items-start ${noTransition ? '' : 'transition-transform duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none'}`}
           style={{
             transform: reduceMotion
               ? 'translateY(0%)'
@@ -147,7 +147,7 @@ function PhraseAccentRotator({
           {(reduceMotion ? loopWords.slice(0, 1) : loopWords).map((w, i) => (
             <span
               key={`${i}-${w}`}
-              className="flex shrink-0 items-center justify-start whitespace-nowrap font-normal leading-none text-[#FF6B4A]"
+              className="flex w-full shrink-0 items-center justify-start whitespace-nowrap text-left font-normal leading-none text-[#FF6B4A]"
               style={lineStyle}
             >
               {w}
