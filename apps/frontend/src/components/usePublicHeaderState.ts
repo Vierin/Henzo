@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
-import { useLanguage } from '@/contexts/LanguageContext';
 import type { LanguageOption } from '@/components/landing/languageDropdown';
+import { prepareScrollTriggersForLocaleNavigation } from '@/utils/viewport';
 
 export const publicHeaderLanguages: readonly LanguageOption[] = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -20,7 +20,6 @@ export function usePublicHeaderState() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { setLanguage } = useLanguage();
 
   const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 
@@ -30,13 +29,12 @@ export function usePublicHeaderState() {
       return;
     }
 
-    setLanguage(lang.code);
     const basePath = withLocale(pathname, lang.code);
     const query = searchParams.toString();
     const target = query ? `${basePath}?${query}` : basePath;
     setIsLanguageDropdownOpen(false);
-    // Soft client nav leaves GSAP ScrollTrigger pins/spacers stale.
-    // Full reload reinits all scroll animations cleanly.
+    // Kill pins first — setLanguage() used to rebuild ST mid-scroll before reload.
+    prepareScrollTriggersForLocaleNavigation();
     window.location.assign(target);
   };
 
