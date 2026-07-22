@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { withLocale } from '@/i18n/routing';
+import { withLocale, type Locale } from '@/i18n/routing';
 import {
   publicHeaderLanguages,
   usePublicHeaderState,
@@ -23,7 +23,7 @@ function PublicHeaderContent({
     selectedLanguage,
     handleLanguageSelect,
   } = usePublicHeaderState();
-  const locale = currentLocale as 'en' | 'ru' | 'vi';
+  const locale = currentLocale as Locale;
   const homePath = withLocale('/', locale);
 
   return (

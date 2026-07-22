@@ -63,7 +63,7 @@ export default function NotFoundClient() {
 
           {/* Single Button */}
           <Link
-            href={withLocale('/', locale as 'en' | 'ru' | 'vi')}
+            href={withLocale('/', locale)}
             className="inline-block bg-[#E86D4F] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#d85e42] transition-colors duration-200"
           >
             {t('public.notFound.returnHome')}

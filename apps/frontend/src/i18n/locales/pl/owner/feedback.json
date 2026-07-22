@@ -1,0 +1,12 @@
+{
+	"title": "Need help?",
+	"subtitle": "Ask a question or describe your issue",
+	"placeholder": "Describe your question or issue...",
+	"send": "Send",
+	"sending": "Sending...",
+	"pleaseEnterMessage": "Please enter a message",
+	"thankYou": "Thanks! We will help you soon.",
+	"failedToSend": "Failed to send your message. Please try again.",
+	"sendFeedback": "Need help?",
+	"close": "Close"
+}

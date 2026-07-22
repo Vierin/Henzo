@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getBlogSitemapEntries } from '@/lib/blog';
 
-const locales = ['en', 'ru', 'vi'] as const;
+const locales = ['en', 'ru', 'vi', 'cs', 'pl'] as const;
 
 function withLocale(path: string, locale: (typeof locales)[number]) {
   const clean = path.startsWith('/') ? path : `/${path}`;
@@ -18,6 +18,8 @@ function alternatesFor(path: string) {
       'en-US': withLocale(path, 'en'),
       'ru-RU': withLocale(path, 'ru'),
       'vi-VN': withLocale(path, 'vi'),
+      'cs-CZ': withLocale(path, 'cs'),
+      'pl-PL': withLocale(path, 'pl'),
     },
   } as const;
 }

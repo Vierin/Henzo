@@ -24,6 +24,8 @@ export async function generateMetadata({
         'en-US': '/en',
         'ru-RU': '/ru',
         'vi-VN': '/vi',
+        'cs-CZ': '/cs',
+        'pl-PL': '/pl',
       },
     },
   };

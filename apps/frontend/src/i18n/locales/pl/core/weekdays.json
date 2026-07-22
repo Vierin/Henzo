@@ -1,0 +1,19 @@
+{
+	"monday": "Poniedziałek",
+	"tuesday": "Wtorek",
+	"wednesday": "Środa",
+	"thursday": "Czwartek",
+	"friday": "Piątek",
+	"saturday": "Sobota",
+	"sunday": "Niedziela",
+	"closed": "Zamknięte",
+	"short": {
+		"sun": "Nd",
+		"mon": "Pn",
+		"tue": "Wt",
+		"wed": "Śr",
+		"thu": "Cz",
+		"fri": "Pt",
+		"sat": "Sb"
+	}
+}

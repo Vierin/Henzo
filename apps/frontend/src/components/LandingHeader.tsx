@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { withLocale } from '@/i18n/routing';
+import { withLocale, type Locale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 import {
   publicHeaderLanguages,
@@ -27,7 +27,7 @@ function LandingHeaderContent({ sectionNavHref }: { sectionNavHref?: string }) {
   const navPricing = String(t('homepage.studio.header.navPricing'));
   const navHowItWorks = String(t('homepage.studio.header.navHowItWorks'));
   const sectionNavBase = sectionNavHref ?? pathname.split('#')[0];
-  const locale = currentLocale as 'en' | 'ru' | 'vi';
+  const locale = currentLocale as Locale;
 
   return (
     <header className="relative z-40 bg-transparent">

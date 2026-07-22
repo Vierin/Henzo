@@ -1,0 +1,22 @@
+{
+	"title": "Favorite Salons",
+	"subtitle": "Salons you've marked as favorites",
+	"salonsSaved": "salons saved",
+	"salon": "salon",
+	"noFavoriteSalons": "No favorite salons yet",
+	"noFavoritesDescription": "Browse salons and mark your favorites by clicking the heart icon",
+	"browseSalons": "Browse Salons",
+	"bookAgain": "Book Again",
+	"book": "Book",
+	"remove": "Remove",
+	"errorLoadingFavorites": "Error loading favorites",
+	"errorLoadingDescription": "There was an error loading your favorite salons. Please try again later.",
+	"removeConfirmation": "Are you sure you want to remove \"{salonName}\" from your favorite salons? This action cannot be undone.",
+	"removeFromFavorites": "Remove {salonName} from favorites",
+	"saved": "saved",
+	"addedToFavorites": "Added to favorites!",
+	"removedFromFavorites": "Removed from favorites",
+	"failedToAdd": "Failed to add to favorites",
+	"failedToRemove": "Failed to remove from favorites"
+}
+

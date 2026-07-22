@@ -2,8 +2,10 @@
 
 import { ChevronDown } from 'lucide-react';
 
+import type { Locale } from '@/i18n/routing';
+
 export type LanguageOption = {
-  code: 'en' | 'ru' | 'vi';
+  code: Locale;
   name: string;
   flag: string;
 };

@@ -1,0 +1,273 @@
+{
+	"heroTitle": "Najděte svůj <span class=\"text-[#ff5b5b]\">perfektní <br> beauty</span> salon poblíž",
+	"heroSubtitle": "Rezervujte si termíny v nejlépe hodnocených salonech ve vašem okolí. Porovnejte ceny, čtěte recenze a dopřejte si péči ještě dnes.",
+	"topRatedTitle": "Nejlépe hodnocené beauty & wellness salony",
+	"topRatedSubtitle": "Objevte vysoce hodnocené salony a spa ve vašem okolí. Rezervujte styling, masáže, péči o pleť, manikúru a další služby.",
+	"popularCategories": "Oblíbené kategorie",
+	"onlineBooking": "Online rezervace",
+	"minutesShort": "min",
+	"toBook": "k rezervaci",
+	"free": "Zdarma",
+	"booking": "Rezervace",
+	"search": "Hledat",
+	"searchPlaceholder": "Hledat služby...",
+	"locationPlaceholder": "Vaše lokalita",
+	"datePlaceholder": "Vyberte datum",
+	"timePlaceholder": "Vyberte čas",
+	"anyNearestTime": "Nejbližší volný čas",
+	"searchButton": "Hledat",
+	"featuredSalons": "Doporučené salony",
+	"popularServices": "Oblíbené služby",
+	"recommendedServices": "Doporučené služby",
+	"howItWorks": "Jak to funguje — <span class=\"text-[#ff5b5b]\">3 jednoduché kroky</span>",
+	"howItWorksSubtitle": "Najít a rezervovat perfektní termín nebylo nikdy jednodušší",
+	"step1": "01",
+	"step2": "02",
+	"step3": "03",
+	"step1Title": "Hledejte a objevujte",
+	"step2Title": "Vyberte a rezervujte",
+	"step3Title": "Užijte si to",
+	"step1Description": "Zadejte lokalitu a najděte salony poblíž s ověřenými recenzemi a konkurenčními cenami. Použijte chytré filtry pro přesné vyhledávání.",
+	"step2Description": "Vyberte službu, vhodný čas a svého oblíbeného specialistu. Okamžitá online rezervace na pár kliknutí bez zbytečných telefonátů.",
+	"step3Description": "Přijďte na termín a užijte si skvělou službu. Po návštěvě ohodnoťte salon a pomozte ostatním.",
+	"bookNow": "Rezervovat",
+	"whyChooseHenzo": "Henzo: chytrá řešení pro salony",
+	"whyChooseSubtitle": "Zažijte maximální pohodlí a jistotu při každé rezervaci.",
+	"easyBooking": "Snadná rezervace",
+	"easyBookingDescription": "Rezervace na pár kliknutí. Zajistěte si místo okamžitě.",
+	"flexibleScheduling": "Flexibilní rozvrh",
+	"flexibleSchedulingDescription": "Najděte správný čas i na poslední chvíli.",
+	"trustedReviews": "Spolehlivé recenze",
+	"trustedReviewsDescription": "Čtěte skutečné recenze zákazníků a vybírejte to nejlepší.",
+	"startExploring": "Prozkoumat salony",
+	"salonOwner": "Vlastníte salon?",
+	"salonOwnerSubtitle": "Připojte se k naší kurátorské nabídce elitních destinací a oslovte tisíce lidí hledajících styl každý měsíc.",
+	"registerBusiness": "Registrovat podnik",
+	"seeAllSalons": "Zobrazit všechny salony",
+	"noSalonsAvailable": "Žádné salony nejsou k dispozici",
+	"checkBackLater": "Zkuste to později — salony se brzy objeví.",
+	"studio": {
+		"hero": {
+			"line1Lead": "Od",
+			"line1Highlight": "chaotických",
+			"line1Trail": "rezervací",
+			"line2Lead": "k",
+			"line2Highlight": "přehlednému rozvrhu",
+			"line2Trail": "",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"availableForFree": "Dostupné zdarma",
+			"notification": "Nezapomeňte dnes trénovat v 15:00",
+			"entryNotificationTitle": "Nová rezervace!",
+			"entryNotificationText": "Sam právě rezervoval trénink.",
+			"entryNotification2Title": "Nová recenze!",
+			"entryNotification2Text": "Klient ohodnotil vaši lekci 5 hvězdami.",
+			"newClientsTitle": "Noví klienti",
+			"newBadge": "New",
+			"clientsBadge": "Klienti",
+			"autoBadge": "Auto",
+			"notificationBadge": "Notifikace",
+			"activeUserLabel": "Aktivní uživatel",
+			"clients": [
+				{
+					"name": "Anna Nováková",
+					"initials": "AN"
+				},
+				{
+					"name": "Ivan Founder",
+					"initials": "IF"
+				},
+				{
+					"name": "Marie Kovalská",
+					"initials": "MK"
+				}
+			]
+		},
+		"header": {
+			"navBenefits": "Výhody",
+			"navPricing": "Ceník",
+			"navHowItWorks": "Jak to funguje",
+			"navContact": "Kontakt",
+			"getApp": "Stáhnout aplikaci"
+		},
+		"intro": {
+			"description": "Spravujte studio z mobilu: rozvrh, sloty trenérů a rezervace klientů v jednom toku.",
+			"secondary": "Stáhněte pro Android nebo iOS a připojte tým bez zbytečných komplikací."
+		},
+		"statementBeforeSpotlight": {
+			"phrase1Lead": "Vy",
+			"phrase1AccentRotating": [
+				"trénujete.",
+				"učíte.",
+				"soustředíte se."
+			],
+			"phrase2Lead": "My",
+			"phrase2AccentRotating": [
+				"plníme váš rozvrh.",
+				"řešíme rezervace.",
+				"snižujeme absence."
+			]
+		},
+		"spotlight": {
+			"headingLine1": "Veďte své lekce",
+			"line2BeforeAccent": "My spustíme váš ",
+			"line2Accent": "systém",
+			"slides": [
+				{
+					"stat": "+30%",
+					"featureTitle": "Obsazenost lekcí",
+					"description": "Viditelné sloty a snazší správa rezervací",
+					"videoSrc": "/video-4.webm",
+					"videoLabel": "Studio spotlight klip jedna"
+				},
+				{
+					"stat": "-40%",
+					"featureTitle": "Méně zmeškaných lekcí",
+					"description": "Klienti dostávají připomínky a méně často zapomínají",
+					"videoSrc": "/video-3.webm",
+					"videoLabel": "Studio spotlight klip dvě"
+				},
+				{
+					"stat": "-70%",
+					"featureTitle": "Méně času na korespondenci",
+					"description": "Už nemusíte ručně odpovídat každému klientovi",
+					"videoSrc": "/video-2.webm",
+					"videoLabel": "Studio spotlight klip tři"
+				},
+				{
+					"stat": "+42%",
+					"featureTitle": "Kontrola rozvrhu",
+					"description": "Všechny lekce a rezervace na jednom místě",
+					"videoSrc": "/video-1.webm",
+					"videoLabel": "Studio spotlight klip čtyři"
+				}
+			]
+		},
+		"quickStart": {
+			"line1": "Hotovo a připraveno",
+			"line2Before": "za ",
+			"line2Accent": "5 minut",
+			"steps": [
+				{
+					"label": "Krok 1:",
+					"text": "Přidejte název a adresu studia"
+				},
+				{
+					"label": "Krok 2:",
+					"text": "Nahrajte fotky a vytvořte první lekci"
+				},
+				{
+					"label": "Krok 3:",
+					"text": "Začněte přijímat první rezervace"
+				}
+			]
+		},
+		"pricing": {
+			"titleLine1": "Jednoduchý ceník",
+			"titleLine2Before": "Skutečné ",
+			"titleLine2Accent": "výsledky",
+			"currency": "VND",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"plans": [
+				{
+					"name": "Solo",
+					"subtitle": "Ideální pro nezávislé trenéry",
+					"price": "0",
+					"priceSub": "",
+					"features": [
+						"12 lekcí měsíčně",
+						"1 trenér",
+						"Neomezení klienti",
+						"Online rezervace",
+						"Profil studia",
+						"Push notifikace"
+					]
+				},
+				{
+					"name": "Studio",
+					"subtitle": "Pro rostoucí studia",
+					"price": "599.000",
+					"priceSub": "/ za 1 měsíc",
+					"features": [
+						"100 lekcí měsíčně",
+						"Až 4 trenéři",
+						"Pořadník",
+						"Automatické připomínky (Email & Push)",
+						"Základní analytika (90 dní)"
+					]
+				},
+				{
+					"name": "Enterprise",
+					"subtitle": "Pro zavedené podniky",
+					"price": "1.999.000",
+					"priceSub": "/ za 1 měsíc",
+					"features": [
+						"Neomezené lekce",
+						"Neomezení trenéři",
+						"Více lokalit",
+						"Pokročilá analytika",
+						"Týmové role a oprávnění",
+						"Prioritní podpora"
+					]
+				}
+			]
+		},
+		"features": {
+			"title": "Vytvořeno pro provoz studia",
+			"items": [
+				{
+					"title": "Rozvrhy, které zůstávají synchronizované",
+					"description": "Spravujte tréninkové sloty, vyhněte se konfliktům a udržujte denní provoz předvídatelný."
+				},
+				{
+					"title": "Viditelnost trenérů a služeb",
+					"description": "Kontrolujte aktivní nabídky, dostupnost trenérů a kapacitu rezervací z jednoho místa."
+				},
+				{
+					"title": "Rezervační zážitek pro klienty",
+					"description": "Dejte klientům rychlý flow rezervací, zatímco váš tým má plnou kontrolu nad lekcemi."
+				}
+			]
+		},
+		"workflow": {
+			"title": "Jak studia startují s Henzo",
+			"steps": [
+				{
+					"title": "1. Nainstalujte aplikaci",
+					"description": "Stáhněte na Android nebo iOS a přihlaste se jako provozovatel studia."
+				},
+				{
+					"title": "2. Nastavte studio",
+					"description": "Nastavte trenéry, nabídky a týdenní rozvrh."
+				},
+				{
+					"title": "3. Začněte přijímat rezervace",
+					"description": "Otevřete rezervace klientům a spravujte lekce z mobilu."
+				}
+			]
+		},
+		"ctaBanner": {
+			"titleLine1": "Vaše studio.",
+			"titleLine2": "Ve vašich rukou.",
+			"description": "Spravujte lekce, studenty a rezervace v jedné mobilní aplikaci",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play"
+		},
+		"finalCta": {
+			"title": "Připraveni zrychlit provoz fitness studia?",
+			"description": "Začněte s mobilní aplikací a přesuňte denní provoz do jednoho přehledného toku.",
+			"androidCta": "Stáhnout pro Android",
+			"iosCta": "Stáhnout pro iOS",
+			"contactCta": "Kontaktovat obchod"
+		},
+		"footer": {
+			"navBenefits": "Výhody",
+			"navPricing": "Ceník",
+			"navHowItWorks": "Jak to funguje",
+			"ctaTitle": "Začněte podnikat ještě dnes.",
+			"copyright": "Copyright © Henzo app. Všechna práva vyhrazena. 2026",
+			"email": "hello@henzo.app"
+		}
+	}
+}

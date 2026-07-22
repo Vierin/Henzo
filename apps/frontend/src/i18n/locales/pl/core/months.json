@@ -1,0 +1,28 @@
+{
+	"january": "Styczeń",
+	"february": "Luty",
+	"march": "Marzec",
+	"april": "Kwiecień",
+	"may": "Maj",
+	"june": "Czerwiec",
+	"july": "Lipiec",
+	"august": "Sierpień",
+	"september": "Wrzesień",
+	"october": "Październik",
+	"november": "Listopad",
+	"december": "Grudzień",
+	"short": {
+		"january": "Sty",
+		"february": "Lut",
+		"march": "Mar",
+		"april": "Kwi",
+		"may": "Maj",
+		"june": "Cze",
+		"july": "Lip",
+		"august": "Sie",
+		"september": "Wrz",
+		"october": "Paź",
+		"november": "Lis",
+		"december": "Gru"
+	}
+}
