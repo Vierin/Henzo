@@ -9,7 +9,7 @@ import {
 } from '@/components/landing/storeIcons';
 import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
-import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
+import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 
 function FacebookIconFilled({ className }: { className?: string }) {
   return (
@@ -38,24 +38,12 @@ export default function Footer() {
   const { language } = useLanguage();
   const locale = extractLocaleFromPath(pathname) ?? language;
   const t = useTranslation();
-  const homePath = withLocale('/', (locale as 'en' | 'ru' | 'vi') || 'en');
-  const navBenefits =
-    locale === 'ru' ? 'Преимущества' : locale === 'vi' ? 'Lợi ích' : 'Benefits';
-  const navPricing =
-    locale === 'ru' ? 'Цены' : locale === 'vi' ? 'Bảng giá' : 'Pricing';
-  const navHowItWorks =
-    locale === 'ru'
-      ? 'Как это работает'
-      : locale === 'vi'
-        ? 'Cách hoạt động'
-        : 'How it works';
+  const homePath = withLocale('/', (locale as Locale) || 'en');
+  const navBenefits = String(t('homepage.studio.footer.navBenefits'));
+  const navPricing = String(t('homepage.studio.footer.navPricing'));
+  const navHowItWorks = String(t('homepage.studio.footer.navHowItWorks'));
   const blogPath = withLocale('/blog', 'en');
-  const ctaTitle =
-    locale === 'ru'
-      ? 'Запустите свой бизнес уже сегодня.'
-      : locale === 'vi'
-        ? 'Bắt đầu kinh doanh ngay hôm nay.'
-        : 'Start your business today.';
+  const ctaTitle = String(t('homepage.studio.footer.ctaTitle'));
 
   return (
     <footer

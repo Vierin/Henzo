@@ -11,6 +11,7 @@ import React, {
 import { usePathname } from 'next/navigation';
 import {
   extractLocaleFromPath,
+  isLocale,
   stripLocaleFromPath,
   type Locale,
 } from '@/i18n/routing';
@@ -379,15 +380,8 @@ export function LanguageProvider({
   // Load language from storage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedLanguage = window.localStorage.getItem(
-        'henzo-language',
-      ) as Language;
-      if (
-        savedLanguage &&
-        (savedLanguage === 'vi' ||
-          savedLanguage === 'en' ||
-          savedLanguage === 'ru')
-      ) {
+      const savedLanguage = window.localStorage.getItem('henzo-language');
+      if (savedLanguage && isLocale(savedLanguage)) {
         setLanguageState(savedLanguage);
       }
     }

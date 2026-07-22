@@ -25,7 +25,6 @@ import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
-import 'notifications_screen.dart';
 import 'owner_edit_training_session_screen.dart';
 import '../widgets/common/workspace_loading_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -254,15 +253,6 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _openOwnerNotifications() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
-    );
-    if (!mounted) return;
-    final token = context.read<AuthService>().accessToken;
-    await context.read<NotificationsStore>().syncFromServer(token);
-  }
-
   /// Opens the Clients shell tab and applies optional filter/search (one list).
   void openClientsTab({String? initialFilter, String? initialQuery}) {
     setState(() => _currentIndex = clientsTabIndex);
@@ -340,9 +330,6 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
             child: Consumer<LocaleProvider>(
               builder: (context, locale, _) {
                 final t = locale.t;
-                final unreadCount = context
-                    .watch<NotificationsStore>()
-                    .unreadCount;
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final tabCount = _tabCount;
@@ -419,15 +406,8 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
                                 label: t('shell.tabSettings'),
                                 isSelected: _currentIndex == settingsIndex,
                                 iconSize: 22,
-                                badgeCount: unreadCount,
-                                onTap: () {
-                                  if (_currentIndex == settingsIndex &&
-                                      unreadCount > 0) {
-                                    _openOwnerNotifications();
-                                    return;
-                                  }
-                                  setState(() => _currentIndex = settingsIndex);
-                                },
+                                onTap: () =>
+                                    setState(() => _currentIndex = settingsIndex),
                               ),
                             ),
                           ],
@@ -454,7 +434,6 @@ class _NavItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final double iconSize;
-  final int? badgeCount;
 
   const _NavItem({
     this.svgAsset,
@@ -463,7 +442,6 @@ class _NavItem extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.iconSize = 20,
-    this.badgeCount,
   }) : assert(
          (svgAsset != null) ^ (icon != null),
          'Provide either svgAsset or icon',
@@ -489,51 +467,15 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  if (svgAsset != null)
-                    SvgPicture.asset(
-                      svgAsset!,
-                      width: iconSize,
-                      height: iconSize,
-                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                    )
-                  else
-                    Icon(icon, size: iconSize, color: iconColor),
-                  if ((badgeCount ?? 0) > 0)
-                    Positioned(
-                      right: -8,
-                      top: -6,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.error500,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary500
-                                : AppColors.backgroundPrimary,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          (badgeCount ?? 0) > 99 ? '99+' : '${badgeCount ?? 0}',
-                          style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              if (svgAsset != null)
+                SvgPicture.asset(
+                  svgAsset!,
+                  width: iconSize,
+                  height: iconSize,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                )
+              else
+                Icon(icon, size: iconSize, color: iconColor),
               const SizedBox(height: 4),
               Text(
                 label,

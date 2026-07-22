@@ -1,0 +1,19 @@
+{
+	"monday": "Pondělí",
+	"tuesday": "Úterý",
+	"wednesday": "Středa",
+	"thursday": "Čtvrtek",
+	"friday": "Pátek",
+	"saturday": "Sobota",
+	"sunday": "Neděle",
+	"closed": "Zavřeno",
+	"short": {
+		"sun": "Ne",
+		"mon": "Po",
+		"tue": "Út",
+		"wed": "St",
+		"thu": "Čt",
+		"fri": "Pá",
+		"sat": "So"
+	}
+}

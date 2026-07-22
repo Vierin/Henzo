@@ -58,6 +58,11 @@ export function LandingPricingSection() {
   const titleLine2After = resolveOptional(`${BASE}.titleLine2After`);
   const appStoreLabel = String(t(`${BASE}.storeAppStore`));
   const googlePlayLabel = String(t(`${BASE}.storeGooglePlay`));
+  const currencyRaw = t(`${BASE}.currency`);
+  const currency =
+    typeof currencyRaw === 'string' && currencyRaw !== `${BASE}.currency`
+      ? currencyRaw
+      : 'VND';
   const plans = useMemo(() => parsePlans(t(`${BASE}.plans`)), [t]);
 
   useLayoutEffect(() => {
@@ -153,7 +158,7 @@ export function LandingPricingSection() {
                   <p className="text-[2.4rem] sm:text-[3.2rem] lg:text-[2.8rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
                     {plan.price}{' '}
                     <span className="text-[1.4rem] sm:text-[1.8rem] lg:text-[1.6rem] text-[#3F3F3F]">
-                      VND
+                      {currency}
                     </span>
                   </p>
                   {plan.priceSub ? (

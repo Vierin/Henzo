@@ -50,6 +50,7 @@ export type StudioLandingContent = {
     titleLine2Before?: string;
     titleLine2Accent: string;
     titleLine2After?: string;
+    currency: string;
     storeAppStore: string;
     storeGooglePlay: string;
     plans: Array<{

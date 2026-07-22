@@ -10,6 +10,8 @@ export const publicHeaderLanguages: readonly LanguageOption[] = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
+  { code: 'pl', name: 'Polski', flag: '🇵🇱' },
 ];
 
 export function usePublicHeaderState() {

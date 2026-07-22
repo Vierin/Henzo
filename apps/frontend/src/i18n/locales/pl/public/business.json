@@ -1,0 +1,235 @@
+{
+	"header": {
+		"features": "Features",
+		"benefits": "Benefits",
+		"betaAccess": "Get 3 months free",
+		"signIn": "Sign In",
+		"startFree": "Start Free"
+	},
+	"hero": {
+		"badge": "3 months free",
+		"title": "Losing clients due to missed calls?",
+		"titleHighlight": "Clients not showing up?",
+		"subtitle": "Increase revenue by 15% with 24/7 online booking. Reduce no-shows with automatic email appointment reminders.",
+		"joinBeta": "Get 3 months of free access",
+		"signIn": "Sign In",
+		"free": "100% Free",
+		"freePeriod": "First 3 months",
+		"quickStart": "Quick Start",
+		"quickStartTime": "Live in 8 minutes",
+		"onboardingNote": "Start risk-free: no card required and no hidden charges during trial. Our team will help you set up and fill out your profile for free, so you can launch fast."
+	},
+	"features": {
+		"badge": "Features",
+		"title": "More clients. Fewer no-shows.",
+		"titleBreak": "Without extra busywork",
+		"subtitle": "Powerful features designed to save you time and help your business grow",
+		"smartScheduling": {
+			"title": "Smart Scheduling",
+			"description": "Intelligent calendar that prevents double bookings and automatically optimizes your team's time.",
+			"shortDescription": "A clean schedule with no overlaps or idle gaps.",
+			"resultValue": "10+ hrs/week",
+			"resultLabel": "saved on admin work"
+		},
+		"onlineBooking": {
+			"title": "24/7 Online Booking",
+			"description": "Accept bookings anytime, even when your salon is closed. Never miss a client again.",
+			"shortDescription": "Clients can book at night and on weekends.",
+			"resultValue": "+15%",
+			"resultLabel": "more bookings without ads"
+		},
+		"emailReminders": {
+			"title": "Email Reminders",
+			"description": "Reduce no-shows with automatic email appointment reminders.",
+			"shortDescription": "Automatic reminders sent before every visit.",
+			"resultValue": "-30%",
+			"resultLabel": "fewer no-shows"
+		},
+		"analytics": {
+			"title": "Analytics",
+			"description": "Track popular services and staff performance with real-time insights.",
+			"shortDescription": "See what grows revenue and act faster.",
+			"resultValue": "-50%",
+			"resultLabel": "fewer double-booking errors"
+		}
+	},
+	"benefits": {
+		"badge": "Why Henzo",
+		"title": "Grow Your Business",
+		"titleBreak": "with Confidence",
+		"subtitle": "A platform designed specifically for the beauty industry. Get 3 months of free access.",
+		"benefit1": "Increase bookings",
+		"benefit1Description": "(with 24/7 online scheduling)",
+		"benefit2": "Save 10+ hours per week",
+		"benefit2Description": "(on administrative tasks)",
+		"benefit3": "Reduce no-shows",
+		"benefit3Description": "(with automated reminders)",
+		"benefit4": "Build client loyalty",
+		"benefit4Description": "(with a convenient booking system)",
+		"benefit5": "Make data-driven decisions",
+		"benefit5Description": "(with powerful analytics)",
+		"benefit6": "Payment happens on-site",
+		"benefit6Description": "(no online payment complexities)"
+	},
+	"dashboard": {
+		"badge": "Dashboard",
+		"title": "All salon work",
+		"titleBreak": "in one interface",
+		"subtitle": "Track appointments, schedules, and staff workload without tables and chaos.",
+		"cta": "Get Free Access"
+	},
+	"pricing": {
+		"badge": "Pricing",
+		"title": "Simple plan.",
+		"titleBreak": "No hidden fees.",
+		"subtitle": "Start with 3 months free, then one clear price per month.",
+		"threeMonthsFree": "3 months free",
+		"thenPrice": "Then",
+		"perMonth": "month",
+		"cta": "Get 3 months of free access",
+		"feature1": "Online booking 24/7",
+		"feature2": "One calendar for all staff",
+		"feature3": "Your own booking link",
+		"feature4": "Revenue & reports",
+		"feature5": "Client base with visit history",
+		"feature6": "Email reminders — fewer no-shows"
+	},
+	"cta": {
+		"title": "Ready to Transform",
+		"titleBreak": "Your Salon?",
+		"subtitle": "Get 3 months of free access. No commitments required.",
+		"startForFree": "Get 3 months of free access",
+		"joinBetaTesters": "Start risk-free: no card required and no hidden charges during trial. Our team will help you set up and fill out your profile for free, so you can launch fast."
+	},
+	"betaForm": {
+		"badge": "Start free",
+		"title": "Create your business account",
+		"subtitle": "Fill out the form below to get started. We'll help you with setup personally.",
+		"onboardingNote": "Start risk-free: no card required and no hidden charges during trial. Our team will help you set up and fill out your profile for free, so you can launch fast.",
+		"fullName": "Full Name",
+		"salonName": "Salon Name",
+		"optional": "(Optional)",
+		"email": "Email",
+		"password": "Password",
+		"confirmPassword": "Confirm Password",
+		"required": "*",
+		"fullNamePlaceholder": "John Doe",
+		"salonNamePlaceholder": "Beauty Lounge",
+		"emailPlaceholder": "john@example.com",
+		"passwordPlaceholder": "Enter your password",
+		"confirmPasswordPlaceholder": "Confirm your password",
+		"submitting": "Submitting...",
+		"requestBetaAccess": "Create account",
+		"requestBetaEmailAccess": "Request beta access",
+		"googleRedirecting": "Redirecting to Google…",
+		"agreement": "By submitting this form, you agree to the service terms.",
+		"successMessage": "Thank you! We'll contact you soon to help you get started.",
+		"magicLinkSent": "We sent you an email with a link to finish signing up. Check your inbox and spam folder.",
+		"errorMessage": "Failed to submit request. Please try again.",
+		"errors": {
+			"fullNameMinLength": "Full name must be at least 2 characters",
+			"invalidEmail": "Please enter a valid email address",
+			"passwordMinLength": "Password must be at least 8 characters"
+		},
+		"businessAccountAlreadyExists": "A business account with this email already exists. Please login instead."
+	},
+	"register": {
+		"title": "Create your business account",
+		"subtitle": "Join as a salon owner to manage your business",
+		"ownerFullName": "Owner Full Name",
+		"ownerFullNamePlaceholder": "Enter your full name",
+		"emailAddress": "Email Address",
+		"emailPlaceholder": "Enter your email",
+		"emailVerified": "✓ Email verified via invitation link",
+		"password": "Password",
+		"passwordPlaceholder": "Create a password",
+		"confirmPassword": "Confirm Password",
+		"confirmPasswordPlaceholder": "Confirm your password",
+		"creatingAccount": "Creating account...",
+		"createBusinessAccount": "Create Business Account",
+		"orContinueWith": "Or continue with",
+		"continueWithGoogle": "Continue with Google",
+		"alreadyHaveAccount": "Already have an account?",
+		"signIn": "Sign in",
+		"lookingToBook": "Looking to book?",
+		"registerAsClient": "Register as a client instead →",
+		"passwordsDoNotMatch": "Passwords do not match",
+		"passwordTooShort": "Password must be at least 6 characters",
+		"registrationSuccessful": "Business account created! Complete your business setup.",
+		"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
+		"failedToRegister": "Failed to register business account",
+		"failedToRegisterGoogle": "Failed to register with Google",
+		"oauthRegisterFailed": "Could not finish business signup after Google. Try again or use email and password.",
+		"magicLinkEmailMismatch": "Google account email does not match your business invitation email.",
+		"magicLinkExpired": "Magic link has expired. Please request a new one.",
+		"invalidMagicLink": "Invalid magic link. Please request a new one.",
+		"verificationFailed": "Failed to verify magic link. Please try again.",
+		"authFailed": "Failed to authenticate. Please try again.",
+		"errorOccurred": "An error occurred. Please try again."
+	},
+	"completeSetup": {
+		"title": "Complete Your Business Setup",
+		"subtitle": "Let's get your business ready for clients.",
+		"loading": "Loading...",
+		"step": "Step",
+		"of": "of",
+		"steps": {
+			"1": "Basics",
+			"2": "Working hours",
+			"3": "Review"
+		},
+		"step1": {
+			"salonName": "Salon Name",
+			"salonNamePlaceholder": "e.g., Henzo Beauty",
+			"salonAddress": "Salon Address",
+			"selectAddressToSeeMap": "Select address to see map",
+			"selectSalonAddress": "Select your salon address",
+			"salonPhone": "Salon Phone Number",
+			"phonePlaceholder": "(123) 456-7890"
+		},
+		"step2": {
+			"selectCategories": "Select Categories (Choose at least one)"
+		},
+		"step4": {
+			"salonDescription": "Salon Description (1-2 sentences)",
+			"descriptionPlaceholder": "Describe your salon and what makes it special...",
+			"logoUpload": "Logo Upload (Optional)",
+			"uploadSalonLogo": "Upload salon logo",
+			"photos": "Photos (Up to 3, Optional)",
+			"socialMedia": "Social Media (Optional)",
+			"websiteUrl": "Website URL",
+			"instagramHandle": "Instagram handle (e.g., @yoursalon)"
+		},
+		"step5": {
+			"reviewInformation": "Review Your Information",
+			"workingHours": "Working Hours",
+			"salonName": "Salon Name:",
+			"address": "Address:",
+			"phone": "Phone:",
+			"categories": "Categories:",
+			"description": "Description:",
+			"closed": "Closed"
+		},
+		"navigation": {
+			"previous": "Previous",
+			"next": "Next",
+			"continue": "Continue",
+			"skipThisStep": "Skip This Step",
+			"creatingSalon": "Creating Salon...",
+			"completeSetup": "Complete Setup"
+		},
+		"errors": {
+			"nameRequired": "Salon name is required",
+			"addressRequired": "Address is required",
+			"phoneRequired": "Phone number is required",
+			"categoriesRequired": "Please select at least one category",
+			"invalidPhone": "Please enter a valid phone number"
+		},
+		"success": {
+			"salonSetupCompleted": "Business setup completed successfully!"
+		},
+		"error": {
+			"failedToCompleteSetup": "Failed to complete business setup"
+		}
+	}
+}
