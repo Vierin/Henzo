@@ -296,64 +296,91 @@ export class AdminService {
     await assertAdmin(this.authService, authHeader);
     const q = search?.trim();
     const where = {
+      role: 'OWNER' as const,
       ...(q
         ? {
             OR: [
+              { email: { contains: q, mode: 'insensitive' as const } },
               { name: { contains: q, mode: 'insensitive' as const } },
+              { phone: { contains: q, mode: 'insensitive' as const } },
               {
-                User: { email: { contains: q, mode: 'insensitive' as const } },
+                Studio: {
+                  some: { name: { contains: q, mode: 'insensitive' as const } },
+                },
               },
-              { User: { name: { contains: q, mode: 'insensitive' as const } } },
             ],
           }
         : {}),
     };
 
-    const studios = await this.prisma.studio.findMany({
+    const owners = await this.prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
+        email: true,
         name: true,
-        slug: true,
-        status: true,
-        address: true,
-        photos: true,
+        phone: true,
         createdAt: true,
-        _count: { select: { Training: true } },
-        User: {
+        Studio: {
+          orderBy: { createdAt: 'asc' },
           select: {
             id: true,
-            email: true,
             name: true,
-            phone: true,
+            slug: true,
+            status: true,
+            address: true,
+            photos: true,
             createdAt: true,
+            _count: { select: { Training: true } },
           },
         },
       },
     });
 
-    const mapped = studios.map((s) => {
-      const onboardingGaps = [
-        ...(!hasCompleteStudioDetails(s) ? ['hasStudioDetails'] : []),
-        ...(s._count.Training === 0 ? ['hasTraining'] : []),
-        ...(s.photos.length === 0 ? ['hasPhoto'] : []),
-      ];
-      return {
-        id: `${s.User.id}:${s.id}`,
-        ownerId: s.User.id,
-        ownerEmail: s.User.email,
-        ownerName: s.User.name,
-        ownerPhone: s.User.phone,
-        ownerCreatedAt: s.User.createdAt,
-        studioId: s.id,
-        studioName: s.name,
-        studioSlug: s.slug,
-        studioStatus: s.status,
-        studioCreatedAt: s.createdAt,
-        onboardingGaps,
-        onboardingComplete: onboardingGaps.length === 0,
-      };
+    const mapped = owners.flatMap((owner) => {
+      if (owner.Studio.length === 0) {
+        return [
+          {
+            id: owner.id,
+            ownerId: owner.id,
+            ownerEmail: owner.email,
+            ownerName: owner.name,
+            ownerPhone: owner.phone,
+            ownerCreatedAt: owner.createdAt,
+            studioId: null as string | null,
+            studioName: null as string | null,
+            studioSlug: null as string | null,
+            studioStatus: null as string | null,
+            studioCreatedAt: null as Date | null,
+            onboardingGaps: ['noStudio'],
+            onboardingComplete: false,
+          },
+        ];
+      }
+
+      return owner.Studio.map((s) => {
+        const onboardingGaps = [
+          ...(!hasCompleteStudioDetails(s) ? ['hasStudioDetails'] : []),
+          ...(s._count.Training === 0 ? ['hasTraining'] : []),
+          ...(s.photos.length === 0 ? ['hasPhoto'] : []),
+        ];
+        return {
+          id: `${owner.id}:${s.id}`,
+          ownerId: owner.id,
+          ownerEmail: owner.email,
+          ownerName: owner.name,
+          ownerPhone: owner.phone,
+          ownerCreatedAt: owner.createdAt,
+          studioId: s.id as string | null,
+          studioName: s.name as string | null,
+          studioSlug: s.slug as string | null,
+          studioStatus: s.status as string | null,
+          studioCreatedAt: s.createdAt as Date | null,
+          onboardingGaps,
+          onboardingComplete: onboardingGaps.length === 0,
+        };
+      });
     });
 
     const filtered =
@@ -373,66 +400,155 @@ export class AdminService {
     page: number,
     limit: number,
     search?: string,
+    activityTier?: string,
   ) {
     await assertAdmin(this.authService, authHeader);
     const q = search?.trim();
     const where = {
+      AND: [
+        { role: { not: 'ADMIN' as const } },
+        {
+          OR: [
+            { role: 'CLIENT' as const },
+            { StudioClients: { some: {} } },
+            { Booking: { some: {} } },
+            { SessionEnrollment: { some: {} } },
+          ],
+        },
+      ],
       ...(q
         ? {
             OR: [
-              { User: { name: { contains: q, mode: 'insensitive' as const } } },
-              {
-                User: { email: { contains: q, mode: 'insensitive' as const } },
-              },
-              {
-                User: { phone: { contains: q, mode: 'insensitive' as const } },
-              },
-              {
-                Studio: { name: { contains: q, mode: 'insensitive' as const } },
-              },
+              { name: { contains: q, mode: 'insensitive' as const } },
+              { email: { contains: q, mode: 'insensitive' as const } },
+              { phone: { contains: q, mode: 'insensitive' as const } },
             ],
           }
         : {}),
     };
 
-    const [rows, total] = await Promise.all([
-      this.prisma.studioClient.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          source: true,
-          createdAt: true,
-          User: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              isGuest: true,
-            },
+    const clients = await this.prisma.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        isGuest: true,
+        createdAt: true,
+      },
+    });
+
+    const userIds = clients.map((c) => c.id);
+    type ClientAgg = {
+      bookingsCount: number;
+      studioIds: Set<string>;
+      lastVisitAt: Date | null;
+    };
+    const aggregates = new Map<string, ClientAgg>();
+    const aggFor = (userId: string): ClientAgg => {
+      let agg = aggregates.get(userId);
+      if (!agg) {
+        agg = { bookingsCount: 0, studioIds: new Set(), lastVisitAt: null };
+        aggregates.set(userId, agg);
+      }
+      return agg;
+    };
+
+    if (userIds.length > 0) {
+      const [bookingRows, enrollmentRows, rosterRows] = await Promise.all([
+        this.prisma.sessionBooking.findMany({
+          where: {
+            userId: { in: userIds },
+            status: { not: BookingStatus.CANCELED },
           },
-          Studio: { select: { id: true, name: true } },
-        },
-      }),
-      this.prisma.studioClient.count({ where }),
-    ]);
+          select: { userId: true, studioId: true, startsAt: true },
+        }),
+        this.prisma.sessionEnrollment.findMany({
+          where: {
+            userId: { in: userIds },
+            status: { not: SessionEnrollmentStatus.CANCELLED },
+          },
+          select: {
+            userId: true,
+            TrainingSession: { select: { studioId: true, startsAt: true } },
+          },
+        }),
+        this.prisma.studioClient.findMany({
+          where: { userId: { in: userIds } },
+          select: { userId: true, studioId: true },
+        }),
+      ]);
 
-    const items = rows.map((r) => ({
-      id: r.id,
-      userId: r.User.id,
-      name: r.User.name,
-      email: r.User.email,
-      phone: r.User.phone,
-      isGuest: r.User.isGuest,
-      source: r.source,
-      createdAt: r.createdAt,
-      studioId: r.Studio.id,
-      studioName: r.Studio.name,
-    }));
+      for (const b of bookingRows) {
+        const agg = aggFor(b.userId);
+        agg.bookingsCount += 1;
+        agg.studioIds.add(b.studioId);
+        if (!agg.lastVisitAt || b.startsAt > agg.lastVisitAt) {
+          agg.lastVisitAt = b.startsAt;
+        }
+      }
+      for (const e of enrollmentRows) {
+        const agg = aggFor(e.userId);
+        agg.bookingsCount += 1;
+        agg.studioIds.add(e.TrainingSession.studioId);
+        const at = e.TrainingSession.startsAt;
+        if (!agg.lastVisitAt || at > agg.lastVisitAt) {
+          agg.lastVisitAt = at;
+        }
+      }
+      for (const r of rosterRows) {
+        aggFor(r.userId).studioIds.add(r.studioId);
+      }
+    }
 
+    const MS_7D = 7 * 24 * 60 * 60 * 1000;
+    const MS_30D = 30 * 24 * 60 * 60 * 1000;
+    const computeTier = (
+      lastVisitAt: Date | null,
+    ): 'active' | 'warming' | 'sleeping' | 'never' => {
+      if (!lastVisitAt) return 'never';
+      const age = Date.now() - lastVisitAt.getTime();
+      if (age <= MS_7D) return 'active';
+      if (age <= MS_30D) return 'warming';
+      return 'sleeping';
+    };
+
+    const mapped = clients.map((c) => {
+      const agg = aggregates.get(c.id);
+      const lastVisitAt = agg?.lastVisitAt ?? null;
+      return {
+        id: c.id,
+        userId: c.id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        isGuest: c.isGuest,
+        createdAt: c.createdAt,
+        bookingsCount: agg?.bookingsCount ?? 0,
+        studiosCount: agg?.studioIds.size ?? 0,
+        lastVisitAt,
+        activityTier: computeTier(lastVisitAt),
+      };
+    });
+
+    const validTiers = ['active', 'warming', 'sleeping', 'never'] as const;
+    const tierFilter = activityTier?.trim();
+    const filtered =
+      tierFilter && (validTiers as readonly string[]).includes(tierFilter)
+        ? mapped.filter((r) => r.activityTier === tierFilter)
+        : mapped;
+
+    filtered.sort((a, b) => {
+      const aTime = a.lastVisitAt?.getTime() ?? 0;
+      const bTime = b.lastVisitAt?.getTime() ?? 0;
+      if (bTime !== aTime) return bTime - aTime;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
+    const total = filtered.length;
+    const items = filtered.slice((page - 1) * limit, page * limit);
     return { items, total, page, limit };
   }
 

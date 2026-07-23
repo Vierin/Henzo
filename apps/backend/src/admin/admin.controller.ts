@@ -127,6 +127,7 @@ export class AdminController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('activityTier') activityTier?: string,
   ) {
     try {
       return {
@@ -135,6 +136,7 @@ export class AdminController {
           parsePage(page),
           parseLimit(limit),
           search,
+          activityTier,
         ),
       };
     } catch (e) {
