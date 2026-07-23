@@ -128,6 +128,7 @@ export class AdminController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
     @Query('activityTier') activityTier?: string,
+    @Query('hideAnonymous') hideAnonymous?: string,
   ) {
     try {
       return {
@@ -137,6 +138,7 @@ export class AdminController {
           parseLimit(limit),
           search,
           activityTier,
+          hideAnonymous !== 'false',
         ),
       };
     } catch (e) {

@@ -401,6 +401,7 @@ export class AdminService {
     limit: number,
     search?: string,
     activityTier?: string,
+    hideAnonymous = true,
   ) {
     await assertAdmin(this.authService, authHeader);
     const q = search?.trim();
@@ -415,6 +416,18 @@ export class AdminService {
             { SessionEnrollment: { some: {} } },
           ],
         },
+        ...(hideAnonymous
+          ? [
+              {
+                NOT: {
+                  email: {
+                    endsWith: '@henzo.local',
+                    mode: 'insensitive' as const,
+                  },
+                },
+              },
+            ]
+          : []),
       ],
       ...(q
         ? {

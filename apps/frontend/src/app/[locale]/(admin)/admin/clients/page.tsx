@@ -92,6 +92,7 @@ export default function AdminClientsPage() {
     '',
   );
   const [activityTier, setActivityTier] = useState('');
+  const [hideAnonymous, setHideAnonymous] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -137,13 +138,14 @@ export default function AdminClientsPage() {
         limit: 20,
         search: search || undefined,
         activityTier: activityTier || undefined,
+        hideAnonymous,
       });
       setClients(res.items);
       setTotal(res.total);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     }
-  }, [tab, page, search, onboarding, activityTier]);
+  }, [tab, page, search, onboarding, activityTier, hideAnonymous]);
 
   useEffect(() => {
     void load();
@@ -211,20 +213,34 @@ export default function AdminClientsPage() {
           </select>
         ) : null}
         {tab === 'clients' ? (
-          <select
-            value={activityTier}
-            onChange={(e) => {
-              setActivityTier(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-          >
-            <option value="">All activity</option>
-            <option value="active">Active (7d)</option>
-            <option value="warming">Warming (8–30d)</option>
-            <option value="sleeping">Sleeping (30d+)</option>
-            <option value="never">Never visited</option>
-          </select>
+          <>
+            <select
+              value={activityTier}
+              onChange={(e) => {
+                setActivityTier(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            >
+              <option value="">All activity</option>
+              <option value="active">Active (7d)</option>
+              <option value="warming">Warming (8–30d)</option>
+              <option value="sleeping">Sleeping (30d+)</option>
+              <option value="never">Never visited</option>
+            </select>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700">
+              <input
+                type="checkbox"
+                checked={hideAnonymous}
+                onChange={(e) => {
+                  setHideAnonymous(e.target.checked);
+                  setPage(1);
+                }}
+                className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+              />
+              Hide anonymous
+            </label>
+          </>
         ) : null}
       </div>
 
