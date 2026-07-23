@@ -83,11 +83,17 @@ export async function fetchAdminDirectoryClients(params: {
   page?: number;
   limit?: number;
   search?: string;
+  activityTier?: string;
+  hideAnonymous?: boolean;
 }): Promise<Paginated<AdminDirectoryClientRow>> {
   const q = new URLSearchParams();
   if (params.page) q.set('page', String(params.page));
   if (params.limit) q.set('limit', String(params.limit));
   if (params.search) q.set('search', params.search);
+  if (params.activityTier) q.set('activityTier', params.activityTier);
+  if (params.hideAnonymous !== undefined) {
+    q.set('hideAnonymous', params.hideAnonymous ? 'true' : 'false');
+  }
   const res = await apiClient.get<ApiWrap<Paginated<AdminDirectoryClientRow>>>(
     `/admin/clients?${q.toString()}`,
   );

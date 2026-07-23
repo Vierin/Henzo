@@ -13,6 +13,7 @@ import '../../utils/formatters.dart';
 import '../../widgets/client/client_panel_empty_state.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
+import '../public_class_detail_screen.dart';
 import '../public_studio_detail_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -171,6 +172,28 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     );
   }
 
+  void _openClassDetail(Map<String, dynamic> item) {
+    final studio = item['studio'] is Map
+        ? Map<String, dynamic>.from(item['studio'] as Map)
+        : <String, dynamic>{};
+    final studioId = (studio['id'] ?? item['studioId'] ?? '').toString().trim();
+    final sessionId = (item['sessionId'] ?? '').toString().trim();
+    if (studioId.isEmpty || sessionId.isEmpty) {
+      _openStudio(item);
+      return;
+    }
+    final startsAt = parseApiDateTime(item['startsAt']) ?? DateTime.now();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicClassDetailScreen(
+          studioId: studioId,
+          sessionId: sessionId,
+          sessionStartsAtHint: startsAt,
+        ),
+      ),
+    );
+  }
+
   List<_UpcomingListEntry> _groupedEntries() {
     final out = <_UpcomingListEntry>[];
     int? lastYear;
@@ -295,7 +318,9 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
               onCancelBooking: canCancel && !isCanceling && !isWaitlisted
                   ? () => _confirmCancel(item)
                   : null,
-              onTap: () => _openStudio(item),
+              onTap: () => isWaitlisted
+                  ? _openClassDetail(item)
+                  : _openStudio(item),
             );
           },
         ),

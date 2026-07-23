@@ -281,14 +281,16 @@ export type AdminOwnerRow = {
   ownerName: string | null;
   ownerPhone: string | null;
   ownerCreatedAt: string;
-  studioId: string;
-  studioName: string;
+  studioId: string | null;
+  studioName: string | null;
   studioSlug: string | null;
-  studioStatus: string;
-  studioCreatedAt: string;
+  studioStatus: string | null;
+  studioCreatedAt: string | null;
   onboardingGaps: string[];
   onboardingComplete: boolean;
 };
+
+export type ClientActivityTier = 'active' | 'warming' | 'sleeping' | 'never';
 
 export type AdminDirectoryClientRow = {
   id: string;
@@ -297,10 +299,11 @@ export type AdminDirectoryClientRow = {
   email: string;
   phone: string | null;
   isGuest: boolean;
-  source: string;
   createdAt: string;
-  studioId: string;
-  studioName: string;
+  bookingsCount: number;
+  studiosCount: number;
+  lastVisitAt: string | null;
+  activityTier: ClientActivityTier;
 };
 
 export type AdminDirectoryTrainerRow = {

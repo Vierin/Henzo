@@ -64,6 +64,7 @@ class _OwnerTrainingSessionDetailScreenState
   late AuthService _authService;
   late OwnerTrainingSession _session;
   final Set<String> _waitlistActionIds = <String>{};
+  final Set<String> _enrollmentActionIds = <String>{};
 
   /// Waitlist is a paid feature (Studio / Enterprise). Hidden until confirmed.
   bool _hasPaidPlan = false;
@@ -431,6 +432,50 @@ class _OwnerTrainingSessionDetailScreenState
     } finally {
       if (mounted) {
         setState(() => _waitlistActionIds.remove(entry.entryId));
+      }
+    }
+  }
+
+  Future<void> _removeAnonymousEnrollment(OwnerSessionEnrollment e) async {
+    final tr = context.read<LocaleProvider>().t;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ownerSession.removeAnonymousConfirmTitle')),
+        content: Text(tr('ownerSession.removeAnonymousConfirmBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(tr('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error500),
+            child: Text(tr('ownerSession.actionDeleteParticipant')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final token = _authService.accessToken;
+    if (token == null || token.isEmpty) return;
+    if (_enrollmentActionIds.contains(e.enrollmentId)) return;
+    setState(() => _enrollmentActionIds.add(e.enrollmentId));
+    try {
+      await DashboardApiService.deleteOwnerEnrollment(token, e.enrollmentId);
+      if (!mounted) return;
+      showSuccess(
+        context,
+        tr('ownerSession.participantRemoved'),
+      );
+      _reloadEnrollments();
+      widget.onParticipantsChanged?.call();
+    } catch (err) {
+      if (mounted) showApiError(context, err);
+    } finally {
+      if (mounted) {
+        setState(() => _enrollmentActionIds.remove(e.enrollmentId));
       }
     }
   }
@@ -891,6 +936,11 @@ class _OwnerTrainingSessionDetailScreenState
                             final attended = effectiveStatus == 'ACTIVE';
                             final cancelled = e.status == 'CANCELLED';
                             final canToggle = !cancelled && sessionEnded;
+                            final canRemoveAnonymous =
+                                anonymous && !cancelled && isUpcoming;
+                            final isRemoving = _enrollmentActionIds.contains(
+                              e.enrollmentId,
+                            );
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Container(
@@ -944,6 +994,31 @@ class _OwnerTrainingSessionDetailScreenState
                                         ],
                                       ),
                                     ),
+                                    if (canRemoveAnonymous)
+                                      IconButton(
+                                        onPressed: isRemoving
+                                            ? null
+                                            : () =>
+                                                _removeAnonymousEnrollment(e),
+                                        tooltip: tr(
+                                          'ownerSession.actionDeleteParticipant',
+                                        ),
+                                        icon: isRemoving
+                                            ? SizedBox(
+                                                width: 18.w,
+                                                height: 18.w,
+                                                child:
+                                                    const CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: AppColors.error500,
+                                                    ),
+                                              )
+                                            : Icon(
+                                                Icons.delete_outline,
+                                                color: AppColors.error500,
+                                                size: 22.sp,
+                                              ),
+                                      ),
                                     if (cancelled)
                                       statusBadgeForParticipant(e.status)
                                     else if (!attendanceTogglesVisible)

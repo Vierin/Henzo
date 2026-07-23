@@ -310,7 +310,8 @@
     "joinedWaitlist": "Đã thêm vào danh sách chờ — sẽ thông báo cho mọi người khi có chỗ",
     "leftWaitlist": "Đã rời danh sách chờ",
     "waitlistError": "Không thể cập nhật danh sách chờ. Thử lại.",
-    "waitlistNotifyHint": "Chúng tôi sẽ thông báo khi có chỗ — ai đặt trước sẽ giữ chỗ"
+    "waitlistNotifyHint": "Chúng tôi sẽ thông báo khi có chỗ — ai đặt trước sẽ giữ chỗ",
+    "ownerCannotBook": "Tài khoản doanh nghiệp không thể đặt lớp. Hãy dùng tài khoản khách hàng."
   },
   "clientMap": {
     "nearbyStudios": "Studio gần bạn",
@@ -473,6 +474,7 @@
     "phone": "Điện thoại",
     "add": "Thêm",
     "participantAdded": "Đã thêm người tham gia",
+    "participantRemoved": "Đã xóa khách ẩn danh",
     "participantsLoadError": "Không thể tải danh sách người tham gia",
     "noParticipants": "Chưa có người tham gia",
     "participantStatusActive": "Đang hoạt động",
@@ -483,6 +485,8 @@
     "waitlistNoSpots": "Hiện chưa có chỗ trống. Nút thêm sẽ mở khi có chỗ.",
     "waitlistRemoveConfirmTitle": "Xóa khỏi danh sách chờ?",
     "waitlistRemoveConfirmBody": "Người này sẽ bị xóa khỏi danh sách chờ của buổi tập này.",
+    "removeAnonymousConfirmTitle": "Xóa khách ẩn danh?",
+    "removeAnonymousConfirmBody": "Họ sẽ bị xóa khỏi buổi tập sắp tới này.",
     "actionSetActive": "Chuyển sang active",
     "actionSetNoShow": "Đánh dấu no-show",
     "actionCancelParticipant": "Hủy tham gia",

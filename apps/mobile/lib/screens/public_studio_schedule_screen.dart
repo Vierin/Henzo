@@ -287,6 +287,11 @@ class _PublicStudioScheduleScreenState
       if (!mounted) return;
       final ids = <String>{};
       for (final item in items) {
+        final bookingStatus =
+            (item['bookingStatus'] ?? '').toString().toUpperCase();
+        final isWaitlisted =
+            item['waitlisted'] == true || bookingStatus == 'WAITLISTED';
+        if (isWaitlisted) continue;
         final sid = item['sessionId']?.toString();
         if (sid != null && sid.isNotEmpty) ids.add(sid);
       }
@@ -860,6 +865,11 @@ class _PublicStudioScheduleScreenState
                                     .toString();
                             final alreadyBooked =
                                 _bookedSessionIds.contains(rawSessionId);
+                            final isOwner = context
+                                .watch<AuthService>()
+                                .isStudioOperator;
+                            final canBookAsClient =
+                                !alreadyBooked && !isOwner;
                             return OwnerDailyScheduleSessionCard(
                               session: session,
                               subtitleLabel: subtitle,
@@ -875,10 +885,10 @@ class _PublicStudioScheduleScreenState
                               bookActionLabel: context
                                   .watch<LocaleProvider>()
                                   .t('booking.book'),
-                              onBookAgain: alreadyBooked
-                                  ? null
-                                  : () => _openClassDetail(raw),
-                              isBooked: alreadyBooked,
+                              onBookAgain: canBookAsClient
+                                  ? () => _openClassDetail(raw)
+                                  : null,
+                              isBooked: alreadyBooked && !isOwner,
                               onTap: () => _openClassDetail(raw),
                             );
                           },

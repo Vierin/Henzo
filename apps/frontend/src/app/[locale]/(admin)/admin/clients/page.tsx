@@ -13,6 +13,7 @@ import type {
   AdminDirectoryClientRow,
   AdminDirectoryTrainerRow,
   AdminOwnerRow,
+  ClientActivityTier,
 } from '@/lib/admin/types';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
@@ -28,7 +29,48 @@ function formatOnboardingGap(gap: string): string {
   if (gap === 'hasTraining') return 'No training';
   if (gap === 'hasPhoto') return 'No photo';
   if (gap === 'hasStudioDetails') return 'No details';
+  if (gap === 'noStudio') return 'No studio';
   return gap;
+}
+
+function formatLastVisit(iso: string | null): string {
+  if (!iso) return 'Never';
+  const d = new Date(iso);
+  const days = Math.floor((Date.now() - d.getTime()) / (24 * 60 * 60 * 1000));
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days}d ago`;
+  return d.toLocaleDateString('en-GB');
+}
+
+function ClientActivityBadge({ tier }: { tier: ClientActivityTier }) {
+  const map: Record<ClientActivityTier, { label: string; className: string }> =
+    {
+      active: {
+        label: 'Active (7d)',
+        className: 'bg-emerald-50 text-emerald-700',
+      },
+      warming: {
+        label: 'Warming (8–30d)',
+        className: 'bg-amber-50 text-amber-700',
+      },
+      sleeping: {
+        label: 'Sleeping (30d+)',
+        className: 'bg-zinc-100 text-zinc-600',
+      },
+      never: {
+        label: 'Never visited',
+        className: 'bg-red-50 text-red-600',
+      },
+    };
+  const conf = map[tier];
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${conf.className}`}
+    >
+      {conf.label}
+    </span>
+  );
 }
 
 export default function AdminClientsPage() {
@@ -49,6 +91,8 @@ export default function AdminClientsPage() {
   const [onboarding, setOnboarding] = useState<'' | 'complete' | 'incomplete'>(
     '',
   );
+  const [activityTier, setActivityTier] = useState('');
+  const [hideAnonymous, setHideAnonymous] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -93,13 +137,15 @@ export default function AdminClientsPage() {
         page,
         limit: 20,
         search: search || undefined,
+        activityTier: activityTier || undefined,
+        hideAnonymous,
       });
       setClients(res.items);
       setTotal(res.total);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     }
-  }, [tab, page, search, onboarding]);
+  }, [tab, page, search, onboarding, activityTier, hideAnonymous]);
 
   useEffect(() => {
     void load();
@@ -143,7 +189,7 @@ export default function AdminClientsPage() {
               ? 'Search owner email, name, studio'
               : tab === 'trainers'
                 ? 'Search trainer, email, studio'
-                : 'Search client, email, phone, studio'
+                : 'Search client name, email, phone'
           }
           value={search}
           onChange={(e) => {
@@ -165,6 +211,36 @@ export default function AdminClientsPage() {
             <option value="complete">Onboarding complete</option>
             <option value="incomplete">Onboarding incomplete</option>
           </select>
+        ) : null}
+        {tab === 'clients' ? (
+          <>
+            <select
+              value={activityTier}
+              onChange={(e) => {
+                setActivityTier(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            >
+              <option value="">All activity</option>
+              <option value="active">Active (7d)</option>
+              <option value="warming">Warming (8–30d)</option>
+              <option value="sleeping">Sleeping (30d+)</option>
+              <option value="never">Never visited</option>
+            </select>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700">
+              <input
+                type="checkbox"
+                checked={hideAnonymous}
+                onChange={(e) => {
+                  setHideAnonymous(e.target.checked);
+                  setPage(1);
+                }}
+                className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+              />
+              Hide anonymous
+            </label>
+          </>
         ) : null}
       </div>
 
@@ -191,36 +267,36 @@ export default function AdminClientsPage() {
                 render: (r) => r.phone || '—',
               },
               {
-                key: 'studio',
-                header: 'Studio',
-                render: (r) => (
-                  <Link
-                    href={studioHref(r.studioId)}
-                    className="text-primary hover:underline"
-                  >
-                    {r.studioName}
-                  </Link>
-                ),
+                key: 'bookings',
+                header: 'Bookings',
+                render: (r) => r.bookingsCount,
               },
               {
-                key: 'source',
-                header: 'Source',
-                render: (r) => (
-                  <span>
-                    {r.source}
-                    {r.isGuest ? (
-                      <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600">
-                        guest
-                      </span>
-                    ) : null}
-                  </span>
-                ),
+                key: 'studios',
+                header: 'Studios',
+                render: (r) => r.studiosCount,
               },
               {
-                key: 'created',
-                header: 'Added',
+                key: 'lastVisit',
+                header: 'Last visit',
+                render: (r) => formatLastVisit(r.lastVisitAt),
+              },
+              {
+                key: 'activity',
+                header: 'Activity',
+                render: (r) => <ClientActivityBadge tier={r.activityTier} />,
+              },
+              {
+                key: 'guest',
+                header: 'Type',
                 render: (r) =>
-                  new Date(r.createdAt).toLocaleDateString('en-GB'),
+                  r.isGuest ? (
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600">
+                      guest
+                    </span>
+                  ) : (
+                    <span className="text-xs text-zinc-500">registered</span>
+                  ),
               },
             ]}
           />
@@ -248,28 +324,33 @@ export default function AdminClientsPage() {
               {
                 key: 'studio',
                 header: 'Studio',
-                render: (r) =>
-                  r.onboardingComplete ? (
-                    <Link
-                      href={studioHref(r.studioId)}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {r.studioName}
-                    </Link>
-                  ) : (
-                    <span className="text-zinc-700">{r.studioName}</span>
-                  ),
+                render: (r) => {
+                  if (!r.studioId || !r.studioName) {
+                    return <span className="text-zinc-400">No studio yet</span>;
+                  }
+                  if (r.onboardingComplete) {
+                    return (
+                      <Link
+                        href={studioHref(r.studioId)}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {r.studioName}
+                      </Link>
+                    );
+                  }
+                  return <span className="text-zinc-700">{r.studioName}</span>;
+                },
               },
               {
                 key: 'status',
                 header: 'Studio status',
-                render: (r) => r.studioStatus,
+                render: (r) => r.studioStatus || '—',
               },
               {
                 key: 'onboarding',
                 header: 'Onboarding',
                 render: (r) =>
-                  r.onboardingComplete ? (
+                  r.onboardingComplete && r.studioId ? (
                     <span className="inline-flex items-center gap-2">
                       <span className="text-emerald-600">Complete</span>
                       <Link

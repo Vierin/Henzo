@@ -317,10 +317,9 @@ export class FitnessController {
     @Headers('authorization') authHeader: string,
     @Param('id') id: string,
   ) {
-    return this.fitnessSessionsService.updateOwnerEnrollmentStatus(
+    return this.fitnessSessionsService.removeOwnerAnonymousEnrollment(
       authHeader,
       id,
-      'CANCELLED',
     );
   }
 

@@ -427,6 +427,12 @@ export class StudiosController {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
       const userId = currentUser.user.id;
+      if (currentUser.user.role === 'OWNER') {
+        throw new HttpException(
+          'Business accounts cannot book classes as clients',
+          HttpStatus.FORBIDDEN,
+        );
+      }
 
       const session = await this.prisma.trainingSession.findUnique({
         where: { id: sessionId },
@@ -648,6 +654,12 @@ export class StudiosController {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
       const userId = currentUser.user.id;
+      if (currentUser.user.role === 'OWNER') {
+        throw new HttpException(
+          'Business accounts cannot book classes as clients',
+          HttpStatus.FORBIDDEN,
+        );
+      }
 
       const session = await this.prisma.trainingSession.findUnique({
         where: { id: sessionId },

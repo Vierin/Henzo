@@ -225,8 +225,15 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   }
 
   Future<void> _book() async {
-    final token = context.read<AuthService>().accessToken;
+    final auth = context.read<AuthService>();
+    final token = auth.accessToken;
     final locale = context.read<LocaleProvider>();
+    if (auth.isStudioOperator) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.ownerCannotBook'))),
+      );
+      return;
+    }
     if (token == null || token.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(content: Text(locale.t('clientClassDetail.signInToBook'))),
@@ -276,8 +283,15 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   }
 
   Future<void> _joinWaitlist() async {
-    final token = context.read<AuthService>().accessToken;
+    final auth = context.read<AuthService>();
+    final token = auth.accessToken;
     final locale = context.read<LocaleProvider>();
+    if (auth.isStudioOperator) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('clientClassDetail.ownerCannotBook'))),
+      );
+      return;
+    }
     if (token == null || _waitlistLoading) return;
     setState(() => _waitlistLoading = true);
     try {
@@ -649,6 +663,7 @@ class _ClassDetailBody extends StatelessWidget {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
     final tr = locale.t;
+    final blockedAsOwner = context.watch<AuthService>().isStudioOperator;
     final training = session['training'] is Map
         ? Map<String, dynamic>.from(session['training'] as Map)
         : <String, dynamic>{};
@@ -816,7 +831,10 @@ class _ClassDetailBody extends StatelessWidget {
             canceling: canceling,
             isBookedByMe: isBookedByMe,
             canCancelBooking: canCancelBooking,
-            canBook: !isBookedByMe && (cap == 0 || booked < cap),
+            canBook: !blockedAsOwner &&
+                !isBookedByMe &&
+                (cap == 0 || booked < cap),
+            blockedAsOwner: blockedAsOwner,
             isOnWaitlist: isOnWaitlist,
             waitlistLoading: waitlistLoading,
             enrollmentLoading: enrollmentLoading,
@@ -1628,6 +1646,7 @@ class _BookBar extends StatelessWidget {
     required this.isBookedByMe,
     required this.canCancelBooking,
     required this.canBook,
+    required this.blockedAsOwner,
     required this.isOnWaitlist,
     required this.waitlistLoading,
     required this.enrollmentLoading,
@@ -1643,6 +1662,7 @@ class _BookBar extends StatelessWidget {
   final bool isBookedByMe;
   final bool canCancelBooking;
   final bool canBook;
+  final bool blockedAsOwner;
   final bool isOnWaitlist;
   final bool waitlistLoading;
   final bool enrollmentLoading;
@@ -1653,7 +1673,7 @@ class _BookBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final started = startsAt.isBefore(DateTime.now());
-    final classFull = !canBook && !isBookedByMe;
+    final classFull = !canBook && !isBookedByMe && !blockedAsOwner;
     final actionLoading = booking || enrollmentLoading;
 
     return Container(
@@ -1665,7 +1685,16 @@ class _BookBar extends StatelessWidget {
         12 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: const BoxDecoration(color: AppColors.backgroundSecondary),
-      child: isBookedByMe
+      child: blockedAsOwner
+          ? Text(
+              locale.t('clientClassDetail.ownerCannotBook'),
+              style: TextStyle(
+                fontSize: 15.sp,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            )
+          : isBookedByMe
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [

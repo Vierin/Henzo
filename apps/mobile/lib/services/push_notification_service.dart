@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -85,6 +86,13 @@ class PushNotificationService {
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
       _log('local notifications initialized');
+      // Cold-start from a local notification (Android foreground → tray → kill).
+      final launch = await _localNotifications
+          .getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp == true &&
+          launch?.notificationResponse != null) {
+        _onNotificationTap(launch!.notificationResponse!);
+      }
       if (defaultTargetPlatform == TargetPlatform.android) {
         final androidPlugin = _localNotifications
             .resolvePlatformSpecificImplementation<
@@ -165,9 +173,31 @@ class PushNotificationService {
   }
 
   static void _onNotificationTap(NotificationResponse response) {
-    _log('notification tap: actionId=${response.actionId} payload=${response.payload}');
+    _log(
+      'notification tap: actionId=${response.actionId} '
+      'payload=${response.payload}',
+    );
     if (response.actionId == 'START_WORKOUT') {
       _handleStartWorkoutAction(response.payload);
+      return;
+    }
+    final payload = response.payload?.trim();
+    if (payload == null || payload.isEmpty) return;
+    if (payload.startsWith('workout:')) {
+      _handleStartWorkoutAction(payload);
+      return;
+    }
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is! Map) return;
+      final data = <String, String>{};
+      for (final entry in decoded.entries) {
+        data[entry.key.toString()] = entry.value?.toString() ?? '';
+      }
+      if (data.isEmpty) return;
+      onNotificationTapped?.call(data);
+    } catch (e) {
+      _log('notification tap payload parse error: $e');
     }
   }
 
@@ -283,11 +313,12 @@ class PushNotificationService {
     // local notification on Android.
     if (!Platform.isIOS) {
       _log('onMessage: showing local notification (Android)');
+      final data = _dataToStringMap(message.data);
       _showLocalNotification(
         id: message.hashCode & 0x7FFFFFFF,
         title: title,
         body: body,
-        payload: message.data.isEmpty ? null : message.data.toString(),
+        payload: data.isEmpty ? null : jsonEncode(data),
       );
     } else {
       _log('onMessage: iOS — system notification shown by FCM, skipping local');
