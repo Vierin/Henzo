@@ -94,6 +94,75 @@ export class AdminController {
     }
   }
 
+  @Get('owners')
+  async owners(
+    @Headers('authorization') authHeader: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('onboarding') onboarding?: string,
+  ) {
+    try {
+      const onboardingFilter =
+        onboarding === 'complete' || onboarding === 'incomplete'
+          ? onboarding
+          : undefined;
+      return {
+        data: await this.adminService.listOwners(
+          authHeader,
+          parsePage(page),
+          parseLimit(limit),
+          search,
+          onboardingFilter,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('clients')
+  async clientsDirectory(
+    @Headers('authorization') authHeader: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listDirectoryClients(
+          authHeader,
+          parsePage(page),
+          parseLimit(limit),
+          search,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('trainers')
+  async trainersDirectory(
+    @Headers('authorization') authHeader: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listDirectoryTrainers(
+          authHeader,
+          parsePage(page),
+          parseLimit(limit),
+          search,
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
   @Get('studios/:id')
   async studio(
     @Headers('authorization') authHeader: string,

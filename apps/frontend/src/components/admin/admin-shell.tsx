@@ -12,6 +12,7 @@ import {
 const nav = [
   { path: '/admin', label: 'Overview', exact: true },
   { path: '/admin/studios', label: 'Studios' },
+  { path: '/admin/clients', label: 'Clients' },
   { path: '/admin/subscriptions', label: 'Subscriptions' },
   { path: '/admin/payments', label: 'Payments' },
   { path: '/admin/broadcast', label: 'Broadcast' },

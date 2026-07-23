@@ -3,9 +3,12 @@ import type {
   AdminBooking,
   AdminBroadcastPayload,
   AdminBroadcastResult,
+  AdminDirectoryClientRow,
+  AdminDirectoryTrainerRow,
   AdminFeedbackRow,
   AdminNoShowClientRow,
   AdminOverview,
+  AdminOwnerRow,
   AdminPaymentEventRow,
   AdminSettings,
   AdminStudioClientRow,
@@ -55,6 +58,53 @@ export async function fetchAdminStudios(params: {
   if (params.onboardingIncomplete) q.set('onboardingIncomplete', 'true');
   const res = await apiClient.get<ApiWrap<Paginated<AdminStudioRow>>>(
     `/admin/studios?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminOwners(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  onboarding?: 'complete' | 'incomplete';
+}): Promise<Paginated<AdminOwnerRow>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.search) q.set('search', params.search);
+  if (params.onboarding) q.set('onboarding', params.onboarding);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminOwnerRow>>>(
+    `/admin/owners?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminDirectoryClients(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<Paginated<AdminDirectoryClientRow>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.search) q.set('search', params.search);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminDirectoryClientRow>>>(
+    `/admin/clients?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchAdminDirectoryTrainers(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<Paginated<AdminDirectoryTrainerRow>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  if (params.search) q.set('search', params.search);
+  const res = await apiClient.get<ApiWrap<Paginated<AdminDirectoryTrainerRow>>>(
+    `/admin/trainers?${q.toString()}`,
   );
   return res.data;
 }

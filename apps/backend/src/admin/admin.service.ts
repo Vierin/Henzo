@@ -286,6 +286,213 @@ export class AdminService {
     return { items, total, page, limit };
   }
 
+  async listOwners(
+    authHeader: string | undefined,
+    page: number,
+    limit: number,
+    search?: string,
+    onboarding?: 'complete' | 'incomplete',
+  ) {
+    await assertAdmin(this.authService, authHeader);
+    const q = search?.trim();
+    const where = {
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' as const } },
+              {
+                User: { email: { contains: q, mode: 'insensitive' as const } },
+              },
+              { User: { name: { contains: q, mode: 'insensitive' as const } } },
+            ],
+          }
+        : {}),
+    };
+
+    const studios = await this.prisma.studio.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        address: true,
+        photos: true,
+        createdAt: true,
+        _count: { select: { Training: true } },
+        User: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    const mapped = studios.map((s) => {
+      const onboardingGaps = [
+        ...(!hasCompleteStudioDetails(s) ? ['hasStudioDetails'] : []),
+        ...(s._count.Training === 0 ? ['hasTraining'] : []),
+        ...(s.photos.length === 0 ? ['hasPhoto'] : []),
+      ];
+      return {
+        id: `${s.User.id}:${s.id}`,
+        ownerId: s.User.id,
+        ownerEmail: s.User.email,
+        ownerName: s.User.name,
+        ownerPhone: s.User.phone,
+        ownerCreatedAt: s.User.createdAt,
+        studioId: s.id,
+        studioName: s.name,
+        studioSlug: s.slug,
+        studioStatus: s.status,
+        studioCreatedAt: s.createdAt,
+        onboardingGaps,
+        onboardingComplete: onboardingGaps.length === 0,
+      };
+    });
+
+    const filtered =
+      onboarding === 'complete'
+        ? mapped.filter((r) => r.onboardingComplete)
+        : onboarding === 'incomplete'
+          ? mapped.filter((r) => !r.onboardingComplete)
+          : mapped;
+
+    const total = filtered.length;
+    const items = filtered.slice((page - 1) * limit, page * limit);
+    return { items, total, page, limit };
+  }
+
+  async listDirectoryClients(
+    authHeader: string | undefined,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
+    await assertAdmin(this.authService, authHeader);
+    const q = search?.trim();
+    const where = {
+      ...(q
+        ? {
+            OR: [
+              { User: { name: { contains: q, mode: 'insensitive' as const } } },
+              {
+                User: { email: { contains: q, mode: 'insensitive' as const } },
+              },
+              {
+                User: { phone: { contains: q, mode: 'insensitive' as const } },
+              },
+              {
+                Studio: { name: { contains: q, mode: 'insensitive' as const } },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [rows, total] = await Promise.all([
+      this.prisma.studioClient.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          source: true,
+          createdAt: true,
+          User: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              isGuest: true,
+            },
+          },
+          Studio: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.studioClient.count({ where }),
+    ]);
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      userId: r.User.id,
+      name: r.User.name,
+      email: r.User.email,
+      phone: r.User.phone,
+      isGuest: r.User.isGuest,
+      source: r.source,
+      createdAt: r.createdAt,
+      studioId: r.Studio.id,
+      studioName: r.Studio.name,
+    }));
+
+    return { items, total, page, limit };
+  }
+
+  async listDirectoryTrainers(
+    authHeader: string | undefined,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
+    await assertAdmin(this.authService, authHeader);
+    const q = search?.trim();
+    const where = {
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' as const } },
+              { email: { contains: q, mode: 'insensitive' as const } },
+              { phone: { contains: q, mode: 'insensitive' as const } },
+              {
+                Studio: { name: { contains: q, mode: 'insensitive' as const } },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [rows, total] = await Promise.all([
+      this.prisma.trainer.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          accessLevel: true,
+          userId: true,
+          Studio: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.trainer.count({ where }),
+    ]);
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      accessLevel: r.accessLevel,
+      userId: r.userId,
+      hasLinkedUser: Boolean(r.userId),
+      studioId: r.Studio.id,
+      studioName: r.Studio.name,
+    }));
+
+    return { items, total, page, limit };
+  }
+
   async getStudio(authHeader: string | undefined, id: string) {
     await assertAdmin(this.authService, authHeader);
     const studio = await this.prisma.studio.findUnique({

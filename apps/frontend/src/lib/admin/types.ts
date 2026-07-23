@@ -273,3 +273,44 @@ export type AdminFeedbackRow = {
   adminNote: string | null;
   createdAt: string;
 };
+
+export type AdminOwnerRow = {
+  id: string;
+  ownerId: string;
+  ownerEmail: string;
+  ownerName: string | null;
+  ownerPhone: string | null;
+  ownerCreatedAt: string;
+  studioId: string;
+  studioName: string;
+  studioSlug: string | null;
+  studioStatus: string;
+  studioCreatedAt: string;
+  onboardingGaps: string[];
+  onboardingComplete: boolean;
+};
+
+export type AdminDirectoryClientRow = {
+  id: string;
+  userId: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  isGuest: boolean;
+  source: string;
+  createdAt: string;
+  studioId: string;
+  studioName: string;
+};
+
+export type AdminDirectoryTrainerRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  accessLevel: string;
+  userId: string | null;
+  hasLinkedUser: boolean;
+  studioId: string;
+  studioName: string;
+};
