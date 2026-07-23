@@ -51,9 +51,19 @@ export type StudioLandingContent = {
     titleLine2Accent: string;
     titleLine2After?: string;
     currency: string;
+    /** English landing: used when `?currency=eur` is present. */
+    currencyEuro?: string;
     storeAppStore: string;
     storeGooglePlay: string;
     plans: Array<{
+      name: string;
+      subtitle: string;
+      price: string;
+      priceSub: string;
+      features: string[];
+    }>;
+    /** English landing euro override plans (`?currency=eur`). */
+    plansEuro?: Array<{
       name: string;
       subtitle: string;
       price: string;
