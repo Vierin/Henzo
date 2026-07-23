@@ -2,9 +2,10 @@
 
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import Image from 'next/image';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const BASE = 'homepage.studio.pricing';
 /** ChaoticUnderline viewBox width / height — SVG height scales with word width. */
@@ -42,8 +43,22 @@ function parsePlans(raw: unknown): PricingPlan[] {
   );
 }
 
-export function LandingPricingSection() {
+/** English landing only: `?currency=eur` (also `?eur` / `?eur=1`). */
+function wantsEuroPricing(language: string, searchParams: URLSearchParams) {
+  if (language !== 'en') return false;
+  const currency = (searchParams.get('currency') ?? '').trim().toLowerCase();
+  if (currency === 'eur' || currency === 'euro' || currency === '€') {
+    return true;
+  }
+  if (!searchParams.has('eur')) return false;
+  const eur = (searchParams.get('eur') ?? '').trim().toLowerCase();
+  return eur === '' || eur === '1' || eur === 'true' || eur === 'yes';
+}
+
+function LandingPricingSectionInner() {
   const t = useTranslation();
+  const { language } = useLanguage();
+  const searchParams = useSearchParams();
   const accentRef = useRef<HTMLSpanElement>(null);
   const [underlineBottomPx, setUnderlineBottomPx] = useState(4);
 
@@ -58,12 +73,26 @@ export function LandingPricingSection() {
   const titleLine2After = resolveOptional(`${BASE}.titleLine2After`);
   const appStoreLabel = String(t(`${BASE}.storeAppStore`));
   const googlePlayLabel = String(t(`${BASE}.storeGooglePlay`));
-  const currencyRaw = t(`${BASE}.currency`);
-  const currency =
-    typeof currencyRaw === 'string' && currencyRaw !== `${BASE}.currency`
-      ? currencyRaw
-      : 'VND';
-  const plans = useMemo(() => parsePlans(t(`${BASE}.plans`)), [t]);
+
+  const showEuro = wantsEuroPricing(language, searchParams);
+
+  const currencyRaw = showEuro
+    ? resolveOptional(`${BASE}.currencyEuro`) || '€'
+    : (() => {
+        const raw = t(`${BASE}.currency`);
+        return typeof raw === 'string' && raw !== `${BASE}.currency`
+          ? raw
+          : '$';
+      })();
+  const currency = currencyRaw;
+
+  const plans = useMemo(() => {
+    if (showEuro) {
+      const euroPlans = parsePlans(t(`${BASE}.plansEuro`));
+      if (euroPlans.length > 0) return euroPlans;
+    }
+    return parsePlans(t(`${BASE}.plans`));
+  }, [t, showEuro]);
 
   useLayoutEffect(() => {
     const el = accentRef.current;
@@ -198,5 +227,13 @@ export function LandingPricingSection() {
         />
       </div>
     </section>
+  );
+}
+
+export function LandingPricingSection() {
+  return (
+    <Suspense fallback={null}>
+      <LandingPricingSectionInner />
+    </Suspense>
   );
 }
