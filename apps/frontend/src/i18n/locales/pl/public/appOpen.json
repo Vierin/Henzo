@@ -1,25 +1,25 @@
 {
   "appOpen": {
-    "openApp": "Open Henzo App",
-    "orDownload": "or download the app",
-    "didntOpen": "App didn't open?",
-    "download": "Download Henzo",
+    "openApp": "Otwórz aplikację Henzo",
+    "orDownload": "lub pobierz aplikację",
+    "didntOpen": "Aplikacja się nie otworzyła?",
+    "download": "Pobierz Henzo",
     "appStore": "App Store",
     "googlePlay": "Google Play",
-    "language": "Language",
+    "language": "Język",
     "trainerInvite": {
-      "title": "You've been invited!",
-      "description": "You've been added as a trainer on Henzo. Open the app to complete your registration.",
-      "expiry": "This invitation expires in 7 days."
+      "title": "Otrzymałeś zaproszenie!",
+      "description": "Dodano Cię jako trenera w Henzo. Otwórz aplikację, aby dokończyć rejestrację.",
+      "expiry": "To zaproszenie wygasa za 7 dni."
     },
     "studioShare": {
-      "titleNamed": "Join {name} on Henzo",
-      "titleGeneric": "You're invited to a studio",
-      "description": "Open Henzo to view the studio schedule and book a class."
+      "titleNamed": "Dołącz do {name} w Henzo",
+      "titleGeneric": "Zaproszono Cię do studia",
+      "description": "Otwórz Henzo, zobacz grafik studia i zarezerwuj zajęcia."
     },
     "classInvite": {
-      "title": "You're invited to a class",
-      "description": "Open Henzo to view the class details and book your spot."
+      "title": "Zaproszono Cię na zajęcia",
+      "description": "Otwórz Henzo, zobacz szczegóły zajęć i zarezerwuj miejsce."
     }
   }
 }

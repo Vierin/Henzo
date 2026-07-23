@@ -310,7 +310,8 @@
     "joinedWaitlist": "Added to waitlist — we'll notify everyone if a spot opens",
     "leftWaitlist": "Removed from waitlist",
     "waitlistError": "Could not update waitlist. Try again.",
-    "waitlistNotifyHint": "We'll notify you if a spot opens — first to book gets it"
+    "waitlistNotifyHint": "We'll notify you if a spot opens — first to book gets it",
+    "ownerCannotBook": "Business accounts can't book classes. Use a client account to join."
   },
   "clientMap": {
     "nearbyStudios": "Nearby studios",
@@ -473,6 +474,7 @@
     "phone": "Phone",
     "add": "Add",
     "participantAdded": "Participant added",
+    "participantRemoved": "Anonymous client removed",
     "participantsLoadError": "Failed to load participants",
     "noParticipants": "No participants yet",
     "participantStatusActive": "Active",
@@ -483,6 +485,8 @@
     "waitlistNoSpots": "No free spots right now. Promote becomes available when a spot opens.",
     "waitlistRemoveConfirmTitle": "Remove from waitlist?",
     "waitlistRemoveConfirmBody": "This person will be removed from the waitlist for this class.",
+    "removeAnonymousConfirmTitle": "Remove anonymous client?",
+    "removeAnonymousConfirmBody": "They will be removed from this upcoming class.",
     "actionSetActive": "Set active",
     "actionSetNoShow": "Mark no-show",
     "actionCancelParticipant": "Cancel participation",

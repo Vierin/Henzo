@@ -310,7 +310,8 @@
     "joinedWaitlist": "Вы в waitlist — уведомим всех, если появится место",
     "leftWaitlist": "Вы вышли из waitlist",
     "waitlistError": "Не удалось обновить waitlist. Попробуйте снова.",
-    "waitlistNotifyHint": "Уведомим, если появится место — кто первый запишется, тот и займёт"
+    "waitlistNotifyHint": "Уведомим, если появится место — кто первый запишется, тот и займёт",
+    "ownerCannotBook": "Бизнес-аккаунт нельзя записать на занятие. Используйте клиентский аккаунт."
   },
   "clientMap": {
     "nearbyStudios": "Студии рядом",
@@ -473,6 +474,7 @@
     "phone": "Телефон",
     "add": "Добавить",
     "participantAdded": "Участник добавлен",
+    "participantRemoved": "Анонимный клиент удалён",
     "participantsLoadError": "Не удалось загрузить участников",
     "noParticipants": "Участников пока нет",
     "participantStatusActive": "Активен",
@@ -483,6 +485,8 @@
     "waitlistNoSpots": "Свободных мест сейчас нет. Кнопка добавления станет доступной, когда место освободится.",
     "waitlistRemoveConfirmTitle": "Удалить из листа ожидания?",
     "waitlistRemoveConfirmBody": "Этот человек будет удалён из листа ожидания на это занятие.",
+    "removeAnonymousConfirmTitle": "Удалить анонимного клиента?",
+    "removeAnonymousConfirmBody": "Он будет убран с этой будущей тренировки.",
     "actionSetActive": "Сделать активным",
     "actionSetNoShow": "Отметить no-show",
     "actionCancelParticipant": "Отменить участие",

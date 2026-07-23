@@ -963,6 +963,7 @@ export class FitnessSessionsService {
             name: true,
             email: true,
             phone: true,
+            isGuest: true,
           },
         },
       },
@@ -978,6 +979,8 @@ export class FitnessSessionsService {
         name: r.User.name,
         email: r.User.email,
         phone: r.User.phone,
+        isGuest: r.User.isGuest,
+        isSyntheticGuest: !isDeliverableClientEmail(r.User.email),
       },
     }));
   }
@@ -1370,6 +1373,54 @@ export class FitnessSessionsService {
         salonTimezone: salonTz,
         locale,
       },
+    );
+  }
+
+  /**
+   * Soft-remove an anonymous (@henzo.local) spot from an upcoming session.
+   * Registered clients cannot be deleted via this path.
+   */
+  async removeOwnerAnonymousEnrollment(
+    authHeader: string,
+    enrollmentId: string,
+  ) {
+    const row = await this.prisma.sessionEnrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        id: true,
+        status: true,
+        sessionId: true,
+        User: { select: { email: true } },
+        TrainingSession: { select: { startsAt: true } },
+      },
+    });
+    if (!row) {
+      throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+    }
+    await this.getOwnedSessionOrThrow(authHeader, row.sessionId);
+
+    if (isDeliverableClientEmail(row.User.email)) {
+      throw new HttpException(
+        'Only anonymous clients can be removed this way',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (row.TrainingSession.startsAt <= new Date()) {
+      throw new HttpException(
+        'Anonymous clients can only be removed from upcoming sessions',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (row.status === SessionEnrollmentStatus.CANCELLED) {
+      return { success: true };
+    }
+
+    return this.updateOwnerEnrollmentStatus(
+      authHeader,
+      enrollmentId,
+      'CANCELLED',
     );
   }
 

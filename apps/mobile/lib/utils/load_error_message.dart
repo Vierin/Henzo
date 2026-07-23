@@ -35,6 +35,9 @@ String bookingErrorMessage(LocaleProvider locale, Object e) {
     if (e.statusCode == 401) {
       return locale.t('clientClassDetail.signInToBook');
     }
+    if (e.statusCode == 403) {
+      return locale.t('clientClassDetail.ownerCannotBook');
+    }
     if (e.statusCode == 409) {
       return locale.t('clientClassDetail.alreadyBooked');
     }
