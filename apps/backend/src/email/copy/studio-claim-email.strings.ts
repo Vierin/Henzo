@@ -18,6 +18,61 @@ export type StudioClaimEmailStrings = {
   footerTagline: string;
 };
 
+export type StudioClaimInviteStrings = {
+  pageTitle: string;
+  subject: string;
+  heading: string;
+  body: string;
+  ctaButton: string;
+  fallbackLabel: string;
+  ignoreText: string;
+  footerTagline: string;
+  appStoreLabel: string;
+  googlePlayLabel: string;
+};
+
+export const STUDIO_CLAIM_INVITE_STRINGS: Record<
+  ClientEmailLocale,
+  StudioClaimInviteStrings
+> = {
+  en: {
+    pageTitle: 'Manage your studio — Henzo',
+    subject: '{studioName} — manage your studio on Henzo',
+    heading: 'Your studio is on Henzo',
+    body: 'To keep receiving bookings for your classes, download the Henzo app and start managing your studio.',
+    ctaButton: 'Manage your studio',
+    fallbackLabel: "If the button doesn't work, copy this link:",
+    ignoreText: "If you didn't expect this email, you can safely ignore it.",
+    footerTagline: 'Run your classes. We\u2019ll run your system.',
+    appStoreLabel: 'App Store',
+    googlePlayLabel: 'Google Play',
+  },
+  ru: {
+    pageTitle: 'Управляйте студией — Henzo',
+    subject: '{studioName} — управляйте студией в Henzo',
+    heading: 'Ваша студия в Henzo',
+    body: 'Чтобы продолжать получать записи на ваши тренировки, скачайте приложение Henzo и начните управлять своей студией.',
+    ctaButton: 'Управлять студией',
+    fallbackLabel: 'Если кнопка не работает, скопируйте ссылку:',
+    ignoreText: 'Если вы не ожидали это письмо, просто проигнорируйте его.',
+    footerTagline: 'Ваши занятия — мы возьмём систему на себя.',
+    appStoreLabel: 'App Store',
+    googlePlayLabel: 'Google Play',
+  },
+  vi: {
+    pageTitle: 'Quản lý studio — Henzo',
+    subject: '{studioName} — quản lý studio của bạn trên Henzo',
+    heading: 'Studio của bạn đã có trên Henzo',
+    body: 'Để tiếp tục nhận đặt chỗ cho các lớp học của bạn, hãy tải ứng dụng Henzo và bắt đầu quản lý studio.',
+    ctaButton: 'Quản lý studio',
+    fallbackLabel: 'Nếu nút không hoạt động, hãy sao chép liên kết này:',
+    ignoreText: 'Nếu bạn không mong đợi email này, hãy bỏ qua.',
+    footerTagline: 'Bạn dạy lớp — chúng tôi vận hành hệ thống.',
+    appStoreLabel: 'App Store',
+    googlePlayLabel: 'Google Play',
+  },
+};
+
 export const STUDIO_CLAIM_EMAIL_STRINGS: Record<
   ClientEmailLocale,
   StudioClaimEmailStrings

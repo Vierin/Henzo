@@ -4,8 +4,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AuthService } from '../auth/auth.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { renderStudioClaimBookingHtml } from '../email/templates/transactional-email-templates';
-import { STUDIO_CLAIM_EMAIL_STRINGS } from '../email/copy/studio-claim-email.strings';
+import {
+  renderStudioClaimBookingHtml,
+  renderStudioClaimInviteHtml,
+} from '../email/templates/transactional-email-templates';
+import {
+  STUDIO_CLAIM_EMAIL_STRINGS,
+  STUDIO_CLAIM_INVITE_STRINGS,
+} from '../email/copy/studio-claim-email.strings';
 import { resolveClientEmailLocale } from '../email/copy/client-email-locale';
 
 const CLAIM_TTL_MS = 72 * 60 * 60 * 1000; // 72 hours
@@ -379,6 +385,23 @@ export class StudioClaimService {
     };
   }) {
     const loc = resolveClientEmailLocale();
+
+    if (!params.bookingMeta?.trainingName && !params.bookingMeta?.clientName) {
+      const IL = STUDIO_CLAIM_INVITE_STRINGS[loc];
+      const subject = IL.subject.replace('{studioName}', params.studioName);
+      await this.emailService.sendEmail({
+        to: params.to,
+        subject,
+        html: renderStudioClaimInviteHtml({
+          studioName: params.studioName,
+          manageUrl: params.manageUrl,
+          locale: loc,
+        }),
+        fromName: 'Henzo',
+      });
+      return;
+    }
+
     const L = STUDIO_CLAIM_EMAIL_STRINGS[loc];
     const subject = L.subject
       .replace('{studioName}', params.studioName)

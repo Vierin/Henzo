@@ -1,6 +1,9 @@
 import { OTP_EMAIL_STRINGS } from '../copy/otp-email.strings';
 import { TRAINER_INVITE_EMAIL_STRINGS } from '../copy/trainer-invite-email.strings';
-import { STUDIO_CLAIM_EMAIL_STRINGS } from '../copy/studio-claim-email.strings';
+import {
+  STUDIO_CLAIM_EMAIL_STRINGS,
+  STUDIO_CLAIM_INVITE_STRINGS,
+} from '../copy/studio-claim-email.strings';
 import { resolveClientEmailLocale } from '../copy/client-email-locale';
 import {
   escapeHtml,
@@ -560,6 +563,150 @@ export function renderStudioClaimBookingHtml(params: {
                 </tr>
                 <tr>
                   <td style="padding:0 16px 16px;">
+                    ${ignoreRow}
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+
+        ${renderEmailFooter(L.footerTagline)}
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+/* ─── Studio Claim Invite (no booking) ─── */
+
+export function renderStudioClaimInviteHtml(params: {
+  studioName: string;
+  manageUrl: string;
+  locale?: string;
+}): string {
+  const loc = resolveClientEmailLocale(params.locale);
+  const L = STUDIO_CLAIM_INVITE_STRINGS[loc];
+  const safeStudioName = escapeHtml(params.studioName);
+  const safeManageUrl = escapeHtml(params.manageUrl);
+
+  const ignoreRow = renderEmailInfoRow('shield', '#FFF0EB', L.ignoreText);
+
+  return `<!DOCTYPE html>
+<html lang="${loc}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>${L.pageTitle}</title>
+  <!--[if mso]>
+  <style>body, table, td { font-family: Arial, sans-serif !important; }</style>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#F9F4F0;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#F9F4F0;">
+    <tr>
+      <td style="padding:32px 16px 40px;">
+
+        ${renderEmailLogoHeader()}
+
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" style="max-width:560px;width:100%;margin:0 auto;background-color:#ffffff;border-radius:28px;overflow:hidden;box-shadow:0 4px 24px rgba(63,63,63,0.06);">
+          <tr>
+            <td style="padding:40px 24px 36px;">
+
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:12px;">
+                <tr>
+                  <td align="center" style="font-size:26px;font-weight:700;color:#3F3F3F;line-height:1.35;">
+                    ${L.heading}<br />
+                    <span style="color:#F15942;">${safeStudioName}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center" style="font-size:15px;color:#8A8A8A;line-height:1.6;max-width:420px;">
+                    ${L.body}
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="background-color:#F15942;border-radius:14px;text-align:center;">
+                          <a href="${safeManageUrl}" style="display:inline-block;padding:16px 36px;color:#ffffff!important;text-decoration:none;font-size:16px;font-weight:700;border-radius:14px;background-color:#F15942;white-space:nowrap;">
+                            ${L.ctaButton}&nbsp;&nbsp;&rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- App download links -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding:0 8px;">
+                          <a href="https://apps.apple.com/app/henzo/id6742519887" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 20px;border:1px solid #E0E0E0;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:#3F3F3F;">
+                            &#127822;&nbsp;&nbsp;${L.appStoreLabel}
+                          </a>
+                        </td>
+                        <td style="padding:0 8px;">
+                          <a href="https://play.google.com/store/apps/details?id=app.henzo" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 20px;border:1px solid #E0E0E0;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:#3F3F3F;">
+                            &#9654;&#65039;&nbsp;&nbsp;${L.googlePlayLabel}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Dashed divider -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    ${renderEmailDashedIconDivider('link', { circleSize: 44, iconSize: 22 })}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Fallback link -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center" style="font-size:14px;color:#8A8A8A;line-height:1.5;padding-bottom:10px;">
+                    ${L.fallbackLabel}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#FFF5F1;border-radius:12px;">
+                      <tr>
+                        <td style="padding:14px 16px;font-size:13px;color:#F15942;line-height:1.5;word-break:break-all;">
+                          <a href="${safeManageUrl}" style="color:#F15942;text-decoration:none;">${safeManageUrl}</a>
+                        </td>
+                        <td align="right" valign="middle" style="padding:14px 16px 14px 0;width:32px;">
+                          ${renderEmailIcon('copy', 16)}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#FAF6F2;border-radius:16px;">
+                <tr>
+                  <td style="padding:20px 16px 16px;">
                     ${ignoreRow}
                   </td>
                 </tr>
