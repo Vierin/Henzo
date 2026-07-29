@@ -4,6 +4,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../screens/studio_claim_login_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/studio_claim_pending.dart';
 
@@ -73,8 +74,28 @@ class _StudioClaimDeepLinkScopeState extends State<StudioClaimDeepLinkScope> {
       if (ok) {
         await auth.refreshSession();
       }
+      return;
     }
-    // Logged-out: LoginScreen reads pending email/studioName for email-first flow.
+
+    final email = await StudioClaimPending.readEmail();
+    final studioName = await StudioClaimPending.readStudioName();
+    final nav = widget.navigatorKey.currentState;
+    if (nav == null) return;
+    if (email == null ||
+        email.isEmpty ||
+        studioName == null ||
+        studioName.isEmpty) {
+      return;
+    }
+    await nav.push(
+      MaterialPageRoute(
+        builder: (_) => StudioClaimLoginScreen(
+          email: email,
+          studioName: studioName,
+          claimToken: token,
+        ),
+      ),
+    );
   }
 
   @override

@@ -35,6 +35,7 @@ import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_role_screen.dart';
+import 'screens/studio_claim_login_screen.dart';
 import 'screens/trainer/trainer_shell.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
@@ -558,6 +559,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
             if (_hasSharePending) {
               _scheduleOpenSharePending();
+            }
+
+            if (_hasClaimPending) {
+              return StudioClaimLoginScreen(
+                onBackToLogin: () {
+                  if (mounted) {
+                    setState(() => _hasClaimPending = false);
+                  }
+                },
+              );
             }
 
             return const LoginScreen();
