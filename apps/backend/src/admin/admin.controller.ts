@@ -77,6 +77,7 @@ export class AdminController {
     @Query('search') search?: string,
     @Query('activityTier') activityTier?: string,
     @Query('onboardingIncomplete') onboardingIncomplete?: string,
+    @Query('unclaimed') unclaimed?: string,
   ) {
     try {
       return {
@@ -88,6 +89,7 @@ export class AdminController {
           search,
           activityTier,
           onboardingIncomplete === 'true',
+          unclaimed === 'true',
         ),
       };
     } catch (e) {
@@ -350,6 +352,61 @@ export class AdminController {
     try {
       return {
         data: await this.adminService.listStudioBookings(authHeader, id, sort),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('studios/:id/claim-link')
+  async requestStudioClaimLink(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() body?: { sendEmail?: boolean },
+  ) {
+    try {
+      return {
+        data: await this.adminService.requestStudioClaimLink(authHeader, id, {
+          sendEmail: body?.sendEmail === true,
+        }),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Get('studios/:id/pending-enrollments')
+  async pendingStudioEnrollments(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.listPendingStudioEnrollments(
+          authHeader,
+          id,
+          parseLimit(limit),
+        ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('studios/:id/pending-enrollments/:enrollmentId/confirm')
+  async confirmPendingStudioEnrollment(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Param('enrollmentId') enrollmentId: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.confirmPendingStudioEnrollment(
+          authHeader,
+          id,
+          enrollmentId,
+        ),
       };
     } catch (e) {
       this.handleError(e);

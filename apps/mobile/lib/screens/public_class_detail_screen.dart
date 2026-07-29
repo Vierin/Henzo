@@ -437,12 +437,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     final trainer = session['trainer'] is Map
         ? Map<String, dynamic>.from(session['trainer'] as Map)
         : <String, dynamic>{};
-    final owner = _studio?['owner'] is Map
-        ? Map<String, dynamic>.from(_studio!['owner'] as Map)
-        : <String, dynamic>{};
-    final instructor = (trainer['name'] ?? '').toString().trim().isNotEmpty
-        ? (trainer['name'] ?? '').toString().trim()
-        : (owner['name'] ?? '').toString().trim();
+    final instructor = (trainer['name'] ?? '').toString().trim();
     final address = (_studio?['address'] ?? '').toString().trim();
     _shareClass(
       classTitle:
@@ -692,9 +687,6 @@ class _ClassDetailBody extends StatelessWidget {
     final trainer = session['trainer'] is Map
         ? Map<String, dynamic>.from(session['trainer'] as Map)
         : <String, dynamic>{};
-    final owner = studio?['owner'] is Map
-        ? Map<String, dynamic>.from(studio!['owner'] as Map)
-        : <String, dynamic>{};
     final startsAt = parseApiDateTime(session['startsAt']);
     final endsAt = parseApiDateTime(session['endsAt']);
     final cap = (session['capacity'] as num?)?.toInt() ?? 0;
@@ -719,9 +711,7 @@ class _ClassDetailBody extends StatelessWidget {
         ((startsAt != null && endsAt != null)
             ? endsAt.difference(startsAt).inMinutes
             : null);
-    final instructorName = (trainer['name'] ?? '').toString().trim().isNotEmpty
-        ? (trainer['name'] ?? '').toString().trim()
-        : (owner['name'] ?? '').toString().trim();
+    final instructorName = (trainer['name'] ?? '').toString().trim();
     final trainingDescription = _localizedField(
       map: training,
       localeCode: localeCode,

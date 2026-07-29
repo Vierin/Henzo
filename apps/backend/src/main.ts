@@ -32,9 +32,13 @@ async function bootstrap() {
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       logger: ['error', 'warn', 'log'],
-      bodyParser: true,
+      bodyParser: false, // custom limits below (default Nest/Express ~100kb breaks photo uploads)
       rawBody: true, // required for Stripe webhook signature verification
     });
+
+    // Must run before routes; aligns with Content-Length guard below.
+    app.useBodyParser('json', { limit: '10mb' });
+    app.useBodyParser('urlencoded', { limit: '10mb', extended: true });
 
     // Handle common browser/scanner requests to reduce log noise (return 404 without exception)
     app.use((req, res, next) => {

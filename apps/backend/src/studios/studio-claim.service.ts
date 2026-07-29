@@ -31,12 +31,70 @@ export class StudioClaimService {
     return (email || '').trim().toLowerCase();
   }
 
+  private extractEnrollmentId(metadata: unknown): string | null {
+    if (!metadata || typeof metadata !== 'object') return null;
+    const raw = (metadata as { enrollmentId?: unknown }).enrollmentId;
+    if (typeof raw !== 'string') return null;
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
   private maskEmail(email: string): string {
     const normalized = this.normalizeEmail(email);
     const [local, domain] = normalized.split('@');
     if (!local || !domain) return '***';
     const visible = local.slice(0, Math.min(2, local.length));
     return `${visible}***@${domain}`;
+  }
+
+  private async notifyTelegramUnclaimedBooking(payload: {
+    studioName: string;
+    studioId: string;
+    ownerEmail: string;
+    trainingName?: string;
+    clientName?: string;
+    startsAt?: string;
+  }): Promise<void> {
+    const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    const chatId = process.env.TELEGRAM_FEEDBACK_CHAT_ID?.trim();
+    if (!token || !chatId) return;
+
+    const baseUrl = (
+      process.env.FRONTEND_URL || 'https://www.henzo.app'
+    ).replace(/\/$/, '');
+    const adminUrl = `${baseUrl}/en/admin/studios/${payload.studioId}?tab=overview`;
+    const text = [
+      '📌 Unclaimed booking',
+      '',
+      `🏢 ${payload.studioName}`,
+      `🆔 ${payload.studioId}`,
+      `✉️ ${payload.ownerEmail}`,
+      `🧘 ${payload.trainingName || 'Class'}`,
+      `👤 ${payload.clientName || 'Client'}`,
+      `🕒 ${payload.startsAt || '—'}`,
+      '',
+      `🔗 ${adminUrl}`,
+    ].join('\n');
+
+    try {
+      const res = await fetch(
+        `https://api.telegram.org/bot${token}/sendMessage`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text.slice(0, 4096),
+          }),
+        },
+      );
+      if (!res.ok) {
+        const body = await res.text();
+        console.error('Telegram unclaimed booking notify failed:', body);
+      }
+    } catch (error) {
+      console.error('Telegram unclaimed booking notify error:', error);
+    }
   }
 
   private claimWebUrl(rawToken: string, action: 'manage' | 'confirm'): string {
@@ -139,10 +197,27 @@ export class StudioClaimService {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
 
-    await this.prisma.studioClaimToken.updateMany({
+    const targetEnrollmentId = this.extractEnrollmentId(options?.bookingMeta);
+    const pendingClaims = await this.prisma.studioClaimToken.findMany({
       where: { studioId, status: 'PENDING' },
-      data: { status: 'REVOKED' },
+      select: { id: true, metadata: true },
     });
+    const idsToRevoke = pendingClaims
+      .filter((row) => {
+        const existingEnrollmentId = this.extractEnrollmentId(row.metadata);
+        if (targetEnrollmentId) {
+          return existingEnrollmentId === targetEnrollmentId;
+        }
+        // For non-booking claim links, only replace generic links.
+        return existingEnrollmentId == null;
+      })
+      .map((row) => row.id);
+    if (idsToRevoke.length > 0) {
+      await this.prisma.studioClaimToken.updateMany({
+        where: { id: { in: idsToRevoke } },
+        data: { status: 'REVOKED' },
+      });
+    }
 
     const rawToken = this.generateRawToken();
     const tokenHash = this.hashToken(rawToken);
@@ -243,6 +318,7 @@ export class StudioClaimService {
       where: { id: studioId },
       select: {
         id: true,
+        name: true,
         claimedAt: true,
         intendedOwnerEmail: true,
         email: true,
@@ -269,6 +345,15 @@ export class StudioClaimService {
         clientName: bookingMeta.clientName,
         startsAt,
       },
+    });
+
+    await this.notifyTelegramUnclaimedBooking({
+      studioName: studio.name || 'Studio',
+      studioId,
+      ownerEmail,
+      trainingName: bookingMeta.trainingName,
+      clientName: bookingMeta.clientName,
+      startsAt,
     });
   }
 
@@ -317,12 +402,7 @@ export class StudioClaimService {
     }
 
     const alreadyConfirmed = enrollment.status === 'ACTIVE';
-    if (
-      !alreadyConfirmed &&
-      (claim.expiresAt < new Date() ||
-        claim.status === 'EXPIRED' ||
-        claim.status === 'REVOKED')
-    ) {
+    if (!alreadyConfirmed && claim.expiresAt < new Date()) {
       throw new HttpException('Claim expired', HttpStatus.GONE);
     }
 

@@ -536,6 +536,8 @@ export class StudiosController {
               name: true,
               reminderSettings: true,
               autoConfirmBookings: true,
+              claimedAt: true,
+              intendedOwnerEmail: true,
             },
           },
           Training: {
@@ -694,18 +696,22 @@ export class StudiosController {
         );
       }
 
-      try {
-        await this.notificationsService.sendGroupClassBookingNotification({
-          studioId: session.studioId,
-          sessionId: session.id,
-          enrollmentId,
-          trainingName: session.Training?.name || 'class',
-          startsAt: session.startsAt,
-          clientName:
-            currentUser.user.name || currentUser.user.email || 'Client',
-        });
-      } catch (pushError) {
-        console.error('⚠️ Failed to send class booking push:', pushError);
+      const isUnclaimedStudio =
+        !session.Studio?.claimedAt && !!session.Studio?.intendedOwnerEmail;
+      if (!isUnclaimedStudio) {
+        try {
+          await this.notificationsService.sendGroupClassBookingNotification({
+            studioId: session.studioId,
+            sessionId: session.id,
+            enrollmentId,
+            trainingName: session.Training?.name || 'class',
+            startsAt: session.startsAt,
+            clientName:
+              currentUser.user.name || currentUser.user.email || 'Client',
+          });
+        } catch (pushError) {
+          console.error('⚠️ Failed to send class booking push:', pushError);
+        }
       }
 
       try {

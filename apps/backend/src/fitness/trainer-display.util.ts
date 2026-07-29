@@ -14,6 +14,13 @@ export type AssignedTrainerRef = {
   User?: { name: string | null } | null;
 } | null;
 
+export function isUnclaimedStudio(studio: {
+  claimedAt?: Date | string | null;
+  intendedOwnerEmail?: string | null;
+}): boolean {
+  return !studio.claimedAt && !!studio.intendedOwnerEmail?.trim();
+}
+
 /**
  * Prefer linked User.name over Trainer.name.
  * Invite flow seeds Trainer.name with the email local-part; the real name

@@ -185,10 +185,13 @@ export class AdminService {
     search?: string,
     activityTier?: string,
     onboardingIncomplete?: boolean,
+    unclaimed?: boolean,
   ) {
     await assertAdmin(this.authService, authHeader);
     const where: {
       status?: { equals: 'DRAFT' | 'READY' | 'ACTIVE' };
+      claimedAt?: null;
+      intendedOwnerEmail?: { not: null };
       OR?: Array<{
         name?: { contains: string; mode: 'insensitive' };
         slug?: { contains: string; mode: 'insensitive' };
@@ -199,6 +202,10 @@ export class AdminService {
 
     if (status === 'DRAFT' || status === 'READY' || status === 'ACTIVE') {
       where.status = { equals: status };
+    }
+    if (unclaimed) {
+      where.claimedAt = null;
+      where.intendedOwnerEmail = { not: null };
     }
     const q = search?.trim();
     if (q) {
@@ -1120,7 +1127,7 @@ export class AdminService {
     const admin = await assertAdmin(this.authService, authHeader);
     const studio = await this.prisma.studio.findUnique({
       where: { id: studioId },
-      select: { id: true, photos: true },
+      select: { id: true, photos: true, photoGallery: true },
     });
     if (!studio) {
       throw new NotFoundException('Studio not found');
@@ -1153,23 +1160,30 @@ export class AdminService {
     if (buffer.length === 0) {
       throw new BadRequestException('Empty image payload');
     }
-    if (buffer.length > 8 * 1024 * 1024) {
-      throw new BadRequestException('Image must be 8MB or smaller');
+    // Prefer client-compressed payloads; hard cap ~5MB binary (~6.7MB base64).
+    if (buffer.length > 5 * 1024 * 1024) {
+      throw new BadRequestException(
+        'Image must be 5MB or smaller after compression',
+      );
     }
 
     const bucket =
       this.config.get<string>('SUPABASE_STUDIO_PHOTOS_BUCKET') ||
       'studio-photos';
+    const photoId = `admin_${Date.now().toString(36)}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
     const safeName = (body.fileName || `photo.${ext}`)
       .replace(/[^a-zA-Z0-9._-]/g, '_')
       .slice(0, 80);
-    const path = `admin/${studioId}/${Date.now()}-${safeName}`;
+    const path = `admin/${studioId}/${photoId}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(path, buffer, {
         contentType,
         upsert: true,
+        cacheControl: '3600',
       });
     if (uploadError) {
       throw new BadRequestException(
@@ -1185,16 +1199,53 @@ export class AdminService {
       throw new BadRequestException('Failed to resolve public photo URL');
     }
 
-    const nextPhotos = [...(studio.photos ?? []), publicUrl].slice(0, 12);
-    const updated = await this.studiosService.updateStudioById(studioId, {
-      photos: nextPhotos,
-    });
+    const fullCrop = { x: 0, y: 0, w: 1, h: 1 };
+    const existingGallery = Array.isArray(studio.photoGallery)
+      ? (studio.photoGallery as Array<Record<string, unknown>>)
+      : [];
+    const nextGallery = [
+      ...existingGallery,
+      {
+        id: photoId,
+        originalUrl: publicUrl,
+        heroUrl: publicUrl,
+        cardUrl: publicUrl,
+        crops: { studioPage: fullCrop, browseCard: fullCrop },
+      },
+    ].slice(0, 5);
+
+    const nextPhotos = nextGallery
+      .map((item) =>
+        typeof item.heroUrl === 'string'
+          ? item.heroUrl
+          : typeof item.originalUrl === 'string'
+            ? item.originalUrl
+            : '',
+      )
+      .filter(Boolean);
+
+    let updated;
+    try {
+      updated = await this.studiosService.updateStudioById(studioId, {
+        photos: nextPhotos,
+        photoGallery: nextGallery as unknown as UpdateStudioDto['photoGallery'],
+      });
+    } catch (e) {
+      throw new BadRequestException(
+        e instanceof Error ? e.message : 'Failed to save studio photo',
+      );
+    }
 
     await this.eventLog.logAdminAction({
       action: 'studio_photo_uploaded',
       adminEmail: admin.email,
       studioId,
-      metadata: { path, contentType },
+      metadata: {
+        path,
+        contentType,
+        bytes: buffer.length,
+        photoId,
+      },
     });
 
     return {
@@ -1232,7 +1283,7 @@ export class AdminService {
 
     let claim: Awaited<ReturnType<StudioClaimService['requestClaim']>> | null =
       null;
-    if (dto.sendClaimEmail !== false) {
+    if (dto.sendClaimEmail === true) {
       claim = await this.studioClaimService.requestClaim(studio.id, intended, {
         createdBy: admin.userId,
         sendEmail: true,
@@ -1245,7 +1296,7 @@ export class AdminService {
       studioId: studio.id,
       metadata: {
         intendedOwnerEmail: intended,
-        claimEmailSent: dto.sendClaimEmail !== false,
+        claimEmailSent: dto.sendClaimEmail === true,
       },
     });
 
@@ -1408,6 +1459,129 @@ export class AdminService {
         Trainer: { select: { name: true } },
       },
     });
+  }
+
+  async requestStudioClaimLink(
+    authHeader: string | undefined,
+    studioId: string,
+    options?: { sendEmail?: boolean },
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const studio = await this.prisma.studio.findUnique({
+      where: { id: studioId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        intendedOwnerEmail: true,
+        claimedAt: true,
+      },
+    });
+    if (!studio) {
+      throw new NotFoundException('Studio not found');
+    }
+    if (studio.claimedAt) {
+      throw new BadRequestException('Studio already claimed');
+    }
+    const ownerEmail =
+      studio.intendedOwnerEmail?.trim().toLowerCase() ||
+      studio.email?.trim().toLowerCase();
+    if (!ownerEmail) {
+      throw new BadRequestException(
+        'No intended owner email found for this studio',
+      );
+    }
+    const claim = await this.studioClaimService.requestClaim(
+      studioId,
+      ownerEmail,
+      {
+        createdBy: admin.userId,
+        sendEmail: options?.sendEmail === true,
+      },
+    );
+    await this.eventLog.logAdminAction({
+      action: options?.sendEmail
+        ? 'studio_claim_email_sent'
+        : 'studio_claim_link_generated',
+      adminEmail: admin.email,
+      studioId,
+      metadata: { ownerEmail },
+    });
+    return claim;
+  }
+
+  async listPendingStudioEnrollments(
+    authHeader: string | undefined,
+    studioId: string,
+    limit = 100,
+  ) {
+    await assertAdmin(this.authService, authHeader);
+    await this.assertStudioExists(studioId);
+    return this.prisma.sessionEnrollment.findMany({
+      where: {
+        status: SessionEnrollmentStatus.PENDING,
+        TrainingSession: { studioId },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 200),
+      select: {
+        id: true,
+        createdAt: true,
+        userId: true,
+        User: {
+          select: { id: true, name: true, email: true },
+        },
+        TrainingSession: {
+          select: {
+            id: true,
+            startsAt: true,
+            endsAt: true,
+            Training: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+  }
+
+  async confirmPendingStudioEnrollment(
+    authHeader: string | undefined,
+    studioId: string,
+    enrollmentId: string,
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const enrollment = await this.prisma.sessionEnrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        status: SessionEnrollmentStatus.PENDING,
+        TrainingSession: { studioId },
+      },
+      select: { id: true, userId: true },
+    });
+    if (!enrollment) {
+      throw new NotFoundException('Pending enrollment not found');
+    }
+    await this.prisma.sessionEnrollment.update({
+      where: { id: enrollmentId },
+      data: { status: SessionEnrollmentStatus.ACTIVE, cancelledAt: null },
+    });
+    try {
+      await this.notifications.schedulePreClassReminders(
+        enrollmentId,
+        enrollment.userId,
+      );
+    } catch (error) {
+      console.error(
+        '⚠️ Failed to schedule reminders for admin-confirmed enrollment:',
+        error,
+      );
+    }
+    await this.eventLog.logAdminAction({
+      action: 'pending_enrollment_confirmed',
+      adminEmail: admin.email,
+      studioId,
+      metadata: { enrollmentId },
+    });
+    return { success: true };
   }
 
   async createStudioTrainer(
