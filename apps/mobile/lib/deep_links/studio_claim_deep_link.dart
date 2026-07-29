@@ -1,12 +1,10 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
-import '../services/studio_claim_api_service.dart';
 import '../utils/studio_claim_pending.dart';
 
 /// Handles `henzo://studio-claim/<token>` and `*.henzo.app/studio-claim/<token>`.
@@ -51,35 +49,8 @@ class _StudioClaimDeepLinkScopeState extends State<StudioClaimDeepLinkScope> {
     }
   }
 
-  static ({String? token, String action}) _extract(Uri uri) {
-    final action = uri.queryParameters['action'] ?? 'manage';
-    final isAppScheme =
-        uri.scheme == 'henzo' && uri.host == 'studio-claim';
-    final isWebPath = (uri.scheme == 'https') &&
-        (uri.host == 'henzo.app' || uri.host.endsWith('.henzo.app')) &&
-        uri.path.contains('/studio-claim/');
-
-    if (isAppScheme) {
-      final parts = uri.pathSegments;
-      return (
-        token: parts.isNotEmpty ? parts.first : null,
-        action: action,
-      );
-    }
-    if (isWebPath) {
-      final parts =
-          uri.path.split('/').where((s) => s.isNotEmpty).toList();
-      // /studio-claim/<token> or /en/studio-claim/<token>
-      final idx = parts.indexOf('studio-claim');
-      if (idx >= 0 && idx + 1 < parts.length) {
-        return (token: parts[idx + 1], action: action);
-      }
-    }
-    return (token: null, action: action);
-  }
-
   Future<void> _handleUri(Uri uri) async {
-    final extracted = _extract(uri);
+    final extracted = StudioClaimPending.extractFromUri(uri);
     final token = extracted.token;
     if (token == null || token.isEmpty) return;
 
@@ -92,24 +63,7 @@ class _StudioClaimDeepLinkScopeState extends State<StudioClaimDeepLinkScope> {
     _lastToken = token;
     _lastAt = now;
 
-    String? email;
-    String? studioName;
-    try {
-      final preview = await StudioClaimApiService.getClaimPreview(token);
-      email = preview['ownerEmailHint'] as String?;
-      studioName = preview['studioName'] as String?;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[StudioClaimDeepLink] preview failed: $e');
-      }
-    }
-
-    await StudioClaimPending.store(
-      token: token,
-      action: extracted.action,
-      email: email,
-      studioName: studioName,
-    );
+    await StudioClaimPending.storeFromUri(uri);
 
     if (!mounted) return;
     final auth = context.read<AuthService>();

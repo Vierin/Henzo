@@ -371,16 +371,12 @@ export function renderStudioClaimBookingHtml(params: {
   const safeTraining = escapeHtml(params.trainingName || L.defaultTrainingName);
   const safeClient = escapeHtml(params.clientName || '—');
 
-  // Format startsAt as human-readable date+time (e.g. "Tue, Aug 1 · 09:00")
+  // Format startsAt as dd.mm.yyyy · HH:mm
   const rawStarts = params.startsAt ? new Date(params.startsAt) : null;
   const safeFormattedDate =
     rawStarts && !isNaN(rawStarts.getTime())
       ? escapeHtml(
-          rawStarts.toLocaleDateString('en-GB', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-          }) +
+          rawStarts.toLocaleDateString('en-GB').replace(/\//g, '.') +
             ' · ' +
             rawStarts.toLocaleTimeString('en-GB', {
               hour: '2-digit',

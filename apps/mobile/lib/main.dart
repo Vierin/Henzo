@@ -30,6 +30,7 @@ import 'utils/root_navigator_key.dart';
 import 'utils/session_cache_clear.dart';
 import 'utils/share_intent_pending.dart';
 import 'utils/share_intent_router.dart';
+import 'utils/studio_claim_pending.dart';
 import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
@@ -392,6 +393,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _shareBootstrapStarted = false;
   bool _shareBootstrapDone = false;
   bool _hasSharePending = false;
+  bool _hasClaimPending = false;
   bool _openedSharePending = false;
 
   @override
@@ -406,14 +408,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
     try {
       await ShareIntentPending.tryRestoreFromClipboard();
       await ShareIntentPending.tryRestoreFromInstallReferrer();
+      // Deferred studio-claim (Play referrer / clipboard from claim landing).
+      await StudioClaimPending.tryRestoreFromClipboard();
+      await StudioClaimPending.tryRestoreFromInstallReferrer();
       final pending = await ShareIntentPending.read();
-      if (pending != null) {
-        // Share arrival: browse studio/class first, skip role-picker intro.
+      final claimPending = await StudioClaimPending.hasPending();
+      if (pending != null || claimPending) {
+        // Skip role-picker intro — go straight to login / share open.
         await AuthEntryPrefs.markCompleted();
       }
       if (!mounted) return;
       setState(() {
         _hasSharePending = pending != null;
+        _hasClaimPending = claimPending;
         _shareBootstrapDone = true;
       });
       if (pending != null) {
@@ -543,9 +550,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
               );
             }
 
-            // Share-first: never dump into role picker when a studio/class
-            // intent is waiting — show login under the pushed studio screen.
-            if (!introCompleted && !_hasSharePending) {
+            // Share/claim-first: never dump into role picker when a studio/class
+            // or studio-claim intent is waiting — show login under the pushed screen.
+            if (!introCompleted && !_hasSharePending && !_hasClaimPending) {
               return const RegistrationRoleScreen(isRootEntry: true);
             }
 

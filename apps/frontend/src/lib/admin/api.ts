@@ -25,6 +25,13 @@ import type {
 
 type ApiWrap<T> = { data: T };
 
+export type AdminAddressSuggestion = {
+  id: string;
+  address: string;
+  lat: number;
+  lon: number;
+};
+
 export async function verifyAdminSession(): Promise<{
   authenticated: true;
   email: string;
@@ -69,6 +76,8 @@ export async function createAdminUnclaimedStudio(body: {
   intendedOwnerEmail: string;
   description?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   phone?: string;
   email?: string;
   sendClaimEmail?: boolean;
@@ -77,6 +86,31 @@ export async function createAdminUnclaimedStudio(body: {
     ApiWrap<{ id: string; name: string; slug?: string | null }>
   >('/admin/studios', body);
   return res.data;
+}
+
+export async function fetchAdminAddressSuggestions(
+  query: string,
+): Promise<AdminAddressSuggestion[]> {
+  const q = new URLSearchParams({
+    q: query,
+    country: 'VN',
+    limit: '5',
+    types: 'address,poi',
+  });
+  return apiClient.get<AdminAddressSuggestion[]>(`/mapbox/autocomplete?${q}`);
+}
+
+export async function reverseGeocodeAdminAddress(
+  lat: number,
+  lon: number,
+): Promise<{ address: string; lat: number; lon: number } | null> {
+  const q = new URLSearchParams({
+    lat: String(lat),
+    lon: String(lon),
+  });
+  return apiClient.get<{ address: string; lat: number; lon: number } | null>(
+    `/mapbox/reverse-geocode?${q}`,
+  );
 }
 
 export async function fetchAdminOwners(params: {

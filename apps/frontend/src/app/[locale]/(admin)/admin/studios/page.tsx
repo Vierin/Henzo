@@ -1,15 +1,30 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminTable } from '@/components/admin/admin-table';
 import {
   ActivityTierBadge,
   formatLastActive,
 } from '@/components/admin/activityTierBadge';
-import { createAdminUnclaimedStudio, fetchAdminStudios } from '@/lib/admin/api';
+import {
+  createAdminUnclaimedStudio,
+  fetchAdminAddressSuggestions,
+  fetchAdminStudios,
+  reverseGeocodeAdminAddress,
+  type AdminAddressSuggestion,
+} from '@/lib/admin/api';
 import type { AdminStudioRow } from '@/lib/admin/types';
+
+const AdminAddressMapPicker = dynamic(
+  () =>
+    import('@/components/admin/adminAddressMapPicker').then(
+      (m) => m.AdminAddressMapPicker,
+    ),
+  { ssr: false },
+);
 
 export default function StudiosContent() {
   const router = useRouter();
@@ -36,9 +51,18 @@ export default function StudiosContent() {
     name: '',
     intendedOwnerEmail: '',
     address: '',
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
     phone: '',
     sendClaimEmail: false,
   });
+  const [addressQuery, setAddressQuery] = useState('');
+  const [addressSuggestions, setAddressSuggestions] = useState<
+    AdminAddressSuggestion[]
+  >([]);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [addressPicked, setAddressPicked] = useState(false);
+  const [mapLoading, setMapLoading] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -63,15 +87,53 @@ export default function StudiosContent() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const q = addressQuery.trim();
+    if (q.length < 2) {
+      setAddressSuggestions([]);
+      setAddressLoading(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setAddressLoading(true);
+      try {
+        const list = await fetchAdminAddressSuggestions(q);
+        setAddressSuggestions(list);
+      } catch {
+        setAddressSuggestions([]);
+      } finally {
+        setAddressLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [addressQuery]);
+
+  const isAddressSelectionValid = useMemo(() => {
+    if (!addressQuery.trim()) return true;
+    return (
+      addressPicked &&
+      typeof form.latitude === 'number' &&
+      typeof form.longitude === 'number'
+    );
+  }, [addressPicked, addressQuery, form.latitude, form.longitude]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreateError(null);
+    if (!isAddressSelectionValid) {
+      setCreateError(
+        'Select address from suggestions, then adjust the pin if needed.',
+      );
+      return;
+    }
     setCreating(true);
     try {
       const created = await createAdminUnclaimedStudio({
         name: form.name.trim(),
         intendedOwnerEmail: form.intendedOwnerEmail.trim(),
         address: form.address.trim() || undefined,
+        latitude: form.latitude,
+        longitude: form.longitude,
         phone: form.phone.trim() || undefined,
         sendClaimEmail: form.sendClaimEmail,
       });
@@ -80,9 +142,14 @@ export default function StudiosContent() {
         name: '',
         intendedOwnerEmail: '',
         address: '',
+        latitude: undefined,
+        longitude: undefined,
         phone: '',
         sendClaimEmail: false,
       });
+      setAddressQuery('');
+      setAddressSuggestions([]);
+      setAddressPicked(false);
       router.push(`/en/admin/studios/${created.id}`);
     } catch (err) {
       setCreateError(
@@ -93,13 +160,53 @@ export default function StudiosContent() {
     }
   }
 
+  async function handlePickAddress(suggestion: AdminAddressSuggestion) {
+    setAddressQuery(suggestion.address);
+    setAddressSuggestions([]);
+    setAddressPicked(true);
+    setForm((f) => ({
+      ...f,
+      address: suggestion.address,
+      latitude: suggestion.lat,
+      longitude: suggestion.lon,
+    }));
+  }
+
+  async function handleMapPick(coords: { lat: number; lon: number }) {
+    setMapLoading(true);
+    try {
+      const resolved = await reverseGeocodeAdminAddress(coords.lat, coords.lon);
+      const resolvedAddress =
+        resolved?.address?.trim() ||
+        `${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}`;
+      setAddressQuery(resolvedAddress);
+      setAddressSuggestions([]);
+      setAddressPicked(true);
+      setForm((f) => ({
+        ...f,
+        address: resolvedAddress,
+        latitude: coords.lat,
+        longitude: coords.lon,
+      }));
+    } finally {
+      setMapLoading(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Studios</h1>
         <button
           type="button"
-          onClick={() => setShowCreate(true)}
+          onClick={() => {
+            setShowCreate(true);
+            setCreateError(null);
+            setAddressQuery('');
+            setAddressSuggestions([]);
+            setAddressPicked(false);
+            setMapLoading(false);
+          }}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           Create unclaimed studio
@@ -110,7 +217,7 @@ export default function StudiosContent() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
             onSubmit={handleCreate}
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+            className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl"
           >
             <h2 className="text-lg font-semibold">Create unclaimed studio</h2>
             <p className="mt-1 text-sm text-zinc-500">
@@ -146,16 +253,63 @@ export default function StudiosContent() {
                   className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                 />
               </label>
-              <label className="block text-sm">
+              <div className="relative block text-sm">
                 <span className="mb-1 block font-medium">Address</span>
                 <input
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, address: e.target.value }))
-                  }
+                  value={addressQuery}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setAddressQuery(next);
+                    setAddressPicked(false);
+                    setForm((f) => ({
+                      ...f,
+                      address: next,
+                      latitude: undefined,
+                      longitude: undefined,
+                    }));
+                  }}
+                  placeholder="Start typing and choose address from suggestions"
                   className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                 />
-              </label>
+                {addressLoading ? (
+                  <p className="mt-1 text-xs text-zinc-500">Searching…</p>
+                ) : null}
+                {addressSuggestions.length > 0 ? (
+                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-zinc-200 bg-white shadow-lg">
+                    {addressSuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => void handlePickAddress(s)}
+                        className="block w-full border-b border-zinc-100 px-3 py-2 text-left text-sm hover:bg-zinc-50"
+                      >
+                        {s.address}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {addressQuery.trim() && !isAddressSelectionValid ? (
+                  <p className="mt-1 text-xs text-amber-700">
+                    Select an address from suggestions to lock coordinates.
+                  </p>
+                ) : null}
+                {typeof form.latitude === 'number' &&
+                typeof form.longitude === 'number' ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-xl border border-zinc-200 p-2">
+                      <AdminAddressMapPicker
+                        latitude={form.latitude}
+                        longitude={form.longitude}
+                        onPick={(coords) => void handleMapPick(coords)}
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      Click on map to move marker (same flow as mobile).
+                      {mapLoading ? ' Updating address…' : ''}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
               <label className="block text-sm">
                 <span className="mb-1 block font-medium">Phone</span>
                 <input
@@ -187,14 +341,21 @@ export default function StudiosContent() {
               <button
                 type="button"
                 disabled={creating}
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  setShowCreate(false);
+                  setCreateError(null);
+                  setAddressQuery('');
+                  setAddressSuggestions([]);
+                  setAddressPicked(false);
+                  setMapLoading(false);
+                }}
                 className="rounded-lg border border-zinc-200 px-4 py-2 text-sm"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || !isAddressSelectionValid}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
                 {creating ? 'Creating…' : 'Create'}

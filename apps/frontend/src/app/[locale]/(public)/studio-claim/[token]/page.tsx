@@ -22,6 +22,7 @@ function StudioClaimContent() {
       title={t('appOpen.studioClaim.title')}
       description={t('appOpen.studioClaim.description')}
       deepLink={buildStudioClaimDeepLink(token, 'manage')}
+      autoOpenOnMobile
       icon="invite"
       footer={
         <p className="text-xs text-gray-400">

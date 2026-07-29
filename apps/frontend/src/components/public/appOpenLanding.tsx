@@ -26,8 +26,10 @@ type AppOpenLandingProps = {
   title: string;
   description: string;
   deepLink: string;
-  /** Auto-attempt deep link on mobile (Universal Link fallback). */
+  /** Auto-attempt deep link on mobile; if app doesn't open, go to store. */
   autoOpenOnMobile?: boolean;
+  /** After failed open, auto-redirect to store (default 1600ms). */
+  autoStoreRedirectMs?: number;
   footer?: ReactNode;
   icon?: 'class' | 'studio' | 'invite';
 };
@@ -82,6 +84,7 @@ export function AppOpenLanding({
   description,
   deepLink,
   autoOpenOnMobile = false,
+  autoStoreRedirectMs = 1600,
   footer,
   icon = 'invite',
 }: AppOpenLandingProps) {
@@ -96,29 +99,48 @@ export function AppOpenLanding({
   const [platform, setPlatform] = useState<MobilePlatform>('other');
   const [attempted, setAttempted] = useState(false);
 
+  const androidStoreUrl = playStoreUrlWithDeepLink(deepLink);
+  const storeUrl =
+    platform === 'android' ? androidStoreUrl : storeUrlForPlatform(platform);
+
   useEffect(() => {
     setPlatform(getMobilePlatform());
   }, []);
 
   useEffect(() => {
     if (!autoOpenOnMobile || platform === 'other') return;
-    const timer = window.setTimeout(() => {
-      void copyDeepLinkForDeferredOpen(deepLink);
-      tryOpenDeepLink(deepLink);
-      setAttempted(true);
+    let cancelled = false;
+    const openTimer = window.setTimeout(() => {
+      void (async () => {
+        await copyDeepLinkForDeferredOpen(deepLink);
+        if (cancelled) return;
+        tryOpenDeepLink(deepLink);
+        setAttempted(true);
+      })();
     }, 300);
-    return () => window.clearTimeout(timer);
-  }, [autoOpenOnMobile, deepLink, platform]);
+
+    // If still on this page after timeout → app not installed → store.
+    const storeTimer = window.setTimeout(() => {
+      if (cancelled || document.hidden) return;
+      void copyDeepLinkForDeferredOpen(deepLink).then(() => {
+        if (!cancelled && !document.hidden) {
+          window.location.href = storeUrl;
+        }
+      });
+    }, 300 + autoStoreRedirectMs);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(openTimer);
+      window.clearTimeout(storeTimer);
+    };
+  }, [autoOpenOnMobile, autoStoreRedirectMs, deepLink, platform, storeUrl]);
 
   async function handleOpenApp() {
     await copyDeepLinkForDeferredOpen(deepLink);
     tryOpenDeepLink(deepLink);
     setAttempted(true);
   }
-
-  const androidStoreUrl = playStoreUrlWithDeepLink(deepLink);
-  const storeUrl =
-    platform === 'android' ? androidStoreUrl : storeUrlForPlatform(platform);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
