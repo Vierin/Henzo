@@ -21,6 +21,7 @@ class StudioClaimApiService {
     required String claimToken,
     required String email,
     required String password,
+    String? name,
     bool confirmBooking = false,
   }) async {
     final raw = await ApiClient.post(
@@ -29,6 +30,7 @@ class StudioClaimApiService {
       body: {
         'email': email.trim(),
         'password': password,
+        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
         'confirmBooking': confirmBooking,
       },
     );

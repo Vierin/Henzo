@@ -152,7 +152,10 @@ export class StudiosController {
       token,
       body.email,
       body.password,
-      { confirmBooking: body.confirmBooking === true },
+      {
+        confirmBooking: body.confirmBooking === true,
+        name: body.name,
+      },
     );
   }
 

@@ -121,6 +121,7 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
     required String claimToken,
+    String? name,
   }) async {
     try {
       final action =
@@ -130,6 +131,7 @@ class AuthService extends ChangeNotifier {
         claimToken: claimToken,
         email: email,
         password: password,
+        name: name,
         confirmBooking: action == 'confirm',
       );
       final session = result['session'];
@@ -141,11 +143,35 @@ class AuthService extends ChangeNotifier {
           errorRaw: null,
         );
       }
-      final fetch = await _fetchUser(token);
+      // Prefer business shell if this account is also a trainer.
+      await OperatorShellPrefs.preferOwner();
+      var fetch = await _fetchUser(token, syncIfMissing: true);
+      if ((!fetch.ok || !_isAuthenticated || _user == null) ||
+          !isStudioOperator) {
+        // Role may lag in cache/JWT — refresh once and re-fetch.
+        try {
+          final refreshed = await _supabase.auth.refreshSession();
+          final live = refreshed.session?.accessToken ?? token;
+          fetch = await _fetchUser(live, syncIfMissing: true);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[Auth] claim login refresh after adopt failed: $e');
+          }
+        }
+      }
       if (!fetch.ok || !_isAuthenticated || _user == null) {
         await _signOutAfterFailedLogin();
         notifyListeners();
         return _loginFetchFailure(fetch);
+      }
+      if (!isStudioOperator) {
+        await _signOutAfterFailedLogin();
+        notifyListeners();
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.mapRawToL10nKey('OWNER_REQUIRED'),
+          errorRaw: 'OWNER_REQUIRED',
+        );
       }
       await StudioClaimPending.clear();
       await _tryFinishPendingTrainerInvite(token);

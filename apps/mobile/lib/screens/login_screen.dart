@@ -22,8 +22,6 @@ import '../widgets/language_selector_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-enum _LoginStep { email, password }
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -39,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isSubmitting = false;
   bool _isGoogleLoading = false;
   bool _isAppleLoading = false;
-  _LoginStep _step = _LoginStep.email;
 
   bool get _isOAuthBusy => _isGoogleLoading || _isAppleLoading;
 
@@ -66,10 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _continueFromEmail() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSubmitting = true);
-    final email = _emailController.text.trim();
+  /// If this email owns an unclaimed studio, route to claim login instead.
+  Future<bool> _tryOpenClaimLogin(String email) async {
     String? studioName;
     String? token;
     final pendingEmail = await StudioClaimPending.readEmail();
@@ -85,40 +80,42 @@ class _LoginScreenState extends State<LoginScreen> {
         token ??= await StudioClaimPending.readToken();
       }
     } catch (_) {
-      // Lookup is best-effort; password step still works.
+      // Lookup is best-effort; normal password login still works.
     }
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    if (!mounted) return false;
+    if (studioName == null || studioName.isEmpty) return false;
 
-    if (studioName != null && studioName.isNotEmpty) {
-      await _openClaimLogin(
-        email: email,
-        studioName: studioName,
-        claimToken: token,
-      );
-      return;
-    }
-
-    setState(() => _step = _LoginStep.password);
+    await _openClaimLogin(
+      email: email,
+      studioName: studioName,
+      claimToken: token,
+    );
+    return true;
   }
 
-  Future<void> _submitPassword() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
-    final auth = context.read<AuthService>();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+
+    final openedClaim = await _tryOpenClaimLogin(email);
+    if (!mounted) return;
+    if (openedClaim) {
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    final auth = context.read<AuthService>();
     final result = await auth.login(email, password);
 
     if (!mounted) return;
-
     setState(() => _isSubmitting = false);
 
     final locale = context.read<LocaleProvider>();
-    if (result.success) {
-    } else {
+    if (!result.success) {
       final msg = resolveAuthUiMessage(locale, result);
       showApiError(
         context,
@@ -202,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Text(
                 locale.t('auth.resetPasswordHint'),
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 14.sp),
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 16),
               AuthFormTextField(
@@ -211,15 +208,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decorationBuilder: ({required invalid}) =>
                     AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.email'),
-                      prefixWidget: SvgPicture.asset(
-                        'assets/icons/icon-mail.svg',
-                        width: 13.5,
-                        height: 13.5,
-                        colorFilter: const ColorFilter.mode(
-                          AuthFormStyles.accentIcon,
-                          BlendMode.srcIn,
-                        ),
-                      ),
                       invalid: invalid,
                     ),
                 style: AuthFormStyles.fieldTextStyle,
@@ -235,17 +223,22 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              if (!(formKey.currentState?.validate() ?? false)) return;
+              if (!formKey.currentState!.validate()) return;
               final auth = context.read<AuthService>();
               final res = await auth.requestPasswordReset(emailController.text);
               if (!ctx.mounted) return;
               Navigator.of(ctx).pop();
               if (!mounted) return;
-              final loc = context.read<LocaleProvider>();
               if (res.success) {
-                showSuccess(context, loc.t('auth.resetEmailSent'));
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                  SnackBar(content: Text(locale.t('auth.resetPasswordSent'))),
+                );
               } else {
-                showApiError(context, resolveAuthUiMessage(loc, res));
+                final msg = resolveAuthUiMessage(locale, res);
+                showApiError(
+                  context,
+                  msg.isNotEmpty ? msg : locale.t('auth.signInError'),
+                );
               }
             },
             child: Text(locale.t('auth.sendResetLink')),
@@ -253,6 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
+    emailController.dispose();
   }
 
   static const Map<String, String> _languageLabels = {
@@ -264,7 +258,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final isEmailStep = _step == _LoginStep.email;
     return Scaffold(
       body: SafeArea(
         child: Consumer<LocaleProvider>(
@@ -329,132 +322,97 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  if (!isEmailStep) ...[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: _isSubmitting
-                            ? null
-                            : () => setState(() {
-                                  _step = _LoginStep.email;
-                                  _passwordController.clear();
-                                }),
-                        icon: const Icon(Icons.arrow_back, size: 18),
-                        label: Text(locale.t('auth.changeEmail')),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          padding: EdgeInsets.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  AuthFormTextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decorationBuilder: ({required invalid}) =>
+                        AuthFormStyles.fieldDecoration(
+                      hintText: locale.t('auth.email'),
+                      prefixWidget: SvgPicture.asset(
+                        'assets/icons/icon-mail.svg',
+                        width: 13.5,
+                        height: 13.5,
+                        colorFilter: const ColorFilter.mode(
+                          AuthFormStyles.accentIcon,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      invalid: invalid,
+                    ),
+                    style: AuthFormStyles.fieldTextStyle,
+                    validator: (v) => validateEmailNullable(locale.t, v),
+                  ),
+                  const SizedBox(height: AuthFormStyles.fieldGap),
+                  AuthFormTextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
+                    decorationBuilder: ({required invalid}) =>
+                        AuthFormStyles.fieldDecoration(
+                      hintText: locale.t('auth.password'),
+                      prefixWidget: SvgPicture.asset(
+                        'assets/icons/icon-password.svg',
+                        width: 16,
+                        height: 16,
+                        colorFilter: const ColorFilter.mode(
+                          AuthFormStyles.accentIcon,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AuthFormStyles.hintMuted,
+                          size: 22,
+                        ),
+                        padding: const EdgeInsets.only(right: 12),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        onPressed: () {
+                          setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          );
+                        },
+                      ),
+                      invalid: invalid,
+                    ),
+                    style: AuthFormStyles.fieldTextStyle,
+                    validator: (v) => validatePasswordNullable(locale.t, v),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: (_isSubmitting || _isOAuthBusy)
+                          ? null
+                          : _showForgotPassword,
+                      style: TextButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
+                      ),
+                      child: Text(
+                        locale.t('auth.forgotPassword'),
+                        style: TextStyle(
+                          color: AppColors.primary500,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _emailController.text.trim(),
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: AuthFormStyles.fieldGap),
-                  ],
-                  if (isEmailStep)
-                    AuthFormTextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) => _continueFromEmail(),
-                      decorationBuilder: ({required invalid}) =>
-                          AuthFormStyles.fieldDecoration(
-                        hintText: locale.t('auth.email'),
-                        prefixWidget: SvgPicture.asset(
-                          'assets/icons/icon-mail.svg',
-                          width: 13.5,
-                          height: 13.5,
-                          colorFilter: const ColorFilter.mode(
-                            AuthFormStyles.accentIcon,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        invalid: invalid,
-                      ),
-                      style: AuthFormStyles.fieldTextStyle,
-                      validator: (v) => validateEmailNullable(locale.t, v),
-                    )
-                  else
-                    AuthFormTextField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submitPassword(),
-                      decorationBuilder: ({required invalid}) =>
-                          AuthFormStyles.fieldDecoration(
-                        hintText: locale.t('auth.password'),
-                        prefixWidget: SvgPicture.asset(
-                          'assets/icons/icon-password.svg',
-                          width: 16,
-                          height: 16,
-                          colorFilter: const ColorFilter.mode(
-                            AuthFormStyles.accentIcon,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: AuthFormStyles.hintMuted,
-                            size: 22,
-                          ),
-                          padding: const EdgeInsets.only(right: 12),
-                          splashColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          onPressed: () {
-                            setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            );
-                          },
-                        ),
-                        invalid: invalid,
-                      ),
-                      style: AuthFormStyles.fieldTextStyle,
-                      validator: (v) => validatePasswordNullable(locale.t, v),
-                    ),
-                  if (!isEmailStep) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: (_isSubmitting || _isOAuthBusy)
-                            ? null
-                            : _showForgotPassword,
-                        style: TextButton.styleFrom(
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(horizontal: 0),
-                        ),
-                        child: Text(
-                          locale.t('auth.forgotPassword'),
-                          style: TextStyle(
-                            color: AppColors.primary500,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     height: AuthFormStyles.buttonHeight,
                     child: FilledButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : (isEmailStep ? _continueFromEmail : _submitPassword),
+                      onPressed: _isSubmitting ? null : _submit,
                       style: AuthFormStyles.primaryButtonStyle(),
                       child: _isSubmitting
-                          ? SizedBox(
+                          ? const SizedBox(
                               height: 22,
                               width: 22,
                               child: CircularProgressIndicator(
@@ -463,9 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             )
                           : Text(
-                              isEmailStep
-                                  ? locale.t('auth.continue')
-                                  : locale.t('auth.signIn'),
+                              locale.t('auth.signIn'),
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textInverse,
@@ -494,75 +450,72 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  if (isEmailStep) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Divider(
-                            color: Color(0xFF9B9B9B),
-                            thickness: 1.0,
-                            indent: 0,
-                            endIndent: 12,
-                          ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Divider(
+                          color: Color(0xFF9B9B9B),
+                          thickness: 1.0,
+                          indent: 0,
+                          endIndent: 12,
                         ),
-                        Text(
-                          locale.t('auth.orContinue').toLowerCase(),
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15.sp,
-                          ),
-                        ),
-                        const Expanded(
-                          child: Divider(
-                            color: Color(0xFF9B9B9B),
-                            thickness: 1.0,
-                            indent: 12,
-                            endIndent: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: AuthFormStyles.buttonHeight,
-                      child: OutlinedButton.icon(
-                        onPressed: (_isSubmitting || _isOAuthBusy)
-                            ? null
-                            : _submitGoogle,
-                        icon: _isGoogleLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : _buildGoogleIcon(),
-                        label: Text(
-                          _isGoogleLoading
-                              ? locale.t('common.loading')
-                              : locale.t('auth.continueWithGoogle'),
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        style: AuthFormStyles.googleButtonStyle(),
                       ),
-                    ),
-                    if (Platform.isIOS) ...[
-                      const SizedBox(height: 8),
-                      AppleSignInButton(
-                        isLoading: _isAppleLoading,
-                        onPressed: (_isSubmitting || _isOAuthBusy)
-                            ? null
-                            : _submitApple,
-                        label: _isAppleLoading
-                            ? locale.t('common.loading')
-                            : locale.t('auth.continueWithApple'),
+                      Text(
+                        locale.t('auth.orContinue').toLowerCase(),
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15.sp,
+                        ),
+                      ),
+                      const Expanded(
+                        child: Divider(
+                          color: Color(0xFF9B9B9B),
+                          thickness: 1.0,
+                          indent: 12,
+                          endIndent: 0,
+                        ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: AuthFormStyles.buttonHeight,
+                    child: OutlinedButton.icon(
+                      onPressed: (_isSubmitting || _isOAuthBusy)
+                          ? null
+                          : _submitGoogle,
+                      icon: _isGoogleLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : _buildGoogleIcon(),
+                      label: Text(
+                        _isGoogleLoading
+                            ? locale.t('common.loading')
+                            : locale.t('auth.continueWithGoogle'),
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      style: AuthFormStyles.googleButtonStyle(),
+                    ),
+                  ),
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 8),
+                    AppleSignInButton(
+                      isLoading: _isAppleLoading,
+                      onPressed: (_isSubmitting || _isOAuthBusy)
+                          ? null
+                          : _submitApple,
+                      label: _isAppleLoading
+                          ? locale.t('common.loading')
+                          : locale.t('auth.continueWithApple'),
+                    ),
                   ],
                   const SizedBox(height: 8),
                 ],

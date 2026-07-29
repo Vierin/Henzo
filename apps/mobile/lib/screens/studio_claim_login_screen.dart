@@ -12,7 +12,8 @@ import '../utils/show_api_error.dart';
 import '../utils/studio_claim_pending.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/auth/auth_form_text_field.dart';
-import '../widgets/settings/branded_settings_app_bar.dart';
+import '../widgets/common/henzo_header_back_button.dart';
+import '../widgets/language_selector_modal.dart';
 
 /// Password step for claiming / managing an unclaimed studio linked to email.
 /// Separate from [LoginScreen] so claim UX stays simple (no register / forgot).
@@ -38,6 +39,7 @@ class StudioClaimLoginScreen extends StatefulWidget {
 
 class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
@@ -46,6 +48,12 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
   late String _email;
   late String _studioName;
   String? _claimToken;
+
+  static const Map<String, String> _languageLabels = {
+    'en': 'English',
+    'ru': 'Русский',
+    'vi': 'Tiếng Việt',
+  };
 
   @override
   void initState() {
@@ -80,6 +88,7 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -100,8 +109,8 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
     setState(() => _isSubmitting = true);
 
     final auth = context.read<AuthService>();
-    final claimToken =
-        _claimToken ?? await StudioClaimPending.readToken();
+    final claimToken = _claimToken ?? await StudioClaimPending.readToken();
+    final name = _nameController.text.trim();
 
     final AuthUiResult result;
     if (claimToken != null && claimToken.isNotEmpty) {
@@ -109,6 +118,7 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
         email: _email,
         password: _passwordController.text,
         claimToken: claimToken,
+        name: name,
       );
     } else {
       result = await auth.login(_email, _passwordController.text);
@@ -116,6 +126,9 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
         final access = auth.accessToken;
         if (access != null && access.isNotEmpty) {
           await StudioClaimPending.tryAccept(access);
+          try {
+            await auth.refreshSession();
+          } catch (_) {}
         }
       }
     }
@@ -147,10 +160,14 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: buildBrandedSettingsAppBar(
-        context,
-        title: locale.t('auth.signIn'),
-        onBack: _handleBack,
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundSecondary,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: HenzoHeaderBackButton(onPressed: _handleBack),
+        leadingWidth: 56,
+        title: const SizedBox.shrink(),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -160,7 +177,60 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () => showLanguageSelectorModal(context, locale),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/icon-globe.svg',
+                            width: 16,
+                            height: 16,
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.textPrimary,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _languageLabels[locale.localeCode] ??
+                                locale.localeCode.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Center(
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: 58,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => Text(
+                      'Henzo',
+                      style: TextStyle(
+                        fontSize: 39.6.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
                 Text(
                   locale
                       .t('auth.studioLinkedToEmail')
@@ -172,6 +242,14 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  _email,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   locale.t('auth.enterPasswordToManageStudio'),
@@ -181,12 +259,30 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
                     color: Colors.grey.shade700,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  _email,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.grey.shade600,
+                const SizedBox(height: AuthFormStyles.fieldGap),
+                AuthFormTextField(
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.words,
+                  decorationBuilder: ({required invalid}) =>
+                      AuthFormStyles.fieldDecoration(
+                    hintText: '${locale.t('auth.fullName')} *',
+                    prefixWidget: SvgPicture.asset(
+                      'assets/icons/icon-profile-large.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: const ColorFilter.mode(
+                        AuthFormStyles.accentIcon,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    invalid: invalid,
+                  ),
+                  style: AuthFormStyles.fieldTextStyle,
+                  validator: (v) => validateRequiredNullable(
+                    locale.t,
+                    v,
+                    emptyKey: 'auth.enterFullName',
                   ),
                 ),
                 const SizedBox(height: AuthFormStyles.fieldGap),

@@ -63,13 +63,16 @@ class _ClientShellState extends State<ClientShell> {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
     final locale = context.read<LocaleProvider>();
-    await PushNotificationService.requestNotificationPermission();
-    if (!mounted) return;
-    _registeredLanguage = locale.localeCode;
-    PushNotificationService.registerToken(
-      accessToken: token,
-      language: locale.localeCode,
-    );
+    // Don't block the client shell on the system permission dialog.
+    unawaited(() async {
+      await PushNotificationService.requestNotificationPermission();
+      if (!mounted) return;
+      _registeredLanguage = locale.localeCode;
+      PushNotificationService.registerToken(
+        accessToken: token,
+        language: locale.localeCode,
+      );
+    }());
   }
 
   void _openMapScreen() {
