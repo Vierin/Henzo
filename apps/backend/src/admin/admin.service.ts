@@ -2296,4 +2296,72 @@ export class AdminService {
       throw new NotFoundException('Training not found');
     }
   }
+
+  async deleteUnclaimedStudio(authHeader: string, studioId: string) {
+    const admin = await assertAdmin(this.authService, authHeader);
+
+    const studio = await this.prisma.studio.findUnique({
+      where: { id: studioId },
+      select: { id: true, name: true, claimedAt: true },
+    });
+    if (!studio) throw new NotFoundException('Studio not found');
+    if (studio.claimedAt) {
+      throw new BadRequestException('Cannot delete a claimed studio');
+    }
+
+    const enrolledUsers = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        status: { in: ['ACTIVE', 'PENDING'] },
+        TrainingSession: { studioId, startsAt: { gte: new Date() } },
+      },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      const sessionIds = (
+        await tx.trainingSession.findMany({
+          where: { studioId },
+          select: { id: true },
+        })
+      ).map((s) => s.id);
+
+      if (sessionIds.length > 0) {
+        await tx.waitlistEntry.deleteMany({
+          where: { sessionId: { in: sessionIds } },
+        });
+        await tx.sessionEnrollment.deleteMany({
+          where: { sessionId: { in: sessionIds } },
+        });
+      }
+      await tx.trainingSession.deleteMany({ where: { studioId } });
+      await tx.sessionBooking.deleteMany({ where: { studioId } });
+      await tx.review.deleteMany({ where: { studioId } });
+      await tx.studioClientBlock.deleteMany({ where: { studioId } });
+      await tx.studioClient.deleteMany({ where: { studioId } });
+      await tx.trainerInvite.deleteMany({ where: { studioId } });
+      await tx.studioClaimToken.deleteMany({ where: { studioId } });
+      await tx.trainer.deleteMany({ where: { studioId } });
+      await tx.training.deleteMany({ where: { studioId } });
+      await tx.subscription.deleteMany({ where: { studioId } });
+      await tx.studio.delete({ where: { id: studioId } });
+    });
+
+    for (const { userId } of enrolledUsers) {
+      try {
+        await this.notifications.sendStudioRemovedPush(userId, studio.name);
+      } catch (e) {
+        console.error(`⚠️ Failed to send studio-removed push to ${userId}:`, e);
+      }
+    }
+
+    await this.eventLog.logAdminAction({
+      action: 'studio_deleted',
+      adminEmail: admin.email,
+      studioId,
+      metadata: { studioName: studio.name },
+    });
+
+    return { success: true };
+  }
 }
