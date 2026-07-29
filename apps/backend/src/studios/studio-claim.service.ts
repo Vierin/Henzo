@@ -733,7 +733,7 @@ export class StudioClaimService {
     rawToken: string,
     email: string,
     password: string,
-    options?: { confirmBooking?: boolean },
+    options?: { confirmBooking?: boolean; name?: string },
   ) {
     const normalized = this.normalizeEmail(email);
     if (!normalized || !password || password.length < 6) {
@@ -756,12 +756,16 @@ export class StudioClaimService {
       );
     }
 
+    const ownerName =
+      options?.name?.trim() ||
+      (claim.Studio?.name
+        ? `${claim.Studio.name} owner`
+        : normalized.split('@')[0]);
+
     const result = await this.authService.ensureOwnerAccountWithPassword({
       email: normalized,
       password,
-      name: claim.Studio?.name
-        ? `${claim.Studio.name} owner`
-        : normalized.split('@')[0],
+      name: ownerName,
     });
 
     await this.transferOwnership(

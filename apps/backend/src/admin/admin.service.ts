@@ -593,6 +593,10 @@ export class AdminService {
     await assertAdmin(this.authService, authHeader);
     const q = search?.trim();
     const where = {
+      // Hide placeholder staff on ops/unclaimed studios (system owner clutter).
+      Studio: {
+        OR: [{ claimedAt: { not: null } }, { intendedOwnerEmail: null }],
+      },
       ...(q
         ? {
             OR: [

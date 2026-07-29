@@ -25,6 +25,7 @@ import {
   resolveTrainingLocationName,
 } from '../lib/training-locations';
 import {
+  isUnclaimedStudio,
   resolveTrainerDisplayName,
   resolveTrainerIdForSession,
 } from './trainer-display.util';
@@ -196,6 +197,8 @@ export class FitnessSessionsService {
         id: true,
         name: true,
         reminderSettings: true,
+        claimedAt: true,
+        intendedOwnerEmail: true,
         User: { select: { id: true, name: true, email: true } },
       },
     });
@@ -213,12 +216,14 @@ export class FitnessSessionsService {
 
     // Plan limit is enforced per candidate month below (not a single pre-check).
 
+    const allowOwnerAutoCreate = !isUnclaimedStudio(studio);
     const resolvedTrainerId = studio.User
       ? await resolveTrainerIdForSession(
           this.prisma,
           dto.studioId,
           studio.User,
           dto.trainerId,
+          { allowOwnerAutoCreate },
         )
       : (dto.trainerId?.trim() ?? null);
 

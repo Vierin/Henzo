@@ -1282,26 +1282,106 @@ export class AuthService {
       });
 
     if (!signInError && signInData.user && signInData.session) {
+      const authUserId = signInData.user.id;
       let dbUser = await this.prisma.user.findUnique({
-        where: { id: signInData.user.id },
+        where: { id: authUserId },
       });
+      if (!dbUser) {
+        dbUser = await this.prisma.user.findUnique({
+          where: { email },
+        });
+      }
       if (!dbUser) {
         dbUser = await this.prisma.user.create({
           data: {
-            id: signInData.user.id,
+            id: authUserId,
             email,
             name: data.name,
             role: 'OWNER',
           },
         });
-      } else if (dbUser.role !== 'OWNER') {
-        dbUser = await this.prisma.user.update({
-          where: { id: dbUser.id },
-          data: { role: 'OWNER' },
-        });
+      } else {
+        // Guest / legacy email rows often have a different id than Supabase Auth.
+        // Remount to auth id so JWT, studios.ownerId, and /auth/user stay aligned.
+        if (dbUser.id !== authUserId) {
+          const oldUserId = dbUser.id;
+          try {
+            await this.prisma.$transaction(async (prisma) => {
+              await prisma.studio.updateMany({
+                where: { ownerId: oldUserId },
+                data: { ownerId: authUserId },
+              });
+              await prisma.sessionBooking.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.sessionEnrollment.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.studioClient.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.studioClientBlock.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.waitlistEntry.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.review.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.pushToken.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.inAppNotification.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.trainer.updateMany({
+                where: { userId: oldUserId },
+                data: { userId: authUserId },
+              });
+              await prisma.user.update({
+                where: { id: oldUserId },
+                data: { id: authUserId },
+              });
+            });
+            const remounted = await this.prisma.user.findUnique({
+              where: { id: authUserId },
+            });
+            if (remounted) dbUser = remounted;
+          } catch (error) {
+            this.authError(
+              '⚠️ Failed to remount owner user id to auth id (keeping legacy id):',
+              error,
+            );
+          }
+        }
+
+        const patch: { role?: 'OWNER'; name?: string; isGuest?: boolean } = {
+          isGuest: false,
+        };
+        if (dbUser.role !== 'OWNER') patch.role = 'OWNER';
+        if (data.name?.trim() && dbUser.name !== data.name.trim()) {
+          patch.name = data.name.trim();
+        }
+        if (Object.keys(patch).length > 0) {
+          dbUser = await this.prisma.user.update({
+            where: { id: dbUser.id },
+            data: patch,
+          });
+        }
       }
-      await this.syncUserRoleMetadata(dbUser.id, 'OWNER');
+      // Always sync the Auth user that owns the JWT, not a legacy DB id.
+      await this.syncUserRoleMetadata(authUserId, 'OWNER');
       this.invalidateGetCurrentUserCacheForUserId(dbUser.id);
+      this.invalidateGetCurrentUserCacheForUserId(authUserId);
       return {
         user: {
           id: dbUser.id,

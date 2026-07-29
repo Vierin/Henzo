@@ -39,6 +39,7 @@ class StudioClaimLoginScreen extends StatefulWidget {
 
 class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
@@ -87,6 +88,7 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -108,6 +110,7 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
 
     final auth = context.read<AuthService>();
     final claimToken = _claimToken ?? await StudioClaimPending.readToken();
+    final name = _nameController.text.trim();
 
     final AuthUiResult result;
     if (claimToken != null && claimToken.isNotEmpty) {
@@ -115,6 +118,7 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
         email: _email,
         password: _passwordController.text,
         claimToken: claimToken,
+        name: name,
       );
     } else {
       result = await auth.login(_email, _passwordController.text);
@@ -122,6 +126,9 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
         final access = auth.accessToken;
         if (access != null && access.isNotEmpty) {
           await StudioClaimPending.tryAccept(access);
+          try {
+            await auth.refreshSession();
+          } catch (_) {}
         }
       }
     }
@@ -250,6 +257,32 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
                     fontSize: 14.sp,
                     height: 1.4,
                     color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: AuthFormStyles.fieldGap),
+                AuthFormTextField(
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.words,
+                  decorationBuilder: ({required invalid}) =>
+                      AuthFormStyles.fieldDecoration(
+                    hintText: '${locale.t('auth.fullName')} *',
+                    prefixWidget: SvgPicture.asset(
+                      'assets/icons/icon-profile-large.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: const ColorFilter.mode(
+                        AuthFormStyles.accentIcon,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    invalid: invalid,
+                  ),
+                  style: AuthFormStyles.fieldTextStyle,
+                  validator: (v) => validateRequiredNullable(
+                    locale.t,
+                    v,
+                    emptyKey: 'auth.enterFullName',
                   ),
                 ),
                 const SizedBox(height: AuthFormStyles.fieldGap),

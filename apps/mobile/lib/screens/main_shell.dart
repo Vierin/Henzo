@@ -176,31 +176,36 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     final bookingsCache = context.read<BookingsCache>();
 
     // Analytics tab must not depend on studio/bookings prefetch failures.
-    await _refreshAnalyticsTabVisibility();
-
     try {
-      await studioCache.getStudio(token);
-    } catch (_) {}
-    try {
-      await bookingsCache.getBookings(token);
-    } catch (_) {}
+      await Future.wait<void>([
+        _refreshAnalyticsTabVisibility(),
+        studioCache.getStudio(token).then((_) {}, onError: (_) {}),
+        bookingsCache.getBookings(token).then((_) {}, onError: (_) {}),
+      ]).timeout(const Duration(seconds: 12));
+    } catch (_) {
+      // Timed out / failed — still enter the shell.
+    }
 
     if (mounted) {
       setState(() => _studioLoading = false);
     }
     if (!mounted) return;
 
-    unawaited(_refreshAnalyticsTabVisibility());
-    final locale = context.read<LocaleProvider>();
-    await PushNotificationService.requestNotificationPermission();
-    if (mounted) {
-      await PushNotificationService.registerToken(
-        accessToken: token,
-        language: locale.localeCode,
-      );
-      if (!mounted) return;
-      await context.read<NotificationsStore>().syncFromServer(token);
-    }
+    // Never block the owner shell on the system notification prompt.
+    unawaited(() async {
+      try {
+        unawaited(_refreshAnalyticsTabVisibility());
+        final locale = context.read<LocaleProvider>();
+        await PushNotificationService.requestNotificationPermission();
+        if (!mounted) return;
+        await PushNotificationService.registerToken(
+          accessToken: token,
+          language: locale.localeCode,
+        );
+        if (!mounted) return;
+        await context.read<NotificationsStore>().syncFromServer(token);
+      } catch (_) {}
+    }());
   }
 
   /// Переключиться на первую вкладку и открыть маршрут (например /trainers, /offerings).

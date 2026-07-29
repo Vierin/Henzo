@@ -22,6 +22,11 @@ export class CompleteStudioClaimDto {
   password!: string;
 
   @IsOptional()
+  @IsString()
+  @MinLength(1)
+  name?: string;
+
+  @IsOptional()
   confirmBooking?: boolean;
 }
 

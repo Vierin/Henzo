@@ -61,13 +61,18 @@ export function buildPublicTrainerPayload(
 }
 
 /**
- * Resolve trainerId for new sessions: explicit id, owner-linked Trainer, or create one.
+ * Resolve trainerId for new sessions: explicit id, owner-linked Trainer, or
+ * (for claimed studios only) create an owner placeholder Trainer.
+ *
+ * Unclaimed / ops studios must not auto-create trainers — that produced
+ * "Henzo System Studios" rows that clutter staff data.
  */
 export async function resolveTrainerIdForSession(
   prisma: PrismaClient,
   studioId: string,
   owner: { id: string; name: string | null; email: string },
   explicitTrainerId?: string | null,
+  options?: { allowOwnerAutoCreate?: boolean },
 ): Promise<string | null> {
   const trimmed = explicitTrainerId?.trim();
   if (trimmed) {
@@ -76,6 +81,11 @@ export async function resolveTrainerIdForSession(
       select: { id: true },
     });
     return found?.id ?? null;
+  }
+
+  // No explicit trainer — leave session unassigned for unclaimed studios.
+  if (options?.allowOwnerAutoCreate === false) {
+    return null;
   }
 
   const email = owner.email.trim();
