@@ -12,9 +12,11 @@ import {
   usePublicHeaderState,
 } from '@/components/usePublicHeaderState';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
+import { appStoreUrl } from '@/constants/appStores';
 import {
   getMobilePlatform,
+  playStoreUrlWithDeepLink,
+  copyDeepLinkForDeferredOpen,
   storeUrlForPlatform,
   tryOpenDeepLink,
   type MobilePlatform,
@@ -101,18 +103,22 @@ export function AppOpenLanding({
   useEffect(() => {
     if (!autoOpenOnMobile || platform === 'other') return;
     const timer = window.setTimeout(() => {
+      void copyDeepLinkForDeferredOpen(deepLink);
       tryOpenDeepLink(deepLink);
       setAttempted(true);
     }, 300);
     return () => window.clearTimeout(timer);
   }, [autoOpenOnMobile, deepLink, platform]);
 
-  function handleOpenApp() {
+  async function handleOpenApp() {
+    await copyDeepLinkForDeferredOpen(deepLink);
     tryOpenDeepLink(deepLink);
     setAttempted(true);
   }
 
-  const storeUrl = storeUrlForPlatform(platform);
+  const androidStoreUrl = playStoreUrlWithDeepLink(deepLink);
+  const storeUrl =
+    platform === 'android' ? androidStoreUrl : storeUrlForPlatform(platform);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
@@ -177,6 +183,9 @@ export function AppOpenLanding({
             href={appStoreUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              void copyDeepLinkForDeferredOpen(deepLink);
+            }}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
           >
             <AppleStoreIcon className="h-5 w-5" />
@@ -185,9 +194,12 @@ export function AppOpenLanding({
             </span>
           </a>
           <a
-            href={playStoreUrl}
+            href={androidStoreUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              void copyDeepLinkForDeferredOpen(deepLink);
+            }}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
           >
             <GooglePlayIcon className="h-5 w-5" />

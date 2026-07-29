@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
-import '../screens/public_studio_detail_screen.dart';
+import '../utils/share_intent_pending.dart';
+import '../utils/share_intent_router.dart';
 
 /// Handles `henzo://studio/<studioId>` and `henzo.app/studio/<slug-or-id>`.
 class StudioDeepLinkScope extends StatefulWidget {
@@ -46,30 +47,12 @@ class _StudioDeepLinkScopeState extends State<StudioDeepLinkScope> {
     }
   }
 
-  static String? _extractStudioId(Uri uri) {
-    // henzo://studio/<id>
-    if (uri.scheme == 'henzo' && uri.host == 'studio') {
-      final parts = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-      return parts.isNotEmpty ? parts.first : null;
-    }
-    // https://henzo.app/studio/<slug-or-id>
-    // https://www.henzo.app/en/studio/<slug-or-id>
-    if (uri.scheme == 'https' &&
-        (uri.host == 'henzo.app' ||
-            uri.host == 'www.henzo.app' ||
-            uri.host.endsWith('.henzo.app'))) {
-      final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-      final studioIdx = segments.indexOf('studio');
-      if (studioIdx >= 0 && studioIdx + 1 < segments.length) {
-        return segments[studioIdx + 1];
-      }
-    }
-    return null;
-  }
+  Future<void> _handleUri(Uri uri) async {
+    final intent = ShareIntentPending.tryParseHenzoUri(uri);
+    if (intent == null || intent.kind != ShareIntentKind.studio) return;
 
-  void _handleUri(Uri uri) {
-    final studioId = _extractStudioId(uri);
-    if (studioId == null || studioId.isEmpty) return;
+    final studioId = intent.idOrSlug;
+    if (studioId.isEmpty) return;
 
     final now = DateTime.now();
     if (_lastId == studioId &&
@@ -80,12 +63,13 @@ class _StudioDeepLinkScopeState extends State<StudioDeepLinkScope> {
     _lastId = studioId;
     _lastAt = now;
 
+    await ShareIntentPending.storeStudio(studioId);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      widget.navigatorKey.currentState?.push(
-        MaterialPageRoute<void>(
-          builder: (_) => PublicStudioDetailScreen(studioId: studioId),
-        ),
+      ShareIntentRouter.open(
+        intent,
+        navigatorKey: widget.navigatorKey,
       );
     });
   }

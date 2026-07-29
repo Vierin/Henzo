@@ -86,7 +86,12 @@ model Studio {
   timezone         String        @default("Asia/Ho_Chi_Minh") // IANA timezone identifier
   slug             String?       @unique // SEO-friendly slug for studio URLs
   status           StudioStatus   @default(DRAFT) // Studio publication status
-  autoConfirmBookings Boolean   @default(false) // New bookings auto-confirmed (no owner approval)
+  /// When true, new class enrollments are ACTIVE immediately.
+  /// When false, enrollments stay PENDING until the owner confirms.
+  autoConfirmBookings Boolean   @default(true)
+  /// Real owner email for ops-created studios awaiting claim.
+  intendedOwnerEmail String?
+  claimedAt        DateTime?
   Booking          SessionBooking[]
   Review           Review[]
   User             User          @relation(fields: [ownerId], references: [id])
@@ -97,11 +102,13 @@ model Studio {
   ClientBlocks     StudioClientBlock[]
   StudioClients    StudioClient[]
   TrainerInvites   TrainerInvite[]
+  ClaimTokens      StudioClaimToken[]
 
   @@index([latitude, longitude])
   @@index([ownerId, createdAt])
   @@index([createdAt])
   @@index([slug]) // Index for fast slug lookups
+  @@index([intendedOwnerEmail])
 }
 
 model StudioClientBlock {
@@ -352,6 +359,7 @@ enum TrainingSessionStatus {
 }
 
 enum SessionEnrollmentStatus {
+  PENDING
   ACTIVE
   NO_SHOW
   CANCELLED
@@ -414,6 +422,33 @@ model TrainerInvite {
 enum TrainerInviteStatus {
   PENDING
   ACCEPTED
+  EXPIRED
+}
+
+model StudioClaimToken {
+  id              String            @id @default(cuid())
+  studioId        String
+  ownerEmail      String
+  tokenHash       String            @unique
+  status          StudioClaimStatus @default(PENDING)
+  expiresAt       DateTime
+  claimedAt       DateTime?
+  claimedByUserId String?
+  createdBy       String?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  Studio          Studio            @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@index([studioId, status])
+  @@index([ownerEmail, status])
+  @@index([expiresAt])
+}
+
+enum StudioClaimStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
   EXPIRED
 }
 

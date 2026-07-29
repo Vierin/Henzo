@@ -6,6 +6,7 @@
         "components": [
           { "/": "/class*" },
           { "/": "/studio/*" },
+          { "/": "/studio-claim/*" },
           { "/": "/trainer-invite/*" },
           { "/": "/en/*" },
           { "/": "/ru/*" },

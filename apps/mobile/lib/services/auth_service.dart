@@ -18,8 +18,10 @@ import '../utils/auth_ui_result.dart';
 import '../utils/operator_shell_prefs.dart';
 import '../utils/owner_navigation_restore.dart';
 import '../utils/trainer_invite_pending.dart';
+import '../utils/studio_claim_pending.dart';
 import 'analytics_service.dart';
 import 'revenuecat_service.dart';
+import 'studio_claim_api_service.dart';
 
 class AuthService extends ChangeNotifier {
   AuthService() {
@@ -68,7 +70,7 @@ class AuthService extends ChangeNotifier {
       final res = await _supabase.auth.refreshSession();
       if (res.session != null) {
         await _fetchUser(res.session!.accessToken);
-        await _tryFinishPendingTrainerInvite(res.session!.accessToken);
+        await _tryFinishPendingHandoffs(res.session!.accessToken);
         notifyListeners();
       }
     } catch (e) {
@@ -98,6 +100,64 @@ class AuthService extends ChangeNotifier {
       await OperatorShellPrefs.preferTrainer();
       await _fetchTrainerInfo(accessToken);
       notifyListeners();
+    }
+  }
+
+  Future<void> _tryFinishPendingStudioClaim(String accessToken) async {
+    final accepted = await StudioClaimPending.tryAccept(accessToken);
+    if (accepted) {
+      await _fetchUser(accessToken);
+      notifyListeners();
+    }
+  }
+
+  Future<void> _tryFinishPendingHandoffs(String accessToken) async {
+    await _tryFinishPendingTrainerInvite(accessToken);
+    await _tryFinishPendingStudioClaim(accessToken);
+  }
+
+  /// Email-first claim login: create/sign-in via claim token then open owner shell.
+  Future<AuthUiResult> completeStudioClaimLogin({
+    required String email,
+    required String password,
+    required String claimToken,
+  }) async {
+    try {
+      final action =
+          (await StudioClaimPending.readAction())?.trim().toLowerCase() ??
+          'manage';
+      final result = await StudioClaimApiService.completeWithPassword(
+        claimToken: claimToken,
+        email: email,
+        password: password,
+        confirmBooking: action == 'confirm',
+      );
+      final session = result['session'];
+      final token = await _adoptBackendSession(session);
+      if (token == null || token.isEmpty) {
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.noSession,
+          errorRaw: null,
+        );
+      }
+      final fetch = await _fetchUser(token);
+      if (!fetch.ok || !_isAuthenticated || _user == null) {
+        await _signOutAfterFailedLogin();
+        notifyListeners();
+        return _loginFetchFailure(fetch);
+      }
+      await StudioClaimPending.clear();
+      await _tryFinishPendingTrainerInvite(token);
+      notifyListeners();
+      return (success: true, errorL10nKey: null, errorRaw: null);
+    } catch (e) {
+      final msg = e.toString();
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.mapRawToL10nKey(msg),
+        errorRaw: msg,
+      );
     }
   }
 
@@ -695,7 +755,7 @@ class AuthService extends ChangeNotifier {
       );
     }
 
-    await _tryFinishPendingTrainerInvite(session.accessToken);
+    await _tryFinishPendingHandoffs(session.accessToken);
     notifyListeners();
 
     return (success: true, errorL10nKey: null, errorRaw: null);
@@ -740,7 +800,7 @@ class AuthService extends ChangeNotifier {
         errorRaw: 'Owner role was not applied',
       );
     }
-    await _tryFinishPendingTrainerInvite(token);
+    await _tryFinishPendingHandoffs(token);
     notifyListeners();
     return (success: true, errorL10nKey: null, errorRaw: null);
   }
@@ -802,7 +862,7 @@ class AuthService extends ChangeNotifier {
         );
         return _loginFetchFailure(fetch);
       }
-      await _tryFinishPendingTrainerInvite(response.session!.accessToken);
+      await _tryFinishPendingHandoffs(response.session!.accessToken);
       return (success: true, errorL10nKey: null, errorRaw: null);
     } catch (e, st) {
       _user = null;
@@ -1046,7 +1106,7 @@ class AuthService extends ChangeNotifier {
             errorRaw: fetch.errorRaw,
           );
         }
-        await _tryFinishPendingTrainerInvite(accessToken);
+        await _tryFinishPendingHandoffs(accessToken);
         // Password registration already has User.name; re-push after link so
         // Trainer.name is never left as the invite email-prefix placeholder.
         final linkedName = _user?.name?.trim();

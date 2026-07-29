@@ -15,7 +15,9 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/client_location_store.dart';
 import '../utils/class_session_link.dart';
+import '../utils/client_auth_booking_gate.dart';
 import '../utils/google_maps_link.dart';
+import '../utils/share_intent_pending.dart';
 import '../utils/share_utils.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
@@ -224,6 +226,17 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     );
   }
 
+  Future<void> _persistThisClassShareIntent() {
+    final starts =
+        DateTime.tryParse((_session?['startsAt'] ?? '').toString()) ??
+        widget.sessionStartsAtHint;
+    return ShareIntentPending.storeClass(
+      studioId: widget.studioId,
+      sessionId: widget.sessionId,
+      startsAt: starts,
+    );
+  }
+
   Future<void> _book() async {
     final auth = context.read<AuthService>();
     final token = auth.accessToken;
@@ -235,8 +248,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       return;
     }
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(locale.t('clientClassDetail.signInToBook'))),
+      await showClientAuthGateForBooking(
+        context,
+        persistShareIntent: _persistThisClassShareIntent,
       );
       return;
     }
@@ -262,6 +276,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           ),
         ),
       );
+      await ShareIntentPending.clear();
     } catch (e) {
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
@@ -292,7 +307,14 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
       return;
     }
-    if (token == null || _waitlistLoading) return;
+    if (token == null || token.isEmpty) {
+      await showClientAuthGateForBooking(
+        context,
+        persistShareIntent: _persistThisClassShareIntent,
+      );
+      return;
+    }
+    if (_waitlistLoading) return;
     setState(() => _waitlistLoading = true);
     try {
       await ApiClient.post(

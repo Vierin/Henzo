@@ -1280,7 +1280,6 @@ export class StudiosService {
   ) {
     try {
       const studioRepo = this.prisma.studio;
-      // Check if Studio already exists for this user
       const existingStudio = await studioRepo.findFirst({
         where: { ownerId: userId },
         select: {
@@ -1290,10 +1289,26 @@ export class StudiosService {
       });
 
       if (existingStudio) {
-        // Idempotent behavior: keep onboarding unblocked when studio already exists.
         return this.getCurrentUserStudio(userId);
       }
 
+      return this.createStudioForOwner(createStudioDto, userId);
+    } catch (error) {
+      console.error('❌ Error creating Studio:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a studio for a specific owner. Used by owner self-serve and admin
+   * unclaimed-studio creation (tech owner + intendedOwnerEmail).
+   */
+  async createStudioForOwner(
+    createStudioDto: CreateStudioDto,
+    ownerId: string,
+    options?: { intendedOwnerEmail?: string | null },
+  ) {
+    try {
       this.assertStudioTextContent({
         description: createStudioDto.description,
         reminderSettings: createStudioDto.reminderSettings,
@@ -1311,7 +1326,6 @@ export class StudiosService {
         createStudioDto.logoUrl,
       );
 
-      // Geocode address if provided and coordinates not provided
       let latitude = createStudioDto.latitude;
       let longitude = createStudioDto.longitude;
 
@@ -1327,23 +1341,23 @@ export class StudiosService {
           }
         } catch (error) {
           console.error('⚠️ Failed to geocode address:', error);
-          // Continue without coordinates
         }
       }
 
-      // Create Studio and subscription in a transaction
+      const intendedOwnerEmail = options?.intendedOwnerEmail
+        ? options.intendedOwnerEmail.trim().toLowerCase()
+        : null;
+
       const result = await this.prisma.$transaction(async (tx) => {
         const studioRepo = (tx as any).studio ?? (tx as any).Studio;
         if (!studioRepo) {
           throw new Error('Studio repository is not available in transaction');
         }
         const usesStudioModel = Boolean((tx as any).studio);
-        // Set default reminder settings if not provided
         const reminderSettings = this.normalizeReminderSettings(
           createStudioDto.reminderSettings,
         );
 
-        // Create the Studio first to get the generated ID
         const studio = await studioRepo.create({
           data: {
             ...createStudioDto,
@@ -1356,8 +1370,12 @@ export class StudiosService {
             reminderSettings,
             latitude,
             longitude,
-            ownerId: userId,
-            status: 'DRAFT', // Set to DRAFT after complete setup
+            ownerId,
+            status: 'DRAFT',
+            // Unclaimed (ops) studios require owner confirmation until settings change.
+            autoConfirmBookings: !intendedOwnerEmail,
+            intendedOwnerEmail: intendedOwnerEmail || undefined,
+            claimedAt: null,
           } as any,
           select: {
             id: true,
@@ -1374,6 +1392,8 @@ export class StudiosService {
             workingHours: true,
             reminderSettings: true,
             ownerId: true,
+            intendedOwnerEmail: true,
+            claimedAt: true,
             createdAt: true,
             latitude: true,
             longitude: true,
@@ -1399,7 +1419,6 @@ export class StudiosService {
           },
         });
 
-        // Create default FREE subscription for each new studio.
         const now = new Date();
 
         await tx.subscription.create({
@@ -1412,14 +1431,12 @@ export class StudiosService {
           },
         });
 
-        // Generate and update slug using the actual Studio ID
         const slug = generateStudioSlug(
           studio.name,
           studio.id,
           studio.address || undefined,
         );
 
-        // Update Studio with generated slug
         const studioWithSlug = await studioRepo.update({
           where: { id: studio.id },
           data: { slug },
@@ -1438,6 +1455,8 @@ export class StudiosService {
             workingHours: true,
             reminderSettings: true,
             ownerId: true,
+            intendedOwnerEmail: true,
+            claimedAt: true,
             createdAt: true,
             latitude: true,
             longitude: true,
@@ -1467,8 +1486,6 @@ export class StudiosService {
         return studioWithSlug;
       });
 
-      // Add derived categories from services
-      // Note: result.Service is an array from Prisma include (may be empty for new Studio)
       const services =
         (result as any).Service || (result as any).Training || [];
       const serviceCategoryIds = Array.from(
@@ -1477,8 +1494,6 @@ export class StudiosService {
         ),
       );
       (result as any).categories = serviceCategoryIds;
-
-      // Transform Service array to services for consistency
       (result as any).services = services;
 
       console.log(
@@ -1491,7 +1506,7 @@ export class StudiosService {
           createdDescription,
         );
       }
-      this.analytics.track(userId, 'studio_created', {
+      this.analytics.track(ownerId, 'studio_created', {
         studio_id: (result as any).id,
       });
       return result;
@@ -1512,6 +1527,25 @@ export class StudiosService {
 
     const existingStudio = await studioRepo.findFirst({
       where: { ownerId: userId },
+      select: { id: true },
+    });
+
+    if (!existingStudio) {
+      throw new Error('Studio not found');
+    }
+
+    return this.updateStudioById(existingStudio.id, updateStudioDto);
+  }
+
+  /** Update a studio by id (admin / ops). Safe for multi-studio tech owners. */
+  async updateStudioById(studioId: string, updateStudioDto: UpdateStudioDto) {
+    const studioRepo = this.prisma.studio ?? this.prisma.Studio;
+    if (!studioRepo) {
+      throw new Error('Studio repository is not available');
+    }
+
+    const existingStudio = await studioRepo.findUnique({
+      where: { id: studioId },
       select: {
         id: true,
         name: true,
@@ -1521,6 +1555,7 @@ export class StudiosService {
         descriptionVi: true,
         descriptionRu: true,
         reminderSettings: true,
+        photos: true,
       },
     });
 
@@ -1548,7 +1583,6 @@ export class StudiosService {
         ? this.normalizeStudioLogoUrl(updateStudioDto.logoUrl)
         : undefined;
 
-    // Generate new slug if name or address changed
     let slug: string | undefined;
     if (
       (updateStudioDto.name && updateStudioDto.name !== existingStudio.name) ||
@@ -1580,7 +1614,6 @@ export class StudiosService {
         : {}),
     };
 
-    // Geocode address if provided and coordinates not provided
     let latitude = updateStudioDto.latitude;
     let longitude = updateStudioDto.longitude;
 
@@ -1596,7 +1629,6 @@ export class StudiosService {
         }
       } catch (error) {
         console.error('⚠️ Failed to geocode address:', error);
-        // Continue without coordinates
       }
     }
 
@@ -1629,7 +1661,7 @@ export class StudiosService {
           : {}),
         ...(latitude !== undefined && { latitude }),
         ...(longitude !== undefined && { longitude }),
-        ...(slug && { slug }), // Update slug if generated
+        ...(slug && { slug }),
       } as any,
       include: {
         Training: true,
@@ -1644,7 +1676,6 @@ export class StudiosService {
       },
     });
 
-    // Add derived categories from services
     const serviceCategoryIds = Array.from(
       new Set(
         (

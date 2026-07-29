@@ -1266,6 +1266,90 @@ export class AuthService {
     };
   }
 
+  /**
+   * For studio claim: sign in if account exists, otherwise create OWNER + session.
+   */
+  async ensureOwnerAccountWithPassword(data: {
+    email: string;
+    password: string;
+    name?: string;
+  }) {
+    const email = this.normalizeEmail(data.email);
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password: data.password,
+      });
+
+    if (!signInError && signInData.user && signInData.session) {
+      let dbUser = await this.prisma.user.findUnique({
+        where: { id: signInData.user.id },
+      });
+      if (!dbUser) {
+        dbUser = await this.prisma.user.create({
+          data: {
+            id: signInData.user.id,
+            email,
+            name: data.name,
+            role: 'OWNER',
+          },
+        });
+      } else if (dbUser.role !== 'OWNER') {
+        dbUser = await this.prisma.user.update({
+          where: { id: dbUser.id },
+          data: { role: 'OWNER' },
+        });
+      }
+      await this.syncUserRoleMetadata(dbUser.id, 'OWNER');
+      this.invalidateGetCurrentUserCacheForUserId(dbUser.id);
+      return {
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          phone: dbUser.phone,
+          role: 'OWNER' as const,
+        },
+        session: signInData.session,
+      };
+    }
+
+    // Wrong password for existing account
+    if (
+      signInError &&
+      (await this.getAuthProvidersByEmail(email)) != null &&
+      !signInError.message?.toLowerCase().includes('email not confirmed')
+    ) {
+      const msg = (signInError.message || '').toLowerCase();
+      if (
+        msg.includes('invalid login credentials') ||
+        msg.includes('invalid email or password')
+      ) {
+        throw new BadRequestException('Invalid email or password');
+      }
+    }
+
+    return this.registerOwnerFromOtp({
+      email,
+      password: data.password,
+      name: data.name,
+    });
+  }
+
+  async syncUserRoleMetadata(
+    userId: string,
+    role: 'OWNER' | 'CLIENT' | 'ADMIN',
+  ): Promise<void> {
+    try {
+      await supabase.auth.admin.updateUserById(userId, {
+        app_metadata: { role },
+      });
+      this.invalidateGetCurrentUserCacheForUserId(userId);
+    } catch (error) {
+      this.authError('⚠️ Failed to sync role to app_metadata:', error);
+    }
+  }
+
   async loginClient(data: { email: string; password: string }) {
     try {
       const { data: authData, error: authError } =

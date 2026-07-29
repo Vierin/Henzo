@@ -36,6 +36,9 @@ export type AdminStudioRow = {
   sessionsLast30d: number;
   clientsCount: number;
   onboardingGaps: string[];
+  intendedOwnerEmail?: string | null;
+  claimedAt?: string | null;
+  isUnclaimed?: boolean;
   User: { id: string; email: string; name: string | null };
   Subscription: {
     id?: string;
@@ -71,6 +74,9 @@ export type AdminStudioDetail = {
   photoGallery: unknown;
   workingHours: unknown;
   reminderSettings: unknown;
+  intendedOwnerEmail?: string | null;
+  claimedAt?: string | null;
+  isUnclaimed?: boolean;
   createdAt: string;
   lastActivityAt: string | null;
   activityTier: ActivityTier;

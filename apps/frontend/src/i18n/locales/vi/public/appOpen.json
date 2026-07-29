@@ -12,6 +12,24 @@
       "description": "Bạn đã được thêm làm huấn luyện viên trên Henzo. Mở ứng dụng để hoàn tất đăng ký.",
       "expiry": "Lời mời này hết hạn sau 7 ngày."
     },
+    "studioClaim": {
+      "title": "Quản lý studio của bạn",
+      "description": "Mở Henzo để quản lý studio và các đặt chỗ.",
+      "expiry": "Liên kết hết hạn sau 72 giờ."
+    },
+    "studioClaimConfirm": {
+      "loading": "Đang xác nhận đặt chỗ…",
+      "title": "Đã xác nhận đặt chỗ",
+      "alreadyTitle": "Đặt chỗ đã được xác nhận",
+      "description": "Đặt chỗ tại {studio} đã được xác nhận. Tải Henzo hoặc mở ứng dụng để quản lý studio.",
+      "client": "Khách",
+      "class": "Lớp",
+      "when": "Thời gian",
+      "manageCta": "Quản lý studio trong Henzo",
+      "openManagePage": "tiếp tục tại đây",
+      "errorTitle": "Không thể xác nhận đặt chỗ",
+      "errorGeneric": "Liên kết không hợp lệ hoặc đã hết hạn."
+    },
     "studioShare": {
       "titleNamed": "Tham gia {name} trên Henzo",
       "titleGeneric": "Bạn được mời đến một studio",

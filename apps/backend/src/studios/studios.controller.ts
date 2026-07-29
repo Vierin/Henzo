@@ -14,8 +14,15 @@ import {
   Header,
 } from '@nestjs/common';
 import { StudiosService } from './studios.service';
+import { StudioClaimService } from './studio-claim.service';
 import { UpdateStudioDto } from './dto/update-studio.dto';
 import { CreateStudioDto } from './dto/create-studio.dto';
+import {
+  CompleteStudioClaimDto,
+  LookupStudioClaimDto,
+  RequestStudioClaimDto,
+  AcceptStudioClaimDto,
+} from './dto/studio-claim.dto';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -48,6 +55,7 @@ export class StudiosController {
 
   constructor(
     private readonly studiosService: StudiosService,
+    private readonly studioClaimService: StudioClaimService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
@@ -112,6 +120,83 @@ export class StudiosController {
       success: true,
       ...result,
     };
+  }
+
+  // ── Studio claim (ops-created → real owner) ───────────────────
+
+  @Public()
+  @Post('claim/lookup')
+  async lookupStudioClaim(@Body() body: LookupStudioClaimDto) {
+    return this.studioClaimService.lookupByEmail(body.email);
+  }
+
+  @Public()
+  @Get('claim/:token')
+  async getStudioClaimPreview(@Param('token') token: string) {
+    return this.studioClaimService.getClaimPreview(token);
+  }
+
+  @Public()
+  @Post('claim/:token/confirm-booking')
+  async confirmStudioClaimBooking(@Param('token') token: string) {
+    return this.studioClaimService.confirmBookingViaToken(token);
+  }
+
+  @Public()
+  @Post('claim/:token/complete')
+  async completeStudioClaim(
+    @Param('token') token: string,
+    @Body() body: CompleteStudioClaimDto,
+  ) {
+    return this.studioClaimService.completeWithPassword(
+      token,
+      body.email,
+      body.password,
+      { confirmBooking: body.confirmBooking === true },
+    );
+  }
+
+  @Post('claim/:token/accept')
+  async acceptStudioClaim(
+    @Headers('authorization') authHeader: string,
+    @Param('token') token: string,
+    @Body() body: AcceptStudioClaimDto,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.studioClaimService.acceptClaim(
+      token,
+      currentUser.user.id,
+      currentUser.user.email,
+      { confirmBooking: body?.confirmBooking === true },
+    );
+  }
+
+  @Post('claim/accept-pending')
+  async acceptPendingStudioClaim(@Headers('authorization') authHeader: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.studioClaimService.acceptPendingForUser(
+      currentUser.user.id,
+      currentUser.user.email,
+    );
+  }
+
+  @Post(':id/claim/request')
+  async requestStudioClaim(
+    @Headers('authorization') authHeader: string,
+    @Param('id') studioId: string,
+    @Body() body: RequestStudioClaimDto,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const role = String(currentUser.user.role || '').toUpperCase();
+    if (role !== 'OWNER' && role !== 'ADMIN') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.studioClaimService.requestClaim(studioId, body.ownerEmail, {
+      createdBy: currentUser.user.id,
+      sendEmail: body.sendEmail !== false,
+      requireOwnership:
+        role === 'OWNER' ? { userId: currentUser.user.id } : undefined,
+    });
   }
 
   @Public()
@@ -450,6 +535,7 @@ export class StudiosController {
               ownerId: true,
               name: true,
               reminderSettings: true,
+              autoConfirmBookings: true,
             },
           },
           Training: {
@@ -481,6 +567,9 @@ export class StudiosController {
         );
       }
 
+      const autoConfirm = session.Studio?.autoConfirmBookings !== false;
+      const enrollmentStatus = autoConfirm ? 'ACTIVE' : 'PENDING';
+
       const existing = await this.prisma.sessionEnrollment.findFirst({
         where: {
           sessionId,
@@ -492,7 +581,7 @@ export class StudiosController {
         },
       });
 
-      if (existing?.status === 'ACTIVE') {
+      if (existing?.status === 'ACTIVE' || existing?.status === 'PENDING') {
         throw new HttpException(
           'You are already booked for this class',
           HttpStatus.CONFLICT,
@@ -506,7 +595,11 @@ export class StudiosController {
       let enrollmentId = existing?.id ?? '';
       const booking = await this.prisma.$transaction(async (tx) => {
         const activeAgain = await tx.sessionEnrollment.findFirst({
-          where: { sessionId, userId, status: 'ACTIVE' },
+          where: {
+            sessionId,
+            userId,
+            status: { in: ['ACTIVE', 'PENDING'] },
+          },
           select: { id: true },
         });
         if (activeAgain) {
@@ -534,7 +627,7 @@ export class StudiosController {
           await tx.sessionEnrollment.update({
             where: { id: existing.id },
             data: {
-              status: 'ACTIVE',
+              status: enrollmentStatus,
               cancelledAt: null,
             },
           });
@@ -545,7 +638,7 @@ export class StudiosController {
               data: {
                 sessionId,
                 userId,
-                status: 'ACTIVE',
+                status: enrollmentStatus,
               },
               select: { id: true },
             });
@@ -588,7 +681,7 @@ export class StudiosController {
       });
 
       try {
-        if (enrollmentId) {
+        if (enrollmentId && enrollmentStatus === 'ACTIVE') {
           await this.notificationsService.schedulePreClassReminders(
             enrollmentId,
             userId,
@@ -615,11 +708,31 @@ export class StudiosController {
         console.error('⚠️ Failed to send class booking push:', pushError);
       }
 
+      try {
+        await this.studioClaimService.notifyOnBookingIfUnclaimed(
+          session.studioId,
+          {
+            enrollmentId,
+            sessionId: session.id,
+            trainingName: session.Training?.name || 'class',
+            clientName:
+              currentUser.user.name || currentUser.user.email || 'Client',
+            startsAt: session.startsAt,
+          },
+        );
+      } catch (claimEmailError) {
+        console.error(
+          '⚠️ Failed to send studio claim booking email:',
+          claimEmailError,
+        );
+      }
+
       this.analytics.track(userId, 'booking_created', {
         session_id: session.id,
         studio_id: session.studioId,
         training_id: session.Training?.id,
         source: 'client_self',
+        enrollment_status: enrollmentStatus,
       });
 
       return {
@@ -628,7 +741,7 @@ export class StudiosController {
         enrollmentId,
         booking: {
           sessionId: booking.id,
-          status: 'ACTIVE',
+          status: enrollmentStatus,
           startsAt: booking.startsAt,
           endsAt: booking.endsAt,
           bookedCount: booking.bookedCount,
