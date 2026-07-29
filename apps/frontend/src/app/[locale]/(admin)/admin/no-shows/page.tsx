@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminNoShowClients } from '@/lib/admin/api';
 import type { AdminNoShowClientRow } from '@/lib/admin/types';
+import { formatAdminDate } from '@/lib/admin/dateTimeFormat';
 
 export default function NoShowsContent() {
   const [rows, setRows] = useState<AdminNoShowClientRow[]>([]);
@@ -137,7 +138,7 @@ export default function NoShowsContent() {
               {
                 key: 'last',
                 header: 'Last no-show',
-                render: (r) => new Date(r.lastNoShowAt).toLocaleDateString(),
+                render: (r) => formatAdminDate(r.lastNoShowAt),
               },
             ]}
           />

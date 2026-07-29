@@ -35,6 +35,7 @@ type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 const clientScheduleEnrollmentSelect =
   Prisma.validator<Prisma.SessionEnrollmentSelect>()({
     id: true,
+    status: true,
     createdAt: true,
     TrainingSession: {
       select: {
@@ -70,6 +71,7 @@ const clientScheduleEnrollmentSelect =
             id: true,
             name: true,
             address: true,
+            claimedAt: true,
             reminderSettings: true,
             User: { select: { name: true, email: true } },
           },
@@ -1814,7 +1816,7 @@ export class FitnessSessionsService {
     const enrollments = await this.prisma.sessionEnrollment.findMany({
       where: {
         userId,
-        status: 'ACTIVE',
+        status: { in: ['ACTIVE', 'PENDING'] },
         TrainingSession: {
           status: {
             in: [TrainingSessionStatus.ACTIVE, TrainingSessionStatus.COMPLETED],
@@ -1911,7 +1913,11 @@ export class FitnessSessionsService {
         enrollmentId: waitlisted ? null : e.id,
         bookedAt: e.createdAt.toISOString(),
         sessionId: e.TrainingSession.id,
-        bookingStatus: waitlisted ? 'WAITLISTED' : 'ACTIVE',
+        bookingStatus: waitlisted
+          ? 'WAITLISTED'
+          : (row as any).status === 'PENDING'
+            ? 'PENDING'
+            : 'ACTIVE',
         waitlisted,
         startsAt: e.TrainingSession.startsAt.toISOString(),
         endsAt: e.TrainingSession.endsAt.toISOString(),
@@ -1939,6 +1945,7 @@ export class FitnessSessionsService {
             }
           : null,
         trainer: (() => {
+          if (!studio?.claimedAt) return null;
           const tr = e.TrainingSession.Trainer;
           if (tr?.name && String(tr.name).trim().length > 0) {
             return { id: tr.id, name: String(tr.name).trim() };
@@ -1950,6 +1957,9 @@ export class FitnessSessionsService {
               id: e.TrainingSession.Studio.id,
               name: e.TrainingSession.Studio.name,
               address: e.TrainingSession.Studio.address,
+              claimedAt: e.TrainingSession.Studio.claimedAt
+                ? e.TrainingSession.Studio.claimedAt.toISOString()
+                : null,
               locationCount,
             }
           : null,

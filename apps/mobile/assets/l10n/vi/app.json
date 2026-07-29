@@ -244,7 +244,8 @@
     "studioUnavailable": "Studio không khả dụng",
     "thankYouForReview": "Cảm ơn đánh giá của bạn!",
     "reviewCommentTooLong": "Bình luận tối đa {max} ký tự",
-    "leaveReview": "Để lại đánh giá"
+    "leaveReview": "Để lại đánh giá",
+    "waitingAcceptShort": "Chờ xác nhận"
   },
   "clientFavorites": {
     "emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -318,7 +319,9 @@
     "leftWaitlist": "Đã rời danh sách chờ",
     "waitlistError": "Không thể cập nhật danh sách chờ. Thử lại.",
     "waitlistNotifyHint": "Chúng tôi sẽ thông báo khi có chỗ — ai đặt trước sẽ giữ chỗ",
-    "ownerCannotBook": "Tài khoản doanh nghiệp không thể đặt lớp. Hãy dùng tài khoản khách hàng."
+    "ownerCannotBook": "Tài khoản doanh nghiệp không thể đặt lớp. Hãy dùng tài khoản khách hàng.",
+    "waitingForAccept": "Đang chờ studio xác nhận",
+    "bookingPendingApproval": "Đã gửi yêu cầu. Đang chờ studio xác nhận."
   },
   "clientMap": {
     "nearbyStudios": "Studio gần bạn",

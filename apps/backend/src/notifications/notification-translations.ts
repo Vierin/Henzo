@@ -20,6 +20,9 @@ export const notificationTranslations = {
       'A spot opened in {class} at {studio}. Book now if you still want it!',
     ownerBookedTitle: "You're booked",
     ownerBookedBody: '{studio} booked you for {class} on {date}.',
+    bookingConfirmedTitle: 'Booking confirmed',
+    bookingConfirmedBody:
+      '{studio} confirmed your booking for {class} on {date}.',
     trainerAssignedTitle: 'New class assigned',
     trainerAssignedBody: '{studio} assigned you to {class} on {date}.',
     sessionCancelledTitle: 'Class cancelled',
@@ -59,6 +62,9 @@ export const notificationTranslations = {
       'В {class} в {studio} освободилось место. Запишитесь, пока оно свободно!',
     ownerBookedTitle: 'Вас записали',
     ownerBookedBody: '{studio} записал(а) вас на {class} — {date}.',
+    bookingConfirmedTitle: 'Запись подтверждена',
+    bookingConfirmedBody:
+      '{studio} подтвердил(а) вашу запись на {class} — {date}.',
     trainerAssignedTitle: 'Вас назначили на занятие',
     trainerAssignedBody: '{studio} назначил(а) вас на {class} — {date}.',
     sessionCancelledTitle: 'Занятие отменено',
@@ -98,6 +104,9 @@ export const notificationTranslations = {
       'Có chỗ trống trong {class} tại {studio}. Đặt ngay nếu bạn còn muốn!',
     ownerBookedTitle: 'Bạn đã được đặt chỗ',
     ownerBookedBody: '{studio} đã đặt chỗ cho bạn vào {class} — {date}.',
+    bookingConfirmedTitle: 'Đặt chỗ đã được xác nhận',
+    bookingConfirmedBody:
+      '{studio} đã xác nhận đặt chỗ của bạn cho {class} — {date}.',
     trainerAssignedTitle: 'Bạn được phân công lớp học',
     trainerAssignedBody: '{studio} đã phân công bạn vào {class} ngày {date}.',
     sessionCancelledTitle: 'Lớp học đã bị hủy',

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   ActivityTierBadge,
   formatLastActive,
@@ -35,6 +36,10 @@ import {
   type TrainingCategoryOption,
 } from '@/lib/admin/api';
 import { compressImageForAdminUpload } from '@/lib/admin/compressImageForAdminUpload';
+import {
+  formatAdminDate,
+  formatAdminDateTime24h,
+} from '@/lib/admin/dateTimeFormat';
 import type {
   AdminPaymentEventRow,
   AdminStudioClientRow,
@@ -90,7 +95,6 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
   const [trainings, setTrainings] = useState<AdminTraining[]>([]);
   const [trainers, setTrainers] = useState<AdminTrainer[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const loadStudio = useCallback(async () => {
@@ -196,11 +200,6 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
         ))}
       </div>
 
-      {msg ? (
-        <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          {msg}
-        </p>
-      ) : null}
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
       {tab === 'overview' ? (
@@ -212,21 +211,21 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
           onCopyClaimLink={async () => {
             setSaving(true);
             setError(null);
-            setMsg(null);
             try {
               const res = await requestAdminStudioClaimLink(studioId, {
                 sendEmail: false,
               });
               if (typeof navigator !== 'undefined' && navigator.clipboard) {
                 await navigator.clipboard.writeText(res.manageUrl);
-                setMsg('Claim link copied');
+                toast.success('Claim link copied');
               } else {
-                setMsg(`Claim link: ${res.manageUrl}`);
+                toast.success(`Claim link: ${res.manageUrl}`);
               }
             } catch (e) {
-              setError(
-                e instanceof Error ? e.message : 'Failed to generate link',
-              );
+              const message =
+                e instanceof Error ? e.message : 'Failed to generate link';
+              setError(message);
+              toast.error(message);
             } finally {
               setSaving(false);
             }
@@ -234,28 +233,31 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
           onSendClaimEmail={async () => {
             setSaving(true);
             setError(null);
-            setMsg(null);
             try {
               await requestAdminStudioClaimLink(studioId, { sendEmail: true });
-              setMsg('Claim email sent');
+              toast.success('Claim email sent');
             } catch (e) {
-              setError(
-                e instanceof Error ? e.message : 'Failed to send claim email',
-              );
+              const message =
+                e instanceof Error ? e.message : 'Failed to send claim email';
+              setError(message);
+              toast.error(message);
             } finally {
               setSaving(false);
             }
           }}
           onPublish={async () => {
             setSaving(true);
-            setMsg(null);
             setError(null);
             try {
               await publishAdminStudio(studioId);
-              setMsg('Studio published (ACTIVE) — clients can find and book');
+              toast.success(
+                'Studio published (ACTIVE) - clients can find and book',
+              );
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Publish failed');
+              const message = e instanceof Error ? e.message : 'Publish failed';
+              setError(message);
+              toast.error(message);
             } finally {
               setSaving(false);
             }
@@ -277,14 +279,15 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
           saving={saving}
           onSaveProfile={async (fields) => {
             setSaving(true);
-            setMsg(null);
             setError(null);
             try {
               await patchAdminStudioProfile(studioId, fields);
-              setMsg('Profile saved');
+              toast.success('Profile saved');
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Save failed');
+              const message = e instanceof Error ? e.message : 'Save failed';
+              setError(message);
+              toast.error(message);
               throw e;
             } finally {
               setSaving(false);
@@ -292,7 +295,6 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
           }}
           onUploadPhoto={async (file) => {
             setSaving(true);
-            setMsg(null);
             setError(null);
             try {
               const compressed = await compressImageForAdminUpload(file);
@@ -301,11 +303,13 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
                 contentType: compressed.contentType,
                 fileName: compressed.fileName,
               });
-              setMsg('Photo uploaded');
+              toast.success('Photo uploaded');
               await loadStudio();
               return res.photos ?? [];
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Upload failed');
+              const message = e instanceof Error ? e.message : 'Upload failed';
+              setError(message);
+              toast.error(message);
               throw e;
             } finally {
               setSaving(false);
@@ -328,11 +332,13 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
                 trainingId,
                 ...payload.sessions,
               });
-              setMsg('Training and sessions created');
+              toast.success('Training and sessions created');
               await loadEditData();
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Create failed');
+              const message = e instanceof Error ? e.message : 'Create failed';
+              setError(message);
+              toast.error(message);
               throw e;
             } finally {
               setSaving(false);
@@ -343,11 +349,13 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
             setError(null);
             try {
               await createAdminStudioTrainer(studioId, body);
-              setMsg('Trainer created');
+              toast.success('Trainer created');
               await loadEditData();
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Create failed');
+              const message = e instanceof Error ? e.message : 'Create failed';
+              setError(message);
+              toast.error(message);
               throw e;
             } finally {
               setSaving(false);
@@ -358,10 +366,12 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
             setError(null);
             try {
               await createAdminRecurringSessions(studioId, body);
-              setMsg('Sessions created');
+              toast.success('Sessions created');
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Create failed');
+              const message = e instanceof Error ? e.message : 'Create failed';
+              setError(message);
+              toast.error(message);
               throw e;
             } finally {
               setSaving(false);
@@ -376,28 +386,31 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
           saving={saving}
           onSave={async (body) => {
             setSaving(true);
-            setMsg(null);
             setError(null);
             try {
               await patchAdminSubscription(sub.id, body);
-              setMsg('Subscription updated');
+              toast.success('Subscription updated');
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Update failed');
+              const message = e instanceof Error ? e.message : 'Update failed';
+              setError(message);
+              toast.error(message);
             } finally {
               setSaving(false);
             }
           }}
           onFounder={async () => {
             setSaving(true);
-            setMsg(null);
             setError(null);
             try {
               await activateFounderProgram(sub.id);
-              setMsg('Founder Program activated — owner notified');
+              toast.success('Founder Program activated - owner notified');
               await loadStudio();
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Activation failed');
+              const message =
+                e instanceof Error ? e.message : 'Activation failed';
+              setError(message);
+              toast.error(message);
             } finally {
               setSaving(false);
             }
@@ -496,7 +509,7 @@ function OverviewTab({
             <dt className="text-zinc-500">Claim</dt>
             <dd>
               {studio.claimedAt
-                ? `Claimed ${new Date(studio.claimedAt).toLocaleString()}`
+                ? `Claimed ${formatAdminDateTime24h(studio.claimedAt)}`
                 : studio.isUnclaimed
                   ? 'Unclaimed'
                   : '—'}
@@ -547,7 +560,7 @@ function OverviewTab({
                   >
                     <p className="font-medium">
                       {row.TrainingSession.Training.name} ·{' '}
-                      {new Date(row.TrainingSession.startsAt).toLocaleString()}
+                      {formatAdminDateTime24h(row.TrainingSession.startsAt)}
                     </p>
                     <p className="text-zinc-500">
                       {row.User.name || 'Client'} · {row.User.email}
@@ -1921,7 +1934,7 @@ function StudioPaymentEvents({ studioId }: { studioId: string }) {
                   {e.type}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {new Date(e.createdAt).toLocaleString()}
+                  {formatAdminDateTime24h(e.createdAt)}
                 </span>
               </div>
               {e.message ? (
@@ -2035,14 +2048,12 @@ function ClientsTab({ studioId }: { studioId: string }) {
                 key: 'lastVisit',
                 header: 'Last visit',
                 render: (r) =>
-                  r.lastVisitAt
-                    ? new Date(r.lastVisitAt).toLocaleDateString()
-                    : '—',
+                  r.lastVisitAt ? formatAdminDate(r.lastVisitAt) : '—',
               },
               {
                 key: 'added',
                 header: 'Added',
-                render: (r) => new Date(r.rosterCreatedAt).toLocaleDateString(),
+                render: (r) => formatAdminDate(r.rosterCreatedAt),
               },
             ]}
           />
@@ -2122,7 +2133,7 @@ function VisitsTab({ studioId }: { studioId: string }) {
               {
                 key: 'date',
                 header: 'Date',
-                render: (r) => new Date(r.startsAt).toLocaleString(),
+                render: (r) => formatAdminDateTime24h(r.startsAt),
               },
               {
                 key: 'client',

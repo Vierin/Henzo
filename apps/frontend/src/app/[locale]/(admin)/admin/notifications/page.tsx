@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminNotifications } from '@/lib/admin/api';
+import { formatAdminDateTime24h } from '@/lib/admin/dateTimeFormat';
 
 export default function NotificationsContent() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
@@ -87,7 +88,7 @@ export default function NotificationsContent() {
             {
               key: 'at',
               header: 'When',
-              render: (r) => new Date(String(r.createdAt)).toLocaleString(),
+              render: (r) => formatAdminDateTime24h(String(r.createdAt)),
             },
           ]}
         />

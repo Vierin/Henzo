@@ -287,6 +287,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
                     .toUpperCase();
             final isWaitlisted =
                 item['waitlisted'] == true || bookingStatus == 'WAITLISTED';
+            final isPending = bookingStatus == 'PENDING';
             final bookingId = _bookingId(item);
             final isCanceling =
                 bookingId != null && _cancelingBookingIds.contains(bookingId);
@@ -306,11 +307,13 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
               dimPastSessions: false,
               statusBadgeLabel: isWaitlisted
                   ? locale.t('dashboard.waitlist')
-                  : null,
-              statusBadgeBackgroundColor: isWaitlisted
+                  : (isPending
+                        ? locale.t('clientActivity.waitingAcceptShort')
+                        : null),
+              statusBadgeBackgroundColor: isWaitlisted || isPending
                   ? const Color(0xFFFFF3E0)
                   : null,
-              statusBadgeTextColor: isWaitlisted
+              statusBadgeTextColor: isWaitlisted || isPending
                   ? const Color(0xFFEF6C00)
                   : null,
               cancelActionLabel: locale.t('clientActivity.cancel'),

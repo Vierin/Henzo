@@ -15,6 +15,7 @@ import type {
   AdminOwnerRow,
   ClientActivityTier,
 } from '@/lib/admin/types';
+import { formatAdminDate } from '@/lib/admin/dateTimeFormat';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
 type PeopleTab = 'clients' | 'owners' | 'trainers';
@@ -40,7 +41,7 @@ function formatLastVisit(iso: string | null): string {
   if (days <= 0) return 'Today';
   if (days === 1) return 'Yesterday';
   if (days < 30) return `${days}d ago`;
-  return d.toLocaleDateString('en-GB');
+  return formatAdminDate(d);
 }
 
 function ClientActivityBadge({ tier }: { tier: ClientActivityTier }) {

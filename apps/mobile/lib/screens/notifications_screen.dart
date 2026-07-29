@@ -762,6 +762,7 @@ class _NotificationCard extends StatelessWidget {
       'SESSION_CANCELLED' => 'notifications.msgCancelled',
       'SESSION_RESCHEDULED' => 'notifications.msgRescheduled',
       'OWNER_BOOKED' => 'notifications.msgOwnerBooked',
+      'BOOKING_CONFIRMED' => 'notifications.msgOwnerBooked',
       _ => null,
     };
     if (key == null) return null;

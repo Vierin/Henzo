@@ -1555,7 +1555,19 @@ export class AdminService {
         status: SessionEnrollmentStatus.PENDING,
         TrainingSession: { studioId },
       },
-      select: { id: true, userId: true },
+      select: {
+        id: true,
+        userId: true,
+        sessionId: true,
+        TrainingSession: {
+          select: {
+            startsAt: true,
+            studioId: true,
+            Studio: { select: { name: true, timezone: true } },
+            Training: { select: { name: true } },
+          },
+        },
+      },
     });
     if (!enrollment) {
       throw new NotFoundException('Pending enrollment not found');
@@ -1572,6 +1584,24 @@ export class AdminService {
     } catch (error) {
       console.error(
         '⚠️ Failed to schedule reminders for admin-confirmed enrollment:',
+        error,
+      );
+    }
+    try {
+      await this.notifications.sendBookingConfirmedClientPush(
+        enrollment.userId,
+        {
+          sessionId: enrollment.sessionId,
+          studioId: enrollment.TrainingSession.studioId,
+          className: enrollment.TrainingSession.Training.name || 'Class',
+          studioName: enrollment.TrainingSession.Studio.name || 'Studio',
+          startsAt: enrollment.TrainingSession.startsAt,
+          timezone: enrollment.TrainingSession.Studio.timezone || undefined,
+        },
+      );
+    } catch (error) {
+      console.error(
+        '⚠️ Failed to send client confirmation push for admin-confirmed enrollment:',
         error,
       );
     }

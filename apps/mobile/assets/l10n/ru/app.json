@@ -244,7 +244,8 @@
     "studioUnavailable": "Студия недоступна",
     "thankYouForReview": "Спасибо за отзыв!",
     "reviewCommentTooLong": "Комментарий — не более {max} символов",
-    "leaveReview": "Оставить отзыв"
+    "leaveReview": "Оставить отзыв",
+    "waitingAcceptShort": "Ждет подтверждения"
   },
   "clientFavorites": {
     "emptyTitle": "Пора найти ваше любимое место",
@@ -318,7 +319,9 @@
     "leftWaitlist": "Вы вышли из waitlist",
     "waitlistError": "Не удалось обновить waitlist. Попробуйте снова.",
     "waitlistNotifyHint": "Уведомим, если появится место — кто первый запишется, тот и займёт",
-    "ownerCannotBook": "Бизнес-аккаунт нельзя записать на занятие. Используйте клиентский аккаунт."
+    "ownerCannotBook": "Бизнес-аккаунт нельзя записать на занятие. Используйте клиентский аккаунт.",
+    "waitingForAccept": "Ожидает подтверждения студии",
+    "bookingPendingApproval": "Заявка отправлена. Ждем подтверждения от студии."
   },
   "clientMap": {
     "nearbyStudios": "Студии рядом",

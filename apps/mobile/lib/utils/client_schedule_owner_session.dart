@@ -69,9 +69,11 @@ ClientScheduleCardPresentation presentationForClientScheduleItem(
       ? Map<String, dynamic>.from(item['studio'] as Map)
       : <String, dynamic>{};
   final studioName = (studio['name'] ?? 'Studio').toString().trim();
+  final isUnclaimed = studio['claimedAt'] == null;
   final locationCount = (studio['locationCount'] as num?)?.toInt() ?? 1;
   final trainerLabel = ownerDailyScheduleTrainerLabel(session, null);
-  final trainerLine = isPlaceholderScheduleTrainerName(trainerLabel)
+  final trainerLine = isUnclaimed ||
+          isPlaceholderScheduleTrainerName(trainerLabel)
       ? null
       : trainerLabel;
 
