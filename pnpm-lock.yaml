@@ -122,6 +122,9 @@ importers:
       stripe:
         specifier: ^17.7.0
         version: 17.7.0
+      tz-lookup:
+        specifier: ^6.1.25
+        version: 6.1.25
       winston:
         specifier: ^3.19.0
         version: 3.19.0
@@ -6426,6 +6429,9 @@ packages:
     resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  tz-lookup@6.1.25:
+    resolution: {integrity: sha512-fFewT9o1uDzsW1QnUU1ValqaihFnwiUiiHr1S79/fxOzKXYYvX+EHeRnpvQJ9B3Qg67wPXT6QF2Esc4pFOrvLg==}
 
   uglify-js@3.19.3:
     resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
@@ -13985,6 +13991,8 @@ snapshots:
   typescript@5.7.2: {}
 
   typescript@5.9.2: {}
+
+  tz-lookup@6.1.25: {}
 
   uglify-js@3.19.3:
     optional: true

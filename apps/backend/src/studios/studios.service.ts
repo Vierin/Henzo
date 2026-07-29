@@ -7,6 +7,7 @@ import { TranslationService } from '../trainings/translation.service';
 import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
+import tzLookup from 'tz-lookup';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -1331,6 +1332,7 @@ export class StudiosService {
 
       let latitude = createStudioDto.latitude;
       let longitude = createStudioDto.longitude;
+      let timezone = createStudioDto.timezone?.trim() || undefined;
 
       if (createStudioDto.address && !latitude && !longitude) {
         try {
@@ -1344,6 +1346,21 @@ export class StudiosService {
           }
         } catch (error) {
           console.error('⚠️ Failed to geocode address:', error);
+        }
+      }
+
+      if (
+        !timezone &&
+        typeof latitude === 'number' &&
+        typeof longitude === 'number'
+      ) {
+        try {
+          timezone = tzLookup(latitude, longitude);
+        } catch (error) {
+          console.error(
+            '⚠️ Failed to resolve timezone from coordinates:',
+            error,
+          );
         }
       }
 
@@ -1373,6 +1390,7 @@ export class StudiosService {
             reminderSettings,
             latitude,
             longitude,
+            timezone,
             ownerId,
             status: 'DRAFT',
             // Unclaimed (ops) studios require owner confirmation until settings change.

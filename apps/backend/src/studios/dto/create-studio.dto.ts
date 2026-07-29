@@ -32,6 +32,10 @@ export class CreateStudioDto {
   address?: string;
 
   @IsOptional()
+  @IsString()
+  timezone?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(-90)
   @Max(90)

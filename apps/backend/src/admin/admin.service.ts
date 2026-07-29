@@ -1274,6 +1274,8 @@ export class AdminService {
         name: dto.name.trim(),
         description: dto.description,
         address: dto.address,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
         phone: dto.phone,
         email: dto.email?.trim().toLowerCase() || intended,
       },
