@@ -48,6 +48,7 @@ export async function fetchAdminStudios(params: {
   search?: string;
   activityTier?: string;
   onboardingIncomplete?: boolean;
+  unclaimed?: boolean;
 }): Promise<Paginated<AdminStudioRow>> {
   const q = new URLSearchParams();
   if (params.page) q.set('page', String(params.page));
@@ -56,6 +57,7 @@ export async function fetchAdminStudios(params: {
   if (params.search) q.set('search', params.search);
   if (params.activityTier) q.set('activityTier', params.activityTier);
   if (params.onboardingIncomplete) q.set('onboardingIncomplete', 'true');
+  if (params.unclaimed) q.set('unclaimed', 'true');
   const res = await apiClient.get<ApiWrap<Paginated<AdminStudioRow>>>(
     `/admin/studios?${q.toString()}`,
   );
@@ -198,6 +200,22 @@ export async function fetchAdminStudioTrainings(
   return res.data;
 }
 
+export type TrainingCategoryOption = {
+  id: number;
+  name_en: string;
+  name_vn: string | null;
+  name_ru: string | null;
+};
+
+export async function fetchTrainingCategories(): Promise<
+  TrainingCategoryOption[]
+> {
+  const res = await apiClient.get<TrainingCategoryOption[]>(
+    '/trainings/categories',
+  );
+  return Array.isArray(res) ? res : [];
+}
+
 export async function createAdminStudioTraining(
   studioId: string,
   body: {
@@ -206,10 +224,12 @@ export async function createAdminStudioTraining(
     price: number;
     studioId: string;
     description?: string;
+    language?: string;
     trainingCategoryId?: number;
+    trainerIds?: string[];
   },
-): Promise<unknown> {
-  const res = await apiClient.post<ApiWrap<unknown>>(
+): Promise<AdminTraining> {
+  const res = await apiClient.post<ApiWrap<AdminTraining>>(
     `/admin/studios/${studioId}/trainings`,
     body,
   );
@@ -233,6 +253,64 @@ export async function fetchAdminStudioBookings(
   if (sort) q.set('sort', sort);
   const res = await apiClient.get<ApiWrap<AdminBooking[]>>(
     `/admin/studios/${studioId}/bookings?${q.toString()}`,
+  );
+  return res.data;
+}
+
+export async function requestAdminStudioClaimLink(
+  studioId: string,
+  body?: { sendEmail?: boolean },
+): Promise<{
+  manageUrl: string;
+  confirmUrl: string;
+  expiresAt: string;
+}> {
+  const res = await apiClient.post<
+    ApiWrap<{ manageUrl: string; confirmUrl: string; expiresAt: string }>
+  >(`/admin/studios/${studioId}/claim-link`, body ?? {});
+  return res.data;
+}
+
+export async function fetchAdminStudioPendingEnrollments(
+  studioId: string,
+  limit = 100,
+): Promise<
+  Array<{
+    id: string;
+    createdAt: string;
+    User: { id: string; name: string | null; email: string };
+    TrainingSession: {
+      id: string;
+      startsAt: string;
+      endsAt: string;
+      Training: { id: string; name: string };
+    };
+  }>
+> {
+  const res = await apiClient.get<
+    ApiWrap<
+      Array<{
+        id: string;
+        createdAt: string;
+        User: { id: string; name: string | null; email: string };
+        TrainingSession: {
+          id: string;
+          startsAt: string;
+          endsAt: string;
+          Training: { id: string; name: string };
+        };
+      }>
+    >
+  >(`/admin/studios/${studioId}/pending-enrollments?limit=${limit}`);
+  return res.data;
+}
+
+export async function confirmAdminStudioPendingEnrollment(
+  studioId: string,
+  enrollmentId: string,
+): Promise<{ success: boolean }> {
+  const res = await apiClient.post<ApiWrap<{ success: boolean }>>(
+    `/admin/studios/${studioId}/pending-enrollments/${enrollmentId}/confirm`,
   );
   return res.data;
 }

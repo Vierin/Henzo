@@ -8,11 +8,13 @@ export function AdminModal({
   title,
   onClose,
   children,
+  size = 'md',
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
+  size?: 'md' | 'lg';
 }) {
   useEffect(() => {
     if (!open) return;
@@ -24,6 +26,8 @@ export function AdminModal({
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const widthClass = size === 'lg' ? 'max-w-xl' : 'max-w-md';
 
   return (
     <div
@@ -37,7 +41,9 @@ export function AdminModal({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+      <div
+        className={`relative z-10 w-full ${widthClass} max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-5 shadow-xl`}
+      >
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-lg font-semibold">{title}</h3>
           <button

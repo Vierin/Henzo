@@ -16,7 +16,10 @@ import {
   resolveStudioBrandNameForDiscovery,
   resolveSessionLocationDisplayName,
 } from '../lib/training-locations';
-import { buildPublicTrainerPayload } from '../fitness/trainer-display.util';
+import {
+  buildPublicTrainerPayload,
+  isUnclaimedStudio,
+} from '../fitness/trainer-display.util';
 import {
   assertValidClientReviewComment,
   assertValidReminderSettingsText,
@@ -1421,10 +1424,11 @@ export class StudiosService {
 
         const now = new Date();
 
+        const initialSubscriptionType = intendedOwnerEmail ? 'STUDIO' : 'SOLO';
         await tx.subscription.create({
           data: {
             studioId: studio.id,
-            type: 'SOLO',
+            type: initialSubscriptionType,
             status: 'ACTIVE',
             startDate: now,
             updatedAt: now,
@@ -1497,7 +1501,9 @@ export class StudiosService {
       (result as any).services = services;
 
       console.log(
-        `✅ Created Studio "${result.name}" with default SOLO subscription`,
+        `✅ Created Studio "${result.name}" with default ${
+          intendedOwnerEmail ? 'STUDIO' : 'SOLO'
+        } subscription`,
       );
       const createdDescription = createStudioDto.description?.trim();
       if (createdDescription) {
@@ -1775,6 +1781,8 @@ export class StudiosService {
           descriptionRu: true,
           slug: true,
           reminderSettings: true,
+          claimedAt: true,
+          intendedOwnerEmail: true,
           _count: {
             select: {
               Review: true,
@@ -1843,6 +1851,16 @@ export class StudiosService {
       const publicReminderSettings = this.pickPublicReminderSettings(
         Studio.reminderSettings,
       );
+      const hideTrainers = isUnclaimedStudio(Studio);
+      const studioOwner = hideTrainers
+        ? null
+        : (Studio as any).User
+          ? {
+              id: (Studio as any).User.id,
+              name: (Studio as any).User.name,
+              email: (Studio as any).User.email,
+            }
+          : null;
 
       // Transform Prisma response to frontend format
       const transformedStudio = {
@@ -1907,13 +1925,15 @@ export class StudiosService {
               }
             : undefined,
         })),
-        owner: (Studio as any).User
-          ? {
-              id: (Studio as any).User.id,
-              name: (Studio as any).User.name,
-              avatarUrl: (Studio as any).User.avatarUrl ?? null,
-            }
-          : undefined,
+        owner: hideTrainers
+          ? undefined
+          : (Studio as any).User
+            ? {
+                id: (Studio as any).User.id,
+                name: (Studio as any).User.name,
+                avatarUrl: (Studio as any).User.avatarUrl ?? null,
+              }
+            : undefined,
         // Add derived categories from services
         categories: Array.from(
           new Set(
@@ -1949,16 +1969,9 @@ export class StudiosService {
                   }),
                 }
               : null,
-            trainer: buildPublicTrainerPayload(
-              session.Trainer,
-              (Studio as any).User
-                ? {
-                    id: (Studio as any).User.id,
-                    name: (Studio as any).User.name,
-                    email: (Studio as any).User.email,
-                  }
-                : null,
-            ),
+            trainer: hideTrainers
+              ? null
+              : buildPublicTrainerPayload(session.Trainer, studioOwner),
           }),
         ),
       };
@@ -2020,6 +2033,8 @@ export class StudiosService {
           descriptionRu: true,
           slug: true,
           timezone: true,
+          claimedAt: true,
+          intendedOwnerEmail: true,
           _count: {
             select: {
               Review: true,
@@ -2202,15 +2217,29 @@ export class StudiosService {
     } else {
       delete studio.reminderSettings;
     }
-    const trainers = studio.trainers as
-      | Array<Record<string, unknown>>
-      | undefined;
-    if (Array.isArray(trainers)) {
-      studio.trainers = trainers.map((t) => ({
-        id: t.id,
-        name: t.name,
-        accessLevel: t.accessLevel,
-      }));
+    const hideTrainers = isUnclaimedStudio({
+      claimedAt: studio.claimedAt as Date | string | null | undefined,
+      intendedOwnerEmail: studio.intendedOwnerEmail as
+        | string
+        | null
+        | undefined,
+    });
+    // Don't leak claim ops fields / tech-owner team on public pages.
+    delete studio.claimedAt;
+    delete studio.intendedOwnerEmail;
+    if (hideTrainers) {
+      studio.trainers = [];
+    } else {
+      const trainers = studio.trainers as
+        | Array<Record<string, unknown>>
+        | undefined;
+      if (Array.isArray(trainers)) {
+        studio.trainers = trainers.map((t) => ({
+          id: t.id,
+          name: t.name,
+          accessLevel: t.accessLevel,
+        }));
+      }
     }
     const reviews = studio.reviews as Array<{
       user?: { id?: unknown; name?: unknown; email?: unknown };
@@ -2241,6 +2270,8 @@ export class StudiosService {
         status: true,
         timezone: true,
         reminderSettings: true,
+        claimedAt: true,
+        intendedOwnerEmail: true,
         User: {
           select: { id: true, name: true, email: true },
         },
@@ -2249,6 +2280,8 @@ export class StudiosService {
     if (!studio || studio.status !== 'ACTIVE') {
       return [];
     }
+
+    const hideTrainers = isUnclaimedStudio(studio);
 
     const studioOwner = studio.User
       ? {
@@ -2379,7 +2412,9 @@ export class StudiosService {
                 : null,
             }
           : null,
-        trainer: buildPublicTrainerPayload(s.Trainer, studioOwner),
+        trainer: hideTrainers
+          ? null
+          : buildPublicTrainerPayload(s.Trainer, studioOwner),
         timezone: studio.timezone,
         studio: { locationCount },
       };

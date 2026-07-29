@@ -14,21 +14,27 @@ import { AdminTable } from '@/components/admin/admin-table';
 import {
   activateFounderProgram,
   createAdminRecurringSessions,
+  confirmAdminStudioPendingEnrollment,
   createAdminStudioTrainer,
   createAdminStudioTraining,
   fetchAdminStudio,
   fetchAdminStudioActivity,
   fetchAdminStudioAnalytics,
+  fetchAdminStudioPendingEnrollments,
   fetchAdminStudioClients,
   fetchAdminStudioPaymentEvents,
   fetchAdminStudioTrainers,
   fetchAdminStudioTrainings,
   fetchAdminStudioVisits,
+  fetchTrainingCategories,
   patchAdminStudioProfile,
   patchAdminSubscription,
   publishAdminStudio,
+  requestAdminStudioClaimLink,
   uploadAdminStudioPhoto,
+  type TrainingCategoryOption,
 } from '@/lib/admin/api';
+import { compressImageForAdminUpload } from '@/lib/admin/compressImageForAdminUpload';
 import type {
   AdminPaymentEventRow,
   AdminStudioClientRow,
@@ -203,6 +209,43 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
           activity={activity}
           saving={saving}
           onGoToEdit={() => setTab('edit')}
+          onCopyClaimLink={async () => {
+            setSaving(true);
+            setError(null);
+            setMsg(null);
+            try {
+              const res = await requestAdminStudioClaimLink(studioId, {
+                sendEmail: false,
+              });
+              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                await navigator.clipboard.writeText(res.manageUrl);
+                setMsg('Claim link copied');
+              } else {
+                setMsg(`Claim link: ${res.manageUrl}`);
+              }
+            } catch (e) {
+              setError(
+                e instanceof Error ? e.message : 'Failed to generate link',
+              );
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onSendClaimEmail={async () => {
+            setSaving(true);
+            setError(null);
+            setMsg(null);
+            try {
+              await requestAdminStudioClaimLink(studioId, { sendEmail: true });
+              setMsg('Claim email sent');
+            } catch (e) {
+              setError(
+                e instanceof Error ? e.message : 'Failed to send claim email',
+              );
+            } finally {
+              setSaving(false);
+            }
+          }}
           onPublish={async () => {
             setSaving(true);
             setMsg(null);
@@ -252,15 +295,15 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
             setMsg(null);
             setError(null);
             try {
-              const base64 = await readFileAsDataUrl(file);
+              const compressed = await compressImageForAdminUpload(file);
               const res = await uploadAdminStudioPhoto(studioId, {
-                base64,
-                contentType: file.type || 'image/jpeg',
-                fileName: file.name,
+                base64: compressed.base64,
+                contentType: compressed.contentType,
+                fileName: compressed.fileName,
               });
               setMsg('Photo uploaded');
               await loadStudio();
-              return res.photos;
+              return res.photos ?? [];
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Upload failed');
               throw e;
@@ -268,15 +311,24 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               setSaving(false);
             }
           }}
-          onCreateTraining={async (body) => {
+          onCreateTraining={async (payload) => {
             setSaving(true);
             setError(null);
             try {
-              await createAdminStudioTraining(studioId, {
-                ...body,
+              const created = await createAdminStudioTraining(studioId, {
+                ...payload.training,
                 studioId,
               });
-              setMsg('Training created');
+              const trainingId = (created as { id?: string })?.id;
+              if (!trainingId) {
+                throw new Error('Training created but id missing');
+              }
+              await createAdminRecurringSessions(studioId, {
+                studioId,
+                trainingId,
+                ...payload.sessions,
+              });
+              setMsg('Training and sessions created');
               await loadEditData();
               await loadStudio();
             } catch (e) {
@@ -369,12 +421,16 @@ function OverviewTab({
   activity,
   saving,
   onGoToEdit,
+  onCopyClaimLink,
+  onSendClaimEmail,
   onPublish,
 }: {
   studio: AdminStudioDetail;
   activity: StudioActivityResponse | null;
   saving: boolean;
   onGoToEdit: () => void;
+  onCopyClaimLink: () => Promise<void>;
+  onSendClaimEmail: () => Promise<void>;
   onPublish: () => Promise<void>;
 }) {
   const cl = studio.onboardingChecklist;
@@ -388,6 +444,38 @@ function OverviewTab({
   );
   const canPublish = cl.canPublish && studio.status !== 'ACTIVE';
   const needsSessions = studio._count.TrainingSession === 0;
+  const [pendingRows, setPendingRows] = useState<
+    Array<{
+      id: string;
+      createdAt: string;
+      User: { id: string; name: string | null; email: string };
+      TrainingSession: {
+        id: string;
+        startsAt: string;
+        Training: { id: string; name: string };
+      };
+    }>
+  >([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const loadPending = useCallback(async () => {
+    if (!studio.isUnclaimed) {
+      setPendingRows([]);
+      return;
+    }
+    setPendingLoading(true);
+    try {
+      const rows = await fetchAdminStudioPendingEnrollments(studio.id, 20);
+      setPendingRows(rows);
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [studio.id, studio.isUnclaimed]);
+
+  useEffect(() => {
+    void loadPending();
+  }, [loadPending]);
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -414,11 +502,78 @@ function OverviewTab({
                   : '—'}
             </dd>
           </div>
+          {studio.isUnclaimed ? (
+            <div className="pt-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void onCopyClaimLink()}
+                  className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  Copy claim link
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void onSendClaimEmail()}
+                  className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  Send claim email
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div>
             <dt className="text-zinc-500">Last activity</dt>
             <dd>{formatLastActive(studio.lastActivityAt)}</dd>
           </div>
         </dl>
+        {studio.isUnclaimed ? (
+          <div className="mt-4">
+            <h3 className="text-sm font-medium">Pending enrollments</h3>
+            {pendingLoading ? (
+              <p className="mt-2 text-xs text-zinc-500">Loading…</p>
+            ) : pendingRows.length === 0 ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                No pending enrollments
+              </p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {pendingRows.map((row) => (
+                  <li
+                    key={row.id}
+                    className="rounded border border-zinc-200 px-2 py-2 text-xs"
+                  >
+                    <p className="font-medium">
+                      {row.TrainingSession.Training.name} ·{' '}
+                      {new Date(row.TrainingSession.startsAt).toLocaleString()}
+                    </p>
+                    <p className="text-zinc-500">
+                      {row.User.name || 'Client'} · {row.User.email}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={confirmingId === row.id}
+                      onClick={() => {
+                        setConfirmingId(row.id);
+                        void confirmAdminStudioPendingEnrollment(
+                          studio.id,
+                          row.id,
+                        )
+                          .then(() => loadPending())
+                          .finally(() => setConfirmingId(null));
+                      }}
+                      className="mt-1 rounded border border-zinc-200 px-2 py-1 text-xs hover:bg-zinc-50 disabled:opacity-50"
+                    >
+                      Confirm booking
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -514,8 +669,8 @@ function OverviewTab({
         </p>
         {needsSessions ? (
           <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            No class sessions yet. Add recurring sessions in Setup / Edit so
-            clients have something to book.
+            No class sessions yet. Add a training with a schedule in Setup /
+            Edit so clients have something to book.
           </p>
         ) : null}
         {!cl.requiredCompleted ? (
@@ -661,6 +816,99 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function todayInputValue() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function addMonthsInputValue(base: string, months: number) {
+  const [y, m, d] = base.split('-').map(Number);
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+  dt.setMonth(dt.getMonth() + months);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/** ISO weekday: Mon=1 … Sun=7 (matches mobile / backend). */
+function isoWeekdayFromDateInput(value: string): number {
+  const [y, m, d] = value.split('-').map(Number);
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+  const js = dt.getDay(); // Sun=0
+  return js === 0 ? 7 : js;
+}
+
+function dateInputToApiDay(value: string): string {
+  return `${value}T00:00:00.000`;
+}
+
+function normalizeHm(value: string): string {
+  const m = value.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return '09:00';
+  return `${m[1].padStart(2, '0')}:${m[2]}`;
+}
+
+function weeksCountInclusive(start: string, end: string): number {
+  const [ys, ms, ds] = start.split('-').map(Number);
+  const [ye, me, de] = end.split('-').map(Number);
+  const a = new Date(ys, (ms ?? 1) - 1, ds ?? 1).getTime();
+  const b = new Date(ye, (me ?? 1) - 1, de ?? 1).getTime();
+  const days = Math.floor((b - a) / (24 * 60 * 60 * 1000)) + 1;
+  return Math.min(26, Math.max(1, Math.ceil(days / 7)));
+}
+
+function studioLocationOptions(
+  studio: AdminStudioDetail,
+): { id: string; label: string }[] {
+  const mainLabel =
+    (studio.address && studio.address.trim()) || studio.name || 'Main location';
+  const opts: { id: string; label: string }[] = [
+    { id: 'default', label: mainLabel },
+  ];
+  const settings = studio.reminderSettings;
+  if (!settings || typeof settings !== 'object') return opts;
+  const raw = (settings as Record<string, unknown>).trainingLocations;
+  if (!Array.isArray(raw)) return opts;
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const loc = entry as { id?: string; name?: string; address?: string };
+    const id = String(loc.id ?? '').trim();
+    if (!id || id === 'default') continue;
+    const label =
+      String(loc.name ?? '').trim() || String(loc.address ?? '').trim() || id;
+    opts.push({ id, label });
+  }
+  return opts;
+}
+
+type CreateTrainingWithSessionsPayload = {
+  training: {
+    name: string;
+    duration: number;
+    price: number;
+    description?: string;
+    language?: string;
+    trainingCategoryId?: number;
+    trainerIds: string[];
+  };
+  sessions: {
+    capacity: number;
+    trainerId?: string;
+    locationId?: string;
+    daysOfWeek?: number[];
+    startTime?: string;
+    slots?: { day: number; startTime: string }[];
+    weeksCount: number;
+    startsFromDate: string;
+    endsOnDate: string;
+    timezone?: string;
+  };
+};
+
 function EditTab({
   studio,
   trainings,
@@ -678,12 +926,9 @@ function EditTab({
   saving: boolean;
   onSaveProfile: (fields: Record<string, unknown>) => Promise<void>;
   onUploadPhoto: (file: File) => Promise<string[]>;
-  onCreateTraining: (body: {
-    name: string;
-    duration: number;
-    price: number;
-    description?: string;
-  }) => Promise<void>;
+  onCreateTraining: (
+    payload: CreateTrainingWithSessionsPayload,
+  ) => Promise<void>;
   onCreateTrainer: (body: {
     name: string;
     email?: string;
@@ -707,10 +952,31 @@ function EditTab({
     setPhotos((studio.photos ?? []).join('\n'));
   }, [studio.photos]);
 
+  const locations = studioLocationOptions(studio);
+
   const [trainingModalOpen, setTrainingModalOpen] = useState(false);
+  const [categories, setCategories] = useState<TrainingCategoryOption[]>([]);
   const [trName, setTrName] = useState('');
+  const [trCategoryId, setTrCategoryId] = useState('');
+  const [trLocationId, setTrLocationId] = useState('default');
   const [trDuration, setTrDuration] = useState('60');
-  const [trPrice, setTrPrice] = useState('0');
+  const [trCapacity, setTrCapacity] = useState('10');
+  const [trPrice, setTrPrice] = useState('');
+  const [trLanguage, setTrLanguage] = useState('en');
+  const [trDescription, setTrDescription] = useState('');
+  const [trTrainerId, setTrTrainerId] = useState('');
+  const [trRecurring, setTrRecurring] = useState(false);
+  const [trDate, setTrDate] = useState(todayInputValue);
+  const [trTime, setTrTime] = useState('09:00');
+  const [trEndDate, setTrEndDate] = useState(() =>
+    addMonthsInputValue(todayInputValue(), 2),
+  );
+  const [trDays, setTrDays] = useState<number[]>([1, 3, 5]);
+  const [trDayTimes, setTrDayTimes] = useState<Record<number, string>>({
+    1: '09:00',
+    3: '09:00',
+    5: '09:00',
+  });
 
   const [trainerModalOpen, setTrainerModalOpen] = useState(false);
   const [trainerName, setTrainerName] = useState('');
@@ -722,20 +988,127 @@ function EditTab({
   const [sessTime, setSessTime] = useState('09:00');
   const [sessCapacity, setSessCapacity] = useState('10');
 
+  useEffect(() => {
+    if (!trainingModalOpen) return;
+    let cancelled = false;
+    void fetchTrainingCategories()
+      .then((list) => {
+        if (!cancelled) setCategories(list);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [trainingModalOpen]);
+
+  const resetTrainingForm = () => {
+    const today = todayInputValue();
+    setTrName('');
+    setTrCategoryId('');
+    setTrLocationId('default');
+    setTrDuration('60');
+    setTrCapacity('10');
+    setTrPrice('');
+    setTrLanguage('en');
+    setTrDescription('');
+    setTrTrainerId('');
+    setTrRecurring(false);
+    setTrDate(today);
+    setTrTime('09:00');
+    setTrEndDate(addMonthsInputValue(today, 2));
+    setTrDays([1, 3, 5]);
+    setTrDayTimes({ 1: '09:00', 3: '09:00', 5: '09:00' });
+  };
+
+  const setRecurringDays = (days: number[]) => {
+    setTrDays(days);
+    setTrDayTimes((prev) => {
+      const next = { ...prev };
+      for (const d of days) {
+        if (!next[d]) next[d] = trTime || '09:00';
+      }
+      for (const key of Object.keys(next)) {
+        const day = Number(key);
+        if (!days.includes(day)) delete next[day];
+      }
+      return next;
+    });
+  };
+
+  const trainingFormValid = (() => {
+    const duration = Number(trDuration) || 0;
+    const capacity = Number(trCapacity) || 0;
+    const price = Number(trPrice) || 0;
+    if (!trName.trim()) return false;
+    if (duration < 1 || duration > 480) return false;
+    if (capacity < 1 || capacity > 30) return false;
+    if (price <= 0) return false;
+    if (categories.length > 0 && !trCategoryId) return false;
+    if (!trDate) return false;
+    if (trRecurring) {
+      if (trDays.length === 0) return false;
+      if (!trEndDate || trEndDate < trDate) return false;
+      const maxEnd = addMonthsInputValue(trDate, 2);
+      if (trEndDate > maxEnd) return false;
+    } else if (!trTime) {
+      return false;
+    }
+    return true;
+  })();
+
   // On failure the parent handler surfaces the error banner and rethrows; we
   // swallow here so the modal stays open (fields intact) with no unhandled
   // rejection.
   const submitTraining = async () => {
+    if (!trainingFormValid) return;
+    const duration = Number(trDuration) || 60;
+    const capacity = Number(trCapacity) || 10;
+    const price = Number(trPrice);
+    const categoryId = trCategoryId ? Number(trCategoryId) : undefined;
     try {
+      const sessions: CreateTrainingWithSessionsPayload['sessions'] =
+        trRecurring
+          ? {
+              capacity,
+              trainerId: trTrainerId || undefined,
+              locationId: trLocationId || undefined,
+              slots: trDays.map((day) => ({
+                day,
+                startTime: normalizeHm(trDayTimes[day] || trTime || '09:00'),
+              })),
+              weeksCount: weeksCountInclusive(trDate, trEndDate),
+              startsFromDate: dateInputToApiDay(trDate),
+              endsOnDate: dateInputToApiDay(trEndDate),
+              timezone: 'Asia/Ho_Chi_Minh',
+            }
+          : {
+              capacity,
+              trainerId: trTrainerId || undefined,
+              locationId: trLocationId || undefined,
+              daysOfWeek: [isoWeekdayFromDateInput(trDate)],
+              startTime: normalizeHm(trTime),
+              weeksCount: 1,
+              startsFromDate: dateInputToApiDay(trDate),
+              endsOnDate: dateInputToApiDay(trDate),
+              timezone: 'Asia/Ho_Chi_Minh',
+            };
+
       await onCreateTraining({
-        name: trName.trim(),
-        duration: Number(trDuration) || 60,
-        price: Number(trPrice) || 0,
+        training: {
+          name: trName.trim(),
+          duration,
+          price,
+          description: trDescription.trim() || undefined,
+          language: trLanguage || undefined,
+          trainingCategoryId: categoryId,
+          trainerIds: trTrainerId ? [trTrainerId] : [],
+        },
+        sessions,
       });
       setTrainingModalOpen(false);
-      setTrName('');
-      setTrDuration('60');
-      setTrPrice('0');
+      resetTrainingForm();
     } catch {
       /* error surfaced by parent */
     }
@@ -850,10 +1223,10 @@ function EditTab({
             ) : (
               <p className="text-sm text-zinc-400">No photos yet</p>
             )}
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50">
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp"
                 disabled={saving || uploading}
                 className="sr-only"
                 onChange={(e) => {
@@ -863,8 +1236,9 @@ function EditTab({
                   setUploading(true);
                   void onUploadPhoto(file)
                     .then((next) => {
-                      setPhotoList(next);
-                      setPhotos(next.join('\n'));
+                      const list = Array.isArray(next) ? next : [];
+                      setPhotoList(list);
+                      setPhotos(list.join('\n'));
                     })
                     .catch(() => {
                       /* parent surfaces error */
@@ -872,8 +1246,11 @@ function EditTab({
                     .finally(() => setUploading(false));
                 }}
               />
-              {uploading ? 'Uploading…' : 'Upload photo'}
+              {uploading ? 'Compressing & uploading…' : 'Upload photo'}
             </label>
+            <p className="text-xs text-zinc-400">
+              Images are compressed to WebP (max ~1600px) before upload.
+            </p>
             <label className="block text-sm">
               <span className="text-zinc-500">
                 Or paste photo URLs (one per line)
@@ -914,8 +1291,17 @@ function EditTab({
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-medium">Trainings ({trainings.length})</h2>
-          <AddButton onClick={() => setTrainingModalOpen(true)} />
+          <AddButton
+            onClick={() => {
+              resetTrainingForm();
+              setTrainingModalOpen(true);
+            }}
+          />
         </div>
+        <p className="mt-1 text-xs text-zinc-500">
+          Creates the class catalog item and schedule sessions in one step (same
+          fields as the mobile app; trainer is optional).
+        </p>
         <ul className="mt-2 space-y-1 text-sm">
           {trainings.map((t) => (
             <li key={t.id}>
@@ -942,7 +1328,7 @@ function EditTab({
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-medium">Recurring sessions</h2>
+          <h2 className="font-medium">Add sessions to existing training</h2>
           <AddButton
             onClick={() => {
               if (trainings.length === 0) return;
@@ -952,12 +1338,12 @@ function EditTab({
           />
         </div>
         <p className="mt-1 text-xs text-zinc-500">
-          Create weekly class slots so clients have something to book. Need at
-          least one training first.
+          Optional — use when the training already exists and you only need more
+          weekly slots.
         </p>
         {trainings.length === 0 ? (
           <p className="mt-2 text-sm text-amber-700">
-            Add a training above before creating sessions.
+            Add a training above before creating extra sessions.
           </p>
         ) : null}
       </section>
@@ -965,6 +1351,7 @@ function EditTab({
       <AdminModal
         open={trainingModalOpen}
         title="Add training"
+        size="lg"
         onClose={() => setTrainingModalOpen(false)}
       >
         <div className="space-y-3">
@@ -975,30 +1362,230 @@ function EditTab({
               className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
             />
           </Field>
+          {categories.length > 0 ? (
+            <Field label="Category">
+              <select
+                value={trCategoryId}
+                onChange={(e) => setTrCategoryId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              >
+                <option value="">Select category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name_en}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+          {locations.length > 1 ? (
+            <Field label="Address / location">
+              <select
+                value={trLocationId}
+                onChange={(e) => setTrLocationId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              >
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Duration (min)">
               <input
                 type="number"
+                min={1}
+                max={480}
                 value={trDuration}
                 onChange={(e) => setTrDuration(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Price">
+            <Field label="Capacity">
               <input
                 type="number"
-                value={trPrice}
-                onChange={(e) => setTrPrice(e.target.value)}
+                min={1}
+                max={30}
+                value={trCapacity}
+                onChange={(e) => setTrCapacity(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
               />
             </Field>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Price (VND)">
+              <input
+                type="number"
+                min={1}
+                value={trPrice}
+                onChange={(e) => setTrPrice(e.target.value)}
+                placeholder="e.g. 250000"
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Language">
+              <select
+                value={trLanguage}
+                onChange={(e) => setTrLanguage(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              >
+                <option value="en">English</option>
+                <option value="ru">Russian</option>
+                <option value="vi">Vietnamese</option>
+              </select>
+            </Field>
+          </div>
+          <Field label="Description (optional)">
+            <textarea
+              value={trDescription}
+              onChange={(e) => setTrDescription(e.target.value)}
+              rows={2}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </Field>
+          <Field label="Trainer (optional)">
+            <select
+              value={trTrainerId}
+              onChange={(e) => setTrTrainerId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            >
+              <option value="">No trainer</option>
+              {trainers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <div className="border-t border-zinc-100 pt-3">
+            <p className="text-sm font-medium text-zinc-700">Schedule</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTrRecurring(false)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  !trRecurring
+                    ? 'bg-[#3F3287] text-white'
+                    : 'bg-zinc-100 text-zinc-600'
+                }`}
+              >
+                One training
+              </button>
+              <button
+                type="button"
+                onClick={() => setTrRecurring(true)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  trRecurring
+                    ? 'bg-[#3F3287] text-white'
+                    : 'bg-zinc-100 text-zinc-600'
+                }`}
+              >
+                Repeated training
+              </button>
+            </div>
+          </div>
+
+          {!trRecurring ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Date">
+                <input
+                  type="date"
+                  value={trDate}
+                  onChange={(e) => setTrDate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </Field>
+              <Field label="Time">
+                <input
+                  type="time"
+                  value={trTime}
+                  onChange={(e) => setTrTime(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </Field>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Start date">
+                  <input
+                    type="date"
+                    value={trDate}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setTrDate(next);
+                      const maxEnd = addMonthsInputValue(next, 2);
+                      if (trEndDate > maxEnd) setTrEndDate(maxEnd);
+                      if (trEndDate < next) setTrEndDate(next);
+                    }}
+                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="End date (max +2 months)">
+                  <input
+                    type="date"
+                    value={trEndDate}
+                    min={trDate}
+                    max={addMonthsInputValue(trDate, 2)}
+                    onChange={(e) => setTrEndDate(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  />
+                </Field>
+              </div>
+              <Field label="Repeat on">
+                <div className="mt-1">
+                  <WeekdayPills value={trDays} onChange={setRecurringDays} />
+                </div>
+              </Field>
+              {trDays.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-zinc-500">Time per day</p>
+                  {trDays.map((day) => {
+                    const label =
+                      ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
+                        day - 1
+                      ] ?? String(day);
+                    return (
+                      <div
+                        key={day}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="text-sm text-zinc-600 w-10">
+                          {label}
+                        </span>
+                        <input
+                          type="time"
+                          value={trDayTimes[day] || '09:00'}
+                          onChange={(e) =>
+                            setTrDayTimes((prev) => ({
+                              ...prev,
+                              [day]: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              <p className="text-xs text-zinc-500">
+                ~{weeksCountInclusive(trDate, trEndDate)} week
+                {weeksCountInclusive(trDate, trEndDate) === 1 ? '' : 's'} in
+                range
+              </p>
+            </>
+          )}
         </div>
         <ModalActions
-          disabled={saving || !trName.trim()}
+          disabled={saving || !trainingFormValid}
           onCancel={() => setTrainingModalOpen(false)}
           onSubmit={() => void submitTraining()}
-          submitLabel="Add training"
+          submitLabel="Create class"
         />
       </AdminModal>
 
@@ -1613,16 +2200,4 @@ function Pagination({
       </span>
     </div>
   );
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Failed to read file'));
-    };
-    reader.onerror = () => reject(reader.error ?? new Error('File read error'));
-    reader.readAsDataURL(file);
-  });
 }

@@ -33,9 +33,6 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     final trainer = session['trainer'] is Map
         ? Map<String, dynamic>.from(session['trainer'] as Map)
         : <String, dynamic>{};
-    final owner = studio?['owner'] is Map
-        ? Map<String, dynamic>.from(studio!['owner'] as Map)
-        : <String, dynamic>{};
     final cat = training['trainingCategory'] is Map
         ? Map<String, dynamic>.from(training['trainingCategory'] as Map)
         : <String, dynamic>{};
@@ -45,7 +42,6 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
         parseApiDateTime(session['endsAt']) ??
         startsAt.add(Duration(minutes: durationMin));
     final trainerName = (trainer['name'] ?? '').toString().trim();
-    final ownerName = (owner['name'] ?? '').toString().trim();
     final locName = (session['locationName'] ?? '').toString().trim();
     final studioName = (studio?['name'] ?? 'Studio').toString();
     final studioAddress = (studio?['address'] ?? '').toString().trim();
@@ -53,7 +49,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     final accentIcon = _resolveCategoryIconColor(cat, accent);
     return ClassBookingConfirmationScreen(
       classTitle: (training['name'] ?? 'Class').toString(),
-      trainerName: trainerName.isNotEmpty ? trainerName : ownerName,
+      trainerName: trainerName,
       locationTitle: locName.isNotEmpty ? locName : studioName,
       studioAddress: studioAddress.isNotEmpty ? studioAddress : null,
       startsAt: startsAt,

@@ -25,6 +25,9 @@ export default function StudiosContent() {
   const [onboardingIncomplete, setOnboardingIncomplete] = useState(
     searchParams.get('onboardingIncomplete') === 'true',
   );
+  const [unclaimed, setUnclaimed] = useState(
+    searchParams.get('unclaimed') === 'true',
+  );
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -47,13 +50,14 @@ export default function StudiosContent() {
         status: status || undefined,
         activityTier: activityTier || undefined,
         onboardingIncomplete: onboardingIncomplete || undefined,
+        unclaimed: unclaimed || undefined,
       });
       setRows(res.items);
       setTotal(res.total);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load studios');
     }
-  }, [page, search, status, activityTier, onboardingIncomplete]);
+  }, [page, search, status, activityTier, onboardingIncomplete, unclaimed]);
 
   useEffect(() => {
     void load();
@@ -249,6 +253,17 @@ export default function StudiosContent() {
             }}
           />
           Onboarding incomplete
+        </label>
+        <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            checked={unclaimed}
+            onChange={(e) => {
+              setUnclaimed(e.target.checked);
+              setPage(1);
+            }}
+          />
+          Unclaimed
         </label>
       </div>
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}

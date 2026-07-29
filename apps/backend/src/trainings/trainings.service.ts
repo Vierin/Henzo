@@ -268,10 +268,13 @@ export class TrainingsService {
     }
 
     let trainerConnect: { connect: { id: string }[] } | undefined;
-    if (trainerIds && trainerIds.length > 0) {
-      trainerConnect = {
-        connect: trainerIds.map((id: string) => ({ id })),
-      };
+    if (Array.isArray(trainerIds)) {
+      // Explicit list (may be empty) — admin optional trainer, etc.
+      if (trainerIds.length > 0) {
+        trainerConnect = {
+          connect: trainerIds.map((id: string) => ({ id })),
+        };
+      }
     } else {
       const allTrainers = await trainerRepo.findMany({
         where: { studioId: data.studioId },
