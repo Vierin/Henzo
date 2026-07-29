@@ -1994,4 +1994,45 @@ export class NotificationsService {
       console.error('[Notifications] Failed to send subscription push:', err);
     }
   }
+
+  async sendStudioRemovedPush(
+    userId: string,
+    studioName: string,
+  ): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensByUserId(userId);
+      if (tokens.length === 0) return;
+
+      const title = 'Booking cancelled';
+      const body = `Unfortunately, ${studioName} is no longer accepting bookings through Henzo. Please contact the studio directly for more information.`;
+
+      const pushData = { type: 'STUDIO_REMOVED' };
+
+      try {
+        await this.createInAppNotification({
+          userId,
+          type: 'STUDIO_REMOVED',
+          title,
+          body,
+          data: pushData,
+        });
+      } catch (e) {
+        console.error(
+          '[Notifications] Failed to save studio-removed in-app:',
+          e,
+        );
+      }
+
+      await this.sendPushNotification(
+        tokens,
+        title,
+        body,
+        pushData,
+        undefined,
+        'henzo_default',
+      );
+    } catch (err) {
+      console.error('[Notifications] Failed to send studio-removed push:', err);
+    }
+  }
 }

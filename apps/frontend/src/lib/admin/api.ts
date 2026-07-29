@@ -546,6 +546,15 @@ export async function sendAdminBroadcast(
   return res.data;
 }
 
+export async function deleteAdminStudio(
+  studioId: string,
+): Promise<{ success: boolean }> {
+  const res = await apiClient.delete<ApiWrap<{ success: boolean }>>(
+    `/admin/studios/${studioId}`,
+  );
+  return res.data;
+}
+
 export async function fetchCurrentUserRole(): Promise<string | null> {
   const res = await apiClient.get<{ user: { role: string } }>('/auth/user');
   return res.user?.role ?? null;

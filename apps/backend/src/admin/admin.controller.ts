@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Headers,
@@ -369,6 +370,20 @@ export class AdminController {
         data: await this.adminService.requestStudioClaimLink(authHeader, id, {
           sendEmail: body?.sendEmail === true,
         }),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Delete('studios/:id')
+  async deleteStudio(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.deleteUnclaimedStudio(authHeader, id),
       };
     } catch (e) {
       this.handleError(e);

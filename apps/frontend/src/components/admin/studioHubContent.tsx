@@ -32,6 +32,7 @@ import {
   patchAdminSubscription,
   publishAdminStudio,
   requestAdminStudioClaimLink,
+  deleteAdminStudio,
   uploadAdminStudioPhoto,
   type TrainingCategoryOption,
 } from '@/lib/admin/api';
@@ -373,6 +374,19 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               setError(message);
               toast.error(message);
               throw e;
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onDeleteStudio={async () => {
+            setSaving(true);
+            try {
+              await deleteAdminStudio(studioId);
+              toast.success('Studio deleted');
+              window.location.href = '/en/admin/studios';
+            } catch (e) {
+              const message = e instanceof Error ? e.message : 'Delete failed';
+              toast.error(message);
             } finally {
               setSaving(false);
             }
@@ -932,6 +946,7 @@ function EditTab({
   onCreateTraining,
   onCreateTrainer,
   onCreateSessions,
+  onDeleteStudio,
 }: {
   studio: AdminStudioDetail;
   trainings: AdminTraining[];
@@ -948,6 +963,7 @@ function EditTab({
     accessLevel: 'ADMIN' | 'EMPLOYEE';
   }) => Promise<void>;
   onCreateSessions: (body: Record<string, unknown>) => Promise<void>;
+  onDeleteStudio: () => void;
 }) {
   const [description, setDescription] = useState(studio.description ?? '');
   const [name, setName] = useState(studio.name ?? '');
@@ -1360,6 +1376,31 @@ function EditTab({
           </p>
         ) : null}
       </section>
+
+      {!studio.claimedAt && (
+        <section className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="text-sm font-semibold text-red-700">Danger zone</h3>
+          <p className="mt-1 text-xs text-red-600">
+            Permanently delete this studio and all associated data (trainings,
+            sessions, bookings). Enrolled clients will be notified.
+          </p>
+          <button
+            disabled={saving}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Are you sure you want to permanently delete "${studio.name}"? This action cannot be undone.`,
+                )
+              ) {
+                onDeleteStudio();
+              }
+            }}
+            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            Delete studio
+          </button>
+        </section>
+      )}
 
       <AdminModal
         open={trainingModalOpen}
