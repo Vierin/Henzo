@@ -17,6 +17,7 @@ import 'config/load_app_env.dart';
 import 'config/release_env.dart';
 import 'config/screen_util_config.dart';
 import 'deep_links/class_session_deep_link.dart';
+import 'deep_links/studio_claim_deep_link.dart';
 import 'deep_links/studio_deep_link.dart';
 import 'deep_links/trainer_invite_deep_link.dart';
 import 'firebase_options.dart';
@@ -25,7 +26,10 @@ import 'screens/main_shell.dart';
 import 'screens/public_class_detail_screen.dart';
 import 'utils/auth_entry_prefs.dart';
 import 'utils/operator_shell_prefs.dart';
+import 'utils/root_navigator_key.dart';
 import 'utils/session_cache_clear.dart';
+import 'utils/share_intent_pending.dart';
+import 'utils/share_intent_router.dart';
 import 'widgets/common/workspace_loading_view.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
@@ -152,8 +156,7 @@ Future<void> main() async {
 }
 
 /// Корневой [Navigator] для deep links (например `henzo://class`).
-final GlobalKey<NavigatorState> henzoRootNavigatorKey =
-    GlobalKey<NavigatorState>();
+// Key lives in [root_navigator_key.dart] — re-exported usage via import.
 
 /// Routes a tapped push notification based on its payload `type`. Runs when the
 /// user opens the app from a push (background or terminated).
@@ -338,9 +341,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     navigatorKey: henzoRootNavigatorKey,
                     child: TrainerInviteDeepLinkScope(
                       navigatorKey: henzoRootNavigatorKey,
-                      child: ClassSessionDeepLinkScope(
+                      child: StudioClaimDeepLinkScope(
                         navigatorKey: henzoRootNavigatorKey,
-                        child: scaled,
+                        child: ClassSessionDeepLinkScope(
+                          navigatorKey: henzoRootNavigatorKey,
+                          child: scaled,
+                        ),
                       ),
                     ),
                   );
@@ -382,6 +388,50 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _wasAuthenticated = false;
   bool _recoveringUnknownRole = false;
   String? _lastUserId;
+  bool _shareBootstrapStarted = false;
+  bool _shareBootstrapDone = false;
+  bool _hasSharePending = false;
+  bool _openedSharePending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrapShareIntent();
+  }
+
+  Future<void> _bootstrapShareIntent() async {
+    if (_shareBootstrapStarted) return;
+    _shareBootstrapStarted = true;
+    try {
+      await ShareIntentPending.tryRestoreFromClipboard();
+      await ShareIntentPending.tryRestoreFromInstallReferrer();
+      final pending = await ShareIntentPending.read();
+      if (pending != null) {
+        // Share arrival: browse studio/class first, skip role-picker intro.
+        await AuthEntryPrefs.markCompleted();
+      }
+      if (!mounted) return;
+      setState(() {
+        _hasSharePending = pending != null;
+        _shareBootstrapDone = true;
+      });
+      if (pending != null) {
+        _scheduleOpenSharePending();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _shareBootstrapDone = true);
+      }
+    }
+  }
+
+  void _scheduleOpenSharePending() {
+    if (_openedSharePending) return;
+    _openedSharePending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(ShareIntentRouter.openPendingWithRetry());
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -418,6 +468,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     if (isAuthenticated) {
       _lastUserId = userId;
+      // After login from soft-gate, reopen pending studio/class.
+      unawaited(() async {
+        final pending = await ShareIntentPending.read();
+        if (pending != null) {
+          await ShareIntentRouter.openPendingWithRetry();
+        }
+      }());
     }
     _wasAuthenticated = isAuthenticated;
   }
@@ -429,7 +486,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
       builder: (context, introCompleted, _) {
         return Consumer<AuthService>(
           builder: (context, auth, _) {
-            if (!auth.isInitialSessionReady || introCompleted == null) {
+            if (!auth.isInitialSessionReady ||
+                introCompleted == null ||
+                !_shareBootstrapDone) {
               final hasStoredSession =
                   Supabase.instance.client.auth.currentSession != null;
               return Scaffold(
@@ -483,8 +542,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
               );
             }
 
-            if (!introCompleted) {
+            // Share-first: never dump into role picker when a studio/class
+            // intent is waiting — show login under the pushed studio screen.
+            if (!introCompleted && !_hasSharePending) {
               return const RegistrationRoleScreen(isRootEntry: true);
+            }
+
+            if (_hasSharePending) {
+              _scheduleOpenSharePending();
             }
 
             return const LoginScreen();

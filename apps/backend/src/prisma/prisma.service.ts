@@ -83,6 +83,7 @@ export class PrismaService
       ['trainer', 'Trainer'],
       ['training', 'Training'],
       ['trainerInvite', 'TrainerInvite'],
+      ['studioClaimToken', 'StudioClaimToken'],
       ['sessionBooking', 'SessionBooking'],
       ['subscription', 'Subscription'],
       ['trainingSession', 'TrainingSession'],

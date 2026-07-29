@@ -2,16 +2,17 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminTable } from '@/components/admin/admin-table';
 import {
   ActivityTierBadge,
   formatLastActive,
 } from '@/components/admin/activityTierBadge';
-import { fetchAdminStudios } from '@/lib/admin/api';
+import { createAdminUnclaimedStudio, fetchAdminStudios } from '@/lib/admin/api';
 import type { AdminStudioRow } from '@/lib/admin/types';
 
 export default function StudiosContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [rows, setRows] = useState<AdminStudioRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -25,6 +26,16 @@ export default function StudiosContent() {
     searchParams.get('onboardingIncomplete') === 'true',
   );
   const [error, setError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: '',
+    intendedOwnerEmail: '',
+    address: '',
+    phone: '',
+    sendClaimEmail: false,
+  });
 
   const load = useCallback(async () => {
     setError(null);
@@ -48,13 +59,151 @@ export default function StudiosContent() {
     void load();
   }, [load]);
 
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateError(null);
+    setCreating(true);
+    try {
+      const created = await createAdminUnclaimedStudio({
+        name: form.name.trim(),
+        intendedOwnerEmail: form.intendedOwnerEmail.trim(),
+        address: form.address.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        sendClaimEmail: form.sendClaimEmail,
+      });
+      setShowCreate(false);
+      setForm({
+        name: '',
+        intendedOwnerEmail: '',
+        address: '',
+        phone: '',
+        sendClaimEmail: false,
+      });
+      router.push(`/en/admin/studios/${created.id}`);
+    } catch (err) {
+      setCreateError(
+        err instanceof Error ? err.message : 'Failed to create studio',
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Studios</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Studios</h1>
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        >
+          Create unclaimed studio
+        </button>
+      </div>
+
+      {showCreate ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form
+            onSubmit={handleCreate}
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+          >
+            <h2 className="text-lg font-semibold">Create unclaimed studio</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Studio is owned by the system until the real owner claims it via
+              email.
+            </p>
+            <div className="mt-4 space-y-3">
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Studio name *</span>
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">
+                  Intended owner email *
+                </span>
+                <input
+                  required
+                  type="email"
+                  value={form.intendedOwnerEmail}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      intendedOwnerEmail: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Address</span>
+                <input
+                  value={form.address}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, address: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Phone</span>
+                <input
+                  value={form.phone}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, phone: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.sendClaimEmail}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      sendClaimEmail: e.target.checked,
+                    }))
+                  }
+                />
+                Send claim email now (otherwise on first booking)
+              </label>
+            </div>
+            {createError ? (
+              <p className="mt-3 text-sm text-red-600">{createError}</p>
+            ) : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={creating}
+                onClick={() => setShowCreate(false)}
+                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={creating}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {creating ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap gap-2">
         <input
           type="search"
-          placeholder="Search name, slug, owner email"
+          placeholder="Search name, slug, owner / intended email"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -116,6 +265,11 @@ export default function StudiosContent() {
                   className="font-medium text-primary hover:underline"
                 >
                   {r.name}
+                  {r.isUnclaimed ? (
+                    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                      Unclaimed
+                    </span>
+                  ) : null}
                 </Link>
               ),
             },
@@ -137,7 +291,14 @@ export default function StudiosContent() {
             {
               key: 'owner',
               header: 'Owner',
-              render: (r) => r.User.email,
+              render: (r) =>
+                r.isUnclaimed && r.intendedOwnerEmail ? (
+                  <span className="text-amber-700">
+                    → {r.intendedOwnerEmail}
+                  </span>
+                ) : (
+                  r.User.email
+                ),
             },
             {
               key: 'clients',

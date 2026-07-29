@@ -299,6 +299,29 @@ class _OwnerTrainingSessionDetailScreenState
     }
   }
 
+  Future<void> _confirmPendingEnrollment(OwnerSessionEnrollment e) async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    setState(() => _enrollmentActionIds.add(e.enrollmentId));
+    try {
+      await DashboardApiService.updateOwnerEnrollmentStatus(
+        token,
+        e.enrollmentId,
+        'ACTIVE',
+      );
+      if (!mounted) return;
+      setState(() {
+        _enrollmentActionIds.remove(e.enrollmentId);
+        _pendingStatusByEnrollmentId[e.enrollmentId] = 'ACTIVE';
+      });
+      _reloadEnrollments();
+    } catch (err) {
+      if (!mounted) return;
+      setState(() => _enrollmentActionIds.remove(e.enrollmentId));
+      showApiError(context, err);
+    }
+  }
+
   Future<void> _handleEditSession() async {
     final updated = await openOwnerEditTrainingSessionFlow(context, _session);
     if (!mounted || updated == null) return;
@@ -551,6 +574,11 @@ class _OwnerTrainingSessionDetailScreenState
           bg = AppColors.primary100;
           fg = AppColors.primary700;
           label = tr('ownerSession.participantStatusActive');
+          break;
+        case 'PENDING':
+          bg = const Color(0xFFFFF3E0);
+          fg = const Color(0xFFE65100);
+          label = tr('ownerSession.participantStatusPending');
           break;
         case 'NO_SHOW':
           bg = AppColors.error100;
@@ -935,7 +963,10 @@ class _OwnerTrainingSessionDetailScreenState
                             );
                             final attended = effectiveStatus == 'ACTIVE';
                             final cancelled = e.status == 'CANCELLED';
+                            final isPending = effectiveStatus == 'PENDING';
                             final canToggle = !cancelled && sessionEnded;
+                            final canConfirmPending =
+                                isPending && !cancelled && isUpcoming;
                             final canRemoveAnonymous =
                                 anonymous && !cancelled && isUpcoming;
                             final isRemoving = _enrollmentActionIds.contains(
@@ -1019,7 +1050,30 @@ class _OwnerTrainingSessionDetailScreenState
                                                 size: 22.sp,
                                               ),
                                       ),
-                                    if (cancelled)
+                                    if (canConfirmPending)
+                                      TextButton(
+                                        onPressed: isRemoving
+                                            ? null
+                                            : () =>
+                                                _confirmPendingEnrollment(e),
+                                        child: isRemoving
+                                            ? SizedBox(
+                                                width: 16.w,
+                                                height: 16.w,
+                                                child:
+                                                    const CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : Text(
+                                                tr('booking.confirm'),
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.primary500,
+                                                ),
+                                              ),
+                                      )
+                                    else if (cancelled)
                                       statusBadgeForParticipant(e.status)
                                     else if (!attendanceTogglesVisible)
                                       statusBadgeForParticipant(effectiveStatus)

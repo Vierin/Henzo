@@ -15,6 +15,7 @@ import {
 } from './admin-owner-activity.service';
 import { hasCompleteStudioDetails } from '../lib/training-locations';
 import { StudiosService } from '../studios/studios.service';
+import { StudioClaimService } from '../studios/studio-claim.service';
 import { TrainingsService } from '../trainings/trainings.service';
 import { TrainersService } from '../trainers/trainers.service';
 import { StudioAnalyticsService } from '../fitness/studio-analytics.service';
@@ -23,6 +24,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { EmailService } from '../email/email.service';
 import { renderBroadcastEmail } from '../email/templates/broadcast-email.template';
 import { CreateAdminBroadcastDto } from './dto/create-admin-broadcast.dto';
+import { CreateAdminStudioDto } from './dto/create-admin-studio.dto';
 import { UpdateStudioDto } from '../studios/dto/update-studio.dto';
 import { CreateServiceDto } from '../trainings/dto/create-service.dto';
 import { UpdateServiceDto } from '../trainings/dto/update-service.dto';
@@ -31,6 +33,7 @@ import { PatchAdminSubscriptionDto } from './dto/patch-admin-subscription.dto';
 import { CreateAdminTrainerDto } from './dto/create-admin-trainer.dto';
 import { PatchAdminFeedbackDto } from './dto/patch-admin-feedback.dto';
 import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
+import { supabase } from '../lib/supabase';
 
 const ADMIN_TZ = 'Asia/Ho_Chi_Minh';
 
@@ -57,6 +60,7 @@ export class AdminService {
     private readonly eventLog: AdminEventLogService,
     private readonly ownerActivity: AdminOwnerActivityService,
     private readonly studiosService: StudiosService,
+    private readonly studioClaimService: StudioClaimService,
     private readonly trainingsService: TrainingsService,
     private readonly trainersService: TrainersService,
     private readonly studioAnalytics: StudioAnalyticsService,
@@ -188,6 +192,7 @@ export class AdminService {
       OR?: Array<{
         name?: { contains: string; mode: 'insensitive' };
         slug?: { contains: string; mode: 'insensitive' };
+        intendedOwnerEmail?: { contains: string; mode: 'insensitive' };
         User?: { email?: { contains: string; mode: 'insensitive' } };
       }>;
     } = {};
@@ -200,6 +205,7 @@ export class AdminService {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
         { slug: { contains: q, mode: 'insensitive' } },
+        { intendedOwnerEmail: { contains: q, mode: 'insensitive' } },
         { User: { email: { contains: q, mode: 'insensitive' } } },
       ];
     }
@@ -215,6 +221,8 @@ export class AdminService {
         address: true,
         createdAt: true,
         photos: true,
+        intendedOwnerEmail: true,
+        claimedAt: true,
         _count: { select: { Training: true } },
         User: { select: { id: true, email: true, name: true } },
         Subscription: {
@@ -262,12 +270,16 @@ export class AdminService {
 
     const items = pageItems.map((s) => {
       const m = metricsMap.get(s.id);
+      const isUnclaimed = !s.claimedAt && !!s.intendedOwnerEmail;
       return {
         id: s.id,
         name: s.name,
         slug: s.slug,
         status: s.status,
         createdAt: s.createdAt,
+        intendedOwnerEmail: s.intendedOwnerEmail,
+        claimedAt: s.claimedAt,
+        isUnclaimed,
         User: s.User,
         Subscription: s.Subscription,
         onboardingGaps: [
@@ -642,6 +654,8 @@ export class AdminService {
         photoGallery: true,
         workingHours: true,
         reminderSettings: true,
+        intendedOwnerEmail: true,
+        claimedAt: true,
         createdAt: true,
         User: { select: { id: true, email: true, name: true, phone: true } },
         Subscription: true,
@@ -668,6 +682,7 @@ export class AdminService {
 
     return {
       ...studio,
+      isUnclaimed: !studio.claimedAt && !!studio.intendedOwnerEmail,
       lastActivityAt: activity?.lastActivityAt ?? null,
       activityTier: activity?.activityTier ?? 'draft',
       bookingsLast30d: activity?.bookingsLast30d ?? 0,
@@ -1044,16 +1059,13 @@ export class AdminService {
     const admin = await assertAdmin(this.authService, authHeader);
     const studio = await this.prisma.studio.findUnique({
       where: { id: studioId },
-      select: { id: true, ownerId: true, name: true },
+      select: { id: true, name: true },
     });
     if (!studio) {
       throw new NotFoundException('Studio not found');
     }
 
-    const updated = await this.studiosService.updateCurrentUserStudio(
-      dto,
-      studio.ownerId,
-    );
+    const updated = await this.studiosService.updateStudioById(studioId, dto);
 
     await this.eventLog.logAdminAction({
       action: 'studio_profile_updated',
@@ -1063,6 +1075,222 @@ export class AdminService {
     });
 
     return updated;
+  }
+
+  async publishStudio(authHeader: string | undefined, studioId: string) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const studio = await this.prisma.studio.findUnique({
+      where: { id: studioId },
+      select: { id: true, status: true },
+    });
+    if (!studio) {
+      throw new NotFoundException('Studio not found');
+    }
+
+    const checklist =
+      await this.studiosService.getStudioOnboardingChecklist(studioId);
+    if (!checklist.canPublish) {
+      throw new BadRequestException({
+        message: 'Studio is not ready for publish',
+        missingRequiredSteps: checklist.missingRequiredSteps,
+        checklist,
+      });
+    }
+
+    const updated = await this.prisma.studio.update({
+      where: { id: studioId },
+      data: { status: 'ACTIVE' },
+    });
+
+    await this.eventLog.logAdminAction({
+      action: 'studio_published',
+      adminEmail: admin.email,
+      studioId,
+      metadata: { previousStatus: studio.status },
+    });
+
+    return updated;
+  }
+
+  async uploadStudioPhoto(
+    authHeader: string | undefined,
+    studioId: string,
+    body: { base64: string; contentType?: string; fileName?: string },
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const studio = await this.prisma.studio.findUnique({
+      where: { id: studioId },
+      select: { id: true, photos: true },
+    });
+    if (!studio) {
+      throw new NotFoundException('Studio not found');
+    }
+
+    const raw = (body.base64 || '').trim();
+    if (!raw) {
+      throw new BadRequestException('base64 image is required');
+    }
+
+    let contentType = (body.contentType || 'image/jpeg').toLowerCase();
+    let base64Data = raw;
+    const dataUrlMatch = /^data:([^;]+);base64,(.+)$/i.exec(raw);
+    if (dataUrlMatch) {
+      contentType = dataUrlMatch[1].toLowerCase();
+      base64Data = dataUrlMatch[2];
+    }
+    if (!contentType.startsWith('image/')) {
+      throw new BadRequestException('Only image uploads are allowed');
+    }
+
+    const ext = contentType.includes('png')
+      ? 'png'
+      : contentType.includes('webp')
+        ? 'webp'
+        : contentType.includes('gif')
+          ? 'gif'
+          : 'jpg';
+    const buffer = Buffer.from(base64Data, 'base64');
+    if (buffer.length === 0) {
+      throw new BadRequestException('Empty image payload');
+    }
+    if (buffer.length > 8 * 1024 * 1024) {
+      throw new BadRequestException('Image must be 8MB or smaller');
+    }
+
+    const bucket =
+      this.config.get<string>('SUPABASE_STUDIO_PHOTOS_BUCKET') ||
+      'studio-photos';
+    const safeName = (body.fileName || `photo.${ext}`)
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 80);
+    const path = `admin/${studioId}/${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(path, buffer, {
+        contentType,
+        upsert: true,
+      });
+    if (uploadError) {
+      throw new BadRequestException(
+        uploadError.message || 'Failed to upload photo',
+      );
+    }
+
+    const { data: publicData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+    const publicUrl = publicData?.publicUrl;
+    if (!publicUrl) {
+      throw new BadRequestException('Failed to resolve public photo URL');
+    }
+
+    const nextPhotos = [...(studio.photos ?? []), publicUrl].slice(0, 12);
+    const updated = await this.studiosService.updateStudioById(studioId, {
+      photos: nextPhotos,
+    });
+
+    await this.eventLog.logAdminAction({
+      action: 'studio_photo_uploaded',
+      adminEmail: admin.email,
+      studioId,
+      metadata: { path, contentType },
+    });
+
+    return {
+      url: publicUrl,
+      photos: nextPhotos,
+      studio: updated,
+    };
+  }
+
+  /**
+   * Create studio under system tech owner for later claim by intendedOwnerEmail.
+   */
+  async createUnclaimedStudio(
+    authHeader: string | undefined,
+    dto: CreateAdminStudioDto,
+  ) {
+    const admin = await assertAdmin(this.authService, authHeader);
+    const intended = dto.intendedOwnerEmail.trim().toLowerCase();
+    if (!intended.includes('@')) {
+      throw new BadRequestException('Valid intendedOwnerEmail is required');
+    }
+
+    const systemOwnerId = await this.resolveSystemStudioOwnerId();
+    const studio = await this.studiosService.createStudioForOwner(
+      {
+        name: dto.name.trim(),
+        description: dto.description,
+        address: dto.address,
+        phone: dto.phone,
+        email: dto.email?.trim().toLowerCase() || intended,
+      },
+      systemOwnerId,
+      { intendedOwnerEmail: intended },
+    );
+
+    let claim: Awaited<ReturnType<StudioClaimService['requestClaim']>> | null =
+      null;
+    if (dto.sendClaimEmail !== false) {
+      claim = await this.studioClaimService.requestClaim(studio.id, intended, {
+        createdBy: admin.userId,
+        sendEmail: true,
+      });
+    }
+
+    await this.eventLog.logAdminAction({
+      action: 'studio_unclaimed_created',
+      adminEmail: admin.email,
+      studioId: studio.id,
+      metadata: {
+        intendedOwnerEmail: intended,
+        claimEmailSent: dto.sendClaimEmail !== false,
+      },
+    });
+
+    return {
+      ...studio,
+      claim,
+    };
+  }
+
+  /** Stable tech owner for ops-created unclaimed studios. */
+  private async resolveSystemStudioOwnerId(): Promise<string> {
+    const configuredId = this.config
+      .get<string>('SYSTEM_STUDIO_OWNER_USER_ID')
+      ?.trim();
+    if (configuredId) {
+      const existing = await this.prisma.user.findUnique({
+        where: { id: configuredId },
+        select: { id: true },
+      });
+      if (existing) return existing.id;
+    }
+
+    const email = (
+      this.config.get<string>('SYSTEM_STUDIO_OWNER_EMAIL') ||
+      'system-studios@henzo.app'
+    )
+      .trim()
+      .toLowerCase();
+
+    const byEmail = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (byEmail) return byEmail.id;
+
+    const created = await this.prisma.user.create({
+      data: {
+        email,
+        name: 'Henzo System Studios',
+        role: 'OWNER',
+        isGuest: true,
+      },
+      select: { id: true },
+    });
+    return created.id;
   }
 
   async listStudioTrainings(authHeader: string | undefined, studioId: string) {

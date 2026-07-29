@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
-import '../screens/public_class_detail_screen.dart';
 import '../utils/class_session_link.dart';
+import '../utils/share_intent_pending.dart';
+import '../utils/share_intent_router.dart';
 
-/// Opens [PublicClassDetailScreen] from `henzo://class?...`.
+/// Opens class detail from `henzo://class?...` / https share links.
 class ClassSessionDeepLinkScope extends StatefulWidget {
   const ClassSessionDeepLinkScope({
     super.key,
@@ -44,7 +45,7 @@ class _ClassSessionDeepLinkScopeState extends State<ClassSessionDeepLinkScope> {
     }
   }
 
-  void _handleUri(Uri uri) {
+  Future<void> _handleUri(Uri uri) async {
     final link = ClassSessionLink.tryParse(uri);
     if (link == null) return;
 
@@ -59,24 +60,25 @@ class _ClassSessionDeepLinkScopeState extends State<ClassSessionDeepLinkScope> {
     _lastSig = sig;
     _lastAt = now;
 
+    await ShareIntentPending.storeClass(
+      studioId: link.studioId,
+      sessionId: link.sessionId,
+      startsAt: link.startsAt,
+    );
+
+    final intent = ShareIntent.classSession(
+      idOrSlug: link.studioId,
+      sessionId: link.sessionId,
+      startsAtIso: link.startsAt.toUtc().toIso8601String(),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _openClass(link);
+      ShareIntentRouter.open(
+        intent,
+        navigatorKey: widget.navigatorKey,
+      );
     });
-  }
-
-  void _openClass(ClassSessionLink link) {
-    final nav = widget.navigatorKey.currentState;
-    if (nav == null) return;
-    nav.push(
-      MaterialPageRoute<void>(
-        builder: (_) => PublicClassDetailScreen(
-          studioId: link.studioId,
-          sessionId: link.sessionId,
-          sessionStartsAtHint: link.startsAt.toLocal(),
-        ),
-      ),
-    );
   }
 
   @override

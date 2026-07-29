@@ -62,6 +62,21 @@ export async function fetchAdminStudios(params: {
   return res.data;
 }
 
+export async function createAdminUnclaimedStudio(body: {
+  name: string;
+  intendedOwnerEmail: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  sendClaimEmail?: boolean;
+}): Promise<{ id: string; name: string; slug?: string | null }> {
+  const res = await apiClient.post<
+    ApiWrap<{ id: string; name: string; slug?: string | null }>
+  >('/admin/studios', body);
+  return res.data;
+}
+
 export async function fetchAdminOwners(params: {
   page?: number;
   limit?: number;
@@ -149,6 +164,26 @@ export async function patchAdminStudioProfile(
 ): Promise<unknown> {
   const res = await apiClient.patch<ApiWrap<unknown>>(
     `/admin/studios/${id}/profile`,
+    body,
+  );
+  return res.data;
+}
+
+export async function publishAdminStudio(
+  id: string,
+): Promise<{ status: string }> {
+  const res = await apiClient.post<ApiWrap<{ status: string }>>(
+    `/admin/studios/${id}/publish`,
+  );
+  return res.data;
+}
+
+export async function uploadAdminStudioPhoto(
+  id: string,
+  body: { base64: string; contentType?: string; fileName?: string },
+): Promise<{ url: string; photos: string[] }> {
+  const res = await apiClient.post<ApiWrap<{ url: string; photos: string[] }>>(
+    `/admin/studios/${id}/photos`,
     body,
   );
   return res.data;

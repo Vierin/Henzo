@@ -13,10 +13,10 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../constants/layout.dart';
-import '../main.dart';
 import 'common/sheet_action_button_style.dart';
 import '../l10n/locale_provider.dart';
 import '../services/mapbox_api_service.dart';
+import '../utils/root_navigator_key.dart';
 import '../utils/text_content_validation.dart';
 import 'map/henzo_map_layers.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

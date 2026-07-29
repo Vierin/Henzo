@@ -463,7 +463,10 @@ export class FitnessSessionsService {
 
     return sessions.map((s: any) => {
       const activeEnrollments = (s.Enrollments || []).filter(
-        (e: any) => e.status === 'ACTIVE' || e.status === 'NO_SHOW',
+        (e: any) =>
+          e.status === 'ACTIVE' ||
+          e.status === 'PENDING' ||
+          e.status === 'NO_SHOW',
       ).length;
       const locationName =
         locationCount > 1
@@ -1478,7 +1481,8 @@ export class FitnessSessionsService {
       });
 
       if (
-        row.status === SessionEnrollmentStatus.ACTIVE &&
+        (row.status === SessionEnrollmentStatus.ACTIVE ||
+          row.status === SessionEnrollmentStatus.PENDING) &&
         nextStatus === SessionEnrollmentStatus.CANCELLED
       ) {
         await tx.trainingSession.update({
@@ -1504,7 +1508,8 @@ export class FitnessSessionsService {
       );
     } else if (
       nextStatus === SessionEnrollmentStatus.ACTIVE &&
-      row.status === SessionEnrollmentStatus.CANCELLED
+      (row.status === SessionEnrollmentStatus.CANCELLED ||
+        row.status === SessionEnrollmentStatus.PENDING)
     ) {
       const enrollment = await this.prisma.sessionEnrollment.findUnique({
         where: { id: enrollmentId },
@@ -1523,7 +1528,8 @@ export class FitnessSessionsService {
     }
 
     if (
-      row.status === SessionEnrollmentStatus.ACTIVE &&
+      (row.status === SessionEnrollmentStatus.ACTIVE ||
+        row.status === SessionEnrollmentStatus.PENDING) &&
       nextStatus === SessionEnrollmentStatus.CANCELLED
     ) {
       const enrollment = await this.prisma.sessionEnrollment.findUnique({
@@ -1559,7 +1565,10 @@ export class FitnessSessionsService {
     if (!row) {
       throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
     }
-    if (row.status !== SessionEnrollmentStatus.ACTIVE) {
+    if (
+      row.status !== SessionEnrollmentStatus.ACTIVE &&
+      row.status !== SessionEnrollmentStatus.PENDING
+    ) {
       return { success: true };
     }
 

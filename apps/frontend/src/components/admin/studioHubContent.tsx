@@ -26,6 +26,8 @@ import {
   fetchAdminStudioVisits,
   patchAdminStudioProfile,
   patchAdminSubscription,
+  publishAdminStudio,
+  uploadAdminStudioPhoto,
 } from '@/lib/admin/api';
 import type {
   AdminPaymentEventRow,
@@ -51,8 +53,7 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'analytics', label: 'Analytics' },
   { id: 'clients', label: 'Clients' },
   { id: 'visits', label: 'Visits' },
-  { id: 'edit', label: 'Edit' },
-  { id: 'visits', label: 'Visits' },
+  { id: 'edit', label: 'Setup / Edit' },
   { id: 'subscription', label: 'Subscription' },
 ];
 
@@ -160,7 +161,13 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
         <div>
           <h1 className="text-2xl font-semibold">{studio.name}</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {studio.User.email} · {studio.status}
+            {studio.isUnclaimed && studio.intendedOwnerEmail
+              ? `Unclaimed → ${studio.intendedOwnerEmail}`
+              : studio.User.email}{' '}
+            · {studio.status}
+            {studio._count.TrainingSession > 0
+              ? ` · ${studio._count.TrainingSession} sessions`
+              : ''}
           </p>
         </div>
         <ActivityTierBadge tier={studio.activityTier} />
@@ -194,7 +201,22 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
         <OverviewTab
           studio={studio}
           activity={activity}
+          saving={saving}
           onGoToEdit={() => setTab('edit')}
+          onPublish={async () => {
+            setSaving(true);
+            setMsg(null);
+            setError(null);
+            try {
+              await publishAdminStudio(studioId);
+              setMsg('Studio published (ACTIVE) — clients can find and book');
+              await loadStudio();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Publish failed');
+            } finally {
+              setSaving(false);
+            }
+          }}
         />
       ) : null}
 
@@ -220,6 +242,28 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
               await loadStudio();
             } catch (e) {
               setError(e instanceof Error ? e.message : 'Save failed');
+              throw e;
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onUploadPhoto={async (file) => {
+            setSaving(true);
+            setMsg(null);
+            setError(null);
+            try {
+              const base64 = await readFileAsDataUrl(file);
+              const res = await uploadAdminStudioPhoto(studioId, {
+                base64,
+                contentType: file.type || 'image/jpeg',
+                fileName: file.name,
+              });
+              setMsg('Photo uploaded');
+              await loadStudio();
+              return res.photos;
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Upload failed');
+              throw e;
             } finally {
               setSaving(false);
             }
@@ -323,37 +367,52 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
 function OverviewTab({
   studio,
   activity,
+  saving,
   onGoToEdit,
+  onPublish,
 }: {
   studio: AdminStudioDetail;
   activity: StudioActivityResponse | null;
+  saving: boolean;
   onGoToEdit: () => void;
+  onPublish: () => Promise<void>;
 }) {
   const cl = studio.onboardingChecklist;
   const stepLabels: Record<string, string> = {
+    hasStudioDetails: 'Name + address',
     hasTraining: 'At least one training',
     hasPhoto: 'At least one photo',
   };
   const requiredSteps = Object.entries(cl.steps).filter(
     ([, step]) => step.required,
   );
+  const canPublish = cl.canPublish && studio.status !== 'ACTIVE';
+  const needsSessions = studio._count.TrainingSession === 0;
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="font-medium">Owner</h2>
+        <h2 className="font-medium">Owner / claim</h2>
         <dl className="mt-3 space-y-2 text-sm">
           <div>
-            <dt className="text-zinc-500">Email</dt>
+            <dt className="text-zinc-500">Tech owner</dt>
             <dd>{studio.User.email}</dd>
           </div>
+          {studio.intendedOwnerEmail ? (
+            <div>
+              <dt className="text-zinc-500">Intended owner</dt>
+              <dd className="text-amber-700">{studio.intendedOwnerEmail}</dd>
+            </div>
+          ) : null}
           <div>
-            <dt className="text-zinc-500">Name</dt>
-            <dd>{studio.User.name ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">Phone</dt>
-            <dd>{studio.User.phone ?? studio.phone ?? '—'}</dd>
+            <dt className="text-zinc-500">Claim</dt>
+            <dd>
+              {studio.claimedAt
+                ? `Claimed ${new Date(studio.claimedAt).toLocaleString()}`
+                : studio.isUnclaimed
+                  ? 'Unclaimed'
+                  : '—'}
+            </dd>
           </div>
           <div>
             <dt className="text-zinc-500">Last activity</dt>
@@ -425,25 +484,47 @@ function OverviewTab({
       </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 lg:col-span-2">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-medium">Onboarding checklist</h2>
-          {!cl.requiredCompleted ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-medium">Launch checklist</h2>
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={onGoToEdit}
-              className="text-sm text-primary hover:underline"
+              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-50"
             >
-              Fix in Edit →
+              Setup / Edit →
             </button>
-          ) : null}
+            {canPublish ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void onPublish()}
+                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              >
+                Publish studio
+              </button>
+            ) : null}
+          </div>
         </div>
+        <p className="mt-2 text-sm text-zinc-600">
+          Status: <strong>{studio.status}</strong>
+          {cl.canPublish
+            ? ' · Ready to publish'
+            : ' · Finish required steps first'}
+        </p>
+        {needsSessions ? (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            No class sessions yet. Add recurring sessions in Setup / Edit so
+            clients have something to book.
+          </p>
+        ) : null}
         {!cl.requiredCompleted ? (
           <p className="mt-2 text-sm text-amber-700">
             Missing required: {cl.missingRequiredSteps.join(', ')}
           </p>
         ) : (
           <p className="mt-2 text-sm text-emerald-700">
-            Required steps complete
+            Required onboarding steps complete
           </p>
         )}
         <ul className="mt-3 space-y-2 text-sm">
@@ -472,6 +553,20 @@ function OverviewTab({
               ) : null}
             </li>
           ))}
+          <li className="flex items-center gap-2">
+            <span
+              className={!needsSessions ? 'text-emerald-600' : 'text-zinc-400'}
+            >
+              {!needsSessions ? '✓' : '○'}
+            </span>
+            <button
+              type="button"
+              onClick={onGoToEdit}
+              className="text-left hover:text-primary"
+            >
+              Recurring class sessions (for first bookings)
+            </button>
+          </li>
         </ul>
       </section>
     </div>
@@ -572,6 +667,7 @@ function EditTab({
   trainers,
   saving,
   onSaveProfile,
+  onUploadPhoto,
   onCreateTraining,
   onCreateTrainer,
   onCreateSessions,
@@ -581,6 +677,7 @@ function EditTab({
   trainers: AdminTrainer[];
   saving: boolean;
   onSaveProfile: (fields: Record<string, unknown>) => Promise<void>;
+  onUploadPhoto: (file: File) => Promise<string[]>;
   onCreateTraining: (body: {
     name: string;
     duration: number;
@@ -602,6 +699,13 @@ function EditTab({
   const [website, setWebsite] = useState(studio.website ?? '');
   const [instagram, setInstagram] = useState(studio.instagram ?? '');
   const [photos, setPhotos] = useState((studio.photos ?? []).join('\n'));
+  const [photoList, setPhotoList] = useState<string[]>(studio.photos ?? []);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    setPhotoList(studio.photos ?? []);
+    setPhotos((studio.photos ?? []).join('\n'));
+  }, [studio.photos]);
 
   const [trainingModalOpen, setTrainingModalOpen] = useState(false);
   const [trName, setTrName] = useState('');
@@ -730,15 +834,58 @@ function EditTab({
               className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
             />
           </label>
-          <label className="block text-sm sm:col-span-2">
-            <span className="text-zinc-500">Photo URLs (one per line)</span>
-            <textarea
-              value={photos}
-              onChange={(e) => setPhotos(e.target.value)}
-              rows={3}
-              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-            />
-          </label>
+          <div className="sm:col-span-2 space-y-2">
+            <span className="text-sm text-zinc-500">Photos</span>
+            {photoList.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {photoList.map((url) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt=""
+                    className="h-20 w-20 rounded-lg object-cover border border-zinc-200"
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-400">No photos yet</p>
+            )}
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={saving || uploading}
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  setUploading(true);
+                  void onUploadPhoto(file)
+                    .then((next) => {
+                      setPhotoList(next);
+                      setPhotos(next.join('\n'));
+                    })
+                    .catch(() => {
+                      /* parent surfaces error */
+                    })
+                    .finally(() => setUploading(false));
+                }}
+              />
+              {uploading ? 'Uploading…' : 'Upload photo'}
+            </label>
+            <label className="block text-sm">
+              <span className="text-zinc-500">
+                Or paste photo URLs (one per line)
+              </span>
+              <textarea
+                value={photos}
+                onChange={(e) => setPhotos(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
         </div>
         <button
           type="button"
@@ -796,11 +943,23 @@ function EditTab({
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-medium">Recurring sessions</h2>
-          <AddButton onClick={() => setSessionModalOpen(true)} />
+          <AddButton
+            onClick={() => {
+              if (trainings.length === 0) return;
+              setSessTrainingId(trainings[0]?.id ?? '');
+              setSessionModalOpen(true);
+            }}
+          />
         </div>
         <p className="mt-1 text-xs text-zinc-500">
-          Create weekly class slots for a training
+          Create weekly class slots so clients have something to book. Need at
+          least one training first.
         </p>
+        {trainings.length === 0 ? (
+          <p className="mt-2 text-sm text-amber-700">
+            Add a training above before creating sessions.
+          </p>
+        ) : null}
       </section>
 
       <AdminModal
@@ -1454,4 +1613,16 @@ function Pagination({
       </span>
     </div>
   );
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new Error('Failed to read file'));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('File read error'));
+    reader.readAsDataURL(file);
+  });
 }

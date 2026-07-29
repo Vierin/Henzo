@@ -22,6 +22,7 @@ import { CreateAdminTrainerDto } from './dto/create-admin-trainer.dto';
 import { PatchAdminFeedbackDto } from './dto/patch-admin-feedback.dto';
 import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
 import { CreateAdminBroadcastDto } from './dto/create-admin-broadcast.dto';
+import { CreateAdminStudioDto } from './dto/create-admin-studio.dto';
 
 function parsePage(v?: string): number {
   const n = Number(v ?? '1');
@@ -88,6 +89,20 @@ export class AdminController {
           activityTier,
           onboardingIncomplete === 'true',
         ),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('studios')
+  async createStudio(
+    @Headers('authorization') authHeader: string,
+    @Body() body: CreateAdminStudioDto,
+  ) {
+    try {
+      return {
+        data: await this.adminService.createUnclaimedStudio(authHeader, body),
       };
     } catch (e) {
       this.handleError(e);
@@ -223,6 +238,35 @@ export class AdminController {
     try {
       return {
         data: await this.adminService.patchStudioProfile(authHeader, id, body),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('studios/:id/publish')
+  async publishStudio(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    try {
+      return {
+        data: await this.adminService.publishStudio(authHeader, id),
+      };
+    } catch (e) {
+      this.handleError(e);
+    }
+  }
+
+  @Post('studios/:id/photos')
+  async uploadStudioPhoto(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() body: { base64: string; contentType?: string; fileName?: string },
+  ) {
+    try {
+      return {
+        data: await this.adminService.uploadStudioPhoto(authHeader, id, body),
       };
     } catch (e) {
       this.handleError(e);
