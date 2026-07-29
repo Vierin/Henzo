@@ -879,6 +879,7 @@ class _ClassDetailBody extends StatelessWidget {
             booking: booking,
             canceling: canceling,
             isBookedByMe: isBookedByMe,
+            isPendingByMe: isPendingByMe,
             canCancelBooking: canCancelBooking,
             canBook: !blockedAsOwner &&
                 !isBookedByMe &&
@@ -1693,6 +1694,7 @@ class _BookBar extends StatelessWidget {
     required this.booking,
     required this.canceling,
     required this.isBookedByMe,
+    required this.isPendingByMe,
     required this.canCancelBooking,
     required this.canBook,
     required this.blockedAsOwner,
@@ -1709,6 +1711,7 @@ class _BookBar extends StatelessWidget {
   final bool booking;
   final bool canceling;
   final bool isBookedByMe;
+  final bool isPendingByMe;
   final bool canCancelBooking;
   final bool canBook;
   final bool blockedAsOwner;
