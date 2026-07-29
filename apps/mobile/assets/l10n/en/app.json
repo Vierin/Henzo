@@ -244,7 +244,8 @@
     "studioUnavailable": "Studio is unavailable",
     "thankYouForReview": "Thank you for your review!",
     "reviewCommentTooLong": "Comment must be {max} characters or less",
-    "leaveReview": "Leave review"
+    "leaveReview": "Leave review",
+    "waitingAcceptShort": "Waiting accept"
   },
   "clientFavorites": {
     "emptyTitle": "Time to find your favorite spot",
@@ -318,7 +319,9 @@
     "leftWaitlist": "Removed from waitlist",
     "waitlistError": "Could not update waitlist. Try again.",
     "waitlistNotifyHint": "We'll notify you if a spot opens — first to book gets it",
-    "ownerCannotBook": "Business accounts can't book classes. Use a client account to join."
+    "ownerCannotBook": "Business accounts can't book classes. Use a client account to join.",
+    "waitingForAccept": "Waiting for confirmation from studio",
+    "bookingPendingApproval": "Request sent. Waiting for studio confirmation."
   },
   "clientMap": {
     "nearbyStudios": "Nearby studios",

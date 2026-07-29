@@ -236,11 +236,6 @@ export function renderTrainerInviteHtml(
   const safeStudioName = escapeHtml(studioName);
   const safeInviteUrl = escapeHtml(inviteUrl);
 
-  const expiryRow = renderEmailInfoRow(
-    'clock',
-    '#D4F000',
-    `${L.expiryText} <strong>${L.expiryDays}</strong>.`,
-  );
   const ignoreRow = renderEmailInfoRow('shield', '#FFF0EB', L.ignoreText);
 
   return `<!DOCTYPE html>
@@ -337,12 +332,7 @@ export function renderTrainerInviteHtml(
               <!-- Info box -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#FAF6F2;border-radius:16px;">
                 <tr>
-                  <td style="padding:20px 16px 8px;">
-                    ${expiryRow}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:0 16px 16px;">
+                  <td style="padding:20px 16px 16px;">
                     ${ignoreRow}
                   </td>
                 </tr>
@@ -377,7 +367,25 @@ export function renderStudioClaimBookingHtml(params: {
   const safeConfirmUrl = escapeHtml(params.confirmUrl);
   const safeTraining = escapeHtml(params.trainingName || L.defaultTrainingName);
   const safeClient = escapeHtml(params.clientName || '—');
-  const safeStarts = escapeHtml(params.startsAt || '—');
+
+  // Format startsAt as human-readable date+time (e.g. "Tue, Aug 1 · 09:00")
+  const rawStarts = params.startsAt ? new Date(params.startsAt) : null;
+  const safeFormattedDate =
+    rawStarts && !isNaN(rawStarts.getTime())
+      ? escapeHtml(
+          rawStarts.toLocaleDateString('en-GB', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+          }) +
+            ' · ' +
+            rawStarts.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            }),
+        )
+      : escapeHtml(params.startsAt || '—');
 
   const expiryRow = renderEmailInfoRow(
     'clock',
@@ -425,12 +433,65 @@ export function renderStudioClaimBookingHtml(params: {
                 </tr>
               </table>
 
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;background-color:#FAF6F2;border-radius:16px;">
+              <!-- Booking card (ticket style) -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:28px;background-color:#ffffff;border:1px solid #F0E8E2;border-radius:22px;overflow:hidden;">
+                <!-- Class title -->
                 <tr>
-                  <td style="padding:16px 18px;font-size:14px;color:#3F3F3F;line-height:1.6;">
-                    <div><strong>${L.clientLabel}:</strong> ${safeClient}</div>
-                    <div><strong>${L.classLabel}:</strong> ${safeTraining}</div>
-                    <div><strong>${L.timeLabel}:</strong> ${safeStarts}</div>
+                  <td style="padding:20px 20px 14px;font-size:20px;font-weight:600;color:#3F3F3F;line-height:1.25;letter-spacing:-0.3px;">
+                    ${safeTraining}
+                  </td>
+                </tr>
+                <!-- Dashed divider -->
+                <tr>
+                  <td style="padding:0 20px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr><td style="border-top:1px dashed #F4DCBA;font-size:0;line-height:0;height:1px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Meta grid -->
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td width="50%" valign="top" style="padding-right:8px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                              <td valign="middle" style="padding-right:8px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                  <tr>
+                                    <td width="28" height="28" align="center" valign="middle" style="width:28px;height:28px;min-width:28px;max-width:28px;min-height:28px;max-height:28px;background-color:#FFF0EB;border-radius:9999px;line-height:0;font-size:0;">
+                                      ${renderEmailIcon('clock', 14)}
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                              <td valign="middle" style="font-size:13px;font-weight:500;color:#3F3F3F;line-height:1.3;">
+                                ${safeFormattedDate}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td width="50%" valign="top" style="padding-left:8px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                              <td valign="middle" style="padding-right:8px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                  <tr>
+                                    <td width="28" height="28" align="center" valign="middle" style="width:28px;height:28px;min-width:28px;max-width:28px;min-height:28px;max-height:28px;background-color:#FFF0EB;border-radius:9999px;line-height:0;font-size:0;">
+                                      ${renderEmailIcon('people', 14)}
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                              <td valign="middle" style="font-size:13px;font-weight:500;color:#3F3F3F;line-height:1.3;">
+                                ${safeClient}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>

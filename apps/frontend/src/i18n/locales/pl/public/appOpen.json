@@ -1,43 +1,41 @@
 {
-  "appOpen": {
-    "openApp": "Otwórz aplikację Henzo",
-    "orDownload": "lub pobierz aplikację",
-    "didntOpen": "Aplikacja się nie otworzyła?",
-    "download": "Pobierz Henzo",
-    "appStore": "App Store",
-    "googlePlay": "Google Play",
-    "language": "Język",
-    "trainerInvite": {
-      "title": "Otrzymałeś zaproszenie!",
-      "description": "Dodano Cię jako trenera w Henzo. Otwórz aplikację, aby dokończyć rejestrację.",
-      "expiry": "To zaproszenie wygasa za 7 dni."
-    },
-    "studioClaim": {
-      "title": "Zarządzaj swoim studiem",
-      "description": "Otwórz Henzo, aby przejąć zarządzanie studiem i rezerwacjami.",
-      "expiry": "Link wygasa po 72 godzinach."
-    },
-    "studioClaimConfirm": {
-      "loading": "Potwierdzanie rezerwacji…",
-      "title": "Rezerwacja potwierdzona",
-      "alreadyTitle": "Rezerwacja już potwierdzona",
-      "description": "Rezerwacja w {studio} została potwierdzona. Pobierz Henzo lub otwórz aplikację, aby zarządzać studiem.",
-      "client": "Klient",
-      "class": "Zajęcia",
-      "when": "Kiedy",
-      "manageCta": "Zarządzaj studiem w Henzo",
-      "openManagePage": "kontynuuj tutaj",
-      "errorTitle": "Nie udało się potwierdzić rezerwacji",
-      "errorGeneric": "Link jest nieprawidłowy lub wygasł."
-    },
-    "studioShare": {
-      "titleNamed": "Dołącz do {name} w Henzo",
-      "titleGeneric": "Zaproszono Cię do studia",
-      "description": "Otwórz Henzo, zobacz grafik studia i zarezerwuj zajęcia."
-    },
-    "classInvite": {
-      "title": "Zaproszono Cię na zajęcia",
-      "description": "Otwórz Henzo, zobacz szczegóły zajęć i zarezerwuj miejsce."
-    }
+  "openApp": "Otwórz aplikację Henzo",
+  "orDownload": "lub pobierz aplikację",
+  "didntOpen": "Aplikacja się nie otworzyła?",
+  "download": "Pobierz Henzo",
+  "appStore": "App Store",
+  "googlePlay": "Google Play",
+  "language": "Język",
+  "trainerInvite": {
+    "title": "Otrzymałeś zaproszenie!",
+    "description": "Dodano Cię jako trenera w Henzo. Otwórz aplikację, aby dokończyć rejestrację.",
+    "expiry": "To zaproszenie wygasa za 7 dni."
+  },
+  "studioClaim": {
+    "title": "Zarządzaj swoim studiem",
+    "description": "Otwórz Henzo, aby przejąć zarządzanie studiem i rezerwacjami.",
+    "expiry": "Link wygasa po 72 godzinach."
+  },
+  "studioClaimConfirm": {
+    "loading": "Potwierdzanie rezerwacji…",
+    "title": "Rezerwacja potwierdzona",
+    "alreadyTitle": "Rezerwacja już potwierdzona",
+    "description": "Rezerwacja w {studio} została potwierdzona. Pobierz Henzo lub otwórz aplikację, aby zarządzać studiem.",
+    "client": "Klient",
+    "class": "Zajęcia",
+    "when": "Kiedy",
+    "manageCta": "Zarządzaj studiem w Henzo",
+    "openManagePage": "kontynuuj tutaj",
+    "errorTitle": "Nie udało się potwierdzić rezerwacji",
+    "errorGeneric": "Link jest nieprawidłowy lub wygasł."
+  },
+  "studioShare": {
+    "titleNamed": "Dołącz do {name} w Henzo",
+    "titleGeneric": "Zaproszono Cię do studia",
+    "description": "Otwórz Henzo, zobacz grafik studia i zarezerwuj zajęcia."
+  },
+  "classInvite": {
+    "title": "Zaproszono Cię na zajęcia",
+    "description": "Otwórz Henzo, zobacz szczegóły zajęć i zarezerwuj miejsce."
   }
 }

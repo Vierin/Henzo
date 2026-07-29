@@ -62,6 +62,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   bool _booking = false;
   bool _canceling = false;
   bool _isBookedByMe = false;
+  bool _isPendingByMe = false;
   String? _enrollmentId;
   bool _isOnWaitlist = false;
   bool _waitlistLoading = false;
@@ -133,6 +134,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         _loadingCore = false;
         _enrollmentLoading = shouldLoadEnrollment;
         _isBookedByMe = false;
+        _isPendingByMe = false;
         _enrollmentId = null;
         _isOnWaitlist = false;
         if (found == null) {
@@ -164,11 +166,14 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
       if (!mounted) return;
       var isBookedByMe = false;
+      var isPendingByMe = false;
       String? enrollmentId;
       var isOnWaitlist = false;
       if (enr is Map) {
-        isBookedByMe = enr['enrolled'] == true;
-        if (isBookedByMe) {
+        final status = (enr['status'] ?? '').toString().toUpperCase();
+        isBookedByMe = enr['enrolled'] == true || status == 'ACTIVE';
+        isPendingByMe = status == 'PENDING';
+        if (isBookedByMe || isPendingByMe) {
           final rawId = (enr['enrollmentId'] ?? '').toString().trim();
           enrollmentId = rawId.isNotEmpty ? rawId : null;
         } else {
@@ -177,6 +182,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       }
       setState(() {
         _isBookedByMe = isBookedByMe;
+        _isPendingByMe = isPendingByMe;
         _enrollmentId = enrollmentId;
         _isOnWaitlist = isOnWaitlist;
         _enrollmentLoading = false;
@@ -257,13 +263,37 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     if (_booking) return;
     setState(() => _booking = true);
     try {
-      await ApiClient.post(
+      final result = await ApiClient.post(
         '/studios/sessions/${widget.sessionId}/book',
         token,
         body: const <String, dynamic>{},
       );
       if (!mounted) return;
       ClientScheduleStore.invalidate();
+      final bookingStatus = result is Map
+          ? ((result['booking'] is Map
+                ? (result['booking'] as Map)['status']
+                : null) ??
+                result['status'])
+                .toString()
+                .toUpperCase()
+          : '';
+      if (bookingStatus == 'PENDING') {
+        setState(() {
+          _isBookedByMe = false;
+          _isPendingByMe = true;
+          _isOnWaitlist = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              locale.t('clientClassDetail.bookingPendingApproval'),
+            ),
+          ),
+        );
+        await _loadEnrollment(token);
+        return;
+      }
       final session = _session;
       if (session == null) return;
       await Navigator.of(context).pushReplacement(
@@ -437,7 +467,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     final trainer = session['trainer'] is Map
         ? Map<String, dynamic>.from(session['trainer'] as Map)
         : <String, dynamic>{};
-    final instructor = (trainer['name'] ?? '').toString().trim();
+    final isUnclaimed = _studio?['claimedAt'] == null;
+    final instructor =
+        isUnclaimed ? '' : (trainer['name'] ?? '').toString().trim();
     final address = (_studio?['address'] ?? '').toString().trim();
     _shareClass(
       classTitle:
@@ -497,6 +529,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                 booking: _booking,
                 canceling: _canceling,
                 isBookedByMe: _isBookedByMe,
+                isPendingByMe: _isPendingByMe,
                 canCancelBooking: _canCancelBooking(),
                 isOnWaitlist: _isOnWaitlist,
                 waitlistLoading: _waitlistLoading,
@@ -646,6 +679,7 @@ class _ClassDetailBody extends StatelessWidget {
     required this.booking,
     required this.canceling,
     required this.isBookedByMe,
+    required this.isPendingByMe,
     required this.canCancelBooking,
     required this.isOnWaitlist,
     required this.waitlistLoading,
@@ -668,6 +702,7 @@ class _ClassDetailBody extends StatelessWidget {
   final bool booking;
   final bool canceling;
   final bool isBookedByMe;
+  final bool isPendingByMe;
   final bool canCancelBooking;
   final bool isOnWaitlist;
   final bool waitlistLoading;
@@ -711,7 +746,9 @@ class _ClassDetailBody extends StatelessWidget {
         ((startsAt != null && endsAt != null)
             ? endsAt.difference(startsAt).inMinutes
             : null);
-    final instructorName = (trainer['name'] ?? '').toString().trim();
+    final isUnclaimed = studio?['claimedAt'] == null;
+    final instructorName =
+        isUnclaimed ? '' : (trainer['name'] ?? '').toString().trim();
     final trainingDescription = _localizedField(
       map: training,
       localeCode: localeCode,
@@ -1753,6 +1790,15 @@ class _BookBar extends StatelessWidget {
                         ),
                 ),
               ],
+            )
+          : isPendingByMe
+          ? Text(
+              locale.t('clientClassDetail.waitingForAccept'),
+              style: TextStyle(
+                fontSize: 15.sp,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
             )
           : classFull && !started && !isOnWaitlist
           ? _WaitlistButton(

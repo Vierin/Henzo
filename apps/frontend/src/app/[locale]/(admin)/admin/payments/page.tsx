@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminPaymentEvents } from '@/lib/admin/api';
 import type { AdminPaymentEventRow } from '@/lib/admin/types';
+import { formatAdminDateTime24h } from '@/lib/admin/dateTimeFormat';
 
 const typeLabels: Record<string, string> = {
   subscription_failed: 'Subscription failed',
@@ -96,7 +97,7 @@ export default function PaymentsContent() {
               {
                 key: 'date',
                 header: 'Date',
-                render: (r) => new Date(r.createdAt).toLocaleString(),
+                render: (r) => formatAdminDateTime24h(r.createdAt),
               },
               {
                 key: 'type',

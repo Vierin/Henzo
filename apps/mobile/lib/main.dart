@@ -170,7 +170,8 @@ void _handlePushTap(Map<String, String> data) {
       type == 'WAITLIST_PROMOTED' ||
       type == 'PRE_CLASS_REMINDER' ||
       type == 'SESSION_RESCHEDULED' ||
-      type == 'OWNER_BOOKED') {
+      type == 'OWNER_BOOKED' ||
+      type == 'BOOKING_CONFIRMED') {
     _openClassFromPush(data);
   }
 }

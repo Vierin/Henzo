@@ -1,4 +1,5 @@
 import type { ActivityTier } from '@/lib/admin/types';
+import { formatAdminDate } from '@/lib/admin/dateTimeFormat';
 
 const tierStyles: Record<ActivityTier, string> = {
   active: 'bg-emerald-100 text-emerald-800',
@@ -34,5 +35,5 @@ export function formatLastActive(iso: string | null): string {
   if (days === 0) return 'Today';
   if (days === 1) return '1d ago';
   if (days < 30) return `${days}d ago`;
-  return d.toLocaleDateString();
+  return formatAdminDate(d);
 }

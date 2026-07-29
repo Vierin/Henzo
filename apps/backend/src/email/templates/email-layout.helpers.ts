@@ -84,9 +84,9 @@ export function renderEmailIconCircle(
   iconSize = 18,
 ): string {
   return `
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:${size}px;height:${size}px;min-width:${size}px;max-width:${size}px;">
       <tr>
-        <td align="center" valign="middle" style="width:${size}px;height:${size}px;background-color:${iconBg};border-radius:50%;">
+        <td align="center" valign="middle" width="${size}" height="${size}" style="width:${size}px;height:${size}px;min-width:${size}px;max-width:${size}px;min-height:${size}px;max-height:${size}px;background-color:${iconBg};border-radius:9999px;line-height:0;font-size:0;mso-line-height-rule:exactly;">
           ${renderEmailIcon(name, iconSize)}
         </td>
       </tr>
@@ -135,7 +135,7 @@ export function renderEmailFooter(footerTagline: string): string {
                   <td style="padding:0 8px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;background-color:#ffffff;border-radius:50%;box-shadow:0 2px 8px rgba(63,63,63,0.08);">
+                        <td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;min-width:44px;max-width:44px;min-height:44px;max-height:44px;background-color:#ffffff;border-radius:9999px;box-shadow:0 2px 8px rgba(63,63,63,0.08);line-height:0;font-size:0;mso-line-height-rule:exactly;">
                           <a href="https://www.instagram.com/henzo.app/" target="_blank" rel="noopener noreferrer" style="display:block;line-height:0;text-decoration:none;">
                             ${renderEmailIcon('instagram', 18, 'Instagram')}
                           </a>
@@ -146,7 +146,7 @@ export function renderEmailFooter(footerTagline: string): string {
                   <td style="padding:0 8px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;background-color:#ffffff;border-radius:50%;box-shadow:0 2px 8px rgba(63,63,63,0.08);">
+                        <td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;min-width:44px;max-width:44px;min-height:44px;max-height:44px;background-color:#ffffff;border-radius:9999px;box-shadow:0 2px 8px rgba(63,63,63,0.08);line-height:0;font-size:0;mso-line-height-rule:exactly;">
                           <a href="https://www.facebook.com/profile.php?id=61581892591997" target="_blank" rel="noopener noreferrer" style="display:block;line-height:0;text-decoration:none;">
                             ${renderEmailIcon('facebook', 18, 'Facebook')}
                           </a>
@@ -216,7 +216,7 @@ export function renderEmailDashedIconDivider(
         <td valign="middle" align="center" style="vertical-align:middle;padding:0 12px;white-space:nowrap;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0">
             <tr>
-              <td align="center" valign="middle" width="${circleSize}" height="${circleSize}" style="width:${circleSize}px;height:${circleSize}px;background-color:#FFF0EB;border-radius:50%;">
+              <td align="center" valign="middle" width="${circleSize}" height="${circleSize}" style="width:${circleSize}px;height:${circleSize}px;min-width:${circleSize}px;max-width:${circleSize}px;min-height:${circleSize}px;max-height:${circleSize}px;background-color:#FFF0EB;border-radius:9999px;line-height:0;font-size:0;mso-line-height-rule:exactly;">
                 ${renderEmailIcon(name, iconSize, '', false, iconHeight)}
               </td>
             </tr>

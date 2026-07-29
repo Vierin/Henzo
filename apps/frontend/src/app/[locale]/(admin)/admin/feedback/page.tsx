@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminFeedback, patchAdminFeedback } from '@/lib/admin/api';
 import type { AdminFeedbackRow } from '@/lib/admin/types';
+import { formatAdminDateTime24h } from '@/lib/admin/dateTimeFormat';
 
 const statusOptions = [
   { value: '', label: 'All' },
@@ -95,7 +96,7 @@ export default function FeedbackContent() {
                 <span className="rounded bg-zinc-100 px-2 py-0.5">
                   {row.source}
                 </span>
-                <span>{new Date(row.createdAt).toLocaleString()}</span>
+                <span>{formatAdminDateTime24h(row.createdAt)}</span>
               </div>
             </div>
             <p className="mt-3 whitespace-pre-wrap text-sm">{row.message}</p>

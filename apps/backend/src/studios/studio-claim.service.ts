@@ -47,12 +47,75 @@ export class StudioClaimService {
     return `${visible}***@${domain}`;
   }
 
+  private async notifyTelegramBookingConfirmed(payload: {
+    studioName: string;
+    studioId: string;
+    trainingName: string;
+    clientName: string;
+    startsAt: Date;
+  }): Promise<void> {
+    const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    const chatId = process.env.TELEGRAM_FEEDBACK_CHAT_ID?.trim();
+    if (!token || !chatId) return;
+
+    const baseUrl = (
+      process.env.FRONTEND_URL || 'https://www.henzo.app'
+    ).replace(/\/$/, '');
+    const adminUrl = `${baseUrl}/en/admin/studios/${payload.studioId}?tab=overview`;
+
+    const d = payload.startsAt;
+    const dateStr = d.toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    const timeStr = d.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    const text = [
+      '✅ Booking confirmed by studio',
+      '',
+      `🏢 ${payload.studioName}`,
+      `🧘 ${payload.trainingName}`,
+      `📅 ${dateStr}  🕒 ${timeStr}`,
+      `👤 ${payload.clientName}`,
+      '',
+      `🔗 ${adminUrl}`,
+    ].join('\n');
+
+    try {
+      const res = await fetch(
+        `https://api.telegram.org/bot${token}/sendMessage`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text.slice(0, 4096),
+          }),
+        },
+      );
+      if (!res.ok) {
+        const body = await res.text();
+        console.error('Telegram booking confirmed notify failed:', body);
+      }
+    } catch (error) {
+      console.error('Telegram booking confirmed notify error:', error);
+    }
+  }
+
   private async notifyTelegramUnclaimedBooking(payload: {
     studioName: string;
     studioId: string;
     ownerEmail: string;
+    instagram?: string;
     trainingName?: string;
     clientName?: string;
+    clientEmail?: string;
     startsAt?: string;
   }): Promise<void> {
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -63,15 +126,55 @@ export class StudioClaimService {
       process.env.FRONTEND_URL || 'https://www.henzo.app'
     ).replace(/\/$/, '');
     const adminUrl = `${baseUrl}/en/admin/studios/${payload.studioId}?tab=overview`;
+
+    // Format date and time separately
+    let dateStr = '—';
+    let timeStr = '—';
+    if (payload.startsAt) {
+      const d = new Date(payload.startsAt);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toLocaleDateString('en-GB', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        timeStr = d.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
+      }
+    }
+
+    const studioLines = [
+      '🏢 Studio',
+      `   ${payload.studioName}`,
+      `   ✉️ ${payload.ownerEmail}`,
+      ...(payload.instagram ? [`   📷 ${payload.instagram}`] : []),
+    ];
+
+    const classLines = [
+      '🧘 Class',
+      `   ${payload.trainingName || 'Class'}`,
+      `   📅 ${dateStr}`,
+      `   🕒 ${timeStr}`,
+    ];
+
+    const clientLines = [
+      '👤 Client',
+      `   ${payload.clientName || 'Client'}`,
+      ...(payload.clientEmail ? [`   ✉️ ${payload.clientEmail}`] : []),
+    ];
+
     const text = [
       '📌 Unclaimed booking',
       '',
-      `🏢 ${payload.studioName}`,
-      `🆔 ${payload.studioId}`,
-      `✉️ ${payload.ownerEmail}`,
-      `🧘 ${payload.trainingName || 'Class'}`,
-      `👤 ${payload.clientName || 'Client'}`,
-      `🕒 ${payload.startsAt || '—'}`,
+      ...studioLines,
+      '',
+      ...classLines,
+      '',
+      ...clientLines,
       '',
       `🔗 ${adminUrl}`,
     ].join('\n');
@@ -311,6 +414,7 @@ export class StudioClaimService {
       sessionId?: string;
       trainingName?: string;
       clientName?: string;
+      clientEmail?: string;
       startsAt?: Date | string;
     },
   ): Promise<void> {
@@ -322,6 +426,7 @@ export class StudioClaimService {
         claimedAt: true,
         intendedOwnerEmail: true,
         email: true,
+        instagram: true,
       },
     });
     if (!studio || studio.claimedAt) return;
@@ -351,8 +456,10 @@ export class StudioClaimService {
       studioName: studio.name || 'Studio',
       studioId,
       ownerEmail,
+      instagram: studio.instagram || undefined,
       trainingName: bookingMeta.trainingName,
       clientName: bookingMeta.clientName,
+      clientEmail: bookingMeta.clientEmail,
       startsAt,
     });
   }
@@ -672,7 +779,20 @@ export class StudioClaimService {
 
     const row = await this.prisma.sessionEnrollment.findUnique({
       where: { id: enrollmentId },
-      select: { id: true, status: true, userId: true },
+      select: {
+        id: true,
+        status: true,
+        userId: true,
+        sessionId: true,
+        TrainingSession: {
+          select: {
+            startsAt: true,
+            studioId: true,
+            Studio: { select: { name: true, timezone: true } },
+            Training: { select: { name: true } },
+          },
+        },
+      },
     });
     if (!row) return false;
     if (row.status === 'ACTIVE') return true;
@@ -690,6 +810,41 @@ export class StudioClaimService {
       );
     } catch (e) {
       console.error('⚠️ Failed to schedule reminders after claim confirm:', e);
+    }
+
+    try {
+      await this.notificationsService.sendBookingConfirmedClientPush(
+        row.userId,
+        {
+          sessionId: row.sessionId,
+          studioId: row.TrainingSession.studioId,
+          className: row.TrainingSession.Training.name || 'Class',
+          studioName: row.TrainingSession.Studio.name || 'Studio',
+          startsAt: row.TrainingSession.startsAt,
+          timezone: row.TrainingSession.Studio.timezone || undefined,
+        },
+      );
+    } catch (e) {
+      console.error(
+        '⚠️ Failed to send client confirmation push after claim confirm:',
+        e,
+      );
+    }
+
+    try {
+      const meta = this.readBookingMeta(metadata);
+      await this.notifyTelegramBookingConfirmed({
+        studioId: row.TrainingSession.studioId,
+        studioName: row.TrainingSession.Studio.name || 'Studio',
+        trainingName: row.TrainingSession.Training.name || 'Class',
+        clientName: meta.clientName || '—',
+        startsAt: row.TrainingSession.startsAt,
+      });
+    } catch (e) {
+      console.error(
+        '⚠️ Failed to send Telegram booking confirmed notification:',
+        e,
+      );
     }
 
     return true;

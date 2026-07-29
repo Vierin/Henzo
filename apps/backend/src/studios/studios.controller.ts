@@ -723,6 +723,7 @@ export class StudiosController {
             trainingName: session.Training?.name || 'class',
             clientName:
               currentUser.user.name || currentUser.user.email || 'Client',
+            clientEmail: currentUser.user.email || undefined,
             startsAt: session.startsAt,
           },
         );

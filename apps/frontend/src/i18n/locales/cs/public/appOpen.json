@@ -1,43 +1,41 @@
 {
-  "appOpen": {
-    "openApp": "Otevřít aplikaci Henzo",
-    "orDownload": "nebo si aplikaci stáhněte",
-    "didntOpen": "Aplikace se neotevřela?",
-    "download": "Stáhnout Henzo",
-    "appStore": "App Store",
-    "googlePlay": "Google Play",
-    "language": "Jazyk",
-    "trainerInvite": {
-      "title": "Byli jste pozváni!",
-      "description": "Byli jste přidáni jako trenér do Henzo. Otevřete aplikaci a dokončete registraci.",
-      "expiry": "Tato pozvánka vyprší za 7 dní."
-    },
-    "studioClaim": {
-      "title": "Spravujte své studio",
-      "description": "Otevřete Henzo a převezměte správu studia a rezervací.",
-      "expiry": "Tento odkaz vyprší za 72 hodin."
-    },
-    "studioClaimConfirm": {
-      "loading": "Potvrzování rezervace…",
-      "title": "Rezervace potvrzena",
-      "alreadyTitle": "Rezervace už je potvrzena",
-      "description": "Rezervace ve studiu {studio} je potvrzena. Stáhněte si Henzo nebo otevřete aplikaci pro správu studia.",
-      "client": "Klient",
-      "class": "Lekce",
-      "when": "Kdy",
-      "manageCta": "Spravovat studio v Henzo",
-      "openManagePage": "pokračovat zde",
-      "errorTitle": "Rezervaci se nepodařilo potvrdit",
-      "errorGeneric": "Odkaz je neplatný nebo vypršel."
-    },
-    "studioShare": {
-      "titleNamed": "Připojte se k {name} v Henzo",
-      "titleGeneric": "Byli jste pozváni do studia",
-      "description": "Otevřete Henzo, prohlédněte si rozvrh studia a rezervujte si lekci."
-    },
-    "classInvite": {
-      "title": "Byli jste pozváni na lekci",
-      "description": "Otevřete Henzo, podívejte se na detaily lekce a rezervujte si místo."
-    }
+  "openApp": "Otevřít aplikaci Henzo",
+  "orDownload": "nebo si aplikaci stáhněte",
+  "didntOpen": "Aplikace se neotevřela?",
+  "download": "Stáhnout Henzo",
+  "appStore": "App Store",
+  "googlePlay": "Google Play",
+  "language": "Jazyk",
+  "trainerInvite": {
+    "title": "Byli jste pozváni!",
+    "description": "Byli jste přidáni jako trenér do Henzo. Otevřete aplikaci a dokončete registraci.",
+    "expiry": "Tato pozvánka vyprší za 7 dní."
+  },
+  "studioClaim": {
+    "title": "Spravujte své studio",
+    "description": "Otevřete Henzo a převezměte správu studia a rezervací.",
+    "expiry": "Tento odkaz vyprší za 72 hodin."
+  },
+  "studioClaimConfirm": {
+    "loading": "Potvrzování rezervace…",
+    "title": "Rezervace potvrzena",
+    "alreadyTitle": "Rezervace už je potvrzena",
+    "description": "Rezervace ve studiu {studio} je potvrzena. Stáhněte si Henzo nebo otevřete aplikaci pro správu studia.",
+    "client": "Klient",
+    "class": "Lekce",
+    "when": "Kdy",
+    "manageCta": "Spravovat studio v Henzo",
+    "openManagePage": "pokračovat zde",
+    "errorTitle": "Rezervaci se nepodařilo potvrdit",
+    "errorGeneric": "Odkaz je neplatný nebo vypršel."
+  },
+  "studioShare": {
+    "titleNamed": "Připojte se k {name} v Henzo",
+    "titleGeneric": "Byli jste pozváni do studia",
+    "description": "Otevřete Henzo, prohlédněte si rozvrh studia a rezervujte si lekci."
+  },
+  "classInvite": {
+    "title": "Byli jste pozváni na lekci",
+    "description": "Otevřete Henzo, podívejte se na detaily lekce a rezervujte si místo."
   }
 }

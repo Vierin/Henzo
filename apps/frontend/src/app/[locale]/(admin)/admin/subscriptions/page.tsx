@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AdminTable } from '@/components/admin/admin-table';
 import { fetchAdminSubscriptions } from '@/lib/admin/api';
+import { formatAdminDate } from '@/lib/admin/dateTimeFormat';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
 export default function AdminSubscriptionsPage() {
@@ -111,7 +112,7 @@ export default function AdminSubscriptionsPage() {
               header: 'Period end',
               render: (r) => {
                 const cpe = r.currentPeriodEnd as string | null;
-                return cpe ? new Date(cpe).toLocaleDateString() : '—';
+                return cpe ? formatAdminDate(cpe) : '—';
               },
             },
             {
