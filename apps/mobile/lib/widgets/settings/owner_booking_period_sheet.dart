@@ -246,7 +246,7 @@ Future<bool?> showOwnerBookingPeriodSheet(
                         ),
                       ),
                       value: localAutoConfirm,
-                      activeColor: AppColors.primary500,
+                      activeTrackColor: AppColors.primary500,
                       onChanged: applying
                           ? null
                           : (v) => setModalState(() => localAutoConfirm = v),

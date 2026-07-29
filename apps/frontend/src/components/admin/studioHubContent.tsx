@@ -839,7 +839,6 @@ function EditTab({
             {photoList.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {photoList.map((url) => (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={url}
                     src={url}

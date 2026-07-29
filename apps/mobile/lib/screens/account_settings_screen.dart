@@ -10,10 +10,10 @@ import '../widgets/settings/account_profile_form_widgets.dart';
 import '../widgets/settings/settings_header_back_button.dart';
 import '../services/auth_service.dart';
 import '../services/owner_photo_storage_service.dart';
-import '../main.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/owner_image_picker.dart';
 import '../utils/owner_navigation_restore.dart';
+import '../utils/root_navigator_key.dart';
 import 'main_shell.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
