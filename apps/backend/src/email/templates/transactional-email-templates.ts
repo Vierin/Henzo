@@ -646,20 +646,20 @@ export function renderStudioClaimInviteHtml(params: {
                 </tr>
               </table>
 
-              <!-- App download links -->
+              <!-- App download badges -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:24px;">
                 <tr>
                   <td align="center">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="padding:0 8px;">
-                          <a href="https://apps.apple.com/app/henzo/id6742519887" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 20px;border:1px solid #E0E0E0;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:#3F3F3F;">
-                            &#127822;&nbsp;&nbsp;${L.appStoreLabel}
+                        <td style="padding:0 6px;" align="center" valign="middle">
+                          <a href="https://apps.apple.com/us/app/henzo/id6773753029" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;line-height:0;">
+                            <img src="https://henzo.app/app-store.png" alt="${L.appStoreLabel}" width="135" height="40" style="display:block;width:135px;height:40px;border:0;outline:none;text-decoration:none;" />
                           </a>
                         </td>
-                        <td style="padding:0 8px;">
-                          <a href="https://play.google.com/store/apps/details?id=app.henzo" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 20px;border:1px solid #E0E0E0;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:#3F3F3F;">
-                            &#9654;&#65039;&nbsp;&nbsp;${L.googlePlayLabel}
+                        <td style="padding:0 6px;" align="center" valign="middle">
+                          <a href="https://play.google.com/store/apps/details?id=com.henzo.mobile" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;line-height:0;">
+                            <img src="https://henzo.app/google.png" alt="${L.googlePlayLabel}" width="135" height="40" style="display:block;width:135px;height:40px;border:0;outline:none;text-decoration:none;" />
                           </a>
                         </td>
                       </tr>

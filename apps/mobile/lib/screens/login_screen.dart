@@ -8,6 +8,7 @@ import '../constants/colors.dart';
 import '../l10n/auth_error_keys.dart';
 import '../l10n/locale_provider.dart';
 import '../screens/registration_role_screen.dart';
+import '../screens/studio_claim_login_screen.dart';
 import '../services/auth_service.dart';
 import '../services/studio_claim_api_service.dart';
 import '../utils/auth_ui_result.dart';
@@ -39,32 +40,23 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isGoogleLoading = false;
   bool _isAppleLoading = false;
   _LoginStep _step = _LoginStep.email;
-  String? _linkedStudioName;
-  String? _pendingClaimToken;
 
   bool get _isOAuthBusy => _isGoogleLoading || _isAppleLoading;
 
-  @override
-  void initState() {
-    super.initState();
-    _hydratePendingClaim();
-  }
-
-  Future<void> _hydratePendingClaim() async {
-    final email = await StudioClaimPending.readEmail();
-    final studioName = await StudioClaimPending.readStudioName();
-    final token = await StudioClaimPending.readToken();
-    if (!mounted) return;
-    if (email != null && email.isNotEmpty) {
-      _emailController.text = email;
-    }
-    setState(() {
-      _linkedStudioName = studioName;
-      _pendingClaimToken = token;
-      if (email != null && email.isNotEmpty && studioName != null) {
-        _step = _LoginStep.password;
-      }
-    });
+  Future<void> _openClaimLogin({
+    required String email,
+    required String studioName,
+    String? claimToken,
+  }) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StudioClaimLoginScreen(
+          email: email,
+          studioName: studioName,
+          claimToken: claimToken,
+        ),
+      ),
+    );
   }
 
   @override
@@ -78,23 +70,36 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
     final email = _emailController.text.trim();
-    String? studioName = await StudioClaimPending.readStudioName();
-    final token = await StudioClaimPending.readToken();
+    String? studioName;
+    String? token;
+    final pendingEmail = await StudioClaimPending.readEmail();
+    if (pendingEmail != null &&
+        pendingEmail.trim().toLowerCase() == email.toLowerCase()) {
+      studioName = await StudioClaimPending.readStudioName();
+      token = await StudioClaimPending.readToken();
+    }
     try {
       final lookup = await StudioClaimApiService.lookupByEmail(email);
       if (lookup['hasUnclaimedStudio'] == true) {
         studioName = lookup['studioName'] as String? ?? studioName;
+        token ??= await StudioClaimPending.readToken();
       }
     } catch (_) {
       // Lookup is best-effort; password step still works.
     }
     if (!mounted) return;
-    setState(() {
-      _isSubmitting = false;
-      _linkedStudioName = studioName;
-      _pendingClaimToken = token;
-      _step = _LoginStep.password;
-    });
+    setState(() => _isSubmitting = false);
+
+    if (studioName != null && studioName.isNotEmpty) {
+      await _openClaimLogin(
+        email: email,
+        studioName: studioName,
+        claimToken: token,
+      );
+      return;
+    }
+
+    setState(() => _step = _LoginStep.password);
   }
 
   Future<void> _submitPassword() async {
@@ -105,19 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.read<AuthService>();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final claimToken =
-        _pendingClaimToken ?? await StudioClaimPending.readToken();
-
-    final AuthUiResult result;
-    if (claimToken != null && claimToken.isNotEmpty) {
-      result = await auth.completeStudioClaimLogin(
-        email: email,
-        password: password,
-        claimToken: claimToken,
-      );
-    } else {
-      result = await auth.login(email, password);
-    }
+    final result = await auth.login(email, password);
 
     if (!mounted) return;
 
@@ -356,30 +349,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (_linkedStudioName != null &&
-                        _linkedStudioName!.isNotEmpty) ...[
-                      Text(
-                        locale
-                            .t('auth.studioLinkedToEmail')
-                            .replaceAll('{studioName}', _linkedStudioName!),
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          height: 1.4,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        locale.t('auth.enterPasswordToManageStudio'),
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          height: 1.4,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     Text(
                       _emailController.text.trim(),
                       style: TextStyle(
@@ -397,18 +366,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       onFieldSubmitted: (_) => _continueFromEmail(),
                       decorationBuilder: ({required invalid}) =>
                           AuthFormStyles.fieldDecoration(
-                            hintText: locale.t('auth.email'),
-                            prefixWidget: SvgPicture.asset(
-                              'assets/icons/icon-mail.svg',
-                              width: 13.5,
-                              height: 13.5,
-                              colorFilter: const ColorFilter.mode(
-                                AuthFormStyles.accentIcon,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            invalid: invalid,
+                        hintText: locale.t('auth.email'),
+                        prefixWidget: SvgPicture.asset(
+                          'assets/icons/icon-mail.svg',
+                          width: 13.5,
+                          height: 13.5,
+                          colorFilter: const ColorFilter.mode(
+                            AuthFormStyles.accentIcon,
+                            BlendMode.srcIn,
                           ),
+                        ),
+                        invalid: invalid,
+                      ),
                       style: AuthFormStyles.fieldTextStyle,
                       validator: (v) => validateEmailNullable(locale.t, v),
                     )
@@ -420,35 +389,35 @@ class _LoginScreenState extends State<LoginScreen> {
                       onFieldSubmitted: (_) => _submitPassword(),
                       decorationBuilder: ({required invalid}) =>
                           AuthFormStyles.fieldDecoration(
-                            hintText: locale.t('auth.password'),
-                            prefixWidget: SvgPicture.asset(
-                              'assets/icons/icon-password.svg',
-                              width: 16,
-                              height: 16,
-                              colorFilter: const ColorFilter.mode(
-                                AuthFormStyles.accentIcon,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: AuthFormStyles.hintMuted,
-                                size: 22,
-                              ),
-                              padding: const EdgeInsets.only(right: 12),
-                              splashColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              onPressed: () {
-                                setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                );
-                              },
-                            ),
-                            invalid: invalid,
+                        hintText: locale.t('auth.password'),
+                        prefixWidget: SvgPicture.asset(
+                          'assets/icons/icon-password.svg',
+                          width: 16,
+                          height: 16,
+                          colorFilter: const ColorFilter.mode(
+                            AuthFormStyles.accentIcon,
+                            BlendMode.srcIn,
                           ),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: AuthFormStyles.hintMuted,
+                            size: 22,
+                          ),
+                          padding: const EdgeInsets.only(right: 12),
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          onPressed: () {
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
+                          },
+                        ),
+                        invalid: invalid,
+                      ),
                       style: AuthFormStyles.fieldTextStyle,
                       validator: (v) => validatePasswordNullable(locale.t, v),
                     ),
@@ -565,7 +534,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : _buildGoogleIcon(),
                         label: Text(
