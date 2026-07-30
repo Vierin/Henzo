@@ -245,7 +245,7 @@
     "thankYouForReview": "Спасибо за отзыв!",
     "reviewCommentTooLong": "Комментарий — не более {max} символов",
     "leaveReview": "Оставить отзыв",
-    "waitingAcceptShort": "Ждет подтверждения"
+    "waitingAcceptShort": "Ожидание"
   },
   "clientFavorites": {
     "emptyTitle": "Пора найти ваше любимое место",
@@ -321,7 +321,8 @@
     "waitlistNotifyHint": "Уведомим, если появится место — кто первый запишется, тот и займёт",
     "ownerCannotBook": "Бизнес-аккаунт нельзя записать на занятие. Используйте клиентский аккаунт.",
     "waitingForAccept": "Ожидает подтверждения студии",
-    "bookingPendingApproval": "Заявка отправлена. Ждем подтверждения от студии."
+    "bookingPendingApprovalTitle": "Ожидание подтверждения студии",
+    "bookingPendingApprovalBody": "Студия должна сейчас подтвердить вашу запись. В среднем это занимает до 1 часа. Мы сообщим вам, как только студия подтвердит вашу запись."
   },
   "clientMap": {
     "nearbyStudios": "Студии рядом",

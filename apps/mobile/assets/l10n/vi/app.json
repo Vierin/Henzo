@@ -245,7 +245,7 @@
     "thankYouForReview": "Cảm ơn đánh giá của bạn!",
     "reviewCommentTooLong": "Bình luận tối đa {max} ký tự",
     "leaveReview": "Để lại đánh giá",
-    "waitingAcceptShort": "Chờ xác nhận"
+    "waitingAcceptShort": "Đang chờ"
   },
   "clientFavorites": {
     "emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -321,7 +321,8 @@
     "waitlistNotifyHint": "Chúng tôi sẽ thông báo khi có chỗ — ai đặt trước sẽ giữ chỗ",
     "ownerCannotBook": "Tài khoản doanh nghiệp không thể đặt lớp. Hãy dùng tài khoản khách hàng.",
     "waitingForAccept": "Đang chờ studio xác nhận",
-    "bookingPendingApproval": "Đã gửi yêu cầu. Đang chờ studio xác nhận."
+    "bookingPendingApprovalTitle": "Đang chờ studio xác nhận",
+    "bookingPendingApprovalBody": "Studio cần xác nhận đặt chỗ của bạn. Trung bình việc này mất đến 1 giờ. Chúng tôi sẽ thông báo ngay khi studio xác nhận."
   },
   "clientMap": {
     "nearbyStudios": "Studio gần bạn",

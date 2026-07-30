@@ -107,6 +107,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.bookActionLabel = 'Book again',
     this.bookActionLoading = false,
     this.isBooked = false,
+    this.isPending = false,
     this.onLeaveReview,
     this.leaveReviewLabel = 'Leave review',
     this.leaveReviewLoading = false,
@@ -140,6 +141,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   final String bookActionLabel;
   final bool bookActionLoading;
   final bool isBooked;
+
+  /// Pending studio confirmation — shows waiting badge instead of Booked/Book.
+  final bool isPending;
 
   final VoidCallback? onLeaveReview;
   final String leaveReviewLabel;
@@ -214,7 +218,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final priceColor = trailingPriceColor ?? accent;
     final badgeLabel = statusBadgeLabel?.trim() ?? '';
     final hasStatusBadge = badgeLabel.isNotEmpty;
-    final hasBookAction = isBooked || onBookAgain != null || bookActionLoading;
+    final hasBookAction =
+        isBooked || isPending || onBookAgain != null || bookActionLoading;
     final hasReviewAction =
         onLeaveReview != null || leaveReviewLoading || leaveReviewSubmitted;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
@@ -411,6 +416,10 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           onReview: onLeaveReview,
                           reviewSubmitted: leaveReviewSubmitted,
                           isBooked: isBooked,
+                          isPending: isPending,
+                          pendingLabel: badgeLabel.isNotEmpty
+                              ? badgeLabel
+                              : null,
                         ),
                       ],
                     )
@@ -470,6 +479,10 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         onReview: onLeaveReview,
                         reviewSubmitted: leaveReviewSubmitted,
                         isBooked: isBooked,
+                        isPending: isPending,
+                        pendingLabel: badgeLabel.isNotEmpty
+                            ? badgeLabel
+                            : null,
                       ),
                     )
                   : hasCancelAction
@@ -563,6 +576,8 @@ class _ScheduleTrailingActions extends StatelessWidget {
     required this.onReview,
     this.reviewSubmitted = false,
     this.isBooked = false,
+    this.isPending = false,
+    this.pendingLabel,
   });
 
   final String bookLabel;
@@ -573,17 +588,22 @@ class _ScheduleTrailingActions extends StatelessWidget {
   final VoidCallback? onReview;
   final bool reviewSubmitted;
   final bool isBooked;
+  final bool isPending;
+  final String? pendingLabel;
 
   @override
   Widget build(BuildContext context) {
-    final showBook = isBooked || onBook != null || bookLoading;
+    final showBook =
+        isBooked || isPending || onBook != null || bookLoading;
     final showReview = onReview != null || reviewLoading || reviewSubmitted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (showBook)
-          isBooked
-              ? _BookedBadge()
+          isPending
+              ? _WaitingBadge(label: pendingLabel)
+              : isBooked
+              ? const _BookedBadge()
               : _ScheduleBookButton(
                   label: bookLabel,
                   loading: bookLoading,
@@ -604,6 +624,8 @@ class _ScheduleTrailingActions extends StatelessWidget {
 }
 
 class _BookedBadge extends StatelessWidget {
+  const _BookedBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -616,18 +638,50 @@ class _BookedBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_rounded, size: 14, color: Color(0xFF388E3C)),
-          SizedBox(width: 4),
+          const Icon(Icons.check_rounded, size: 14, color: Color(0xFF388E3C)),
+          const SizedBox(width: 4),
           Text(
             'Booked',
             style: TextStyle(
               fontSize: 12.sp,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF388E3C),
+              color: const Color(0xFF388E3C),
               height: 1.1,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _WaitingBadge extends StatelessWidget {
+  const _WaitingBadge({this.label});
+
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final text =
+        (label != null && label!.trim().isNotEmpty) ? label!.trim() : 'Waiting';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFEF6C00).withValues(alpha: 0.4),
+        ),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFEF6C00),
+          height: 1.1,
+        ),
       ),
     );
   }

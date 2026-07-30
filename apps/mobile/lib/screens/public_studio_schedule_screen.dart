@@ -89,6 +89,7 @@ class _PublicStudioScheduleScreenState
   bool _isMonthExpanded = false;
 
   Set<String> _bookedSessionIds = {};
+  Set<String> _pendingSessionIds = {};
 
   @override
   void initState() {
@@ -285,17 +286,28 @@ class _PublicStudioScheduleScreenState
     try {
       final items = await ClientScheduleStore.loadFullSchedule(token);
       if (!mounted) return;
-      final ids = <String>{};
+      final booked = <String>{};
+      final pending = <String>{};
       for (final item in items) {
         final bookingStatus =
-            (item['bookingStatus'] ?? '').toString().toUpperCase();
+            (item['bookingStatus'] ?? item['status'] ?? '')
+                .toString()
+                .toUpperCase();
         final isWaitlisted =
             item['waitlisted'] == true || bookingStatus == 'WAITLISTED';
         if (isWaitlisted) continue;
         final sid = item['sessionId']?.toString();
-        if (sid != null && sid.isNotEmpty) ids.add(sid);
+        if (sid == null || sid.isEmpty) continue;
+        if (bookingStatus == 'PENDING') {
+          pending.add(sid);
+        } else {
+          booked.add(sid);
+        }
       }
-      setState(() => _bookedSessionIds = ids);
+      setState(() {
+        _bookedSessionIds = booked;
+        _pendingSessionIds = pending;
+      });
     } catch (_) {}
   }
 
@@ -865,11 +877,14 @@ class _PublicStudioScheduleScreenState
                                     .toString();
                             final alreadyBooked =
                                 _bookedSessionIds.contains(rawSessionId);
+                            final isPending =
+                                _pendingSessionIds.contains(rawSessionId);
                             final isOwner = context
                                 .watch<AuthService>()
                                 .isStudioOperator;
+                            final locale = context.watch<LocaleProvider>();
                             final canBookAsClient =
-                                !alreadyBooked && !isOwner;
+                                !alreadyBooked && !isPending && !isOwner;
                             return OwnerDailyScheduleSessionCard(
                               session: session,
                               subtitleLabel: subtitle,
@@ -882,13 +897,17 @@ class _PublicStudioScheduleScreenState
                                   ? formatVnd(price)
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
-                              bookActionLabel: context
-                                  .watch<LocaleProvider>()
-                                  .t('booking.book'),
+                              bookActionLabel: locale.t('booking.book'),
                               onBookAgain: canBookAsClient
                                   ? () => _openClassDetail(raw)
                                   : null,
                               isBooked: alreadyBooked && !isOwner,
+                              isPending: isPending && !isOwner,
+                              statusBadgeLabel: isPending && !isOwner
+                                  ? locale.t(
+                                      'clientActivity.waitingAcceptShort',
+                                    )
+                                  : null,
                               onTap: () => _openClassDetail(raw),
                             );
                           },

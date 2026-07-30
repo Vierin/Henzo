@@ -245,7 +245,7 @@
     "thankYouForReview": "Thank you for your review!",
     "reviewCommentTooLong": "Comment must be {max} characters or less",
     "leaveReview": "Leave review",
-    "waitingAcceptShort": "Waiting accept"
+    "waitingAcceptShort": "Waiting"
   },
   "clientFavorites": {
     "emptyTitle": "Time to find your favorite spot",
@@ -321,7 +321,8 @@
     "waitlistNotifyHint": "We'll notify you if a spot opens — first to book gets it",
     "ownerCannotBook": "Business accounts can't book classes. Use a client account to join.",
     "waitingForAccept": "Waiting for confirmation from studio",
-    "bookingPendingApproval": "Request sent. Waiting for studio confirmation."
+    "bookingPendingApprovalTitle": "Waiting for studio confirmation",
+    "bookingPendingApprovalBody": "The studio needs to confirm your booking. This usually takes up to 1 hour. We'll notify you as soon as the studio confirms."
   },
   "clientMap": {
     "nearbyStudios": "Nearby studios",

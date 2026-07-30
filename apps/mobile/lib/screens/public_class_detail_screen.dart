@@ -25,6 +25,7 @@ import '../utils/load_error_message.dart';
 import '../widgets/common/load_error_view.dart';
 import '../services/client_schedule_store.dart';
 import '../widgets/common/henzo_header_back_button.dart';
+import '../widgets/common/henzo_modal.dart';
 import '../widgets/session_capacity_card.dart';
 import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
@@ -284,13 +285,8 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           _isPendingByMe = true;
           _isOnWaitlist = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              locale.t('clientClassDetail.bookingPendingApproval'),
-            ),
-          ),
-        );
+        await _showPendingApprovalDialog();
+        if (!mounted) return;
         await _loadEnrollment(token);
         return;
       }
@@ -375,6 +371,23 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     final session = _session;
     if (session == null) return false;
     return !ClientScheduleStore.sessionHasEnded(session, DateTime.now());
+  }
+
+  Future<void> _showPendingApprovalDialog() {
+    final locale = context.read<LocaleProvider>();
+    return showHenzoDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(locale.t('clientClassDetail.bookingPendingApprovalTitle')),
+        content: Text(locale.t('clientClassDetail.bookingPendingApprovalBody')),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(locale.t('common.understood')),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmCancelBooking() async {
@@ -1795,13 +1808,47 @@ class _BookBar extends StatelessWidget {
               ],
             )
           : isPendingByMe
-          ? Text(
-              locale.t('clientClassDetail.waitingForAccept'),
-              style: TextStyle(
-                fontSize: 15.sp,
-                color: AppColors.textSecondary,
+          ? OutlinedButton(
+              onPressed: () {
+                showHenzoDialog<void>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(
+                      locale.t(
+                        'clientClassDetail.bookingPendingApprovalTitle',
+                      ),
+                    ),
+                    content: Text(
+                      locale.t(
+                        'clientClassDetail.bookingPendingApprovalBody',
+                      ),
+                    ),
+                    actions: [
+                      FilledButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(locale.t('common.understood')),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary500,
+                side: const BorderSide(color: AppColors.primary500),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
-              textAlign: TextAlign.center,
+              child: Text(
+                locale.t('clientClassDetail.waitingForAccept'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             )
           : classFull && !started && !isOnWaitlist
           ? _WaitlistButton(
