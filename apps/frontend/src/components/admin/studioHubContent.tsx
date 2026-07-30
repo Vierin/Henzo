@@ -10,6 +10,10 @@ import {
   formatLastActive,
 } from '@/components/admin/activityTierBadge';
 import { AdminModal } from '@/components/admin/adminModal';
+import {
+  AdminTimeInput,
+  normalizeAdminHm,
+} from '@/components/admin/adminTimeInput';
 import { WeekdayPills } from '@/components/admin/weekdayPills';
 import { AdminTable } from '@/components/admin/admin-table';
 import {
@@ -471,6 +475,7 @@ function OverviewTab({
   );
   const canPublish = cl.canPublish && studio.status !== 'ACTIVE';
   const needsSessions = studio._count.TrainingSession === 0;
+  const onboardingDone = cl.requiredCompleted && !needsSessions;
   const [pendingRows, setPendingRows] = useState<
     Array<{
       id: string;
@@ -665,92 +670,115 @@ function OverviewTab({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4 lg:col-span-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-medium">Launch checklist</h2>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onGoToEdit}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-50"
-            >
-              Setup / Edit →
-            </button>
-            {canPublish ? (
+      {!onboardingDone ? (
+        <section className="rounded-lg border border-zinc-200 bg-white p-4 lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium">Launch checklist</h2>
+            <div className="flex gap-2">
               <button
                 type="button"
-                disabled={saving}
-                onClick={() => void onPublish()}
-                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                onClick={onGoToEdit}
+                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-50"
               >
-                Publish studio
+                Setup / Edit →
               </button>
-            ) : null}
-          </div>
-        </div>
-        <p className="mt-2 text-sm text-zinc-600">
-          Status: <strong>{studio.status}</strong>
-          {cl.canPublish
-            ? ' · Ready to publish'
-            : ' · Finish required steps first'}
-        </p>
-        {needsSessions ? (
-          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            No class sessions yet. Add a training with a schedule in Setup /
-            Edit so clients have something to book.
-          </p>
-        ) : null}
-        {!cl.requiredCompleted ? (
-          <p className="mt-2 text-sm text-amber-700">
-            Missing required: {cl.missingRequiredSteps.join(', ')}
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-emerald-700">
-            Required onboarding steps complete
-          </p>
-        )}
-        <ul className="mt-3 space-y-2 text-sm">
-          {requiredSteps.map(([key, step]) => (
-            <li key={key} className="flex items-center gap-2">
-              <span
-                className={
-                  step.completed ? 'text-emerald-600' : 'text-zinc-400'
-                }
-              >
-                {step.completed ? '✓' : '○'}
-              </span>
-              {!step.completed ? (
+              {canPublish ? (
                 <button
                   type="button"
-                  onClick={onGoToEdit}
-                  className="text-left hover:text-primary"
+                  disabled={saving}
+                  onClick={() => void onPublish()}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                 >
-                  {stepLabels[key] ?? key}
+                  Publish studio
                 </button>
-              ) : (
-                <span>{stepLabels[key] ?? key}</span>
-              )}
-              {step.required ? (
-                <span className="text-xs text-zinc-400">required</span>
               ) : null}
+            </div>
+          </div>
+          <p className="mt-2 text-sm text-zinc-600">
+            Status: <strong>{studio.status}</strong>
+            {cl.canPublish
+              ? ' · Ready to publish'
+              : ' · Finish required steps first'}
+          </p>
+          {needsSessions ? (
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              No class sessions yet. Add a training with a schedule in Setup /
+              Edit so clients have something to book.
+            </p>
+          ) : null}
+          {!cl.requiredCompleted ? (
+            <p className="mt-2 text-sm text-amber-700">
+              Missing required: {cl.missingRequiredSteps.join(', ')}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-emerald-700">
+              Required onboarding steps complete
+            </p>
+          )}
+          <ul className="mt-3 space-y-2 text-sm">
+            {requiredSteps.map(([key, step]) => (
+              <li key={key} className="flex items-center gap-2">
+                <span
+                  className={
+                    step.completed ? 'text-emerald-600' : 'text-zinc-400'
+                  }
+                >
+                  {step.completed ? '✓' : '○'}
+                </span>
+                {!step.completed ? (
+                  <button
+                    type="button"
+                    onClick={onGoToEdit}
+                    className="text-left hover:text-primary"
+                  >
+                    {stepLabels[key] ?? key}
+                  </button>
+                ) : (
+                  <span>{stepLabels[key] ?? key}</span>
+                )}
+                {step.required ? (
+                  <span className="text-xs text-zinc-400">required</span>
+                ) : null}
+              </li>
+            ))}
+            <li className="flex items-center gap-2">
+              <span
+                className={
+                  !needsSessions ? 'text-emerald-600' : 'text-zinc-400'
+                }
+              >
+                {!needsSessions ? '✓' : '○'}
+              </span>
+              <button
+                type="button"
+                onClick={onGoToEdit}
+                className="text-left hover:text-primary"
+              >
+                Recurring class sessions (for first bookings)
+              </button>
             </li>
-          ))}
-          <li className="flex items-center gap-2">
-            <span
-              className={!needsSessions ? 'text-emerald-600' : 'text-zinc-400'}
-            >
-              {!needsSessions ? '✓' : '○'}
-            </span>
+          </ul>
+        </section>
+      ) : canPublish ? (
+        <section className="rounded-lg border border-zinc-200 bg-white p-4 lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="font-medium">Ready to publish</h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Onboarding complete · Status: <strong>{studio.status}</strong>
+              </p>
+            </div>
             <button
               type="button"
-              onClick={onGoToEdit}
-              className="text-left hover:text-primary"
+              disabled={saving}
+              onClick={() => void onPublish()}
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
-              Recurring class sessions (for first bookings)
+              Publish studio
             </button>
-          </li>
-        </ul>
-      </section>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -871,12 +899,6 @@ function isoWeekdayFromDateInput(value: string): number {
 
 function dateInputToApiDay(value: string): string {
   return `${value}T00:00:00.000`;
-}
-
-function normalizeHm(value: string): string {
-  const m = value.trim().match(/^(\d{1,2}):(\d{2})/);
-  if (!m) return '09:00';
-  return `${m[1].padStart(2, '0')}:${m[2]}`;
 }
 
 function weeksCountInclusive(start: string, end: string): number {
@@ -1105,7 +1127,9 @@ function EditTab({
               locationId: trLocationId || undefined,
               slots: trDays.map((day) => ({
                 day,
-                startTime: normalizeHm(trDayTimes[day] || trTime || '09:00'),
+                startTime: normalizeAdminHm(
+                  trDayTimes[day] || trTime || '09:00',
+                ),
               })),
               weeksCount: weeksCountInclusive(trDate, trEndDate),
               startsFromDate: dateInputToApiDay(trDate),
@@ -1117,7 +1141,7 @@ function EditTab({
               trainerId: trTrainerId || undefined,
               locationId: trLocationId || undefined,
               daysOfWeek: [isoWeekdayFromDateInput(trDate)],
-              startTime: normalizeHm(trTime),
+              startTime: normalizeAdminHm(trTime),
               weeksCount: 1,
               startsFromDate: dateInputToApiDay(trDate),
               endsOnDate: dateInputToApiDay(trDate),
@@ -1553,11 +1577,10 @@ function EditTab({
                   className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                 />
               </Field>
-              <Field label="Time">
-                <input
-                  type="time"
+              <Field label="Time (24h)">
+                <AdminTimeInput
                   value={trTime}
-                  onChange={(e) => setTrTime(e.target.value)}
+                  onChange={setTrTime}
                   className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                 />
               </Field>
@@ -1611,13 +1634,12 @@ function EditTab({
                         <span className="text-sm text-zinc-600 w-10">
                           {label}
                         </span>
-                        <input
-                          type="time"
+                        <AdminTimeInput
                           value={trDayTimes[day] || '09:00'}
-                          onChange={(e) =>
+                          onChange={(hm) =>
                             setTrDayTimes((prev) => ({
                               ...prev,
-                              [day]: e.target.value,
+                              [day]: hm,
                             }))
                           }
                           className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
@@ -1698,11 +1720,10 @@ function EditTab({
             </div>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Start time">
-              <input
-                type="time"
+            <Field label="Start time (24h)">
+              <AdminTimeInput
                 value={sessTime}
-                onChange={(e) => setSessTime(e.target.value)}
+                onChange={setSessTime}
                 className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
               />
             </Field>
