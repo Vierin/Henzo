@@ -31,9 +31,8 @@ int? extractBookingPeriodDays(Studio? studio) {
 Future<bool> saveBookingPeriodDays(
   BuildContext context,
   Studio studio,
-  int days, {
-  bool? autoConfirmBookings,
-}) async {
+  int days,
+) async {
   final token = context.read<AuthService>().accessToken;
   if (token == null || token.isEmpty) return false;
   try {
@@ -41,8 +40,6 @@ Future<bool> saveBookingPeriodDays(
       ...?studio.reminderSettings,
       'bookingPeriodDays': days,
     };
-    final confirm =
-        autoConfirmBookings ?? studio.autoConfirmBookings ?? true;
     final payload = <String, dynamic>{
       'name': studio.name ?? '',
       if (studio.description != null) 'description': studio.description,
@@ -56,7 +53,8 @@ Future<bool> saveBookingPeriodDays(
       if (studio.workingHours != null) 'workingHours': studio.workingHours,
       if (studio.latitude != null) 'latitude': studio.latitude,
       if (studio.longitude != null) 'longitude': studio.longitude,
-      'autoConfirmBookings': confirm,
+      if (studio.autoConfirmBookings != null)
+        'autoConfirmBookings': studio.autoConfirmBookings,
       'reminderSettings': reminderSettings,
     };
     await DashboardApiService.updateCurrentStudio(token, payload);
@@ -73,7 +71,7 @@ Future<bool> saveBookingPeriodDays(
   }
 }
 
-/// Bottom sheet: booking window (1–60 days) + auto-confirm toggle.
+/// Bottom sheet: booking window (1–60 days).
 Future<bool?> showOwnerBookingPeriodSheet(
   BuildContext context, {
   required Studio studio,
@@ -84,7 +82,6 @@ Future<bool?> showOwnerBookingPeriodSheet(
       initialDays ??
       extractBookingPeriodDays(studio) ??
       kDefaultBookingPeriodDays;
-  final startAutoConfirm = studio.autoConfirmBookings ?? true;
 
   return showHenzoModalBottomSheet<bool>(
     context: context,
@@ -92,7 +89,6 @@ Future<bool?> showOwnerBookingPeriodSheet(
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
       int localDays = startDays;
-      var localAutoConfirm = startAutoConfirm;
       final controller = TextEditingController(text: localDays.toString());
       var applying = false;
 
@@ -120,7 +116,6 @@ Future<bool?> showOwnerBookingPeriodSheet(
               context,
               studio,
               localDays,
-              autoConfirmBookings: localAutoConfirm,
             );
             if (!sheetContext.mounted) return;
             setModalState(() => applying = false);
@@ -225,33 +220,6 @@ Future<bool?> showOwnerBookingPeriodSheet(
                       ],
                     ),
                     const SizedBox(height: 16),
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        locale.t('settings.owner.autoConfirmBookings'),
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        locale.t(
-                          'settings.owner.autoConfirmBookingsDescription',
-                        ),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          height: 1.35,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      value: localAutoConfirm,
-                      activeTrackColor: AppColors.primary500,
-                      onChanged: applying
-                          ? null
-                          : (v) => setModalState(() => localAutoConfirm = v),
-                    ),
-                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(

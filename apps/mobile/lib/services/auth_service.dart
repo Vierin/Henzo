@@ -1251,6 +1251,8 @@ class AuthService extends ChangeNotifier {
     required String name,
     required String phone,
     String? avatarUrl,
+    String? city,
+    String? country,
   }) async {
     final token = accessToken;
     if (token == null) {
@@ -1272,6 +1274,8 @@ class AuthService extends ChangeNotifier {
           'name': name.trim(),
           'phone': phone.trim(),
           if (avatarUrl != null) 'avatarUrl': avatarUrl.trim(),
+          if (city != null) 'city': city.trim(),
+          if (country != null) 'country': country.trim().toUpperCase(),
         }),
       );
       if (response.statusCode == 200) {
@@ -1295,6 +1299,66 @@ class AuthService extends ChangeNotifier {
         success: false,
         errorL10nKey: AuthErrorKeys.profileUpdateFailed,
         errorRaw: msg,
+      );
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
+    }
+  }
+
+  /// Persist client explore city/country without touching name/phone.
+  Future<AuthUiResult> updateClientLocation({
+    required String city,
+    String? country,
+  }) async {
+    final token = accessToken;
+    if (token == null) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.noSession,
+        errorRaw: null,
+      );
+    }
+    final trimmed = city.trim();
+    if (trimmed.isEmpty) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.profileUpdateFailed,
+        errorRaw: 'city required',
+      );
+    }
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/profile');
+      final body = <String, dynamic>{
+        'city': trimmed,
+        'country': (country != null && country.trim().isNotEmpty)
+            ? country.trim().toUpperCase()
+            : '',
+      };
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': 'Bearer $token',
+        },
+        body: json.encode(body),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final userData = data['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          _user = UserModel.fromJson(userData);
+          notifyListeners();
+        }
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.profileUpdateFailed,
+        errorRaw: 'HTTP ${response.statusCode}',
       );
     } catch (e) {
       return (

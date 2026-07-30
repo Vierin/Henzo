@@ -304,6 +304,8 @@ export type AdminDirectoryClientRow = {
   name: string | null;
   email: string;
   phone: string | null;
+  city: string | null;
+  country: string | null;
   isGuest: boolean;
   createdAt: string;
   bookingsCount: number;

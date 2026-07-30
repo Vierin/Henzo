@@ -467,6 +467,8 @@ export class AdminService {
         name: true,
         email: true,
         phone: true,
+        city: true,
+        country: true,
         isGuest: true,
         createdAt: true,
       },
@@ -556,6 +558,8 @@ export class AdminService {
         name: c.name,
         email: c.email,
         phone: c.phone,
+        city: c.city,
+        country: c.country,
         isGuest: c.isGuest,
         createdAt: c.createdAt,
         bookingsCount: agg?.bookingsCount ?? 0,
@@ -2303,7 +2307,7 @@ export class AdminService {
     }
   }
 
-  async deleteUnclaimedStudio(authHeader: string, studioId: string) {
+  async deleteStudio(authHeader: string, studioId: string) {
     const admin = await assertAdmin(this.authService, authHeader);
 
     const studio = await this.prisma.studio.findUnique({
@@ -2311,9 +2315,6 @@ export class AdminService {
       select: { id: true, name: true, claimedAt: true },
     });
     if (!studio) throw new NotFoundException('Studio not found');
-    if (studio.claimedAt) {
-      throw new BadRequestException('Cannot delete a claimed studio');
-    }
 
     const enrolledUsers = await this.prisma.sessionEnrollment.findMany({
       where: {
@@ -2365,7 +2366,10 @@ export class AdminService {
       action: 'studio_deleted',
       adminEmail: admin.email,
       studioId,
-      metadata: { studioName: studio.name },
+      metadata: {
+        studioName: studio.name,
+        wasClaimed: Boolean(studio.claimedAt),
+      },
     });
 
     return { success: true };

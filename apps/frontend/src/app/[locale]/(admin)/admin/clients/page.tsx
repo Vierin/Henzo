@@ -288,16 +288,20 @@ export default function AdminClientsPage() {
                 render: (r) => <ClientActivityBadge tier={r.activityTier} />,
               },
               {
-                key: 'guest',
-                header: 'Type',
-                render: (r) =>
-                  r.isGuest ? (
-                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600">
-                      guest
+                key: 'location',
+                header: 'Location',
+                render: (r) => {
+                  const city = r.city?.trim();
+                  const country = r.country?.trim();
+                  if (!city && !country) {
+                    return <span className="text-xs text-zinc-400">—</span>;
+                  }
+                  return (
+                    <span className="text-xs text-zinc-700">
+                      {[city, country].filter(Boolean).join(', ')}
                     </span>
-                  ) : (
-                    <span className="text-xs text-zinc-500">registered</span>
-                  ),
+                  );
+                },
               },
             ]}
           />

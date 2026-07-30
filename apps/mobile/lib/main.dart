@@ -451,6 +451,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
       _authService = auth;
       auth.addListener(_onAuthChanged);
     }
+    final loc = context.read<ClientLocationStore>();
+    loc.remoteSync = (city, country) async {
+      if (!auth.isAuthenticated) return;
+      await auth.updateClientLocation(city: city, country: country);
+    };
   }
 
   @override
@@ -476,6 +481,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
 
     if (isAuthenticated) {
+      final becameAuthed = !_wasAuthenticated || userId != _lastUserId;
       _lastUserId = userId;
       // After login from soft-gate, reopen pending studio/class.
       unawaited(() async {
@@ -484,8 +490,25 @@ class _AuthWrapperState extends State<AuthWrapper> {
           await ShareIntentRouter.openPendingWithRetry();
         }
       }());
+      if (becameAuthed) {
+        unawaited(_syncClientLocationWithProfile(auth));
+      }
     }
     _wasAuthenticated = isAuthenticated;
+  }
+
+  Future<void> _syncClientLocationWithProfile(AuthService auth) async {
+    if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
+    final user = auth.user;
+    if (user?.city != null && user!.city!.trim().isNotEmpty) {
+      await loc.hydrateFromProfile(
+        city: user.city,
+        country: user.country,
+        onlyIfEmpty: true,
+      );
+    }
+    await loc.pushToRemoteIfNeeded();
   }
 
   @override

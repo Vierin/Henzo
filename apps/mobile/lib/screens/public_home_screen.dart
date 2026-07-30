@@ -177,11 +177,13 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
   Future<void> _persistLocation({
     required String city,
+    String? country,
     double? lat,
     double? lon,
   }) async {
     await context.read<ClientLocationStore>().apply(
       city: city,
+      country: country,
       lat: lat,
       lon: lon,
     );
@@ -312,7 +314,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       reverse?.address,
       locale.t('clientHome.locationPickerUseCity'),
     );
-    await _persistLocation(city: city, lat: pos.latitude, lon: pos.longitude);
+    await _persistLocation(
+      city: city,
+      country: reverse?.country,
+      lat: pos.latitude,
+      lon: pos.longitude,
+    );
   }
 
   Future<void> _openManualLocationInput() async {
@@ -326,6 +333,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     if (picked == null || picked.city.trim().isEmpty) return;
     await _persistLocation(
       city: picked.city.trim(),
+      country: picked.country,
       lat: picked.lat,
       lon: picked.lon,
     );
