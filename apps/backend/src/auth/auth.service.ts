@@ -1821,6 +1821,8 @@ export class AuthService {
           name: dbUser.name,
           phone: dbUser.phone,
           avatarUrl: dbUser.avatarUrl,
+          city: dbUser.city,
+          country: dbUser.country,
           role: dbUser.role,
         },
       };
@@ -1981,17 +1983,26 @@ export class AuthService {
 
   async updateUserProfile(userId: string, data: UpdateProfileDto) {
     try {
-      // Update user in database
+      const city =
+        data.city !== undefined ? data.city.trim() || null : undefined;
+      const country =
+        data.country !== undefined
+          ? data.country.trim().toUpperCase() || null
+          : undefined;
+
+      // Update user in database (only patch provided fields)
       const updatedUser = await this.prisma.user.update({
         where: {
           id: userId,
         },
         data: {
-          name: data.name,
-          phone: data.phone,
+          ...(data.name !== undefined ? { name: data.name } : {}),
+          ...(data.phone !== undefined ? { phone: data.phone } : {}),
           ...(data.avatarUrl !== undefined
             ? { avatarUrl: data.avatarUrl || null }
             : {}),
+          ...(city !== undefined ? { city } : {}),
+          ...(country !== undefined ? { country } : {}),
         },
         select: {
           id: true,
@@ -1999,6 +2010,8 @@ export class AuthService {
           name: true,
           phone: true,
           avatarUrl: true,
+          city: true,
+          country: true,
           role: true,
         },
       });

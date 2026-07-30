@@ -29,7 +29,7 @@ export class MapboxController {
       : ['address', 'poi'];
     const suggestions = await this.mapboxService.getAutocompleteSuggestions(
       query.trim(),
-      country || 'VN',
+      country ?? 'VN',
       limitNum,
       typeList,
     );

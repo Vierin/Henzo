@@ -383,7 +383,7 @@ export class AdminController {
   ) {
     try {
       return {
-        data: await this.adminService.deleteUnclaimedStudio(authHeader, id),
+        data: await this.adminService.deleteStudio(authHeader, id),
       };
     } catch (e) {
       this.handleError(e);

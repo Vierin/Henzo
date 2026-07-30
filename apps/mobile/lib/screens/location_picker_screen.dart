@@ -26,11 +26,13 @@ class LocationPickerScreen extends StatefulWidget {
 class LocationPickerResult {
   const LocationPickerResult({
     required this.city,
+    this.country,
     this.lat,
     this.lon,
   });
 
   final String city;
+  final String? country;
   final double? lat;
   final double? lon;
 }
@@ -74,8 +76,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     final seen = <String>{};
     final out = <AddressSuggestion>[];
     for (final s in raw) {
-      final key = s.displayCity.toLowerCase();
-      if (key.isEmpty || seen.contains(key)) continue;
+      final country = s.country?.toLowerCase() ?? '';
+      final key = '${s.displayCity.toLowerCase()}|$country';
+      if (s.displayCity.isEmpty || seen.contains(key)) continue;
       seen.add(key);
       out.add(s);
     }
@@ -102,11 +105,16 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     });
   }
 
-  void _pickCity(String city, {double? lat, double? lon}) {
+  void _pickCity(String city, {String? country, double? lat, double? lon}) {
     final trimmed = city.trim();
     if (trimmed.isEmpty) return;
     Navigator.of(context).pop(
-      LocationPickerResult(city: trimmed, lat: lat, lon: lon),
+      LocationPickerResult(
+        city: trimmed,
+        country: country,
+        lat: lat,
+        lon: lon,
+      ),
     );
   }
 
@@ -165,7 +173,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         reverse?.address,
         locale.t('clientHome.locationPickerUseCity'),
       );
-      _pickCity(city, lat: pos.latitude, lon: pos.longitude);
+      _pickCity(
+        city,
+        country: reverse?.country,
+        lat: pos.latitude,
+        lon: pos.longitude,
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -357,6 +370,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           child: InkWell(
                             onTap: () => _pickCity(
                               city,
+                              country: suggestion.country,
                               lat: suggestion.lat,
                               lon: suggestion.lon,
                             ),
@@ -380,7 +394,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      city,
+                                      suggestion.displayLabel,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(

@@ -4,6 +4,8 @@ class UserModel {
   final String? name;
   final String? phone;
   final String? avatarUrl;
+  final String? city;
+  final String? country;
   final String role;
 
   const UserModel({
@@ -12,6 +14,8 @@ class UserModel {
     this.name,
     this.phone,
     this.avatarUrl,
+    this.city,
+    this.country,
     required this.role,
   });
 
@@ -22,6 +26,8 @@ class UserModel {
       name: json['name'] as String?,
       phone: json['phone'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
+      city: json['city'] as String?,
+      country: json['country'] as String?,
       role: json['role'] as String,
     );
   }

@@ -167,7 +167,7 @@ export class MapboxService {
    */
   async getAutocompleteSuggestions(
     query: string,
-    country?: string,
+    country?: string | null,
     limit: number = 5,
     types: string[] = ['address', 'poi'],
   ): Promise<
@@ -175,6 +175,7 @@ export class MapboxService {
       id: string;
       address: string;
       city: string;
+      country: string | null;
       lat: number;
       lon: number;
     }>
@@ -186,25 +187,42 @@ export class MapboxService {
 
       this.initializeClient();
 
-      const countryCode = country || 'VN';
+      const countryFilter =
+        country &&
+        country !== 'all' &&
+        country !== '*' &&
+        country.trim().length > 0
+          ? country.trim().toUpperCase()
+          : null;
 
       const response = await this.geocodingClient
         .forwardGeocode({
           query,
           limit,
-          countries: [countryCode],
+          ...(countryFilter ? { countries: [countryFilter] } : {}),
           types,
         })
         .send();
 
       if (response.body && response.body.features) {
-        return response.body.features.map((feature) => ({
-          id: feature.id,
-          address: feature.place_name || '',
-          city: (feature.text || feature.place_name || '').trim(),
-          lat: feature.center[1],
-          lon: feature.center[0],
-        }));
+        return response.body.features.map((feature) => {
+          const fromContext = feature.context
+            ?.find((ctx: { id?: string }) => ctx.id?.startsWith('country'))
+            ?.short_code?.toUpperCase();
+          const countryCode =
+            (typeof fromContext === 'string' && fromContext.length >= 2
+              ? fromContext.slice(0, 2)
+              : null) || countryFilter;
+
+          return {
+            id: feature.id,
+            address: feature.place_name || '',
+            city: (feature.text || feature.place_name || '').trim(),
+            country: countryCode,
+            lat: feature.center[1],
+            lon: feature.center[0],
+          };
+        });
       }
 
       return [];

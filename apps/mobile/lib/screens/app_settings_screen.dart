@@ -21,6 +21,7 @@ import '../utils/subscription_tier.dart';
 import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/feedback_sheet.dart';
+import '../widgets/settings/owner_auto_confirm_sheet.dart';
 import '../widgets/settings/owner_booking_period_sheet.dart';
 import '../widgets/settings/owner_client_reminders_sheet.dart';
 import '../widgets/settings/settings_header_back_button.dart';
@@ -154,6 +155,16 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       context,
       studio: studio,
       initialDays: _bookingPeriodDays,
+    );
+    if (changed == true && mounted) await _loadData();
+  }
+
+  Future<void> _openAutoConfirmSheet() async {
+    final studio = _studio;
+    if (studio == null) return;
+    final changed = await showOwnerAutoConfirmSheet(
+      context,
+      studio: studio,
     );
     if (changed == true && mounted) await _loadData();
   }
@@ -328,6 +339,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         title: locale.t('settings.owner.onlineBooking'),
                         trailingText: bookingTrailing,
                         onTap: _openBookingPeriodSheet,
+                      ),
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-calendar-check.svg',
+                        title: locale.t('settings.owner.autoConfirmBookings'),
+                        trailingText:
+                            autoConfirmBookingsSummary(_studio, locale),
+                        onTap: _openAutoConfirmSheet,
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-bell.svg',

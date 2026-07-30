@@ -239,6 +239,10 @@ model User {
   phone            String?
   avatarUrl        String?
   role             UserRole     @default(OWNER)
+  /// Client explore location (city name from Mapbox / GPS).
+  city             String?
+  /// ISO 3166-1 alpha-2 (e.g. VN), from Mapbox country context.
+  country          String?
   /// Indicates that the user was created implicitly (e.g. via booking magic link)
   /// and has not yet completed full account registration.
   isGuest          Boolean      @default(false)

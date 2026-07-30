@@ -374,6 +374,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
     await context.read<ClientLocationStore>().apply(
       city: city,
+      country: reverse?.country,
       lat: pos.latitude,
       lon: pos.longitude,
     );

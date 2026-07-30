@@ -245,7 +245,7 @@
     "thankYouForReview": "Спасибо за отзыв!",
     "reviewCommentTooLong": "Комментарий — не более {max} символов",
     "leaveReview": "Оставить отзыв",
-    "waitingAcceptShort": "Ждет подтверждения"
+    "waitingAcceptShort": "Ожидание"
   },
   "clientFavorites": {
     "emptyTitle": "Пора найти ваше любимое место",
@@ -321,7 +321,8 @@
     "waitlistNotifyHint": "Уведомим, если появится место — кто первый запишется, тот и займёт",
     "ownerCannotBook": "Бизнес-аккаунт нельзя записать на занятие. Используйте клиентский аккаунт.",
     "waitingForAccept": "Ожидает подтверждения студии",
-    "bookingPendingApproval": "Заявка отправлена. Ждем подтверждения от студии."
+    "bookingPendingApprovalTitle": "Ожидание подтверждения студии",
+    "bookingPendingApprovalBody": "Студия должна сейчас подтвердить вашу запись. В среднем это занимает до 1 часа. Мы сообщим вам, как только студия подтвердит вашу запись."
   },
   "clientMap": {
     "nearbyStudios": "Студии рядом",
@@ -832,6 +833,7 @@
     "msgRescheduled": "{studio}: {class} перенесено",
     "cancelNote": "Причина: {note}",
     "msgOwnerBooked": "{studio} записал(а) вас на {class}",
+    "msgBookingConfirmed": "{studio} подтвердила вашу запись на {class}",
     "ownerBooked": "{client} записался(ась) на {service}",
     "ownerBookedGeneric": "{client} записался(ась) на занятие",
     "ownerCancelled": "{client} отменил(а) {service}",
@@ -885,7 +887,7 @@
       "sectionPayments": "Платежи",
       "ownerRole": "Владелец",
       "studioProfile": "Профиль студии",
-      "onlineBooking": "Онлайн-запись",
+      "onlineBooking": "Период бронирования",
       "trainings": "Тренировки",
       "team": "Команда",
       "subscriptionBilling": "Подписка и оплата",
@@ -899,6 +901,9 @@
       "bookingPeriodSaved": "Настройки бронирования сохранены",
       "autoConfirmBookings": "Автоподтверждение записей",
       "autoConfirmBookingsDescription": "Вкл: клиент подтверждается сразу. Выкл: запись ждёт вашего одобрения (Pending).",
+      "autoConfirmBookingsSaved": "Настройка автоподтверждения сохранена",
+      "autoConfirmOn": "Вкл",
+      "autoConfirmOff": "Выкл",
       "clientNotifications": "Уведомления клиентам",
       "clientRemindersTitle": "Напоминания клиентам",
       "clientRemindersDescription": "Когда записанные клиенты получают напоминание перед занятием. До 2 напоминаний.",
