@@ -46,6 +46,14 @@ export default function ConditionalFooter() {
     return null;
   }
 
+  // Claim / invite landings — no marketing footer
+  if (
+    pathname.includes('/studio-claim/') ||
+    pathname.includes('/trainer-invite/')
+  ) {
+    return null;
+  }
+
   // Hide footer on admin and owner panel pages (they have their own footers in layout)
   if (
     pathname.includes('/admin') ||

@@ -1,5 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { formatInTimeZone } from 'date-fns-tz';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AuthService } from '../auth/auth.service';
@@ -15,6 +16,7 @@ import {
 import { resolveClientEmailLocale } from '../email/copy/client-email-locale';
 
 const CLAIM_TTL_MS = 72 * 60 * 60 * 1000; // 72 hours
+const DEFAULT_STUDIO_TZ = 'Asia/Ho_Chi_Minh';
 
 @Injectable()
 export class StudioClaimService {
@@ -27,6 +29,33 @@ export class StudioClaimService {
 
   private hashToken(raw: string): string {
     return crypto.createHash('sha256').update(raw).digest('hex');
+  }
+
+  private resolveStudioTimezone(timezone?: string | null): string {
+    const tz = timezone?.trim();
+    return tz || DEFAULT_STUDIO_TZ;
+  }
+
+  private formatSessionInStudioTz(
+    startsAt: Date | string,
+    timezone?: string | null,
+  ): { dateStr: string; timeStr: string } {
+    const d = startsAt instanceof Date ? startsAt : new Date(startsAt);
+    if (Number.isNaN(d.getTime())) {
+      return { dateStr: '—', timeStr: '—' };
+    }
+    const tz = this.resolveStudioTimezone(timezone);
+    try {
+      return {
+        dateStr: formatInTimeZone(d, tz, 'EEE d MMM yyyy'),
+        timeStr: formatInTimeZone(d, tz, 'HH:mm'),
+      };
+    } catch {
+      return {
+        dateStr: formatInTimeZone(d, DEFAULT_STUDIO_TZ, 'EEE d MMM yyyy'),
+        timeStr: formatInTimeZone(d, DEFAULT_STUDIO_TZ, 'HH:mm'),
+      };
+    }
   }
 
   private generateRawToken(): string {
@@ -59,6 +88,7 @@ export class StudioClaimService {
     trainingName: string;
     clientName: string;
     startsAt: Date;
+    timezone?: string | null;
   }): Promise<void> {
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
     const chatId = process.env.TELEGRAM_FEEDBACK_CHAT_ID?.trim();
@@ -69,18 +99,10 @@ export class StudioClaimService {
     ).replace(/\/$/, '');
     const adminUrl = `${baseUrl}/en/admin/studios/${payload.studioId}?tab=overview`;
 
-    const d = payload.startsAt;
-    const dateStr = d.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-    const timeStr = d.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
+    const { dateStr, timeStr } = this.formatSessionInStudioTz(
+      payload.startsAt,
+      payload.timezone,
+    );
 
     const text = [
       '✅ Booking confirmed by studio',
@@ -123,6 +145,7 @@ export class StudioClaimService {
     clientName?: string;
     clientEmail?: string;
     startsAt?: string;
+    timezone?: string | null;
   }): Promise<void> {
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
     const chatId = process.env.TELEGRAM_FEEDBACK_CHAT_ID?.trim();
@@ -133,25 +156,9 @@ export class StudioClaimService {
     ).replace(/\/$/, '');
     const adminUrl = `${baseUrl}/en/admin/studios/${payload.studioId}?tab=overview`;
 
-    // Format date and time separately
-    let dateStr = '—';
-    let timeStr = '—';
-    if (payload.startsAt) {
-      const d = new Date(payload.startsAt);
-      if (!isNaN(d.getTime())) {
-        dateStr = d.toLocaleDateString('en-GB', {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        });
-        timeStr = d.toLocaleTimeString('en-GB', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        });
-      }
-    }
+    const { dateStr, timeStr } = payload.startsAt
+      ? this.formatSessionInStudioTz(payload.startsAt, payload.timezone)
+      : { dateStr: '—', timeStr: '—' };
 
     const studioLines = [
       '🏢 Studio',
@@ -274,6 +281,7 @@ export class StudioClaimService {
         trainingName?: string;
         clientName?: string;
         startsAt?: string;
+        timezone?: string;
       };
       requireOwnership?: { userId: string };
     },
@@ -382,6 +390,7 @@ export class StudioClaimService {
       trainingName?: string;
       clientName?: string;
       startsAt?: string;
+      timezone?: string;
     };
   }) {
     const loc = resolveClientEmailLocale();
@@ -420,6 +429,7 @@ export class StudioClaimService {
         trainingName: params.bookingMeta?.trainingName,
         clientName: params.bookingMeta?.clientName,
         startsAt: params.bookingMeta?.startsAt,
+        timezone: params.bookingMeta?.timezone,
         locale: loc,
       }),
       fromName: 'Henzo',
@@ -450,6 +460,7 @@ export class StudioClaimService {
         intendedOwnerEmail: true,
         email: true,
         instagram: true,
+        timezone: true,
       },
     });
     if (!studio || studio.claimedAt) return;
@@ -463,6 +474,7 @@ export class StudioClaimService {
       bookingMeta.startsAt instanceof Date
         ? bookingMeta.startsAt.toISOString()
         : bookingMeta.startsAt;
+    const timezone = this.resolveStudioTimezone(studio.timezone);
 
     await this.requestClaim(studioId, ownerEmail, {
       sendEmail: true,
@@ -472,6 +484,7 @@ export class StudioClaimService {
         trainingName: bookingMeta.trainingName,
         clientName: bookingMeta.clientName,
         startsAt,
+        timezone,
       },
     });
 
@@ -484,6 +497,7 @@ export class StudioClaimService {
       clientName: bookingMeta.clientName,
       clientEmail: bookingMeta.clientEmail,
       startsAt,
+      timezone,
     });
   }
 
@@ -574,6 +588,7 @@ export class StudioClaimService {
     trainingName?: string;
     clientName?: string;
     startsAt?: string;
+    timezone?: string;
   } {
     if (!metadata || typeof metadata !== 'object') return {};
     const m = metadata as Record<string, unknown>;
@@ -585,6 +600,7 @@ export class StudioClaimService {
       trainingName: str(m.trainingName),
       clientName: str(m.clientName),
       startsAt: str(m.startsAt),
+      timezone: str(m.timezone),
     };
   }
 
@@ -866,6 +882,7 @@ export class StudioClaimService {
         trainingName: row.TrainingSession.Training.name || 'Class',
         clientName: meta.clientName || '—',
         startsAt: row.TrainingSession.startsAt,
+        timezone: row.TrainingSession.Studio.timezone,
       });
     } catch (e) {
       console.error(

@@ -158,7 +158,7 @@ export function StudioClaimConfirmLanding({ token }: { token: string }) {
             </div>
             <Link
               href={manageHref}
-              className="w-full rounded-xl border-2 border-[#ff5b5b] px-6 py-3 text-center font-semibold text-[#ff5b5b] transition-colors hover:bg-orange-50"
+              className="w-full rounded-xl border-2 border-[#3F3287] px-6 py-3 text-center font-semibold text-[#3F3287] transition-colors hover:bg-[#3F3287]/5"
             >
               {t('appOpen.studioClaimConfirm.manageCta')}
             </Link>
@@ -228,7 +228,7 @@ export function StudioClaimConfirmLanding({ token }: { token: string }) {
             <button
               type="button"
               onClick={() => void handleManageInApp()}
-              className="w-full rounded-xl bg-[#ff5b5b] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#e54f4f]"
+              className="w-full rounded-xl bg-[#3F3287] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#34296f]"
             >
               {t('appOpen.studioClaimConfirm.manageCta')}
             </button>
@@ -237,14 +237,14 @@ export function StudioClaimConfirmLanding({ token }: { token: string }) {
               {t('appOpen.didntOpen')}{' '}
               <Link
                 href={manageHref}
-                className="font-medium text-[#ff5b5b] underline"
+                className="font-medium text-[#3F3287] underline"
               >
                 {t('appOpen.studioClaimConfirm.openManagePage')}
               </Link>
               {' · '}
               <a
                 href={storeUrl}
-                className="font-medium text-[#ff5b5b] underline"
+                className="font-medium text-[#3F3287] underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >

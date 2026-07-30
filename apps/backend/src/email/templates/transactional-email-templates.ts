@@ -14,6 +14,24 @@ import {
   renderEmailIconCircle,
   renderEmailDashedIconDivider,
 } from './email-layout.helpers';
+import { formatInTimeZone } from 'date-fns-tz';
+
+const DEFAULT_CLAIM_EMAIL_TZ = 'Asia/Ho_Chi_Minh';
+
+function formatClaimBookingStartsAt(
+  startsAt: string | undefined,
+  timezone?: string,
+): string {
+  if (!startsAt) return '—';
+  const raw = new Date(startsAt);
+  if (Number.isNaN(raw.getTime())) return startsAt;
+  const tz = timezone?.trim() || DEFAULT_CLAIM_EMAIL_TZ;
+  try {
+    return formatInTimeZone(raw, tz, 'dd.MM.yyyy · HH:mm');
+  } catch {
+    return formatInTimeZone(raw, DEFAULT_CLAIM_EMAIL_TZ, 'dd.MM.yyyy · HH:mm');
+  }
+}
 
 export function renderContactMessageHtml(context: {
   name: string;
@@ -361,6 +379,8 @@ export function renderStudioClaimBookingHtml(params: {
   trainingName?: string;
   clientName?: string;
   startsAt?: string;
+  /** IANA timezone of the studio (session wall-clock). */
+  timezone?: string;
   locale?: string;
 }): string {
   const loc = resolveClientEmailLocale(params.locale);
@@ -371,20 +391,9 @@ export function renderStudioClaimBookingHtml(params: {
   const safeTraining = escapeHtml(params.trainingName || L.defaultTrainingName);
   const safeClient = escapeHtml(params.clientName || '—');
 
-  // Format startsAt as dd.mm.yyyy · HH:mm
-  const rawStarts = params.startsAt ? new Date(params.startsAt) : null;
-  const safeFormattedDate =
-    rawStarts && !isNaN(rawStarts.getTime())
-      ? escapeHtml(
-          rawStarts.toLocaleDateString('en-GB').replace(/\//g, '.') +
-            ' · ' +
-            rawStarts.toLocaleTimeString('en-GB', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            }),
-        )
-      : escapeHtml(params.startsAt || '—');
+  const safeFormattedDate = escapeHtml(
+    formatClaimBookingStartsAt(params.startsAt, params.timezone),
+  );
 
   const expiryRow = renderEmailInfoRow(
     'clock',

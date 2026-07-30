@@ -55,14 +55,14 @@ function CalendarIcon({ className }: { className?: string }) {
 
 function LandingIcon({ kind }: { kind: AppOpenLandingProps['icon'] }) {
   if (kind === 'class') {
-    return <CalendarIcon className="h-8 w-8 text-[#ff5b5b]" />;
+    return <CalendarIcon className="h-8 w-8 text-[#3F3287]" />;
   }
   if (kind === 'studio') {
     return (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
         <path
           d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-          fill="#ff5b5b"
+          fill="#3F3287"
         />
         <circle cx="12" cy="9" r="2.5" fill="white" />
       </svg>
@@ -72,7 +72,7 @@ function LandingIcon({ kind }: { kind: AppOpenLandingProps['icon'] }) {
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
       <path
         d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-        fill="#ff5b5b"
+        fill="#3F3287"
       />
       <circle cx="12" cy="9" r="2.5" fill="white" />
     </svg>
@@ -161,7 +161,7 @@ export function AppOpenLanding({
       </div>
 
       <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3F3287]/10">
           <LandingIcon kind={icon} />
         </div>
 
@@ -173,7 +173,7 @@ export function AppOpenLanding({
         <button
           type="button"
           onClick={handleOpenApp}
-          className="w-full rounded-xl bg-[#ff5b5b] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#e54f4f]"
+          className="w-full rounded-xl bg-[#3F3287] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#34296f]"
         >
           {t('appOpen.openApp')}
         </button>
@@ -183,7 +183,7 @@ export function AppOpenLanding({
             {t('appOpen.didntOpen')}{' '}
             <a
               href={storeUrl}
-              className="font-medium text-[#ff5b5b] underline"
+              className="font-medium text-[#3F3287] underline"
               target="_blank"
               rel="noopener noreferrer"
             >
