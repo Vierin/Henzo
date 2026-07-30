@@ -304,7 +304,8 @@ export default function StudiosContent() {
                       />
                     </div>
                     <p className="text-xs text-zinc-500">
-                      Click on map to move marker (same flow as mobile).
+                      Click the map or drag the marker to adjust the pin.
+                      Address updates via reverse geocode.
                       {mapLoading ? ' Updating address…' : ''}
                     </p>
                   </div>

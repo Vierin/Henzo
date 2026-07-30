@@ -1,5 +1,24 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const MARKER_ICON = L.divIcon({
+  className: 'admin-map-marker !border-0 !bg-transparent',
+  html: `<span style="
+    display:block;
+    width:18px;
+    height:18px;
+    border-radius:9999px;
+    background:#3F3287;
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.35);
+  "></span>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
 export function AdminAddressMapPicker({
   latitude,
   longitude,
@@ -9,52 +28,79 @@ export function AdminAddressMapPicker({
   longitude: number;
   onPick: (coords: { lat: number; lon: number }) => void;
 }) {
-  const nudge = (dLat: number, dLon: number) => {
-    onPick({ lat: latitude + dLat, lon: longitude + dLon });
-  };
-  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${
-    longitude - 0.01
-  }%2C${latitude - 0.01}%2C${longitude + 0.01}%2C${
-    latitude + 0.01
-  }&layer=mapnik&marker=${latitude}%2C${longitude}`;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || mapRef.current) return;
+
+    const map = L.map(el, {
+      center: [latitude, longitude],
+      zoom: 16,
+      scrollWheelZoom: true,
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    const marker = L.marker([latitude, longitude], {
+      draggable: true,
+      icon: MARKER_ICON,
+      autoPan: true,
+    }).addTo(map);
+
+    const emit = (latlng: L.LatLng) => {
+      onPickRef.current({ lat: latlng.lat, lon: latlng.lng });
+    };
+
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      marker.setLatLng(e.latlng);
+      emit(e.latlng);
+    });
+    marker.on('dragend', () => {
+      emit(marker.getLatLng());
+    });
+
+    mapRef.current = map;
+    markerRef.current = marker;
+
+    // Leaflet needs a tick after mount in modals/dialogs.
+    requestAnimationFrame(() => map.invalidateSize());
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+
+    const next = L.latLng(latitude, longitude);
+    const cur = marker.getLatLng();
+    if (
+      Math.abs(cur.lat - next.lat) < 1e-8 &&
+      Math.abs(cur.lng - next.lng) < 1e-8
+    ) {
+      return;
+    }
+    marker.setLatLng(next);
+    map.panTo(next);
+  }, [latitude, longitude]);
 
   return (
-    <div className="space-y-2">
-      <iframe
-        title="Address marker preview"
-        src={mapSrc}
-        className="h-[220px] w-full rounded-xl border border-zinc-200"
-      />
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => nudge(0.0005, 0)}
-          className="rounded border border-zinc-200 px-2 py-1 text-xs"
-        >
-          N
-        </button>
-        <button
-          type="button"
-          onClick={() => nudge(-0.0005, 0)}
-          className="rounded border border-zinc-200 px-2 py-1 text-xs"
-        >
-          S
-        </button>
-        <button
-          type="button"
-          onClick={() => nudge(0, 0.0005)}
-          className="rounded border border-zinc-200 px-2 py-1 text-xs"
-        >
-          E
-        </button>
-        <button
-          type="button"
-          onClick={() => nudge(0, -0.0005)}
-          className="rounded border border-zinc-200 px-2 py-1 text-xs"
-        >
-          W
-        </button>
-      </div>
-    </div>
+    <div
+      ref={containerRef}
+      className="h-[240px] w-full overflow-hidden rounded-lg [&_.admin-map-marker]:!border-0 [&_.admin-map-marker]:!bg-transparent"
+    />
   );
 }
