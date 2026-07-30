@@ -78,8 +78,6 @@ export function AdminAddressMapPicker({
       mapRef.current = null;
       markerRef.current = null;
     };
-    // Init once; lat/lon sync handled below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
