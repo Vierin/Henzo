@@ -1,6 +1,8 @@
 {
 	"dashboard": "Dashboard",
-	"calendar": "Calendar",
+	"calendar": "Schedule",
+	"trainings": "Trainings",
+	"loggingOut": "Logging out...",
 	"services": {
 		"title": "Services"
 	},

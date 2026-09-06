@@ -7,6 +7,8 @@ import {
   stripLocaleFromPath,
   type Locale,
 } from './i18n/routing';
+import { isRouteMatch, ownerRoutes } from './config/routes';
+import { OWNER_AUTH_COOKIE } from './lib/owner/auth-session-cookie';
 
 function withLocaleHeader(response: NextResponse, locale: Locale) {
   response.headers.set('x-locale', locale);
@@ -17,10 +19,11 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const res = NextResponse.next();
 
-  // Ignore next internals, static files, and Digital Asset Links (no locale redirect)
+  // Ignore next internals, static files, OAuth callback, and Digital Asset Links
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
+    pathname.startsWith('/auth') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/.well-known') ||
     pathname.includes('.')
@@ -70,9 +73,9 @@ export async function middleware(req: NextRequest) {
   const pathWithoutLocale = stripLocaleFromPath(pathname);
   const activeLocale = (urlLocale ?? defaultLocale) as Locale;
 
-  // Supabase OAuth may fall back to Site URL (/en?code=...) instead of the
-  // admin callback when redirect allowlists drift. Forward the auth code into
-  // the admin exchange route so login never dumps onto the landing page.
+  // Supabase may fall back to Site URL (/en?code=...). Never steal business /
+  // client OAuth into admin — only admin login uses /en/admin/auth/callback
+  // as redirectTo. Forward unknown codes to /auth/callback (client PKCE).
   const oauthCode = req.nextUrl.searchParams.get('code');
   const oauthError = req.nextUrl.searchParams.get('error');
   if (
@@ -80,7 +83,7 @@ export async function middleware(req: NextRequest) {
     (oauthCode || oauthError)
   ) {
     const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = `/${activeLocale}/admin/auth/callback`;
+    redirectUrl.pathname = '/auth/callback';
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -105,9 +108,32 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
+  // Legacy list URL /salons → /studios
+  if (
+    pathWithoutLocale === '/salons' ||
+    pathWithoutLocale.startsWith('/salons/')
+  ) {
+    const targetLocale = urlLocale ?? defaultLocale;
+    const redirectUrl = req.nextUrl.clone();
+    const newPath = pathWithoutLocale.replace(/^\/salons/, '/studios');
+    redirectUrl.pathname = `/${targetLocale}${newPath}`;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
+  // Owner panel: session cookie set by client after OAuth / gate.
+  // Role is still enforced in OwnerProtectedGate.
+  if (isRouteMatch(pathWithoutLocale, ownerRoutes)) {
+    const hasOwnerSession = Boolean(req.cookies.get(OWNER_AUTH_COOKIE)?.value);
+    if (!hasOwnerSession) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = `/${activeLocale}/business/login`;
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+    return withLocaleHeader(res, activeLocale);
+  }
+
   const disabledPrefixes = [
-    '/salons',
-    '/category',
     '/map',
     '/booking-confirmed',
     '/bookings',
@@ -116,19 +142,17 @@ export async function middleware(req: NextRequest) {
     '/favorites',
     '/reviews',
     '/settings',
-    '/owner-dashboard',
-    '/calendar',
     '/services',
-    '/staff',
-    '/salon-info',
     '/billing',
     '/owner-help',
-    '/clients',
     '/admin-panel',
     '/profit',
     '/promotion-coupons',
     '/structure',
     '/unauthorized',
+    '/subscription',
+    '/marketing',
+    '/profile-settings',
   ];
 
   if (
@@ -144,8 +168,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Web is landing-only now: no auth gating in middleware.
-  // Allow routing to continue and let Next.js handle missing pages (404).
   return withLocaleHeader(res, activeLocale);
 }
 

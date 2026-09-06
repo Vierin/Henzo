@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
-import LandingHeader from '@/components/LandingHeader';
-import { LandingSpotlightSection } from '@/components/landingSpotlightSection';
-import { LandingHeroSection } from '@/components/landing/landingHeroSection';
-import { LandingPhoneShowcaseSection } from '@/components/landing/landingPhoneShowcaseSection';
-import { LandingScrollReset } from '@/components/landing/landingScrollReset';
-import { LandingStatement } from '@/components/landing/landingStatement';
-import { QuickStartSection } from '@/components/landing/quickStartSection';
-import { LandingPricingSection } from '@/components/landing/landingPricingSection';
+import { ClientHomeHero } from '@/components/clientHome/clientHomeHero';
+import { fetchHomeTrainingCategories } from '@/lib/client/fetch-training-categories';
+import { ClientHomePopularStudiosSection } from '@/components/clientHome/clientHomePopularStudiosSection';
+import { ClientHomeNearbyClassesSection } from '@/components/clientHome/clientHomeNearbyClassesSection';
+import {
+  ClientHomeAppPromoSection,
+  ClientHomeBusinessPromoSection,
+} from '@/components/clientHome/clientHomePromoSections';
 import { HomeJsonLd } from '@/components/blog/homeJsonLd';
 import { buildStaticPageMetadata, resolveLocale } from '@/seo';
-import { LandingCtaSection } from '@/components/landing/landingCtaSection';
 import type { Locale } from '@/i18n/routing';
 
 export async function generateMetadata({
@@ -28,24 +27,18 @@ export default async function HomePage({
 }) {
   const { locale: raw } = await params;
   const locale = resolveLocale(raw) as Locale;
+  const categories = await fetchHomeTrainingCategories();
 
   return (
     <>
       <HomeJsonLd locale={locale} />
-      <LandingScrollReset />
-      <div className="min-h-screen overflow-x-clip bg-[#3F3287] font-wix-madefor-display text-[#3F3F3F]">
-        <header className="absolute left-1/2 top-0 z-30 -translate-x-1/2 w-full max-w-6xl rounded-b-[1.35rem] bg-[#FDF5F0] sm:rounded-b-[1.75rem]">
-          <LandingHeader />
-        </header>
-
+      <div className="min-h-screen overflow-x-clip font-wix-madefor-display text-[#3F3F3F]">
         <main className="w-full">
-          <LandingHeroSection />
-          <LandingPhoneShowcaseSection />
-          <LandingStatement />
-          <LandingSpotlightSection />
-          <QuickStartSection />
-          <LandingPricingSection />
-          <LandingCtaSection />
+          <ClientHomeHero categories={categories} locale={locale} />
+          <ClientHomePopularStudiosSection locale={locale} />
+          <ClientHomeNearbyClassesSection locale={locale} />
+          <ClientHomeAppPromoSection />
+          <ClientHomeBusinessPromoSection />
         </main>
       </div>
     </>

@@ -1,273 +1,362 @@
 {
-	"heroTitle": "Đặt lịch <span class=\"text-[#ff5b5b]\">làm <br> đẹp</span> dễ dàng",
-	"heroSubtitle": "Tìm và đặt lịch tại các salon, spa, massage hàng đầu với chỉ vài cú click",
-	"topRatedTitle": "Salon & Wellness Hàng Đầu",
-	"topRatedSubtitle": "Khám phá các salon và spa được đánh giá cao gần bạn. Đặt lịch làm tóc, massage, chăm sóc da, làm móng và nhiều dịch vụ chuyên nghiệp khác.",
-	"popularCategories": "Danh mục phổ biến",
-	"onlineBooking": "Đặt lịch Online",
-	"minutesShort": "phút",
-	"toBook": "để đặt",
-	"free": "Miễn phí",
-	"booking": "Đặt lịch",
-	"search": "Tìm kiếm",
-	"searchPlaceholder": "Tìm kiếm dịch vụ...",
-	"locationPlaceholder": "Vị trí của bạn",
-	"datePlaceholder": "Chọn ngày",
-	"timePlaceholder": "Chọn giờ",
-	"anyNearestTime": "Bất kỳ thời gian gần nhất",
-	"searchButton": "Tìm kiếm",
-	"featuredSalons": "Salon nổi bật",
-	"popularServices": "Dịch vụ phổ biến",
-	"recommendedServices": "Dịch vụ đề xuất",
-	"howItWorks": "Đặt lịch trong 3 bước đơn giản",
-	"howItWorksSubtitle": "Tìm và đặt lịch bệnh viện thẩm mỹ hoàn hảo chưa bao giờ dễ dàng đến thế",
-	"step1": "01",
-	"step2": "02",
-	"step3": "03",
-	"step1Title": "Tìm kiếm & Khám phá",
-	"step2Title": "Chọn & Đặt lịch",
-	"step3Title": "Tận hưởng",
-	"step1Description": "Nhập vị trí của bạn để tìm các salon gần đó với đánh giá đã xác minh và giá cả cạnh tranh.",
-	"step2Description": "Chọn dịch vụ, khung giờ và stylist yêu thích. Đặt lịch ngay lập tức chỉ với vài cú nhấp chuột.",
-	"step3Description": "Đến cuộc hẹn và tận hưởng trải nghiệm làm đẹp cao cấp. Đánh giá chuyến thăm của bạn sau đó.",
-	"whyChooseHenzo": "Tại sao chọn Henzo?",
-	"whyChooseSubtitle": "Henzo giúp việc đặt lịch hẹn làm đẹp tiếp theo của bạn trở nên đơn giản và tiện lợi.",
-	"easyBooking": "Đặt lịch dễ dàng",
-	"easyBookingDescription": "Đặt lịch hẹn chỉ với vài cú nhấp chuột.",
-	"flexibleScheduling": "Lịch trình linh hoạt",
-	"flexibleSchedulingDescription": "Tìm thời gian phù hợp với bạn, ngay cả phút cuối.",
-	"trustedReviews": "Đánh giá đáng tin cậy",
-	"trustedReviewsDescription": "Đọc đánh giá từ các khách hàng khác để tìm salon tốt nhất.",
-	"startExploring": "Bắt đầu khám phá các salon",
-	"salonOwner": "Bạn là chủ salon?",
-	"salonOwnerSubtitle": "Tham gia Henzo và phát triển doanh nghiệp với nền tảng đặt lịch của chúng tôi",
-	"registerBusiness": "Đăng ký doanh nghiệp của bạn",
-	"learnMore": "Tìm hiểu thêm",
-	"seeAllSalons": "Xem tất cả salon",
-	"noSalonsAvailable": "Không có salon nào",
-	"checkBackLater": "Vui lòng quay lại sau để xem các salon có sẵn.",
-	"studio": {
-		"hero": {
-			"line1Lead": "Từ",
-			"line1Highlight": "lịch đặt",
-			"line1Trail": "hỗn loạn",
-			"line2Lead": "đến",
-			"line2Highlight": "lịch trình rõ ràng",
-			"line2Trail": "",
-			"storeAppStore": "App Store",
-			"storeGooglePlay": "Google Play",
-			"availableForFree": "Dùng miễn phí",
-			"notification": "Nhớ tập hôm nay lúc 3pm",
-			"entryNotificationTitle": "Đặt lịch mới!",
-			"entryNotificationText": "Sam vừa đặt một buổi tập.",
-			"entryNotification2Title": "Có đánh giá mới!",
-			"entryNotification2Text": "Một khách hàng vừa để lại đánh giá 5 sao.",
-			"newClientsTitle": "Khách hàng mới",
-			"newBadge": "Mới",
-			"clientsBadge": "Khách",
-			"autoBadge": "Tự động",
-			"notificationBadge": "Thông báo",
-			"activeUserLabel": "Người dùng hoạt động",
-			"clients": [
-				{
-					"name": "Anna Nowak",
-					"initials": "AN"
-				},
-				{
-					"name": "Ivan Founder",
-					"initials": "IF"
-				},
-				{
-					"name": "Maria Kowalski",
-					"initials": "MK"
-				}
-			]
-		},
-		"header": {
-			"navBenefits": "Lợi ích",
-			"navPricing": "Bảng giá",
-			"navHowItWorks": "Cách hoạt động",
-			"navContact": "Liên hệ",
-			"getApp": "Tải ứng dụng"
-		},
-		"intro": {
-			"description": "Vận hành studio từ điện thoại: lịch, khung giờ huấn luyện viên và đặt chỗ của khách trong một luồng thống nhất.",
-			"secondary": "Tải cho Android hoặc iOS và onboard đội ngũ nhanh chóng, không rườm rà."
-		},
-		"statementBeforeSpotlight": {
-			"phrase1Lead": "Bạn",
-			"phrase1AccentRotating": [
-				"tập luyện.",
-				"giảng dạy.",
-				"tập trung."
-			],
-			"phrase2Lead": "Chúng tôi",
-			"phrase2AccentRotating": [
-				"lấp đầy lịch của bạn.",
-				"xử lý booking.",
-				"giảm no-show."
-			]
-		},
-		"spotlight": {
-			"headingLine1": "Vận hành lớp học của bạn",
-			"line2BeforeAccent": "Chúng tôi vận hành ",
-			"line2Accent": "hệ thống",
-			"slides": [
-				{
-					"stat": "+30%",
-					"featureTitle": "Tỉ lệ lấp đầy lớp",
-					"description": "Khung giờ rõ ràng và quản lý lịch hẹn dễ hơn",
-					"videoSrc": "/video-4.webm",
-					"videoLabel": "Video spotlight studio 1"
-				},
-				{
-					"stat": "-40%",
-					"featureTitle": "Giảm số buổi bị bỏ lỡ",
-					"description": "Khách nhận nhắc lịch và ít quên buổi tập hơn",
-					"videoSrc": "/video-3.webm",
-					"videoLabel": "Video spotlight studio 2"
-				},
-				{
-					"stat": "-70%",
-					"featureTitle": "Giảm thời gian trả lời tin nhắn",
-					"description": "Không cần phản hồi thủ công từng khách hàng",
-					"videoSrc": "/video-2.webm",
-					"videoLabel": "Video spotlight studio 3"
-				},
-				{
-					"stat": "+42%",
-					"featureTitle": "Kiểm soát lịch trình",
-					"description": "Tất cả lớp học và lịch hẹn trong một nơi",
-					"videoSrc": "/video-1.webm",
-					"videoLabel": "Video spotlight studio 4"
-				}
-			]
-		},
-		"quickStart": {
-			"line1": "Sẵn sàng vận hành",
-			"line2Before": "trong ",
-			"line2Accent": "5 phút",
-			"steps": [
-				{
-					"label": "Step 1:",
-					"text": "Thêm tên và địa chỉ studio"
-				},
-				{
-					"label": "Step 2:",
-					"text": "Tải ảnh lên và tạo lớp học đầu tiên"
-				},
-				{
-					"label": "Step 3:",
-					"text": "Bắt đầu nhận booking đầu tiên"
-				}
-			]
-		},
-		"pricing": {
-			"titleLine1": "Giá đơn giản",
-			"titleLine2Accent": "Kết quả",
-			"titleLine2After": " thực tế",
-			"currency": "VND",
-			"storeAppStore": "App Store",
-			"storeGooglePlay": "Google Play",
-			"plans": [
-				{
-					"name": "Solo",
-					"subtitle": "Dành cho huấn luyện viên độc lập",
-					"price": "0",
-					"priceSub": "/ mỗi tháng",
-					"features": [
-						"12 lớp mỗi tháng",
-						"1 huấn luyện viên",
-						"Không giới hạn khách hàng",
-						"Đặt lịch trực tuyến",
-						"Hồ sơ studio",
-						"Thông báo đẩy"
-					]
-				},
-				{
-					"name": "Studio",
-					"subtitle": "Dành cho studio đang phát triển",
-					"price": "599.000",
-					"priceSub": "/ mỗi tháng",
-					"features": [
-						"100 lớp/tháng",
-						"Tối đa 4 huấn luyện viên",
-						"Danh sách chờ",
-						"Nhắc nhở tự động (Email & Push)",
-						"Phân tích cơ bản (90 ngày)"
-					]
-				},
-				{
-					"name": "Enterprise",
-					"subtitle": "Dành cho doanh nghiệp lớn",
-					"price": "1.999.000",
-					"priceSub": "/ mỗi tháng",
-					"features": [
-						"Không giới hạn lớp học",
-						"Không giới hạn HLV",
-						"Nhiều địa điểm",
-						"Phân tích nâng cao",
-						"Phân quyền nhóm",
-						"Hỗ trợ ưu tiên"
-					]
-				}
-			]
-		},
-		"features": {
-			"title": "Thiết kế cho vận hành studio",
-			"items": [
-				{
-					"title": "Lịch trình luôn đồng bộ",
-					"description": "Quản lý khung giờ tập, tránh xung đột và giữ vận hành hằng ngày ổn định."
-				},
-				{
-					"title": "Minh bạch huấn luyện viên và dịch vụ",
-					"description": "Kiểm soát dịch vụ đang mở, độ sẵn sàng của huấn luyện viên và công suất booking tại một nơi."
-				},
-				{
-					"title": "Trải nghiệm đặt lịch cho khách",
-					"description": "Cho khách luồng booking nhanh, trong khi đội ngũ vẫn kiểm soát toàn bộ session."
-				}
-			]
-		},
-		"workflow": {
-			"title": "Cách studio triển khai với Henzo",
-			"steps": [
-				{
-					"title": "1. Cài ứng dụng",
-					"description": "Tải trên Android hoặc iOS và đăng nhập với vai trò vận hành studio."
-				},
-				{
-					"title": "2. Cấu hình studio",
-					"description": "Thiết lập huấn luyện viên, dịch vụ và lịch làm việc theo tuần."
-				},
-				{
-					"title": "3. Bắt đầu nhận booking",
-					"description": "Mở luồng booking cho khách và quản lý session từ điện thoại."
-				}
-			]
-		},
-		"ctaBanner": {
-			"titleLine1": "Studio của bạn.",
-			"titleLine2": "Trong tay bạn.",
-			"description": "Quản lý lớp học, học viên và lịch hẹn trong một ứng dụng mobile",
-			"storeAppStore": "App Store",
-			"storeGooglePlay": "Google Play"
-		},
-		"finalCta": {
-			"title": "Sẵn sàng vận hành fitness studio nhanh hơn?",
-			"description": "Bắt đầu với ứng dụng mobile và đưa vận hành hằng ngày vào một luồng gọn gàng.",
-			"androidCta": "Tải cho Android",
-			"iosCta": "Tải cho iOS",
-			"contactCta": "Liên hệ tư vấn"
-		},
-		"footer": {
-			"navBenefits": "Lợi ích",
-			"navPricing": "Bảng giá",
-			"navHowItWorks": "Cách hoạt động",
-			"ctaTitle": "Bắt đầu kinh doanh ngay hôm nay.",
-			"copyright": "Copyright © Henzo app. Đã đăng ký bản quyền. 2026",
-			"email": "hello@henzo.app"
-		}
-	}
+  "heroTitle": "Đặt lịch <span class=\"text-[#ff5b5b]\">làm <br> đẹp</span> dễ dàng",
+  "heroSubtitle": "Tìm và đặt lịch tại các salon, spa, massage hàng đầu với chỉ vài cú click",
+  "topRatedTitle": "Salon & Wellness Hàng Đầu",
+  "topRatedSubtitle": "Khám phá các salon và spa được đánh giá cao gần bạn. Đặt lịch làm tóc, massage, chăm sóc da, làm móng và nhiều dịch vụ chuyên nghiệp khác.",
+  "popularCategories": "Danh mục phổ biến",
+  "onlineBooking": "Đặt lịch Online",
+  "minutesShort": "phút",
+  "toBook": "để đặt",
+  "free": "Miễn phí",
+  "booking": "Đặt lịch",
+  "search": "Tìm kiếm",
+  "searchPlaceholder": "Tìm kiếm dịch vụ...",
+  "locationPlaceholder": "Vị trí của bạn",
+  "datePlaceholder": "Chọn ngày",
+  "timePlaceholder": "Chọn giờ",
+  "anyNearestTime": "Bất kỳ thời gian gần nhất",
+  "searchButton": "Tìm kiếm",
+  "featuredSalons": "Salon nổi bật",
+  "popularServices": "Dịch vụ phổ biến",
+  "recommendedServices": "Dịch vụ đề xuất",
+  "howItWorks": "Đặt lịch trong 3 bước đơn giản",
+  "howItWorksSubtitle": "Tìm và đặt lịch bệnh viện thẩm mỹ hoàn hảo chưa bao giờ dễ dàng đến thế",
+  "step1": "01",
+  "step2": "02",
+  "step3": "03",
+  "step1Title": "Tìm kiếm & Khám phá",
+  "step2Title": "Chọn & Đặt lịch",
+  "step3Title": "Tận hưởng",
+  "step1Description": "Nhập vị trí của bạn để tìm các salon gần đó với đánh giá đã xác minh và giá cả cạnh tranh.",
+  "step2Description": "Chọn dịch vụ, khung giờ và stylist yêu thích. Đặt lịch ngay lập tức chỉ với vài cú nhấp chuột.",
+  "step3Description": "Đến cuộc hẹn và tận hưởng trải nghiệm làm đẹp cao cấp. Đánh giá chuyến thăm của bạn sau đó.",
+  "whyChooseHenzo": "Tại sao chọn Henzo?",
+  "whyChooseSubtitle": "Henzo giúp việc đặt lịch hẹn làm đẹp tiếp theo của bạn trở nên đơn giản và tiện lợi.",
+  "easyBooking": "Đặt lịch dễ dàng",
+  "easyBookingDescription": "Đặt lịch hẹn chỉ với vài cú nhấp chuột.",
+  "flexibleScheduling": "Lịch trình linh hoạt",
+  "flexibleSchedulingDescription": "Tìm thời gian phù hợp với bạn, ngay cả phút cuối.",
+  "trustedReviews": "Đánh giá đáng tin cậy",
+  "trustedReviewsDescription": "Đọc đánh giá từ các khách hàng khác để tìm salon tốt nhất.",
+  "startExploring": "Bắt đầu khám phá các salon",
+  "salonOwner": "Bạn là chủ salon?",
+  "salonOwnerSubtitle": "Tham gia Henzo và phát triển doanh nghiệp với nền tảng đặt lịch của chúng tôi",
+  "registerBusiness": "Đăng ký doanh nghiệp của bạn",
+  "learnMore": "Tìm hiểu thêm",
+  "seeAllSalons": "Xem tất cả salon",
+  "noSalonsAvailable": "Không có salon nào",
+  "checkBackLater": "Vui lòng quay lại sau để xem các salon có sẵn.",
+  "studio": {
+    "hero": {
+      "line1Lead": "Từ",
+      "line1Highlight": "lịch đặt",
+      "line1Trail": "hỗn loạn",
+      "line2Lead": "đến",
+      "line2Highlight": "lịch trình rõ ràng",
+      "line2Trail": "",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "availableForFree": "Dùng miễn phí",
+      "notification": "Nhớ tập hôm nay lúc 3pm",
+      "entryNotificationTitle": "Đặt lịch mới!",
+      "entryNotificationText": "Sam vừa đặt một buổi tập.",
+      "entryNotification2Title": "Có đánh giá mới!",
+      "entryNotification2Text": "Một khách hàng vừa để lại đánh giá 5 sao.",
+      "newClientsTitle": "Khách hàng mới",
+      "newBadge": "Mới",
+      "clientsBadge": "Khách",
+      "autoBadge": "Tự động",
+      "notificationBadge": "Thông báo",
+      "activeUserLabel": "Người dùng hoạt động",
+      "clients": [
+        {
+          "name": "Anna Nowak",
+          "initials": "AN"
+        },
+        {
+          "name": "Ivan Founder",
+          "initials": "IF"
+        },
+        {
+          "name": "Maria Kowalski",
+          "initials": "MK"
+        }
+      ]
+    },
+    "header": {
+      "navBenefits": "Lợi ích",
+      "navPricing": "Bảng giá",
+      "navHowItWorks": "Cách hoạt động",
+      "navContact": "Liên hệ",
+      "getApp": "Tải ứng dụng"
+    },
+    "intro": {
+      "description": "Vận hành studio từ điện thoại: lịch, khung giờ huấn luyện viên và đặt chỗ của khách trong một luồng thống nhất.",
+      "secondary": "Tải cho Android hoặc iOS và onboard đội ngũ nhanh chóng, không rườm rà."
+    },
+    "statementBeforeSpotlight": {
+      "phrase1Lead": "Bạn",
+      "phrase1AccentRotating": [
+        "tập luyện.",
+        "giảng dạy.",
+        "tập trung."
+      ],
+      "phrase2Lead": "Chúng tôi",
+      "phrase2AccentRotating": [
+        "lấp đầy lịch của bạn.",
+        "xử lý booking.",
+        "giảm no-show."
+      ]
+    },
+    "spotlight": {
+      "headingLine1": "Vận hành lớp học của bạn",
+      "line2BeforeAccent": "Chúng tôi vận hành ",
+      "line2Accent": "hệ thống",
+      "slides": [
+        {
+          "stat": "+30%",
+          "featureTitle": "Tỉ lệ lấp đầy lớp",
+          "description": "Khung giờ rõ ràng và quản lý lịch hẹn dễ hơn",
+          "videoSrc": "/video-4.webm",
+          "videoLabel": "Video spotlight studio 1"
+        },
+        {
+          "stat": "-40%",
+          "featureTitle": "Giảm số buổi bị bỏ lỡ",
+          "description": "Khách nhận nhắc lịch và ít quên buổi tập hơn",
+          "videoSrc": "/video-3.webm",
+          "videoLabel": "Video spotlight studio 2"
+        },
+        {
+          "stat": "-70%",
+          "featureTitle": "Giảm thời gian trả lời tin nhắn",
+          "description": "Không cần phản hồi thủ công từng khách hàng",
+          "videoSrc": "/video-2.webm",
+          "videoLabel": "Video spotlight studio 3"
+        },
+        {
+          "stat": "+42%",
+          "featureTitle": "Kiểm soát lịch trình",
+          "description": "Tất cả lớp học và lịch hẹn trong một nơi",
+          "videoSrc": "/video-1.webm",
+          "videoLabel": "Video spotlight studio 4"
+        }
+      ]
+    },
+    "quickStart": {
+      "line1": "Sẵn sàng vận hành",
+      "line2Before": "trong ",
+      "line2Accent": "5 phút",
+      "steps": [
+        {
+          "label": "Step 1:",
+          "text": "Thêm tên và địa chỉ studio"
+        },
+        {
+          "label": "Step 2:",
+          "text": "Tải ảnh lên và tạo lớp học đầu tiên"
+        },
+        {
+          "label": "Step 3:",
+          "text": "Bắt đầu nhận booking đầu tiên"
+        }
+      ]
+    },
+    "pricing": {
+      "titleLine1": "Giá đơn giản",
+      "titleLine2Accent": "Kết quả",
+      "titleLine2After": " thực tế",
+      "currency": "VND",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "plans": [
+        {
+          "name": "Solo",
+          "subtitle": "Dành cho huấn luyện viên độc lập",
+          "price": "0",
+          "priceSub": "/ mỗi tháng",
+          "features": [
+            "12 lớp mỗi tháng",
+            "1 huấn luyện viên",
+            "Không giới hạn khách hàng",
+            "Đặt lịch trực tuyến",
+            "Hồ sơ studio",
+            "Thông báo đẩy"
+          ]
+        },
+        {
+          "name": "Studio",
+          "subtitle": "Dành cho studio đang phát triển",
+          "price": "599.000",
+          "priceSub": "/ mỗi tháng",
+          "features": [
+            "100 lớp/tháng",
+            "Tối đa 4 huấn luyện viên",
+            "Danh sách chờ",
+            "Nhắc nhở tự động (Email & Push)",
+            "Phân tích cơ bản (90 ngày)"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "subtitle": "Dành cho doanh nghiệp lớn",
+          "price": "1.999.000",
+          "priceSub": "/ mỗi tháng",
+          "features": [
+            "Không giới hạn lớp học",
+            "Không giới hạn HLV",
+            "Nhiều địa điểm",
+            "Phân tích nâng cao",
+            "Phân quyền nhóm",
+            "Hỗ trợ ưu tiên"
+          ]
+        }
+      ]
+    },
+    "features": {
+      "title": "Thiết kế cho vận hành studio",
+      "items": [
+        {
+          "title": "Lịch trình luôn đồng bộ",
+          "description": "Quản lý khung giờ tập, tránh xung đột và giữ vận hành hằng ngày ổn định."
+        },
+        {
+          "title": "Minh bạch huấn luyện viên và dịch vụ",
+          "description": "Kiểm soát dịch vụ đang mở, độ sẵn sàng của huấn luyện viên và công suất booking tại một nơi."
+        },
+        {
+          "title": "Trải nghiệm đặt lịch cho khách",
+          "description": "Cho khách luồng booking nhanh, trong khi đội ngũ vẫn kiểm soát toàn bộ session."
+        }
+      ]
+    },
+    "workflow": {
+      "title": "Cách studio triển khai với Henzo",
+      "steps": [
+        {
+          "title": "1. Cài ứng dụng",
+          "description": "Tải trên Android hoặc iOS và đăng nhập với vai trò vận hành studio."
+        },
+        {
+          "title": "2. Cấu hình studio",
+          "description": "Thiết lập huấn luyện viên, dịch vụ và lịch làm việc theo tuần."
+        },
+        {
+          "title": "3. Bắt đầu nhận booking",
+          "description": "Mở luồng booking cho khách và quản lý session từ điện thoại."
+        }
+      ]
+    },
+    "ctaBanner": {
+      "titleLine1": "Studio của bạn.",
+      "titleLine2": "Trong tay bạn.",
+      "description": "Quản lý lớp học, học viên và lịch hẹn trong một ứng dụng mobile",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play"
+    },
+    "finalCta": {
+      "title": "Sẵn sàng vận hành fitness studio nhanh hơn?",
+      "description": "Bắt đầu với ứng dụng mobile và đưa vận hành hằng ngày vào một luồng gọn gàng.",
+      "androidCta": "Tải cho Android",
+      "iosCta": "Tải cho iOS",
+      "contactCta": "Liên hệ tư vấn"
+    },
+    "footer": {
+      "navBenefits": "Lợi ích",
+      "navPricing": "Bảng giá",
+      "navHowItWorks": "Cách hoạt động",
+      "ctaTitle": "Bắt đầu kinh doanh ngay hôm nay.",
+      "copyright": "Copyright © Henzo app. Đã đăng ký bản quyền. 2026",
+      "email": "hello@henzo.app"
+    }
+  },
+  "client": {
+    "header": {
+      "explore": "Khám phá",
+      "classes": "Lớp học",
+      "trainers": "Huấn luyện viên",
+      "blog": "Blog",
+      "location": "Đà Nẵng, Việt Nam",
+      "login": "Đăng nhập",
+      "signUp": "Đăng ký",
+      "forBusiness": "Dành cho doanh nghiệp"
+    },
+    "hero": {
+      "line1": "Vận động. Cảm thấy tốt.",
+      "line2Highlight": "Sống tốt hơn.",
+      "subtitle": "Khám phá và đặt các lớp fitness, wellness và thể thao tốt nhất gần bạn.",
+      "searchPlaceholder": "Tìm lớp học, studio hoặc huấn luyện viên...",
+      "floatingCardTitle": "Tìm lớp tiếp theo",
+      "floatingCardSubtitle": "3.200+ lớp hôm nay",
+      "categories": {
+        "yoga": "Yoga",
+        "pilates": "Pilates",
+        "gym": "Gym",
+        "boxing": "Boxing",
+        "padel": "Padel",
+        "surfing": "Lướt sóng",
+        "more": "Thêm"
+      },
+      "features": {
+        "findClasses": {
+          "title": "Lớp phù hợp với bạn",
+          "subtitle": "Yoga, gym, pilates và hơn thế"
+        },
+        "bookFast": {
+          "title": "Đặt trong vài giây",
+          "subtitle": "Đặt lịch nhanh và dễ dàng"
+        },
+        "reminders": {
+          "title": "Nhắc nhở lịch học",
+          "subtitle": "Không bỏ lỡ buổi tập"
+        },
+        "allInOne": {
+          "title": "Tất cả ở một nơi",
+          "subtitle": "Quản lý đặt chỗ và yêu thích"
+        }
+      }
+    },
+    "appPromo": {
+      "eyebrow": "Vì sao mọi người yêu thích Henzo",
+      "title": "Cuộc sống fitness trong một ứng dụng",
+      "subtitle": "Đặt lớp học, quản lý lịch trình và không bỏ lỡ buổi tập.",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "qrLabel": "Quét để tải ứng dụng",
+      "pills": {
+        "easyBooking": "Đặt lịch dễ dàng",
+        "smartReminders": "Nhắc nhở thông minh",
+        "memberships": "Quản lý gói thành viên",
+        "trackActivity": "Theo dõi hoạt động"
+      }
+    },
+    "businessPromo": {
+      "title": "Phát triển studio với Henzo",
+      "subtitle": "Mọi công cụ bạn cần để vận hành và phát triển doanh nghiệp trên một nền tảng.",
+      "features": {
+        "bookings": "Đặt lịch trực tuyến 24/7",
+        "clients": "Quản lý khách hàng & gói thành viên",
+        "schedule": "Lịch trình & thanh toán",
+        "reminders": "Nhắc nhở tự động"
+      },
+      "cta": "Tham gia Henzo miễn phí"
+    },
+    "popularStudios": {
+      "title": "Studio phổ biến gần bạn",
+      "seeAll": "Xem tất cả studio",
+      "distanceMeters": "{value} m",
+      "distanceKilometers": "{value} km"
+    },
+    "nearbyClasses": {
+      "badge": "Gần bạn",
+      "titleLead": "Lớp học",
+      "titleHighlight": "gần bạn",
+      "subtitle": "Khám phá các lớp sắp diễn ra tại studio hàng đầu quanh Đà Nẵng. Đặt chỗ trong vài giây.",
+      "viewSchedule": "Xem toàn bộ lịch",
+      "seeAll": "Xem tất cả",
+      "today": "Hôm nay",
+      "tomorrow": "Ngày mai",
+      "durationMin": "{value} phút"
+    }
+  }
 }

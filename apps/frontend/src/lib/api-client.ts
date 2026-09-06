@@ -1,7 +1,9 @@
 import { plainToClass } from 'class-transformer';
 import { supabase } from './supabase';
+import { getPublicSupabase } from './supabase-public';
 import { logger } from './logger';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
+import type { Session } from '@supabase/supabase-js';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -16,11 +18,22 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
+async function resolveAuthSession(): Promise<Session | null> {
+  try {
+    const publicSession = await getPublicSupabase().auth.getSession();
+    if (publicSession.data.session) return publicSession.data.session;
+  } catch {
+    // public client may throw if misconfigured
+  }
+  const cookieSession = await supabase.auth.getSession();
+  return cookieSession.data.session;
+}
+
 export class ApiClient {
   private baseUrl: string;
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
 
-  constructor(baseUrl: string = 'http://localhost:3001') {
+  constructor(baseUrl: string = 'https://api.henzo.app') {
     this.baseUrl = baseUrl;
   }
 
@@ -31,10 +44,7 @@ export class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const { responseType, ...fetchOptions } = options;
 
-    // Get current session and add authorization header
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const session = await resolveAuthSession();
     const headers: HeadersInit = {};
 
     // Don't set Content-Type for blob requests
@@ -109,7 +119,10 @@ export class ApiClient {
       if (response.status === 401) {
         // Try to logout user and redirect to login
         try {
-          await supabase.auth.signOut();
+          await Promise.allSettled([
+            getPublicSupabase().auth.signOut({ scope: 'local' }),
+            supabase.auth.signOut({ scope: 'local' }),
+          ]);
           // Redirect to login page if we're in browser
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname;
@@ -285,5 +298,5 @@ export class ApiClient {
 
 // Create a default API client instance
 // В продакшене будет использоваться URL бэкенда на Digital Ocean
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.henzo.app';
 export const apiClient = new ApiClient(API_BASE_URL);

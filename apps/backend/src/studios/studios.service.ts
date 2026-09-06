@@ -947,6 +947,7 @@ export class StudiosService {
         latitude: true,
         longitude: true,
         slug: true,
+        reminderSettings: true,
         _count: {
           select: {
             Review: true,
@@ -960,6 +961,7 @@ export class StudiosService {
             name: true,
             duration: true,
             price: true,
+            trainingCategoryId: true,
           },
           orderBy: {
             id: 'asc', // Consistent ordering
@@ -974,62 +976,57 @@ export class StudiosService {
     // Get Studio IDs for aggregate queries
     const studioIds = studios.map((s) => s.id);
 
-    // Calculate average ratings for all Studios in one query (only if we have Studios)
-    let ratingMap = new Map<
-      string,
-      { avgRating: number; reviewCount: number }
-    >();
-    if (studioIds.length > 0) {
-      const ratingAggregates = await this.prisma.review.groupBy({
-        by: ['studioId'],
-        where: {
-          studioId: { in: studioIds },
-        },
-        _avg: {
-          rating: true,
-        },
-        _count: {
-          rating: true,
-        },
-      });
-
-      // Create a map for quick lookup
-      ratingMap = new Map(
-        ratingAggregates.map((agg) => [
-          agg.studioId,
-          {
-            avgRating: agg._avg.rating || 0,
-            reviewCount: agg._count.rating,
-          },
-        ]),
-      );
-    }
+    const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
+      await this.getStudioDiscoveryMeta(studioIds);
 
     // Calculate pagination info
     const totalPages = Math.ceil(total / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
 
-    // Transform to match expected format (Service -> services) and add ratings
+    // Mobile browse-card parity: locationName + training categories
     let transformedStudios = studios.map((studio: any) => {
       const ratingData = ratingMap.get(studio.id) || {
         avgRating: 0,
         reviewCount: 0,
       };
+      const studioName = resolveStudioBrandNameForDiscovery({
+        name: studio.name,
+        slug: studio.slug,
+        reminderSettings: studio.reminderSettings,
+      });
+      const avgRating = Math.round(ratingData.avgRating * 10) / 10;
 
       return {
-        ...studio,
+        id: studio.id,
+        name: studioName,
+        studioName,
+        description: studio.description,
+        address: studio.address,
+        locationName: resolveBrowseStudioLocationName(studio.reminderSettings),
+        phone: studio.phone,
+        logoUrl: studio.logoUrl,
+        photos: studio.photos,
+        photoGallery: studio.photoGallery,
+        workingHours: studio.workingHours,
+        createdAt: studio.createdAt,
+        latitude: studio.latitude,
+        longitude: studio.longitude,
+        slug: studio.slug,
+        _count: studio._count,
         services: (studio.Training || []).map((service: any) => ({
           id: service.id,
           name: service.name,
           duration: service.duration,
           price: service.price,
+          trainingCategoryId: service.trainingCategoryId,
         })),
-        Training: undefined, // Remove Prisma field
-        reviews: [], // Empty array - not needed for cards, use avgRating instead
-        avgRating: Math.round(ratingData.avgRating * 10) / 10, // Round to 1 decimal
+        reviews: [],
+        avgRating,
         reviewCount: ratingData.reviewCount,
-        rating: Math.round(ratingData.avgRating * 10) / 10, // Alias for compatibility
+        rating: avgRating,
+        categories: categoriesByStudio.get(studio.id) ?? [],
+        trainingCategoryIds: categoryIdsByStudio.get(studio.id) ?? [],
       };
     });
 

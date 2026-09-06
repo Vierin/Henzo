@@ -38,7 +38,9 @@ export default function Footer() {
   const { language } = useLanguage();
   const locale = extractLocaleFromPath(pathname) ?? language;
   const t = useTranslation();
-  const homePath = withLocale('/', (locale as Locale) || 'en');
+  const loc = (locale as Locale) || 'en';
+  const homePath = withLocale('/', loc);
+  const businessPath = withLocale('/business', loc);
   const navBenefits = String(t('homepage.studio.footer.navBenefits'));
   const navPricing = String(t('homepage.studio.footer.navPricing'));
   const navHowItWorks = String(t('homepage.studio.footer.navHowItWorks'));
@@ -79,19 +81,19 @@ export default function Footer() {
                 className="mt-8 flex flex-wrap items-center gap-x-9 gap-y-3 text-[1.02rem] font-medium text-[#3F3F3F]"
               >
                 <Link
-                  href={`${homePath}#benefits`}
+                  href={`${businessPath}#benefits`}
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navBenefits}
                 </Link>
                 <Link
-                  href={`${homePath}#pricing`}
+                  href={`${businessPath}#pricing`}
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navPricing}
                 </Link>
                 <Link
-                  href={`${homePath}#how-it-works`}
+                  href={`${businessPath}#how-it-works`}
                   className="transition hover:text-[#E86D4F]"
                 >
                   {navHowItWorks}

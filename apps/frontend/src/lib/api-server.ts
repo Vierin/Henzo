@@ -3,7 +3,7 @@
  * Does not attach auth (no Supabase session). Use for public endpoints only.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.henzo.app';
 
 export type ServerApiGetOptions = {
   /** Seconds for Next.js Data Cache; `false` = no store (always fresh). Default 3600. */
