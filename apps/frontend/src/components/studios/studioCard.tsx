@@ -11,6 +11,7 @@ import {
   type PublicTrainingCategory,
 } from '@/lib/client/training-category';
 import { withLocale, type Locale } from '@/i18n/routing';
+import { resolveStudioPublicSlug } from '@/utils/slug';
 
 type Props = {
   studio: PublicStudioPreview;
@@ -86,8 +87,12 @@ export function StudioCard({
   trainingCategories = [],
   priority = false,
 }: Props) {
-  const slugOrId = studio.slug?.trim() || studio.id;
-  const href = withLocale(`/studio/${slugOrId}`, locale);
+  const publicSlug = resolveStudioPublicSlug({
+    id: studio.id,
+    name: studio.studioName,
+    slug: studio.slug,
+  });
+  const href = withLocale(`/studio/${publicSlug}`, locale);
   const byId = new Map(trainingCategories.map((c) => [c.id, c]));
 
   const sortedIds = sortCategoryIds(studio.categoryIds, byId);

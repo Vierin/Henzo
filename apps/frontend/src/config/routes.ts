@@ -56,7 +56,7 @@ export const publicRoutes = [
 
  */
 
-export const clientRoutes = [] as const;
+export const clientRoutes = ['/activity', '/favorites', '/profile'] as const;
 
 /**
 

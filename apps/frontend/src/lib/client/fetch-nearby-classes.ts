@@ -1,20 +1,18 @@
-﻿import {
-  DEFAULT_LAT,
-  DEFAULT_LNG,
+import {
+  DEFAULT_CLIENT_LOCATION,
+  type ClientLocation,
+} from '@/lib/client/client-location';
+import {
   fetchPopularStudios,
+  fetchPopularStudiosClient,
   fetchPublicApiJson,
-  resolvePopularStudiosApiBases,
 } from '@/lib/client/fetch-popular-studios';
 import {
   parseNearbyClassSession,
   type NearbyClassSession,
   type NearbyClassesDayGroup,
 } from '@/lib/client/nearby-class-session';
-import {
-  extractStudiosListFromNearby,
-  parsePublicStudioPreview,
-  type PublicStudioPreview,
-} from '@/lib/client/studio-preview';
+import type { PublicStudioPreview } from '@/lib/client/studio-preview';
 import type { Locale } from '@/i18n/routing';
 
 const STUDIO_SCAN_LIMIT = 16;
@@ -186,41 +184,20 @@ export async function buildNearbyClassGroups(
 export async function fetchNearbyClassGroups(
   locale: Locale,
   labels: { today: string; tomorrow: string },
+  coords?: Pick<ClientLocation, 'lat' | 'lng'>,
 ): Promise<NearbyClassesDayGroup[]> {
-  const studios = await fetchPopularStudios(STUDIO_SCAN_LIMIT);
+  const studios = await fetchPopularStudios(
+    STUDIO_SCAN_LIMIT,
+    coords ?? DEFAULT_CLIENT_LOCATION,
+  );
   return buildNearbyClassGroups(studios, locale, labels, false);
 }
 
 export async function fetchNearbyClassGroupsClient(
   locale: Locale,
   labels: { today: string; tomorrow: string },
+  coords: Pick<ClientLocation, 'lat' | 'lng'> = DEFAULT_CLIENT_LOCATION,
 ): Promise<NearbyClassesDayGroup[]> {
-  const nearbyPath = `/studios/nearby?lat=${DEFAULT_LAT}&lng=${DEFAULT_LNG}&limit=${STUDIO_SCAN_LIMIT}&radius=50`;
-  let studios: PublicStudioPreview[] = [];
-
-  for (const base of resolvePopularStudiosApiBases()) {
-    try {
-      const nearbyRes = await fetch(`${base}${nearbyPath}`);
-      if (nearbyRes.ok) {
-        studios = extractStudiosListFromNearby(await nearbyRes.json())
-          .map((item) => parsePublicStudioPreview(item))
-          .filter((s): s is PublicStudioPreview => s != null);
-        if (studios.length > 0) break;
-      }
-
-      const featuredRes = await fetch(
-        `${base}/studios/featured?limit=${STUDIO_SCAN_LIMIT}`,
-      );
-      if (featuredRes.ok) {
-        studios = extractStudiosListFromNearby(await featuredRes.json())
-          .map((item) => parsePublicStudioPreview(item))
-          .filter((s): s is PublicStudioPreview => s != null);
-        if (studios.length > 0) break;
-      }
-    } catch {
-      // try next base
-    }
-  }
-
+  const studios = await fetchPopularStudiosClient(STUDIO_SCAN_LIMIT, coords);
   return buildNearbyClassGroups(studios, locale, labels, true);
 }

@@ -7,7 +7,8 @@ import {
   stripLocaleFromPath,
   type Locale,
 } from './i18n/routing';
-import { isRouteMatch, ownerRoutes } from './config/routes';
+import { clientRoutes, isRouteMatch, ownerRoutes } from './config/routes';
+import { CLIENT_AUTH_COOKIE } from './lib/client-panel/auth-session-cookie';
 import { OWNER_AUTH_COOKIE } from './lib/owner/auth-session-cookie';
 
 function withLocaleHeader(response: NextResponse, locale: Locale) {
@@ -126,7 +127,21 @@ export async function middleware(req: NextRequest) {
     const hasOwnerSession = Boolean(req.cookies.get(OWNER_AUTH_COOKIE)?.value);
     if (!hasOwnerSession) {
       const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = `/${activeLocale}/business/login`;
+      redirectUrl.pathname = `/${activeLocale}/login`;
+      redirectUrl.search = '?intent=business';
+      return NextResponse.redirect(redirectUrl);
+    }
+    return withLocaleHeader(res, activeLocale);
+  }
+
+  // Client panel: cookie set after login / ClientProtectedGate.
+  if (isRouteMatch(pathWithoutLocale, clientRoutes)) {
+    const hasClientSession = Boolean(
+      req.cookies.get(CLIENT_AUTH_COOKIE)?.value,
+    );
+    if (!hasClientSession) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = `/${activeLocale}/login`;
       redirectUrl.search = '';
       return NextResponse.redirect(redirectUrl);
     }
@@ -139,7 +154,6 @@ export async function middleware(req: NextRequest) {
     '/bookings',
     '/verify',
     '/dashboard',
-    '/favorites',
     '/reviews',
     '/settings',
     '/services',

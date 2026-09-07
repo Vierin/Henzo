@@ -1,20 +1,21 @@
-import type { Metadata } from 'next';
-import { BusinessLoginLanding } from '@/components/business/businessAppAuthLanding';
-import { buildDynamicPageMetadata, resolveLocale } from '@/seo';
+import { redirect } from 'next/navigation';
+import { isLocale, type Locale } from '@/i18n/routing';
 
-export async function generateMetadata({
+/** Legacy URL — owners use the shared `/login` page. */
+export default async function BusinessLoginRedirect({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { locale: raw } = await params;
-  return buildDynamicPageMetadata(resolveLocale(raw), {
-    pathAfterLocale: '/business/login',
-    title: 'Studio login — Henzo',
-    description: 'Open the Henzo app to sign in as a studio owner.',
-  });
-}
-
-export default function BusinessLoginPage() {
-  return <BusinessLoginLanding />;
+  const locale = (isLocale(raw) ? raw : 'en') as Locale;
+  const sp = await searchParams;
+  const q = new URLSearchParams();
+  q.set('intent', 'business');
+  for (const [key, value] of Object.entries(sp)) {
+    if (typeof value === 'string' && value) q.set(key, value);
+  }
+  redirect(`/${locale}/login?${q.toString()}`);
 }

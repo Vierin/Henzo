@@ -79,7 +79,15 @@ export function ClientRegisterPageClient() {
         });
       }
 
-      router.replace(withLocale('/', locale as 'en' | 'ru' | 'vi'));
+      const { setClientAuthCookie } = await import(
+        '@/lib/client-panel/auth-session-cookie'
+      );
+      const { clearOwnerAuthCookie } = await import(
+        '@/lib/owner/auth-session-cookie'
+      );
+      clearOwnerAuthCookie();
+      setClientAuthCookie();
+      router.replace(withLocale('/activity', locale as 'en' | 'ru' | 'vi'));
     } catch (err) {
       setError(
         err instanceof Error

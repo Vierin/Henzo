@@ -46,7 +46,7 @@ export default function OwnerProtectedGate({
         if (!session) {
           clearOwnerAuthCookie();
           authedRef.current = false;
-          router.replace(withLocale('/business/login', locale));
+          router.replace(withLocale('/login?intent=business', locale));
           return;
         }
 
@@ -59,7 +59,7 @@ export default function OwnerProtectedGate({
           await getPublicSupabase().auth.signOut({ scope: 'local' });
           router.replace(
             withLocale(
-              `/business/login?error=${encodeURIComponent('Owner account required')}`,
+              `/login?intent=business&error=${encodeURIComponent('Owner account required')}`,
               locale,
             ),
           );
@@ -88,7 +88,7 @@ export default function OwnerProtectedGate({
         setError(err instanceof Error ? err.message : 'Auth failed');
         clearOwnerAuthCookie();
         authedRef.current = false;
-        router.replace(withLocale('/business/login', locale));
+        router.replace(withLocale('/login?intent=business', locale));
       }
     };
 

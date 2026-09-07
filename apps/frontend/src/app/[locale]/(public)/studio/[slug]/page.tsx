@@ -1,15 +1,17 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { StudioPublicView } from '@/components/studios/studioPublicView';
 import { StudioShareLanding } from './studioShareLanding';
 import {
   fetchPublicStudioBySlug,
   fetchPublicStudioSchedule,
 } from '@/lib/client/fetch-studio-detail';
+import { fetchTrainingCategories } from '@/lib/client/fetch-training-categories';
 import { isLocale } from '@/i18n/routing';
 import { buildDynamicPageMetadata, resolveLocale } from '@/seo';
 import type { Locale } from '@/i18n/routing';
+import { isBareStudioId, resolveStudioPublicSlug } from '@/utils/slug';
 
 export async function generateMetadata({
   params,
@@ -26,8 +28,13 @@ export async function generateMetadata({
       description: 'Open Henzo to view the studio schedule and book a class.',
     });
   }
+  const canonicalSlug = resolveStudioPublicSlug({
+    id: studio.id,
+    name: studio.name,
+    slug: studio.slug,
+  });
   return buildDynamicPageMetadata(locale, {
-    pathAfterLocale: `/studio/${slug}`,
+    pathAfterLocale: `/studio/${canonicalSlug}`,
     title: `${studio.name} — Henzo`,
     description:
       studio.description?.slice(0, 155) ||
@@ -68,13 +75,28 @@ export default async function StudioPublicPage({
   const studio = await fetchPublicStudioBySlug(slug);
   if (!studio) notFound();
 
-  const sessions = await fetchPublicStudioSchedule(studio.id);
+  const canonicalSlug = resolveStudioPublicSlug({
+    id: studio.id,
+    name: studio.name,
+    slug: studio.slug,
+  });
+
+  // Bare cuid/uuid → SEO `{name}-{id}` (or stored DB slug)
+  if (isBareStudioId(slug) && canonicalSlug !== slug) {
+    redirect(`/${locale}/studio/${canonicalSlug}`);
+  }
+
+  const [sessions, categories] = await Promise.all([
+    fetchPublicStudioSchedule(studio.id),
+    fetchTrainingCategories(),
+  ]);
 
   return (
     <StudioPublicView
       studio={studio}
       initialSessions={sessions}
       locale={locale}
+      trainingCategories={categories}
     />
   );
 }

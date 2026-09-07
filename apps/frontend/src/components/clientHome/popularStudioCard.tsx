@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,6 +10,7 @@ import {
 } from '@/lib/client/studio-preview';
 import { withLocale, type Locale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { resolveStudioPublicSlug } from '@/utils/slug';
 
 type Props = {
   studio: PublicStudioPreview;
@@ -25,8 +26,12 @@ export function PopularStudioCard({ studio, locale }: Props) {
   });
   const hasCategories = categoryPreview.visible.length > 0;
 
-  const slugOrId = studio.slug?.trim() || studio.id;
-  const href = `${withLocale(`/studio/${slugOrId}`, locale)}?name=${encodeURIComponent(studio.studioName)}`;
+  const publicSlug = resolveStudioPublicSlug({
+    id: studio.id,
+    name: studio.studioName,
+    slug: studio.slug,
+  });
+  const href = withLocale(`/studio/${publicSlug}`, locale);
 
   return (
     <Link

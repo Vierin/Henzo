@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { Calendar, ChevronRight, MapPin } from 'lucide-react';
 import { playStoreUrl } from '@/constants/appStores';
+import { useClientLocation } from '@/contexts/ClientLocationContext';
 import { fetchNearbyClassGroupsClient } from '@/lib/client/fetch-nearby-classes';
 import type { NearbyClassesDayGroup } from '@/lib/client/nearby-class-session';
 import { NearbyClassCard } from '@/components/clientHome/nearbyClassCard';
@@ -38,23 +39,21 @@ export function ClientHomeNearbyClassesCarousel({
   locale,
   copy,
 }: Props) {
+  const { location, isHydrated } = useClientLocation();
   const [groups, setGroups] = useState(initialGroups);
   const [isLoading, setIsLoading] = useState(initialGroups.length === 0);
 
   useEffect(() => {
-    if (initialGroups.length > 0) {
-      setGroups(initialGroups);
-      setIsLoading(false);
-      return;
-    }
+    if (!isHydrated) return;
 
     let cancelled = false;
     setIsLoading(true);
 
-    fetchNearbyClassGroupsClient(locale, {
-      today: copy.today,
-      tomorrow: copy.tomorrow,
-    })
+    fetchNearbyClassGroupsClient(
+      locale,
+      { today: copy.today, tomorrow: copy.tomorrow },
+      { lat: location.lat, lng: location.lng },
+    )
       .then((data) => {
         if (!cancelled) {
           setGroups(data);
@@ -62,17 +61,32 @@ export function ClientHomeNearbyClassesCarousel({
         }
       })
       .catch(() => {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setGroups(initialGroups);
+          setIsLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [initialGroups, locale, copy.today, copy.tomorrow]);
+  }, [
+    isHydrated,
+    location.lat,
+    location.lng,
+    locale,
+    copy.today,
+    copy.tomorrow,
+    initialGroups,
+  ]);
 
   if (!isLoading && groups.length === 0) {
     return null;
   }
+
+  const subtitle = copy.subtitle.includes('{city}')
+    ? copy.subtitle.replace('{city}', location.city)
+    : copy.subtitle.replace(/Da Nang/gi, location.city || 'your area');
 
   return (
     <section
@@ -91,7 +105,7 @@ export function ClientHomeNearbyClassesCarousel({
               <span className="text-[#E86D4F]">{copy.titleHighlight}</span>
             </h2>
             <p className="mt-3 text-base leading-relaxed text-[#878787] sm:text-lg">
-              {copy.subtitle}
+              {subtitle}
             </p>
           </div>
 

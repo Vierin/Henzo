@@ -140,7 +140,7 @@ export async function startBusinessGoogleOAuth(options?: {
   const locale = extractLocaleFromPath(currentPath) ?? 'en';
   saveOAuthIntent({
     type: 'business',
-    next: withLocale('/business/login', locale),
+    next: withLocale('/owner-dashboard', locale),
     source,
   });
 

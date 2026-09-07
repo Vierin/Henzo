@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { isSupabaseConfigured, publicEnv } from '@/lib/public-env';
-import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
+import {
+  extractLocaleFromPath,
+  stripLocaleFromPath,
+  withLocale,
+  type Locale,
+} from '@/i18n/routing';
 import {
   consumeBusinessOAuthContext,
   consumeOAuthIntent,
@@ -18,7 +23,7 @@ const OAUTH_LOCK_PREFIX = 'henzo-oauth-lock:';
 
 function sanitizeNextPath(next: string | null, locale: Locale): string {
   if (!next || !next.startsWith('/') || next.startsWith('//')) {
-    return withLocale('/', locale);
+    return withLocale('/activity', locale);
   }
   return next;
 }
@@ -49,7 +54,7 @@ function AuthCallbackInner() {
       if (!alive) return;
       router.replace(
         withLocale(
-          `/business/login?error=${encodeURIComponent(error)}`,
+          `/login?intent=business&error=${encodeURIComponent(error)}`,
           locale,
         ),
       );
@@ -102,6 +107,10 @@ function AuthCallbackInner() {
         const { setOwnerAuthCookie } = await import(
           '@/lib/owner/auth-session-cookie'
         );
+        const { clearClientAuthCookie } = await import(
+          '@/lib/client-panel/auth-session-cookie'
+        );
+        clearClientAuthCookie();
         setOwnerAuthCookie();
         router.replace(withLocale('/owner-dashboard', locale));
         return;
@@ -126,6 +135,20 @@ function AuthCallbackInner() {
 
         const body = (await res.json()) as { user?: { role?: string } };
         const role = body.user?.role;
+        if (role === 'OWNER') {
+          if (!alive) return;
+          setMessage('Opening business panel…');
+          const { setOwnerAuthCookie } = await import(
+            '@/lib/owner/auth-session-cookie'
+          );
+          const { clearClientAuthCookie } = await import(
+            '@/lib/client-panel/auth-session-cookie'
+          );
+          clearClientAuthCookie();
+          setOwnerAuthCookie();
+          router.replace(withLocale('/owner-dashboard', locale));
+          return;
+        }
         if (role && role !== 'CLIENT') {
           await publicSb.auth.signOut({ scope: 'local' });
           failToLogin(locale, 'role');
@@ -138,7 +161,21 @@ function AuthCallbackInner() {
       }
 
       if (!alive) return;
-      router.replace(sanitizeNextPath(nextRaw, locale));
+      const { setClientAuthCookie } = await import(
+        '@/lib/client-panel/auth-session-cookie'
+      );
+      const { clearOwnerAuthCookie } = await import(
+        '@/lib/owner/auth-session-cookie'
+      );
+      clearOwnerAuthCookie();
+      setClientAuthCookie();
+      const nextPath = sanitizeNextPath(nextRaw, locale);
+      const stripped = stripLocaleFromPath(nextPath);
+      router.replace(
+        !stripped || stripped === '/'
+          ? withLocale('/activity', locale)
+          : nextPath,
+      );
     };
 
     const waitForSession = async (

@@ -2023,7 +2023,7 @@ export class StudiosService {
       }
 
       // Fast lookup by slug using indexed field
-      const Studio = await this.prisma.Studio.findUnique({
+      let Studio = await this.prisma.Studio.findUnique({
         where: { slug },
         select: {
           id: true,
@@ -2093,6 +2093,88 @@ export class StudiosService {
           },
         },
       });
+
+      // Composite SEO slug `{name}-{cuid}` when DB slug is null / outdated
+      if (!Studio) {
+        const idMatch = slug.match(/-c[a-z0-9]{19,}$/i);
+        const extractedId = idMatch
+          ? idMatch[0].substring(1)
+          : /^c[a-z0-9]{19,}$/i.test(slug)
+            ? slug
+            : null;
+        if (extractedId) {
+          Studio = await this.prisma.Studio.findUnique({
+            where: { id: extractedId },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              address: true,
+              phone: true,
+              email: true,
+              website: true,
+              instagram: true,
+              logoUrl: true,
+              photos: true,
+              photoGallery: true,
+              workingHours: true,
+              reminderSettings: true,
+              ownerId: true,
+              createdAt: true,
+              latitude: true,
+              longitude: true,
+              descriptionEn: true,
+              descriptionVi: true,
+              descriptionRu: true,
+              slug: true,
+              timezone: true,
+              claimedAt: true,
+              intendedOwnerEmail: true,
+              _count: {
+                select: {
+                  Review: true,
+                  Training: true,
+                  Booking: true,
+                  Trainer: true,
+                },
+              },
+              Training: {
+                take: 50,
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  descriptionEn: true,
+                  descriptionVi: true,
+                  descriptionRu: true,
+                  duration: true,
+                  price: true,
+                  studioId: true,
+                  categoryId: true,
+                  trainingCategoryId: true,
+                  trainingCategory: {
+                    select: {
+                      id: true,
+                      name_en: true,
+                      name_vn: true,
+                      name_ru: true,
+                    },
+                  },
+                },
+              },
+              Trainer: {
+                select: {
+                  id: true,
+                  name: true,
+                  accessLevel: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          });
+        }
+      }
 
       if (!Studio) {
         return null;
@@ -2649,6 +2731,7 @@ export class StudiosService {
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,
         photoGallery: Studio.photoGallery,
+        slug: Studio.slug,
         avgRating: ratingData.avgRating,
         reviewCount: ratingData.reviewCount,
         categories,
@@ -2859,6 +2942,7 @@ export class StudiosService {
         photos: s.photos,
         photoGallery: s.photoGallery,
         logoUrl: s.logoUrl,
+        slug: s.slug,
         distance: s.distance,
         avgRating: r.avgRating,
         reviewCount: r.reviewCount,

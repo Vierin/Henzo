@@ -1,9 +1,8 @@
-﻿'use client';
+'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronDown, MapPin } from 'lucide-react';
 import { withLocale, type Locale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 import {
@@ -11,6 +10,15 @@ import {
   usePublicHeaderState,
 } from '@/components/usePublicHeaderState';
 import { LanguageDropdown } from '@/components/landing/languageDropdown';
+import { ClientLocationPicker } from '@/components/clientHome/clientLocationPicker';
+import { CLIENT_AUTH_COOKIE } from '@/lib/client-panel/auth-session-cookie';
+
+function hasClientCookie() {
+  if (typeof document === 'undefined') return false;
+  return document.cookie
+    .split(';')
+    .some((c) => c.trim().startsWith(`${CLIENT_AUTH_COOKIE}=`));
+}
 
 function ClientHomeHeaderContent() {
   const {
@@ -24,8 +32,15 @@ function ClientHomeHeaderContent() {
   const t = useTranslation();
   const locale = currentLocale as Locale;
   const homePath = withLocale('/', locale);
+  const [isClientAuthed, setIsClientAuthed] = useState(false);
 
-  const location = String(t('homepage.client.header.location'));
+  useEffect(() => {
+    setIsClientAuthed(hasClientCookie());
+  }, []);
+
+  const locationFallback = String(
+    t('homepage.client.header.location') || 'Set location',
+  );
   const login = String(t('homepage.client.header.login'));
   const signUp = String(t('homepage.client.header.signUp'));
   const forBusiness = String(
@@ -51,15 +66,7 @@ function ClientHomeHeaderContent() {
         </Link>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            className="hidden items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-white/80 px-3 py-2 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:flex"
-            aria-label={location}
-          >
-            <MapPin className="h-4 w-4 text-[#E86D4F]" aria-hidden />
-            <span className="max-w-[9rem] truncate">{location}</span>
-            <ChevronDown className="h-4 w-4 text-[#878787]" aria-hidden />
-          </button>
+          <ClientLocationPicker fallbackLabel={locationFallback} />
 
           <LanguageDropdown
             dropdownRef={dropdownRef}
@@ -78,19 +85,30 @@ function ClientHomeHeaderContent() {
             {forBusiness}
           </Link>
 
-          <Link
-            href={withLocale('/login', locale)}
-            className="hidden text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F] sm:inline"
-          >
-            {login}
-          </Link>
+          {isClientAuthed ? (
+            <Link
+              href={withLocale('/activity', locale)}
+              className="inline-flex items-center rounded-full bg-[#E86D4F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d85e42] sm:px-5 sm:py-2.5"
+            >
+              Activity
+            </Link>
+          ) : (
+            <>
+              <Link
+                href={withLocale('/login', locale)}
+                className="hidden text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F] sm:inline"
+              >
+                {login}
+              </Link>
 
-          <Link
-            href={withLocale('/register', locale)}
-            className="inline-flex items-center rounded-full bg-[#E86D4F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d85e42] sm:px-5 sm:py-2.5"
-          >
-            {signUp}
-          </Link>
+              <Link
+                href={withLocale('/register', locale)}
+                className="inline-flex items-center rounded-full bg-[#E86D4F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d85e42] sm:px-5 sm:py-2.5"
+              >
+                {signUp}
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

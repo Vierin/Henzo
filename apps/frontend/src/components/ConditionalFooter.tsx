@@ -65,7 +65,10 @@ export default function ConditionalFooter() {
     pathname.includes('/subscription') ||
     pathname.includes('/salon-info') ||
     pathname.includes('/profile-settings') ||
-    pathname.includes('/business/complete-setup')
+    pathname.includes('/business/complete-setup') ||
+    pathname.includes('/activity') ||
+    pathname.includes('/favorites') ||
+    /\/profile(\/|$)/.test(pathname)
   ) {
     return null;
   }

@@ -98,8 +98,10 @@ export function LanguageProvider({
     pathNoLocale.startsWith('/business/complete-setup');
 
   const isClientPage =
-    pathNoLocale.startsWith('/dashboard') ||
+    pathNoLocale.startsWith('/activity') ||
     pathNoLocale.startsWith('/favorites') ||
+    pathNoLocale.startsWith('/profile') ||
+    pathNoLocale.startsWith('/dashboard') ||
     pathNoLocale.startsWith('/reviews') ||
     pathNoLocale.startsWith('/settings');
 

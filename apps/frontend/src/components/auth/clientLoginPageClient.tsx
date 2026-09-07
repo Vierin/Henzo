@@ -11,7 +11,10 @@ import { AppleLogo, GoogleLogo } from '@/components/auth/authSocialIcons';
 import { fetchCurrentUserRole } from '@/lib/auth/api';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { isSupabaseConfigured } from '@/lib/public-env';
-import { startClientGoogleOAuth } from '@/utils/oauth';
+import {
+  startBusinessGoogleOAuth,
+  startClientGoogleOAuth,
+} from '@/utils/oauth';
 
 export function ClientLoginPageClient() {
   const t = useTranslation();
@@ -19,6 +22,7 @@ export function ClientLoginPageClient() {
   const searchParams = useSearchParams();
   const params = useParams();
   const locale = (params?.locale as string) ?? 'en';
+  const isBusinessIntent = searchParams.get('intent') === 'business';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,26 +36,78 @@ export function ClientLoginPageClient() {
     if (!oauthError) return;
 
     if (oauthError === 'role') {
-      setError(String(t('auth.ownerUseStudioLogin')));
-    } else if (oauthError === 'account') {
+      void (async () => {
+        const session = (await getPublicSupabase().auth.getSession()).data
+          .session;
+        if (session) {
+          const role = await fetchCurrentUserRole({ syncIfMissing: true });
+          if (role === 'OWNER') {
+            const { setOwnerAuthCookie } = await import(
+              '@/lib/owner/auth-session-cookie'
+            );
+            const { clearClientAuthCookie } = await import(
+              '@/lib/client-panel/auth-session-cookie'
+            );
+            clearClientAuthCookie();
+            setOwnerAuthCookie();
+            router.replace(
+              withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'),
+            );
+            return;
+          }
+        }
+        setError(String(t('auth.ownerUseStudioLogin')));
+        router.replace(
+          withLocale('/login?intent=business', locale as 'en' | 'ru' | 'vi'),
+          { scroll: false },
+        );
+      })();
+      return;
+    }
+
+    const message = searchParams.get('message');
+    if (oauthError === 'account') {
       setError(String(t('auth.signInFailed')));
     } else {
-      const message = searchParams.get('message');
       setError(
         message?.trim() ||
+          decodeURIComponent(oauthError) ||
           (oauthError === 'oauth'
             ? String(t('auth.googleSignInFailed'))
             : String(t('auth.signInFailed'))),
       );
     }
 
-    router.replace(withLocale('/login', locale as 'en' | 'ru' | 'vi'), {
-      scroll: false,
-    });
-  }, [locale, router, searchParams, t]);
+    const clean = isBusinessIntent
+      ? withLocale('/login?intent=business', locale as 'en' | 'ru' | 'vi')
+      : withLocale('/login', locale as 'en' | 'ru' | 'vi');
+    router.replace(clean, { scroll: false });
+  }, [isBusinessIntent, locale, router, searchParams, t]);
 
-  const redirectHome = () => {
-    router.replace(withLocale('/', locale as 'en' | 'ru' | 'vi'));
+  const redirectClientPanel = async () => {
+    const { setClientAuthCookie } = await import(
+      '@/lib/client-panel/auth-session-cookie'
+    );
+    const { clearOwnerAuthCookie } = await import(
+      '@/lib/owner/auth-session-cookie'
+    );
+    clearOwnerAuthCookie();
+    setClientAuthCookie();
+    router.replace(withLocale('/activity', locale as 'en' | 'ru' | 'vi'));
+  };
+
+  const redirectOwnerPanel = async () => {
+    const { setOwnerAuthCookie } = await import(
+      '@/lib/owner/auth-session-cookie'
+    );
+    const { clearClientAuthCookie } = await import(
+      '@/lib/client-panel/auth-session-cookie'
+    );
+    clearClientAuthCookie();
+    setOwnerAuthCookie();
+    router.replace(
+      withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'),
+    );
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -74,16 +130,16 @@ export function ClientLoginPageClient() {
       if (signError) throw signError;
 
       const role = await fetchCurrentUserRole();
+      if (role === 'OWNER') {
+        await redirectOwnerPanel();
+        return;
+      }
       if (role && role !== 'CLIENT') {
         await getPublicSupabase().auth.signOut({ scope: 'local' });
-        throw new Error(
-          role === 'OWNER'
-            ? String(t('auth.ownerUseStudioLogin'))
-            : String(t('auth.signInFailed')),
-        );
+        throw new Error(String(t('auth.signInFailed')));
       }
 
-      redirectHome();
+      await redirectClientPanel();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : String(t('auth.signInFailed')),
@@ -102,9 +158,20 @@ export function ClientLoginPageClient() {
     setOauthLoading(provider);
     setError(null);
 
+    if (isBusinessIntent && provider === 'google') {
+      const { error: oauthError } = await startBusinessGoogleOAuth({
+        source: 'business_login',
+      });
+      if (oauthError) {
+        setError(String(t('auth.googleSignInFailed')));
+        setOauthLoading(null);
+      }
+      return;
+    }
+
     const { error: oauthError } = await startClientGoogleOAuth({
       provider,
-      next: withLocale('/', locale as 'en' | 'ru' | 'vi'),
+      next: withLocale('/activity', locale as 'en' | 'ru' | 'vi'),
     });
 
     if (oauthError) {
@@ -121,10 +188,17 @@ export function ClientLoginPageClient() {
     <ClientAuthShell>
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[#3F3287]">
-          {String(t('auth.clientLoginTitle'))}
+          {isBusinessIntent
+            ? String(t('auth.businessLoginTitle') || 'Business sign in')
+            : String(t('auth.clientLoginTitle'))}
         </h1>
         <p className="mt-2 text-sm text-[#878787] sm:text-base">
-          {String(t('auth.clientLoginSubtitle'))}
+          {isBusinessIntent
+            ? String(
+                t('auth.businessLoginSubtitle') ||
+                  'Sign in to manage your studio on the web.',
+              )
+            : String(t('auth.clientLoginSubtitle'))}
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
@@ -205,24 +279,45 @@ export function ClientLoginPageClient() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-[#878787]">
-          {String(t('auth.noAccountRegister'))}{' '}
-          <Link
-            href={withLocale('/register', locale as 'en' | 'ru' | 'vi')}
-            className="font-semibold text-[#E86D4F] transition hover:text-[#d85e42]"
-          >
-            {String(t('auth.registerLink'))}
-          </Link>
-        </p>
+        {!isBusinessIntent ? (
+          <p className="mt-6 text-center text-sm text-[#878787]">
+            {String(t('auth.noAccountRegister'))}{' '}
+            <Link
+              href={withLocale('/register', locale as 'en' | 'ru' | 'vi')}
+              className="font-semibold text-[#E86D4F] transition hover:text-[#d85e42]"
+            >
+              {String(t('auth.registerLink'))}
+            </Link>
+          </p>
+        ) : null}
 
         <p className="mt-3 text-center text-sm text-[#878787]">
-          {String(t('auth.areYouSalonOwner'))}{' '}
-          <Link
-            href={withLocale('/business/login', locale as 'en' | 'ru' | 'vi')}
-            className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
-          >
-            {String(t('auth.registerBusinessAccount'))}
-          </Link>
+          {isBusinessIntent ? (
+            <>
+              {String(
+                t('auth.lookingForClientLogin') || 'Looking for client login?',
+              )}{' '}
+              <Link
+                href={withLocale('/login', locale as 'en' | 'ru' | 'vi')}
+                className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
+              >
+                {String(t('auth.clientLoginLink') || 'Client sign in →')}
+              </Link>
+            </>
+          ) : (
+            <>
+              {String(t('auth.areYouSalonOwner'))}{' '}
+              <Link
+                href={withLocale(
+                  '/login?intent=business',
+                  locale as 'en' | 'ru' | 'vi',
+                )}
+                className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
+              >
+                {String(t('auth.registerBusinessAccount'))}
+              </Link>
+            </>
+          )}
         </p>
 
         <div className="relative my-8">
@@ -247,15 +342,17 @@ export function ClientLoginPageClient() {
             {String(t('auth.continueWithGoogle'))}
           </button>
 
-          <button
-            type="button"
-            disabled={loading || oauthLoading != null}
-            onClick={() => onOAuth('apple')}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#E8E0D8] bg-white py-3 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 disabled:opacity-60"
-          >
-            <AppleLogo className="h-5 w-5" />
-            {String(t('auth.continueWithApple'))}
-          </button>
+          {!isBusinessIntent ? (
+            <button
+              type="button"
+              disabled={loading || oauthLoading != null}
+              onClick={() => onOAuth('apple')}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#E8E0D8] bg-white py-3 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 disabled:opacity-60"
+            >
+              <AppleLogo className="h-5 w-5" />
+              {String(t('auth.continueWithApple'))}
+            </button>
+          ) : null}
         </div>
       </div>
     </ClientAuthShell>

@@ -1,20 +1,13 @@
-import type { Metadata } from 'next';
-import { BusinessRegisterLanding } from '@/components/business/businessAppAuthLanding';
-import { buildDynamicPageMetadata, resolveLocale } from '@/seo';
+import { redirect } from 'next/navigation';
+import { isLocale, type Locale } from '@/i18n/routing';
 
-export async function generateMetadata({
+/** Legacy URL — owners use the shared `/login` page. */
+export default async function BusinessRegisterRedirect({
   params,
 }: {
   params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+}) {
   const { locale: raw } = await params;
-  return buildDynamicPageMetadata(resolveLocale(raw), {
-    pathAfterLocale: '/business/register',
-    title: 'Register your studio — Henzo',
-    description: 'Create your studio account in the Henzo mobile app.',
-  });
-}
-
-export default function BusinessRegisterPage() {
-  return <BusinessRegisterLanding />;
+  const locale = (isLocale(raw) ? raw : 'en') as Locale;
+  redirect(`/${locale}/login?intent=business`);
 }

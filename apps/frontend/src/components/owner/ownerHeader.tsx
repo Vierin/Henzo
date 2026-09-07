@@ -31,9 +31,6 @@ export default function OwnerHeader() {
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
     { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-    { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
-    { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
-    { code: 'pl', name: 'Polski', flag: '🇵🇱' },
   ] as const;
 
   useEffect(() => {
@@ -73,7 +70,7 @@ export default function OwnerHeader() {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      hardNavigateToLocalePath('/business/login', currentLocale);
+      hardNavigateToLocalePath('/login', currentLocale);
     }
   };
 

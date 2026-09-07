@@ -51,7 +51,7 @@ export default function OwnerSidebar({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      hardNavigateToLocalePath('/business/login', currentLocale);
+      hardNavigateToLocalePath('/login', currentLocale);
     }
   };
 

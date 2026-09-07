@@ -1,7 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useClientLocation } from '@/contexts/ClientLocationContext';
 import { fetchPopularStudiosClient } from '@/lib/client/fetch-popular-studios';
 import type { PublicStudioPreview } from '@/lib/client/studio-preview';
 import { PopularStudioCard } from '@/components/clientHome/popularStudioCard';
@@ -35,21 +36,21 @@ export function ClientHomePopularStudiosCarousel({
   title,
   seeAllLabel,
 }: Props) {
+  const { location, isHydrated } = useClientLocation();
   const [studios, setStudios] = useState(initialStudios);
   const [isLoading, setIsLoading] = useState(initialStudios.length === 0);
   const seeAllHref = withLocale('/studios', locale);
 
   useEffect(() => {
-    if (initialStudios.length > 0) {
-      setStudios(initialStudios);
-      setIsLoading(false);
-      return;
-    }
+    if (!isHydrated) return;
 
     let cancelled = false;
     setIsLoading(true);
 
-    fetchPopularStudiosClient(8)
+    fetchPopularStudiosClient(8, {
+      lat: location.lat,
+      lng: location.lng,
+    })
       .then((data) => {
         if (!cancelled) {
           setStudios(data);
@@ -57,13 +58,16 @@ export function ClientHomePopularStudiosCarousel({
         }
       })
       .catch(() => {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setStudios(initialStudios);
+          setIsLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [initialStudios]);
+  }, [isHydrated, location.lat, location.lng, initialStudios]);
 
   if (!isLoading && studios.length === 0) {
     return null;
@@ -101,12 +105,14 @@ export function ClientHomePopularStudiosCarousel({
               ))}
         </div>
 
-        <Link
-          href={seeAllHref}
-          className="mt-4 inline-flex text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F] sm:hidden"
-        >
-          {seeAllLabel}
-        </Link>
+        <div className="mt-4 sm:hidden">
+          <Link
+            href={seeAllHref}
+            className="text-sm font-medium text-[#3F3F3F] hover:text-[#E86D4F]"
+          >
+            {seeAllLabel}
+          </Link>
+        </div>
       </div>
     </section>
   );
