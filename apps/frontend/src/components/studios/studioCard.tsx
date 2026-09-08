@@ -2,9 +2,22 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, Dumbbell, MapPin, Star } from 'lucide-react';
+import {
+  ChevronRight,
+  Dumbbell,
+  Flame,
+  Heart,
+  MapPin,
+  Star,
+} from 'lucide-react';
 import type { PublicStudioPreview } from '@/lib/client/studio-preview';
 import { formatStudioDistanceLabel } from '@/lib/client/studio-preview';
+import { formatBrowseDistrictCity } from '@/lib/client/format-browse-address';
+import {
+  formatBrowseClassPrice,
+  formatBrowseClassTime,
+  type BrowseClassItem,
+} from '@/lib/client/browse-studio-classes';
 import {
   isOtherTrainingCategory,
   trainingCategoryLabel,
@@ -17,7 +30,11 @@ type Props = {
   studio: PublicStudioPreview;
   locale: Locale;
   trainingCategories?: PublicTrainingCategory[];
+  nextClasses?: BrowseClassItem[];
   priority?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  showPopularBadge?: boolean;
 };
 
 function sortCategoryIds(
@@ -66,14 +83,12 @@ function CategoryPill({
   category?: PublicTrainingCategory | null;
 }) {
   const isOther = !category || isOtherTrainingCategory(category);
-  const bg = isOther ? '#FFFFFF' : category.chipBgHex;
+  const bg = isOther ? '#F3F0EC' : category.chipBgHex;
   const fg = isOther ? '#3F3F3F' : (category.chipFgHex ?? '#171717');
 
   return (
     <span
-      className={`inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-semibold tracking-[-0.02em] ${
-        isOther ? 'border border-[#F9A48F]' : ''
-      }`}
+      className="inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-semibold tracking-[-0.02em]"
       style={{ backgroundColor: bg, color: fg }}
     >
       {label}
@@ -85,7 +100,11 @@ export function StudioCard({
   studio,
   locale,
   trainingCategories = [],
+  nextClasses = [],
   priority = false,
+  isFavorite = false,
+  onToggleFavorite,
+  showPopularBadge = false,
 }: Props) {
   const publicSlug = resolveStudioPublicSlug({
     id: studio.id,
@@ -96,80 +115,117 @@ export function StudioCard({
   const byId = new Map(trainingCategories.map((c) => [c.id, c]));
 
   const sortedIds = sortCategoryIds(studio.categoryIds, byId);
-  const visibleIds = sortedIds.slice(0, 2);
+  const visibleIds = sortedIds.slice(0, 3);
   const moreFromIds = Math.max(0, sortedIds.length - visibleIds.length);
 
   const sortedNames = sortCategoryNames(studio.categories, trainingCategories);
-  const fallbackNames = sortedNames.slice(0, 2);
-  const moreFromNames = Math.max(0, sortedNames.length - 2);
+  const fallbackNames = sortedNames.slice(0, 3);
+  const moreFromNames = Math.max(0, sortedNames.length - 3);
 
-  const locationLabel =
-    studio.locationName?.trim() ||
-    (studio.address && studio.address !== '—' ? studio.address : null);
+  // Web browse: always use address (not locationName — often duplicates studio name)
+  const addressLabel = formatBrowseDistrictCity(studio.address);
 
   const distanceLabel = formatStudioDistanceLabel(studio.distanceKm, {
     meters: '{value} m',
     kilometers: '{value} km',
   });
 
-  const ratingText = studio.rating.toFixed(1).replace('.', ',');
+  const ratingText = studio.rating.toFixed(1);
+  const firstClass = nextClasses[0] ?? null;
+  const popular =
+    showPopularBadge || (studio.rating >= 4.7 && studio.reviewCount >= 20);
 
   return (
-    <Link
-      href={href}
-      className="group flex min-h-[166px] overflow-hidden rounded-xl bg-white"
-    >
-      <div className="relative w-[121px] shrink-0 self-stretch bg-[#FDF9E7]">
+    <article className="group flex min-h-[207px] overflow-hidden rounded-2xl border border-[#EDE8E3] bg-white shadow-[0_1px_2px_rgba(63,63,63,0.04)]">
+      <div className="relative w-[160px] shrink-0 self-stretch bg-[#FDF9E7] sm:w-[176px]">
         {studio.photoUrl ? (
           <Image
             src={studio.photoUrl}
             alt=""
             fill
             priority={priority}
-            sizes="121px"
+            sizes="176px"
             className="object-cover transition duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full min-h-[166px] items-center justify-center text-[#E86D4F]">
+          <div className="flex h-full min-h-[207px] items-center justify-center text-[#E86D4F]">
             <Dumbbell className="h-8 w-8" aria-hidden />
           </div>
         )}
 
-        {studio.rating > 0 ? (
-          <span className="absolute bottom-2 right-1.5 inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-1 text-[12px] leading-none tracking-[-0.03em]">
-            <Star
-              className="h-3.5 w-3.5 fill-[#FFB800] text-[#FFB800]"
-              aria-hidden
-            />
-            <span className="font-bold text-[#3F3F3F]">{ratingText}</span>
-            {studio.reviewCount > 0 ? (
-              <span className="font-normal text-[#3F3F3F]/60">
-                {` (${studio.reviewCount})`}
-              </span>
-            ) : null}
+        {popular ? (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#FFF1ED]/95 px-2 py-1 text-[11px] font-semibold text-[#E86D4F]">
+            <Flame className="h-3 w-3" aria-hidden />
+            Popular
           </span>
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col px-2 py-2.5">
+      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-3.5">
         <div className="flex items-start gap-2">
-          <h2 className="min-w-0 flex-1 text-[15px] font-bold leading-[1.15] tracking-[-0.03em] text-[#3F3F3F] line-clamp-2">
-            {studio.studioName}
-          </h2>
-          {distanceLabel ? (
-            <span className="shrink-0 pt-0.5 text-[12px] leading-[1.1] tracking-[-0.03em] text-[#3F3F3F]/60">
-              {distanceLabel}
-            </span>
-          ) : null}
+          <Link href={href} className="min-w-0 flex-1">
+            <h2 className="text-[15px] font-bold leading-[1.2] tracking-[-0.03em] text-[#2B2B2B] line-clamp-2 hover:text-[#E86D4F] sm:text-base">
+              {studio.studioName}
+            </h2>
+          </Link>
+
+          <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
+            {studio.rating > 0 ? (
+              <span className="inline-flex items-center gap-0.5 text-[12px] text-[#3F3F3F]">
+                <Star
+                  className="h-3.5 w-3.5 fill-[#FFB800] text-[#FFB800]"
+                  aria-hidden
+                />
+                <span className="font-semibold">{ratingText}</span>
+                {studio.reviewCount > 0 ? (
+                  <span className="text-[#878787]">({studio.reviewCount})</span>
+                ) : null}
+              </span>
+            ) : null}
+            {onToggleFavorite ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onToggleFavorite();
+                }}
+                className="rounded-full p-1 text-[#FF5D7A] hover:bg-[#FFF1ED]"
+                aria-label={
+                  isFavorite ? 'Remove from favorites' : 'Add to favorites'
+                }
+              >
+                <Heart
+                  className={`h-4 w-4 ${isFavorite ? 'fill-[#FF5D7A]' : ''}`}
+                  aria-hidden
+                />
+              </button>
+            ) : (
+              <Heart className="h-4 w-4 text-[#FF5D7A]/70" aria-hidden />
+            )}
+          </div>
         </div>
 
-        {locationLabel ? (
-          <p className="mt-2 flex items-start gap-1 text-[14px] leading-snug text-[#3F3F3F]">
+        {addressLabel || distanceLabel ? (
+          <p className="mt-1.5 flex items-start gap-1 text-[13px] leading-snug text-[#878787]">
             <MapPin
-              className="mt-0.5 h-3 w-3 shrink-0 text-[#E86D4F]"
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#E86D4F]"
               aria-hidden
             />
-            <span className="truncate">{locationLabel}</span>
+            <span className="min-w-0 line-clamp-1">
+              {addressLabel ? (
+                <>
+                  {addressLabel}
+                  {distanceLabel ? (
+                    <span className="text-[#3F3F3F]/55">
+                      {' '}
+                      · {distanceLabel}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                distanceLabel
+              )}
+            </span>
           </p>
         ) : null}
 
@@ -189,26 +245,59 @@ export function StudioCard({
                 ))}
             {(moreFromIds > 0 ||
               (visibleIds.length === 0 && moreFromNames > 0)) && (
-              <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full border border-[#E86D4F] text-[10px] font-semibold text-[#3F3F3F]">
-                +{moreFromIds > 0 ? moreFromIds : moreFromNames}
+              <span className="text-[11px] font-medium text-[#878787]">
+                +{moreFromIds > 0 ? moreFromIds : moreFromNames} more
               </span>
             )}
           </div>
         ) : null}
 
-        <div className="mt-2.5">
+        {/* Nearest trainings slot — mobile browse parity, no description */}
+        <div className="mt-auto pt-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.02em] text-[#3F3F3F]">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[#3F3F3F]">
               Classes
             </span>
-            <span className="inline-flex items-center text-[11px] font-medium uppercase tracking-wide text-[#E86D4F]">
+            <Link
+              href={href}
+              className="inline-flex items-center text-[11px] font-medium uppercase tracking-wide text-[#E86D4F] hover:underline"
+            >
               See all
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </span>
+            </Link>
           </div>
-          <p className="mt-1.5 text-[12px] text-[#3F3F3F]">No classes today</p>
+
+          {firstClass ? (
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-[#F8F3EB] px-2 py-2">
+              <span className="shrink-0 text-[12px] font-bold text-[#E86D4F]">
+                {formatBrowseClassTime(firstClass.startsAt, locale)}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#3F3F3F]">
+                {firstClass.className}
+              </span>
+              {formatBrowseClassPrice(firstClass.price) ? (
+                <span className="shrink-0 text-[11px] font-semibold text-[#3F3F3F]">
+                  {formatBrowseClassPrice(firstClass.price)}
+                </span>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-1.5 text-[12px] text-[#3F3F3F]">
+              No classes today
+            </p>
+          )}
+
+          <div className="mt-2.5 flex justify-end">
+            <Link
+              href={href}
+              className="inline-flex items-center gap-1 rounded-full bg-[#E86D4F] px-3.5 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#d85e42]"
+            >
+              View studio
+              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </div>
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

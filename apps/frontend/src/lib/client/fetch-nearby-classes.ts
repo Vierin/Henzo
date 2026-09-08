@@ -6,6 +6,7 @@ import {
   fetchPopularStudios,
   fetchPopularStudiosClient,
   fetchPublicApiJson,
+  resolvePopularStudiosApiBases,
 } from '@/lib/client/fetch-popular-studios';
 import {
   parseNearbyClassSession,

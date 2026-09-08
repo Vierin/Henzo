@@ -55,7 +55,7 @@ export default function CompleteSetupPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]/40"
+              className="mt-1 w-full rounded-lg border-0 bg-white px-3 py-2 text-sm focus:outline-none"
               placeholder="Henzo Studio"
               required
             />
@@ -65,7 +65,7 @@ export default function CompleteSetupPage() {
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]/40"
+              className="mt-1 w-full rounded-lg border-0 bg-white px-3 py-2 text-sm focus:outline-none"
               placeholder="Street, city"
             />
           </label>
@@ -74,7 +74,7 @@ export default function CompleteSetupPage() {
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]/40"
+              className="mt-1 w-full rounded-lg border-0 bg-white px-3 py-2 text-sm focus:outline-none"
               placeholder="+84..."
             />
           </label>
@@ -82,7 +82,7 @@ export default function CompleteSetupPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-lg bg-[#ea4b4b] text-white font-medium py-2.5 hover:bg-[#d63f3f] disabled:opacity-60"
+            className="w-full rounded-lg bg-[#F15942] text-white font-medium py-2.5 hover:bg-[#D94C37] disabled:opacity-60"
           >
             {saving ? 'Creating…' : 'Continue to dashboard'}
           </button>

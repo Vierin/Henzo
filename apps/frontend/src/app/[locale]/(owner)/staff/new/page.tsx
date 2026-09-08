@@ -45,7 +45,7 @@ export default function NewStaffPage() {
   };
 
   return (
-    <div className="max-w-lg space-y-5">
+    <div className="space-y-5">
       <h1 className="text-2xl font-semibold">Add staff</h1>
       <form
         onSubmit={onSubmit}
@@ -57,7 +57,7 @@ export default function NewStaffPage() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+            className="mt-1 w-full rounded-lg border-0 bg-[#FCF3EC] px-3 py-2"
           />
         </label>
         <label className="block text-sm">
@@ -66,7 +66,7 @@ export default function NewStaffPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+            className="mt-1 w-full rounded-lg border-0 bg-[#FCF3EC] px-3 py-2"
           />
         </label>
         <label className="block text-sm">
@@ -74,7 +74,7 @@ export default function NewStaffPage() {
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+            className="mt-1 w-full rounded-lg border-0 bg-[#FCF3EC] px-3 py-2"
           />
         </label>
         <label className="block text-sm">
@@ -84,7 +84,7 @@ export default function NewStaffPage() {
             onChange={(e) =>
               setAccessLevel(e.target.value as 'ADMIN' | 'EMPLOYEE')
             }
-            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+            className="mt-1 w-full rounded-lg border-0 bg-[#FCF3EC] px-3 py-2"
           >
             <option value="EMPLOYEE">Employee</option>
             <option value="ADMIN">Admin</option>
@@ -95,7 +95,7 @@ export default function NewStaffPage() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-[#ea4b4b] text-white px-4 py-2 text-sm font-medium disabled:opacity-60"
+            className="rounded-lg bg-[#F15942] text-white px-4 py-2 text-sm font-medium disabled:opacity-60"
           >
             {saving ? 'Saving…' : 'Create'}
           </button>

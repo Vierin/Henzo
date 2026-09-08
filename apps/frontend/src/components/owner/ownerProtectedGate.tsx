@@ -100,8 +100,8 @@ export default function OwnerProtectedGate({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F2F5F7] p-6">
-        <p className="text-red-600 text-sm">{error}</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#FCF3EC] p-6">
+        <p className="text-sm text-red-600">{error}</p>
       </div>
     );
   }

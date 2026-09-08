@@ -1,18 +1,33 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import {
   extractLocaleFromPath,
   hardNavigateToLocalePath,
   withLocale,
   type Locale,
 } from '@/i18n/routing';
-import { User, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, LogOut, ChevronDown, User } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { clearOwnerAuthCookie } from '@/lib/owner/auth-session-cookie';
-import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
+import { fetchOwnerAccountProfile } from '@/lib/owner/fetch-account';
+import {
+  OWNER_NOTIFICATIONS_QUERY_KEY,
+  fetchOwnerNotificationsInbox,
+  ownerUnreadCount,
+} from '@/lib/owner/fetch-notifications';
+import { ownerTheme } from '@/lib/owner/owner-theme';
+
+function ownerInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'SO';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+}
 
 export default function OwnerHeader() {
   const t = useTranslation();
@@ -27,11 +42,33 @@ export default function OwnerHeader() {
   const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentLocale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
+  const path = (p: string) => withLocale(p, currentLocale);
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
     { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   ] as const;
+
+  const profileQuery = useQuery({
+    queryKey: ['owner-account-profile'],
+    queryFn: fetchOwnerAccountProfile,
+  });
+
+  const notificationsQuery = useQuery({
+    queryKey: OWNER_NOTIFICATIONS_QUERY_KEY,
+    queryFn: fetchOwnerNotificationsInbox,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+  });
+
+  const unreadCount = ownerUnreadCount(notificationsQuery.data ?? []);
+  const hasUnread = unreadCount > 0;
+
+  const ownerName =
+    profileQuery.data?.name?.trim() || email?.split('@')[0] || 'Owner';
+  const initials = useMemo(() => ownerInitials(ownerName), [ownerName]);
+  const avatarUrl = profileQuery.data?.avatarUrl;
 
   useEffect(() => {
     void getPublicSupabase()
@@ -75,82 +112,185 @@ export default function OwnerHeader() {
   };
 
   return (
-    <header className="sticky w-full top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
-      <div className="mx-auto max-w-7xl md:px-6 px-4 py-2 flex items-center justify-between">
-        <div className="hidden md:block text-sm text-gray-600 font-medium truncate pl-2">
-          {studio?.name ?? ''}
-        </div>
-        <div className="flex items-center gap-4 ml-auto mr-10 md:mr-0">
+    <header
+      className="sticky top-0 z-[300] w-full border-b backdrop-blur-md"
+      style={{
+        backgroundColor: `${ownerTheme.bg}cc`,
+        borderColor: ownerTheme.borderSoft,
+      }}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-end px-3 py-2.5 md:px-6 lg:px-8">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Language */}
           <div className="relative" ref={languageDropdownRef}>
             <button
+              type="button"
               onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#ff5b5b] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#ff5b5b]"
+              className="flex h-10 items-center gap-1.5 rounded-[12px] border-0 bg-white px-3.5 text-sm font-semibold"
+              style={{ color: ownerTheme.text }}
+              aria-label="Change language"
             >
               <span>{currentLocale.toUpperCase()}</span>
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${
+                className={`h-3.5 w-3.5 transition-transform ${
                   isLanguageDropdownOpen ? 'rotate-180' : ''
                 }`}
+                style={{ color: ownerTheme.textSecondary }}
               />
             </button>
-            {isLanguageDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            {isLanguageDropdownOpen ? (
+              <div className="absolute right-0 top-full z-50 mt-1.5 w-44 overflow-hidden rounded-2xl bg-white py-1 shadow-lg">
                 {languages.map((language) => (
                   <button
                     key={language.code}
+                    type="button"
                     onClick={() => {
                       setIsLanguageDropdownOpen(false);
                       router.push(
                         withLocale(pathname, language.code as Locale),
                       );
                     }}
-                    className={`w-full px-4 py-3 text-left hover:bg-[#ff5b5b]/30 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium transition-colors"
+                    style={
                       currentLocale === language.code
-                        ? 'bg-[#ff5b5b] text-white'
-                        : 'text-gray-700'
-                    }`}
+                        ? {
+                            backgroundColor: ownerTheme.accent,
+                            color: '#FFFFFF',
+                          }
+                        : { color: ownerTheme.text }
+                    }
                   >
-                    <span className="text-lg">{language.flag}</span>
-                    <span className="font-medium">{language.name}</span>
+                    <span className="text-base">{language.flag}</span>
+                    <span>{language.name}</span>
                   </button>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
 
-          <div className="hidden md:block relative" ref={dropdownRef}>
+          {/* Notifications — mobile parity */}
+          <button
+            type="button"
+            className={
+              hasUnread
+                ? 'flex h-10 items-center gap-1.5 rounded-full border-0 px-3'
+                : 'relative flex h-10 w-10 items-center justify-center rounded-full border-0 bg-white'
+            }
+            style={
+              hasUnread
+                ? { backgroundColor: ownerTheme.accent, color: '#fff' }
+                : undefined
+            }
+            aria-label={
+              hasUnread
+                ? `Notifications, ${unreadCount} unread`
+                : 'Notifications'
+            }
+            onClick={() => router.push(path('/notifications'))}
+          >
+            <Bell
+              className="h-[18px] w-[18px]"
+              strokeWidth={1.75}
+              style={{ color: hasUnread ? '#fff' : ownerTheme.text }}
+            />
+            {hasUnread ? (
+              <span className="text-base font-bold leading-none tabular-nums text-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            ) : null}
+          </button>
+
+          {/* Studio / profile */}
+          <div className="relative" ref={dropdownRef}>
             <button
+              type="button"
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-gray-900 transition-colors"
+              className="flex max-w-[220px] items-center gap-2.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-white/60 sm:max-w-none"
             >
-              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-gray-600" />
-              </div>
-              <span>{t('header.profile') || 'Profile'}</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold"
+                style={{
+                  backgroundColor: ownerTheme.bgSoft,
+                  color: ownerTheme.text,
+                }}
+              >
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
+              </span>
+              <span className="hidden min-w-0 text-left sm:block">
+                <span
+                  className="block truncate text-sm font-bold leading-tight"
+                  style={{ color: ownerTheme.text }}
+                >
+                  {ownerName}
+                </span>
+                <span
+                  className="mt-0.5 block truncate text-xs font-medium leading-tight"
+                  style={{ color: ownerTheme.textSecondary }}
+                >
+                  Studio Owner
+                </span>
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 transition-transform ${
+                  showProfileDropdown ? 'rotate-180' : ''
+                }`}
+                style={{ color: ownerTheme.textSecondary }}
+              />
             </button>
-            {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                  <div className="font-medium truncate">
-                    {email?.split('@')[0] || email || 'Owner'}
+
+            {showProfileDropdown ? (
+              <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl bg-white py-1 shadow-lg">
+                <div
+                  className="border-b px-4 py-3"
+                  style={{ borderColor: ownerTheme.borderSoft }}
+                >
+                  <div
+                    className="truncate text-sm font-semibold"
+                    style={{ color: ownerTheme.text }}
+                  >
+                    {ownerName}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {t('header.owner') || 'Owner'}
+                  <div
+                    className="truncate text-xs"
+                    style={{ color: ownerTheme.textSecondary }}
+                  >
+                    {email || studio?.name?.trim() || 'Studio Owner'}
                   </div>
                 </div>
                 <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50"
+                  type="button"
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    router.push(path('/salon-info/account'));
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[#FFFCF9]"
+                  style={{ color: ownerTheme.text }}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <User className="h-4 w-4" />
+                  {t('header.profile') || 'Account'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  disabled={isLoggingOut}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                >
+                  <LogOut className="h-4 w-4" />
                   {isLoggingOut
                     ? t('header.loggingOut') || 'Logging out...'
                     : t('header.logout') || 'Log out'}
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

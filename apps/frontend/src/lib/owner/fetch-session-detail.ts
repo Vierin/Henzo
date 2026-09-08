@@ -19,6 +19,17 @@ export async function updateEnrollmentStatus(
   });
 }
 
+export async function updateOwnerSessionStatus(
+  sessionId: string,
+  status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED',
+  note?: string,
+): Promise<void> {
+  await apiClient.put(`/fitness/owner/training-sessions/${sessionId}/status`, {
+    status,
+    ...(note ? { note } : {}),
+  });
+}
+
 export async function fetchOwnerSessionById(
   sessionId: string,
   from: string,

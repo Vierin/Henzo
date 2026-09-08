@@ -55,9 +55,10 @@ function nearbyPath(lat: number, lng: number, limit: number, radius = 50) {
 async function loadPopularStudios(
   limit: number,
   coords: Pick<ClientLocation, 'lat' | 'lng'> = DEFAULT_CLIENT_LOCATION,
+  radius = 50,
 ): Promise<PublicStudioPreview[]> {
   const nearbyRaw = await fetchPublicApiJson(
-    nearbyPath(coords.lat, coords.lng, limit),
+    nearbyPath(coords.lat, coords.lng, limit, radius),
   );
   const nearby = parseStudiosList(nearbyRaw);
   if (nearby.length > 0) return nearby;
@@ -72,16 +73,18 @@ async function loadPopularStudios(
 export async function fetchPopularStudios(
   limit = 8,
   coords?: Pick<ClientLocation, 'lat' | 'lng'>,
+  radius = 50,
 ): Promise<PublicStudioPreview[]> {
-  return loadPopularStudios(limit, coords ?? DEFAULT_CLIENT_LOCATION);
+  return loadPopularStudios(limit, coords ?? DEFAULT_CLIENT_LOCATION, radius);
 }
 
 /** Client-side fetch with explicit coordinates. */
 export async function fetchPopularStudiosClient(
   limit = 8,
   coords: Pick<ClientLocation, 'lat' | 'lng'> = DEFAULT_CLIENT_LOCATION,
+  radius = 50,
 ): Promise<PublicStudioPreview[]> {
-  const path = nearbyPath(coords.lat, coords.lng, limit);
+  const path = nearbyPath(coords.lat, coords.lng, limit, radius);
 
   for (const base of resolvePopularStudiosApiBases()) {
     try {

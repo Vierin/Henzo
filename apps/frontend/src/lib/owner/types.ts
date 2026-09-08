@@ -2,12 +2,36 @@ export type OwnerStudio = {
   id: string;
   name: string;
   slug?: string | null;
+  description?: string | null;
   address?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   phone?: string | null;
   email?: string | null;
+  website?: string | null;
+  instagram?: string | null;
   logoUrl?: string | null;
+  photos?: string[] | null;
+  photoGallery?: unknown;
+  workingHours?: unknown;
   status?: string | null;
   timezone?: string | null;
+  autoConfirmBookings?: boolean | null;
+  reminderSettings?: {
+    bookingPeriodDays?: number;
+    clientReminders?: ClientReminderRule[];
+    defaultLocationName?: string;
+    trainingLocations?: unknown;
+    socialLinks?: unknown;
+    [key: string]: unknown;
+  } | null;
+};
+
+export type ClientReminderRule = {
+  mode?: 'eveningBefore' | 'hoursBefore' | string;
+  time?: string;
+  hours?: number;
+  enabled?: boolean;
 };
 
 export type OnboardingChecklist = {
@@ -37,6 +61,7 @@ export type OwnerTrainingSession = {
   locationName?: string | null;
   training: {
     name: string;
+    description?: string | null;
     displayColor?: string | null;
     price?: number | null;
     duration?: number | null;
@@ -75,6 +100,15 @@ export type OwnerTraining = {
   displayColor?: string | null;
   trainingCategoryId?: number | null;
   language?: string | null;
+  Staff?: { id: string; name: string }[] | null;
+  trainingCategory?: {
+    id: number;
+    name_en?: string | null;
+    name_vn?: string | null;
+    name_ru?: string | null;
+    chip_bg_hex?: string | null;
+    chip_fg_hex?: string | null;
+  } | null;
 };
 
 export type OwnerStaffMember = {
@@ -84,10 +118,13 @@ export type OwnerStaffMember = {
   phone?: string | null;
   accessLevel?: string | null;
   studioId: string;
+  userId?: string | null;
+  Training?: { id: string; name: string; duration?: number; price?: number }[];
+  invite?: { status: string; expiresAt: string } | null;
 };
 
 export type OwnerStudioClient = {
-  studioClientId: string;
+  studioClientId?: string | null;
   userId: string;
   source?: string | null;
   notes?: string | null;

@@ -13,6 +13,11 @@ import {
   createCurrentStudio,
   fetchCurrentStudio,
 } from '@/lib/owner/fetch-current-studio';
+import {
+  studioUpdatePayload,
+  updateCurrentStudio,
+  type UpdateCurrentStudioBody,
+} from '@/lib/owner/update-studio-settings';
 import type { OwnerStudio } from '@/lib/owner/types';
 
 type OwnerStudioContextValue = {
@@ -27,6 +32,9 @@ type OwnerStudioContextValue = {
     phone?: string;
     email?: string;
   }) => Promise<OwnerStudio>;
+  patchStudio: (
+    patch: Partial<UpdateCurrentStudioBody>,
+  ) => Promise<OwnerStudio>;
 };
 
 const OwnerStudioContext = createContext<OwnerStudioContextValue | null>(null);
@@ -72,6 +80,19 @@ export function OwnerStudioProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const patchStudio = useCallback(
+    async (patch: Partial<UpdateCurrentStudioBody>) => {
+      if (!studio) throw new Error('Studio not loaded');
+      await updateCurrentStudio(studioUpdatePayload(studio, patch));
+      const result = await fetchCurrentStudio();
+      setStudio(result.studio);
+      setNeedsSetup(result.needsSetup);
+      if (!result.studio) throw new Error('Studio missing after update');
+      return result.studio;
+    },
+    [studio],
+  );
+
   const value = useMemo(
     () => ({
       studio,
@@ -80,8 +101,9 @@ export function OwnerStudioProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       createStudio,
+      patchStudio,
     }),
-    [studio, needsSetup, isLoading, error, refresh, createStudio],
+    [studio, needsSetup, isLoading, error, refresh, createStudio, patchStudio],
   );
 
   return (

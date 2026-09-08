@@ -1,18 +1,29 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { ClientHomeHeader } from '@/components/clientHome/clientHomeHeader';
 import { StudioCard } from '@/components/studios/studioCard';
+import { StudiosBrowseFilters } from '@/components/studios/studiosBrowseFilters';
+import { useClientLocation } from '@/contexts/ClientLocationContext';
+import {
+  distanceFilterToRadiusKm,
+  filterBrowseStudios,
+  sortBrowseStudios,
+  type BrowseDistanceFilter,
+  type BrowseSortBy,
+  type BrowseTimePeriod,
+} from '@/lib/client/browse-filters';
+import {
+  fetchBrowseClassesByStudio,
+  type BrowseClassItem,
+} from '@/lib/client/browse-studio-classes';
+import { fetchPopularStudiosClient } from '@/lib/client/fetch-popular-studios';
 import { fetchStudiosSearchClient } from '@/lib/client/fetch-studios-search';
 import type { PublicStudioPreview } from '@/lib/client/studio-preview';
 import { fetchHomeTrainingCategoriesClient } from '@/lib/client/fetch-training-categories';
-import {
-  trainingCategoryLabel,
-  type PublicTrainingCategory,
-} from '@/lib/client/training-category';
+import type { PublicTrainingCategory } from '@/lib/client/training-category';
 import { isLocale, withLocale, type Locale } from '@/i18n/routing';
 
 type Props = {
@@ -25,36 +36,50 @@ type Props = {
 
 export function StudiosListClient({
   initialStudios,
-  initialTotal,
+  initialTotal: _initialTotal,
   initialCategories,
   title = 'Studios',
   categorySlug,
 }: Props) {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
+  const { location, isHydrated } = useClientLocation();
   const localeRaw = params?.locale;
   const locale: Locale =
     typeof localeRaw === 'string' && isLocale(localeRaw) ? localeRaw : 'en';
 
-  const [studios, setStudios] = useState(initialStudios);
-  const [total, setTotal] = useState(initialTotal);
+  const [rawStudios, setRawStudios] = useState(initialStudios);
   const [categories, setCategories] = useState(initialCategories);
+  const [classesByStudio, setClassesByStudio] = useState<
+    Map<string, BrowseClassItem[]>
+  >(new Map());
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [classesLoading, setClassesLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
 
-  const activeCategory =
-    categorySlug?.trim() || searchParams.get('category') || 'all';
+  const lockedCategory = useMemo(() => {
+    if (!categorySlug) return null;
+    return (
+      categories.find((c) => c.slug === categorySlug) ??
+      initialCategories.find((c) => c.slug === categorySlug) ??
+      null
+    );
+  }, [categories, categorySlug, initialCategories]);
 
-  const queryKey = useMemo(
-    () =>
-      JSON.stringify({
-        search: searchParams.get('search') ?? '',
-        category: activeCategory,
-        page: searchParams.get('page') ?? '1',
-      }),
-    [searchParams, activeCategory],
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    lockedCategory?.id ?? null,
   );
+  const [languages, setLanguages] = useState<Set<string>>(new Set());
+  const [timePeriods, setTimePeriods] = useState<Set<BrowseTimePeriod>>(
+    new Set(),
+  );
+  const [distance, setDistance] = useState<BrowseDistanceFilter>('auto');
+  const [sortBy, setSortBy] = useState<BrowseSortBy>('recommended');
+
+  useEffect(() => {
+    if (lockedCategory) setSelectedCategoryId(lockedCategory.id);
+  }, [lockedCategory]);
 
   useEffect(() => {
     if (initialCategories.length > 0) return;
@@ -67,54 +92,138 @@ export function StudiosListClient({
     };
   }, [initialCategories.length]);
 
+  // Load nearby studios when location / distance / category changes
   useEffect(() => {
+    if (!isHydrated) return;
     let cancelled = false;
     setLoading(true);
-    const page = Number(searchParams.get('page') ?? '1') || 1;
-    fetchStudiosSearchClient({
-      search: searchParams.get('search') ?? undefined,
-      category: activeCategory === 'all' ? undefined : activeCategory,
-      page,
-      limit: 24,
+
+    const radius = distanceFilterToRadiusKm(distance);
+    const run = async () => {
+      try {
+        let items = await fetchPopularStudiosClient(
+          50,
+          { lat: location.lat, lng: location.lng },
+          radius,
+        );
+
+        // Fallback to search if nearby empty
+        if (items.length === 0) {
+          const category =
+            lockedCategory?.slug ??
+            categories.find((c) => c.id === selectedCategoryId)?.slug;
+          const result = await fetchStudiosSearchClient({
+            category: category ?? undefined,
+            limit: 50,
+            search: appliedSearch || undefined,
+          });
+          items = result.items;
+        }
+
+        if (!cancelled) {
+          setRawStudios(items);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isHydrated,
+    location.lat,
+    location.lng,
+    distance,
+    lockedCategory?.slug,
+    categories,
+    selectedCategoryId,
+    appliedSearch,
+  ]);
+
+  // Schedules for nearest-class slot
+  useEffect(() => {
+    if (rawStudios.length === 0) {
+      setClassesByStudio(new Map());
+      return;
+    }
+    let cancelled = false;
+    setClassesLoading(true);
+    fetchBrowseClassesByStudio(rawStudios, {
+      clientSide: true,
+      limitStudios: 40,
     })
-      .then((result) => {
-        if (cancelled) return;
-        setStudios(result.items);
-        setTotal(result.total);
+      .then((map) => {
+        if (!cancelled) setClassesByStudio(map);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setClassesLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [queryKey, activeCategory, searchParams]);
+  }, [rawStudios]);
+
+  const derived = useMemo(() => {
+    return filterBrowseStudios({
+      studios: rawStudios,
+      classesByStudio,
+      categoryId: selectedCategoryId,
+      categories,
+      languages,
+      timePeriods,
+      searchQuery: appliedSearch,
+    });
+  }, [
+    rawStudios,
+    classesByStudio,
+    selectedCategoryId,
+    categories,
+    languages,
+    timePeriods,
+    appliedSearch,
+  ]);
+
+  const studios = useMemo(
+    () => sortBrowseStudios(derived.studios, sortBy),
+    [derived.studios, sortBy],
+  );
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
-    const q = new URLSearchParams();
-    if (search.trim()) q.set('search', search.trim());
-    if (activeCategory !== 'all' && !categorySlug) {
-      q.set('category', activeCategory);
+    setAppliedSearch(search.trim());
+  };
+
+  const onCategoryChange = (id: number | null) => {
+    if (categorySlug) {
+      // Navigate between category pages
+      if (id == null) {
+        router.push(withLocale('/studios', locale));
+        return;
+      }
+      const cat = categories.find((c) => c.id === id);
+      if (cat) router.push(withLocale(`/category/${cat.slug}`, locale));
+      return;
     }
-    const base = categorySlug
-      ? withLocale(`/category/${categorySlug}`, locale)
-      : withLocale('/studios', locale);
-    const qs = q.toString();
-    router.push(qs ? `${base}?${qs}` : base);
+    setSelectedCategoryId(id);
   };
 
   return (
     <div className="min-h-screen bg-[#F9F4F0] font-wix-madefor-display text-[#3F3F3F]">
       <ClientHomeHeader />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               {title}
             </h1>
             <p className="mt-1 text-sm text-[#878787]">
-              {total} studio{total === 1 ? '' : 's'}
+              {loading
+                ? 'Loading…'
+                : `${studios.length} studio${studios.length === 1 ? '' : 's'}`}
+              {classesLoading ? ' · updating classes' : ''}
             </p>
           </div>
 
@@ -139,55 +248,46 @@ export function StudiosListClient({
           </form>
         </div>
 
-        {!categorySlug && categories.length > 0 ? (
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-            <Link
-              href={withLocale('/studios', locale)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${
-                activeCategory === 'all'
-                  ? 'bg-[#3F3287] text-white'
-                  : 'bg-white text-[#3F3F3F] hover:bg-[#EDE8E3]'
-              }`}
-            >
-              All
-            </Link>
-            {categories.slice(0, 12).map((cat) => (
-              <Link
-                key={cat.id}
-                href={withLocale(`/category/${cat.slug}`, locale)}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${
-                  activeCategory === cat.slug
-                    ? 'bg-[#3F3287] text-white'
-                    : 'bg-white text-[#3F3F3F] hover:bg-[#EDE8E3]'
-                }`}
-              >
-                {trainingCategoryLabel(cat, locale)}
-              </Link>
-            ))}
-          </div>
-        ) : null}
+        <div className="mb-6">
+          <StudiosBrowseFilters
+            locale={locale}
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            onCategoryChange={onCategoryChange}
+            languages={languages}
+            onLanguagesChange={setLanguages}
+            timePeriods={timePeriods}
+            onTimePeriodsChange={setTimePeriods}
+            distance={distance}
+            onDistanceChange={setDistance}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            hideTypes={false}
+          />
+        </div>
 
         {loading && studios.length === 0 ? (
-          <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-[166px] animate-pulse rounded-xl bg-[#EDE8E3]"
+                className="h-[207px] animate-pulse rounded-2xl bg-[#EDE8E3]"
               />
             ))}
           </div>
         ) : studios.length === 0 ? (
           <p className="rounded-2xl bg-white p-8 text-center text-[#878787]">
-            No studios found. Try another search.
+            No studios found. Try changing filters or widening distance.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {studios.map((studio, index) => (
               <StudioCard
                 key={studio.id}
                 studio={studio}
                 locale={locale}
                 trainingCategories={categories}
+                nextClasses={derived.classesByStudio.get(studio.id) ?? []}
                 priority={index < 2}
               />
             ))}

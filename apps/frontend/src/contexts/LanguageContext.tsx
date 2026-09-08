@@ -271,6 +271,10 @@ export function LanguageProvider({
     modulesToLoad.push('owner/feedback');
     // Load onboarding module for OnboardingChecklist component on dashboard
     modulesToLoad.push('owner/onboarding');
+    // Account settings under /salon-info/account
+    if (pathNoLocale.startsWith('/salon-info')) {
+      modulesToLoad.push('owner/profileSettings');
+    }
     // Load header module for OwnerHeader component
     modulesToLoad.push('ui/header');
     // Load footer module for footer links in header dropdown

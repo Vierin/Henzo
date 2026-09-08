@@ -9,6 +9,10 @@ import {
   fetchSessionEnrollments,
   updateEnrollmentStatus,
 } from '@/lib/owner/fetch-session-detail';
+import {
+  formatOwnerDateShort,
+  formatOwnerTime24h,
+} from '@/lib/owner/format-time';
 
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -55,10 +59,10 @@ export default function SessionDetailPage() {
   const enrollments = enrollmentsQuery.data ?? [];
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5">
       <button
         onClick={() => router.push(withLocale('/calendar', locale))}
-        className="text-sm text-gray-500 hover:text-[#ea4b4b]"
+        className="text-sm text-gray-500 hover:text-[#F15942]"
       >
         ← Back to schedule
       </button>
@@ -73,11 +77,9 @@ export default function SessionDetailPage() {
             {session.training?.name}
           </h1>
           <p className="text-sm text-gray-600">
-            {new Date(session.startsAt).toLocaleString()} –{' '}
-            {new Date(session.endsAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {formatOwnerDateShort(session.startsAt)}{' '}
+            {formatOwnerTime24h(session.startsAt)} –{' '}
+            {formatOwnerTime24h(session.endsAt)}
           </p>
           <div className="flex flex-wrap gap-3 text-sm text-gray-600">
             <span>
@@ -124,7 +126,7 @@ export default function SessionDetailPage() {
                           status: e.status === 'NO_SHOW' ? 'ACTIVE' : 'NO_SHOW',
                         })
                       }
-                      className="text-xs rounded-md border border-gray-200 px-2 py-1 hover:border-[#ea4b4b] hover:text-[#ea4b4b]"
+                      className="text-xs rounded-md border border-gray-200 px-2 py-1 hover:border-[#F15942] hover:text-[#F15942]"
                     >
                       {e.status === 'NO_SHOW' ? 'Mark present' : 'No-show'}
                     </button>
