@@ -50,6 +50,16 @@ export default function ConditionalFooter() {
     return null;
   }
 
+  // Auth pages use ClientAuthShell mini-footer
+  if (
+    /\/login(\/|$|\?)/.test(pathname) ||
+    pathname.includes('/register') ||
+    pathname.includes('/forgot-password') ||
+    pathname.includes('/check-email')
+  ) {
+    return null;
+  }
+
   // Hide footer on admin and owner panel pages (they have their own footers in layout)
   if (
     pathname.includes('/admin') ||

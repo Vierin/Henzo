@@ -3,10 +3,14 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Mail } from 'lucide-react';
 import { withLocale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { ClientAuthShell } from '@/components/auth/clientAuthShell';
+import {
+  AuthFieldIcon,
+  AuthFormField,
+  authPrimaryButtonClassName,
+} from '@/components/auth/authFormField';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { isSupabaseConfigured } from '@/lib/public-env';
 
@@ -79,21 +83,21 @@ export function ClientForgotPasswordPageClient() {
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <label className="block">
               <span className="sr-only">{String(t('auth.emailAddress'))}</span>
-              <div className="relative">
-                <Mail
-                  className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#878787]"
-                  aria-hidden
-                />
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={String(t('auth.loginEmailPlaceholder'))}
-                  className="w-full rounded-xl border border-[#E8E0D8] bg-white py-3 pl-11 pr-4 text-sm text-[#3F3F3F] outline-none transition placeholder:text-[#878787] focus:border-[#E86D4F]"
-                />
-              </div>
+              <AuthFormField
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={String(t('auth.loginEmailPlaceholder'))}
+                icon={
+                  <AuthFieldIcon
+                    src="/images/icons/icon-mail.svg"
+                    width={14}
+                    height={14}
+                  />
+                }
+              />
             </label>
 
             {error ? (
@@ -105,7 +109,7 @@ export function ClientForgotPasswordPageClient() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#E86D4F] py-3 text-sm font-semibold text-white transition hover:bg-[#d85e42] disabled:opacity-60"
+              className={authPrimaryButtonClassName}
             >
               {loading
                 ? String(t('auth.sending'))

@@ -249,23 +249,6 @@ export default function OwnerHeader() {
 
             {showProfileDropdown ? (
               <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl bg-white py-1 shadow-lg">
-                <div
-                  className="border-b px-4 py-3"
-                  style={{ borderColor: ownerTheme.borderSoft }}
-                >
-                  <div
-                    className="truncate text-sm font-semibold"
-                    style={{ color: ownerTheme.text }}
-                  >
-                    {ownerName}
-                  </div>
-                  <div
-                    className="truncate text-xs"
-                    style={{ color: ownerTheme.textSecondary }}
-                  >
-                    {email || studio?.name?.trim() || 'Studio Owner'}
-                  </div>
-                </div>
                 <button
                   type="button"
                   onClick={() => {

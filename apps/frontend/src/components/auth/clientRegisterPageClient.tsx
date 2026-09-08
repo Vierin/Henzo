@@ -3,10 +3,15 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { withLocale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { ClientAuthShell } from '@/components/auth/clientAuthShell';
+import {
+  AuthFieldIcon,
+  AuthFormField,
+  authFieldClassName,
+  authPrimaryButtonClassName,
+} from '@/components/auth/authFormField';
 import {
   requestClientRegistrationCode,
   verifyClientRegistrationCode,
@@ -26,7 +31,6 @@ export function ClientRegisterPageClient() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -113,70 +117,59 @@ export function ClientRegisterPageClient() {
           <form onSubmit={onRequestCode} className="mt-8 space-y-4">
             <label className="block">
               <span className="sr-only">{String(t('auth.fullName'))}</span>
-              <div className="relative">
-                <User
-                  className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#878787]"
-                  aria-hidden
-                />
-                <input
-                  type="text"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={String(t('auth.fullName'))}
-                  className="w-full rounded-xl border border-[#E8E0D8] bg-white py-3 pl-11 pr-4 text-sm text-[#3F3F3F] outline-none transition placeholder:text-[#878787] focus:border-[#E86D4F]"
-                />
-              </div>
+              <AuthFormField
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={String(t('auth.fullName'))}
+                icon={
+                  <AuthFieldIcon
+                    src="/images/icons/icon-profile.svg"
+                    width={16}
+                    height={16}
+                  />
+                }
+              />
             </label>
 
             <label className="block">
               <span className="sr-only">{String(t('auth.emailAddress'))}</span>
-              <div className="relative">
-                <Mail
-                  className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#878787]"
-                  aria-hidden
-                />
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={String(t('auth.loginEmailPlaceholder'))}
-                  className="w-full rounded-xl border border-[#E8E0D8] bg-white py-3 pl-11 pr-4 text-sm text-[#3F3F3F] outline-none transition placeholder:text-[#878787] focus:border-[#E86D4F]"
-                />
-              </div>
+              <AuthFormField
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={String(t('auth.loginEmailPlaceholder'))}
+                icon={
+                  <AuthFieldIcon
+                    src="/images/icons/icon-mail.svg"
+                    width={14}
+                    height={14}
+                  />
+                }
+              />
             </label>
 
             <label className="block">
               <span className="sr-only">{String(t('auth.password'))}</span>
-              <div className="relative">
-                <Lock
-                  className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#878787]"
-                  aria-hidden
-                />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={String(t('auth.loginPasswordPlaceholder'))}
-                  className="w-full rounded-xl border border-[#E8E0D8] bg-white py-3 pl-11 pr-11 text-sm text-[#3F3F3F] outline-none transition placeholder:text-[#878787] focus:border-[#E86D4F]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#878787]"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" aria-hidden />
-                  ) : (
-                    <Eye className="h-5 w-5" aria-hidden />
-                  )}
-                </button>
-              </div>
+              <AuthFormField
+                type="password"
+                passwordToggle
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={String(t('auth.loginPasswordPlaceholder'))}
+                icon={
+                  <AuthFieldIcon
+                    src="/images/icons/icon-password.svg"
+                    width={16}
+                    height={16}
+                  />
+                }
+              />
             </label>
 
             {error ? (
@@ -188,7 +181,7 @@ export function ClientRegisterPageClient() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#E86D4F] py-3 text-sm font-semibold text-white transition hover:bg-[#d85e42] disabled:opacity-60"
+              className={authPrimaryButtonClassName}
             >
               {loading
                 ? String(t('auth.sending'))
@@ -207,7 +200,7 @@ export function ClientRegisterPageClient() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="000000"
-              className="w-full rounded-xl border border-[#E8E0D8] bg-white py-3 px-4 text-center text-lg tracking-[0.3em] text-[#3F3F3F] outline-none focus:border-[#E86D4F]"
+              className={`${authFieldClassName} px-4 text-center text-lg tracking-[0.3em]`}
             />
 
             {error ? (
@@ -219,7 +212,7 @@ export function ClientRegisterPageClient() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#E86D4F] py-3 text-sm font-semibold text-white transition hover:bg-[#d85e42] disabled:opacity-60"
+              className={authPrimaryButtonClassName}
             >
               {loading
                 ? String(t('auth.verifying'))
