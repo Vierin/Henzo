@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Pencil, Plus, Search } from 'lucide-react';
+import { Pencil, Plus, Search } from 'lucide-react';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { fetchTrainings } from '@/lib/owner/fetch-trainings';
@@ -21,6 +21,7 @@ import {
   isPlaceholderTrainerName,
   trainingLanguageLabel,
 } from '@/lib/owner/format-time';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
 
 type SortKey =
   | 'nameAsc'
@@ -171,25 +172,17 @@ export default function TrainingsPage() {
           })}
         </div>
 
-        <label className="relative shrink-0">
-          <span className="sr-only">Sort</span>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="appearance-none rounded-[12px] bg-white py-2.5 pl-3 pr-8 text-sm font-semibold outline-none"
-            style={{ color: ownerTheme.text }}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-            style={{ color: ownerTheme.textSecondary }}
-          />
-        </label>
+        <OwnerSelect
+          value={sortKey}
+          onChange={(v) => setSortKey(v as SortKey)}
+          size="compact"
+          aria-label="Sort"
+          className="w-full shrink-0 sm:w-auto sm:min-w-[150px]"
+          options={SORT_OPTIONS.map((o) => ({
+            value: o.id,
+            label: o.label,
+          }))}
+        />
       </div>
 
       {trainingsQuery.isLoading ? (

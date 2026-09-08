@@ -3,17 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-  ChevronRight,
-  ImagePlus,
-  Loader2,
-  MapPin,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { ImagePlus, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { SettingsSubpageShell } from '@/components/owner/settingsSubpageShell';
+import { OwnerLocationField } from '@/components/owner/ownerLocationField';
 import { OwnerTrainingLocationsModal } from '@/components/owner/ownerTrainingLocationsModal';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
@@ -417,21 +409,32 @@ export default function StudioProfileSettingsPage() {
         </button>
       }
     >
-      <SectionLabel hint="Square image, up to 3 MB after compression">
-        Studio logo
-      </SectionLabel>
-      <div className="mt-3 flex justify-center">
-        <div className="relative">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p
+            className="text-[13px] font-medium uppercase tracking-wide"
+            style={{ color: ownerTheme.textSecondary }}
+          >
+            Studio logo
+          </p>
+          <p
+            className="mt-1 text-sm"
+            style={{ color: ownerTheme.textSecondary }}
+          >
+            Square image, up to 3 MB after compression
+          </p>
+        </div>
+        <div className="relative shrink-0">
           <button
             type="button"
             disabled={logoUploading}
             onClick={() => logoInputRef.current?.click()}
-            className="flex h-[120px] w-[120px] items-center justify-center overflow-hidden rounded-[20px] bg-white"
+            className="flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-[18px] bg-white md:h-[96px] md:w-[96px]"
             aria-label="Upload studio logo"
           >
             {logoUploading ? (
               <Loader2
-                className="h-6 w-6 animate-spin"
+                className="h-5 w-5 animate-spin"
                 style={{ color: ownerTheme.textSecondary }}
               />
             ) : logoUrl ? (
@@ -443,7 +446,7 @@ export default function StudioProfileSettingsPage() {
               />
             ) : (
               <ImagePlus
-                className="h-8 w-8"
+                className="h-7 w-7"
                 style={{ color: ownerTheme.textSecondary }}
               />
             )}
@@ -452,10 +455,10 @@ export default function StudioProfileSettingsPage() {
             <button
               type="button"
               onClick={() => setLogoUrl(null)}
-              className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow"
+              className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow"
               aria-label="Remove logo"
             >
-              <X className="h-3.5 w-3.5" style={{ color: ownerTheme.text }} />
+              <X className="h-3 w-3" style={{ color: ownerTheme.text }} />
             </button>
           ) : null}
           <input
@@ -477,11 +480,11 @@ export default function StudioProfileSettingsPage() {
         Studio photos
       </SectionLabel>
       <div className="mt-3 rounded-[14px] bg-white p-3">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2.5 overflow-x-auto pb-1">
           {photos.map((photo, index) => (
             <div
               key={photo.id}
-              className="relative h-28 w-28 shrink-0 overflow-hidden rounded-[12px]"
+              className="relative h-36 w-36 shrink-0 overflow-hidden rounded-[14px] md:h-40 md:w-40"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -494,7 +497,7 @@ export default function StudioProfileSettingsPage() {
                   Main
                 </span>
               ) : null}
-              <div className="absolute inset-x-0 bottom-0 flex justify-between bg-gradient-to-t from-black/50 to-transparent p-1">
+              <div className="absolute inset-x-0 bottom-0 flex justify-between bg-gradient-to-t from-black/50 to-transparent p-1.5">
                 <button
                   type="button"
                   className="rounded bg-white/90 px-1.5 text-xs font-bold"
@@ -529,7 +532,7 @@ export default function StudioProfileSettingsPage() {
               type="button"
               disabled={photosProcessing}
               onClick={() => photosInputRef.current?.click()}
-              className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-[12px] border-2 border-dashed"
+              className="flex h-36 w-36 shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] border-2 border-dashed md:h-40 md:w-40"
               style={{
                 borderColor: ownerTheme.border,
                 color: ownerTheme.textSecondary,
@@ -578,36 +581,11 @@ export default function StudioProfileSettingsPage() {
           </p>
         </div>
 
-        <button
-          type="button"
+        <OwnerLocationField
+          name={locationName}
+          address={address}
           onClick={() => setLocationsOpen(true)}
-          className="flex w-full items-start gap-3 rounded-[14px] bg-white px-3.5 py-3.5 text-left transition hover:bg-[#FFFCF9]"
-        >
-          <MapPin
-            className="mt-0.5 h-5 w-4 shrink-0"
-            style={{ color: ownerTheme.accent }}
-          />
-          <span className="min-w-0 flex-1">
-            <span
-              className="block text-[15px] font-bold"
-              style={{ color: ownerTheme.text }}
-            >
-              {locationName.trim() || 'Studio'}
-            </span>
-            <span
-              className="mt-0.5 block text-sm"
-              style={{
-                color: address.trim() ? ownerTheme.textSecondary : '#9CA3AF',
-              }}
-            >
-              {address.trim() || 'No address'}
-            </span>
-          </span>
-          <ChevronRight
-            className="mt-1 h-5 w-5 shrink-0"
-            style={{ color: ownerTheme.textSecondary }}
-          />
-        </button>
+        />
       </div>
 
       <SectionLabel>Contact info</SectionLabel>

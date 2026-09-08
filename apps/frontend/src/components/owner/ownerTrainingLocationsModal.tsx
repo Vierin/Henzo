@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Trash2, X } from 'lucide-react';
 import {
   OwnerAddressPickerModal,
   type OwnerAddressPickerResult,
 } from '@/components/owner/ownerAddressPickerModal';
+import { OwnerPinIcon } from '@/components/owner/ownerPinIcon';
 import {
   newLocationId,
   swapDefaultTrainingLocation,
@@ -19,6 +20,9 @@ export function OwnerTrainingLocationsModal({
   mainStudioName,
   onClose,
   onChange,
+  mode = 'manage',
+  selectedId,
+  onSelect,
 }: {
   open: boolean;
   locations: TrainingLocationItem[];
@@ -31,6 +35,10 @@ export function OwnerTrainingLocationsModal({
     lat: number | null;
     lon: number | null;
   }) => void;
+  /** manage = studio profile default; pick = choose location for a class */
+  mode?: 'manage' | 'pick';
+  selectedId?: string;
+  onSelect?: (id: string) => void;
 }) {
   const [draft, setDraft] = useState<TrainingLocationItem[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -53,6 +61,7 @@ export function OwnerTrainingLocationsModal({
   if (!open) return null;
 
   const primary = draft.find((l) => l.isDefault) ?? draft[0];
+  const isPick = mode === 'pick';
 
   const commitDraft = (next: TrainingLocationItem[]) => {
     setDraft(next);
@@ -67,7 +76,12 @@ export function OwnerTrainingLocationsModal({
     });
   };
 
-  const onPickDefault = (id: string) => {
+  const onRowClick = (id: string) => {
+    if (isPick) {
+      onSelect?.(id);
+      onClose();
+      return;
+    }
     if (id === 'default' || primary?.id === id) return;
     const swapped = swapDefaultTrainingLocation({
       locations: draft,
@@ -106,10 +120,11 @@ export function OwnerTrainingLocationsModal({
       }
       commitDraft(next);
     } else if (editingId === '__new__') {
+      const id = newLocationId();
       commitDraft([
         ...draft,
         {
-          id: newLocationId(),
+          id,
           name: result.locationName,
           address: result.address,
           isDefault: false,
@@ -117,6 +132,10 @@ export function OwnerTrainingLocationsModal({
           longitude: result.lon,
         },
       ]);
+      if (isPick) {
+        onSelect?.(id);
+        onClose();
+      }
     } else {
       commitDraft(
         draft.map((l) =>
@@ -181,81 +200,88 @@ export function OwnerTrainingLocationsModal({
             className="px-5 pt-1 text-sm"
             style={{ color: ownerTheme.textSecondary }}
           >
-            Tap a location to set it as default. First is used on your public
-            page.
+            {isPick
+              ? 'Tap a location for this class.'
+              : 'Tap a location to set it as default. First is used on your public page.'}
           </p>
 
           <div className="mt-3 flex-1 space-y-2 overflow-y-auto px-5 pb-3">
-            {draft.map((loc) => (
-              <div
-                key={loc.id}
-                className="flex items-start gap-2 rounded-[14px] px-3 py-3"
-                style={{
-                  backgroundColor: loc.isDefault
-                    ? 'rgba(241, 89, 66, 0.08)'
-                    : ownerTheme.bg,
-                }}
-              >
-                <button
-                  type="button"
-                  className="flex min-w-0 flex-1 items-start gap-2 text-left"
-                  onClick={() => onPickDefault(loc.id)}
-                >
-                  <MapPin
-                    className="mt-0.5 h-4 w-4 shrink-0"
-                    style={{ color: ownerTheme.accent }}
-                  />
-                  <span className="min-w-0">
-                    <span
-                      className="block text-[15px] font-bold"
-                      style={{ color: ownerTheme.text }}
-                    >
-                      {loc.name || 'Location'}
-                      {loc.isDefault ? (
-                        <span
-                          className="ml-1.5 text-xs font-semibold"
-                          style={{ color: ownerTheme.accent }}
-                        >
-                          Default
-                        </span>
-                      ) : null}
-                    </span>
-                    <span
-                      className="mt-0.5 block text-sm"
-                      style={{ color: ownerTheme.textSecondary }}
-                    >
-                      {loc.address || 'No address'}
-                    </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg p-2"
-                  aria-label="Edit location"
-                  onClick={() => {
-                    setEditingId(loc.isDefault ? 'default' : loc.id);
-                    setPickerOpen(true);
+            {draft.map((loc) => {
+              const highlighted = isPick
+                ? loc.id === (selectedId || primary?.id)
+                : loc.isDefault;
+              return (
+                <div
+                  key={loc.id}
+                  className="flex items-start gap-2 rounded-[14px] px-3 py-3"
+                  style={{
+                    backgroundColor: highlighted
+                      ? 'rgba(241, 89, 66, 0.08)'
+                      : ownerTheme.bg,
                   }}
                 >
-                  <Pencil
-                    className="h-4 w-4"
-                    style={{ color: ownerTheme.textSecondary }}
-                  />
-                </button>
-                {!loc.isDefault ? (
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                    onClick={() => onRowClick(loc.id)}
+                  >
+                    <OwnerPinIcon
+                      className="mt-0.5 shrink-0"
+                      width={15}
+                      height={18}
+                    />
+                    <span className="min-w-0">
+                      <span
+                        className="block text-[15px] font-bold"
+                        style={{ color: ownerTheme.text }}
+                      >
+                        {loc.name || 'Location'}
+                        {!isPick && loc.isDefault ? (
+                          <span
+                            className="ml-1.5 text-xs font-semibold"
+                            style={{ color: ownerTheme.accent }}
+                          >
+                            Default
+                          </span>
+                        ) : null}
+                      </span>
+                      <span
+                        className="mt-0.5 block text-sm"
+                        style={{ color: ownerTheme.textSecondary }}
+                      >
+                        {loc.address || 'No address'}
+                      </span>
+                    </span>
+                  </button>
                   <button
                     type="button"
                     className="rounded-lg p-2"
-                    aria-label="Delete location"
-                    onClick={() =>
-                      commitDraft(draft.filter((l) => l.id !== loc.id))
-                    }
+                    aria-label="Edit location"
+                    onClick={() => {
+                      setEditingId(loc.isDefault ? 'default' : loc.id);
+                      setPickerOpen(true);
+                    }}
                   >
-                    <Trash2 className="h-4 w-4 text-red-500" />
+                    <Pencil
+                      className="h-4 w-4"
+                      style={{ color: ownerTheme.textSecondary }}
+                    />
                   </button>
-                ) : null}
-              </div>
-            ))}
+                  {!loc.isDefault ? (
+                    <button
+                      type="button"
+                      className="rounded-lg p-2"
+                      aria-label="Delete location"
+                      onClick={() =>
+                        commitDraft(draft.filter((l) => l.id !== loc.id))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
 
           <div

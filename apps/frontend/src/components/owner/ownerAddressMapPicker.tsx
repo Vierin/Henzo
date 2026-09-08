@@ -21,28 +21,21 @@ const MARKER_ICON = L.divIcon({
 });
 
 /**
- * CARTO raster basemaps now watermark without `?key=…`.
- * Mobile uses the same public CDN URL (no key in app) — fall back to OSM
- * unless `NEXT_PUBLIC_CARTO_API_KEY` is set.
+ * Free raster basemap (no API key).
+ * Esri World Street — warmer than raw OSM; Mapbox stays on backend for geocoding.
+ *
+ * Do NOT put CSS `filter` on Leaflet panes — it creates a containing block and
+ * tiles render blank/white.
  */
 function basemapLayer(): L.TileLayer {
-  const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY?.trim();
-  if (cartoKey) {
-    return L.tileLayer(
-      `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`,
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 20,
-        subdomains: 'abcd',
-      },
-    );
-  }
-  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19,
-  });
+  return L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {
+      attribution:
+        'Tiles &copy; Esri &mdash; Source: Esri, OpenStreetMap contributors',
+      maxZoom: 19,
+    },
+  );
 }
 
 export function OwnerAddressMapPicker({
@@ -94,11 +87,20 @@ export function OwnerAddressMapPicker({
     mapRef.current = map;
     markerRef.current = marker;
 
-    requestAnimationFrame(() => map.invalidateSize());
-    const t = window.setTimeout(() => map.invalidateSize(), 200);
+    const refreshSize = () => map.invalidateSize({ animate: false });
+    requestAnimationFrame(refreshSize);
+    const t1 = window.setTimeout(refreshSize, 50);
+    const t2 = window.setTimeout(refreshSize, 250);
+    const ro =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => refreshSize())
+        : null;
+    ro?.observe(el);
 
     return () => {
-      window.clearTimeout(t);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      ro?.disconnect();
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -121,15 +123,30 @@ export function OwnerAddressMapPicker({
     }
     marker.setLatLng(next);
     map.panTo(next);
+    map.invalidateSize({ animate: false });
   }, [latitude, longitude]);
 
   return (
     <div
-      ref={containerRef}
       className={
         className ??
-        'h-[220px] w-full overflow-hidden rounded-[14px] [&_.owner-map-marker]:!border-0 [&_.owner-map-marker]:!bg-transparent'
+        'relative h-[220px] w-full overflow-hidden rounded-[14px] bg-[#F8EDE5]'
       }
-    />
+    >
+      <div
+        ref={containerRef}
+        className="h-full w-full [&_.owner-map-marker]:!border-0 [&_.owner-map-marker]:!bg-transparent"
+      />
+      {/* Cream wash without CSS filter on Leaflet panes */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-[14px]"
+        style={{
+          backgroundColor: ownerTheme.bg,
+          mixBlendMode: 'soft-light',
+          opacity: 0.55,
+        }}
+        aria-hidden
+      />
+    </div>
   );
 }

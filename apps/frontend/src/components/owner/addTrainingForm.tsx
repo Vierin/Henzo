@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
@@ -14,7 +14,10 @@ import {
   fetchOwnerSubscription,
   planBadgeLabel,
 } from '@/lib/owner/fetch-subscription';
-import { studioTrainingLocations } from '@/lib/owner/training-locations';
+import {
+  extraLocationsToJson,
+  listTrainingLocations,
+} from '@/lib/owner/training-locations';
 import {
   addMonthsInputValue,
   dateInputToApiDay,
@@ -28,6 +31,9 @@ import {
   OwnerDateField,
   OwnerTimeField,
 } from '@/components/owner/ownerSchedulePickers';
+import { OwnerLocationField } from '@/components/owner/ownerLocationField';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
+import { OwnerTrainingLocationsModal } from '@/components/owner/ownerTrainingLocationsModal';
 import { formatPriceDots, parsePriceDots } from '@/lib/owner/format-price';
 
 const MAX_DURATION = 480;
@@ -64,12 +70,16 @@ export function AddTrainingForm() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
-  const { studio } = useOwnerStudio();
+  const { studio, patchStudio } = useOwnerStudio();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [locationId, setLocationId] = useState('default');
+  const [locationsOpen, setLocationsOpen] = useState(false);
+  const [localLocations, setLocalLocations] = useState(() =>
+    listTrainingLocations(studio),
+  );
   const [duration, setDuration] = useState('60');
   const [capacity, setCapacity] = useState('10');
   const [price, setPrice] = useState('');
@@ -117,7 +127,15 @@ export function AddTrainingForm() {
   const categories = categoriesQuery.data ?? [];
   const existing = trainingsQuery.data ?? [];
   const trainers = staffQuery.data ?? [];
-  const locations = useMemo(() => studioTrainingLocations(studio), [studio]);
+
+  useEffect(() => {
+    setLocalLocations(listTrainingLocations(studio));
+  }, [studio]);
+
+  const selectedLocation =
+    localLocations.find((l) => l.id === locationId) ??
+    localLocations[0] ??
+    null;
   const isPro = planBadgeLabel(subQuery.data ?? null) !== 'Solo';
 
   const nameSuggestions = useMemo(() => {
@@ -389,38 +407,52 @@ export function AddTrainingForm() {
           {categories.length > 0 ? (
             <label className="block">
               <FieldLabel>Category *</FieldLabel>
-              <select
+              <OwnerSelect
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className={inputClass}
-                style={fieldStyle}
-              >
-                <option value="">Pick category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {categoryLabel(c, locale)}
-                  </option>
-                ))}
-              </select>
+                onChange={setCategoryId}
+                placeholder="Pick category"
+                options={categories.map((c) => ({
+                  value: String(c.id),
+                  label: categoryLabel(c, locale),
+                }))}
+              />
             </label>
           ) : null}
 
-          {locations.length > 0 ? (
-            <label className="block">
-              <FieldLabel>Address</FieldLabel>
-              <select
-                value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-                className={inputClass}
-                style={fieldStyle}
-              >
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {selectedLocation ? (
+            <>
+              <OwnerLocationField
+                label="Address"
+                name={selectedLocation.name}
+                address={selectedLocation.address}
+                onClick={() => setLocationsOpen(true)}
+              />
+              <OwnerTrainingLocationsModal
+                open={locationsOpen}
+                mode="pick"
+                selectedId={locationId}
+                locations={localLocations}
+                mainStudioName={studio?.name?.trim() || 'Main studio'}
+                onClose={() => setLocationsOpen(false)}
+                onSelect={(id) => {
+                  setLocationId(id);
+                  setLocationsOpen(false);
+                }}
+                onChange={(next) => {
+                  setLocalLocations(next.locations);
+                  void patchStudio({
+                    address: next.address,
+                    latitude: next.lat,
+                    longitude: next.lon,
+                    reminderSettings: {
+                      ...(studio?.reminderSettings ?? {}),
+                      defaultLocationName: next.locationName,
+                      trainingLocations: extraLocationsToJson(next.locations),
+                    },
+                  });
+                }}
+              />
+            </>
           ) : null}
 
           <div className="grid grid-cols-2 gap-3">
@@ -464,18 +496,14 @@ export function AddTrainingForm() {
             </label>
             <label className="block">
               <FieldLabel>Language</FieldLabel>
-              <select
+              <OwnerSelect
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className={inputClass}
-                style={fieldStyle}
-              >
-                {LANGS.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setLanguage}
+                options={LANGS.map((l) => ({
+                  value: l.code,
+                  label: l.label,
+                }))}
+              />
             </label>
           </div>
 
@@ -663,19 +691,15 @@ export function AddTrainingForm() {
           {isPro && trainers.length > 0 ? (
             <label className="block">
               <FieldLabel>Trainer</FieldLabel>
-              <select
+              <OwnerSelect
                 value={trainerId}
-                onChange={(e) => setTrainerId(e.target.value)}
-                className={inputClass}
-                style={fieldStyle}
-              >
-                <option value="">Any / unassigned</option>
-                {trainers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setTrainerId}
+                placeholder="Any / unassigned"
+                options={trainers.map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                }))}
+              />
             </label>
           ) : !isPro ? (
             <p className="text-xs" style={{ color: ownerTheme.textSecondary }}>

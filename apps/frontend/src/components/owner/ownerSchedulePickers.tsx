@@ -1,10 +1,22 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import type { Locale } from '@/i18n/routing';
 import { normalizeHm } from '@/lib/owner/add-training-date';
+
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTES = Array.from({ length: 12 }, (_, i) =>
+  String(i * 5).padStart(2, '0'),
+);
+
+function snapMinute(mm: string): string {
+  const m = Number(mm);
+  if (!Number.isFinite(m)) return '00';
+  const snapped = Math.round(m / 5) * 5;
+  return String(Math.min(55, Math.max(0, snapped))).padStart(2, '0');
+}
 
 function parseYmd(value: string): Date {
   const [y, m, d] = value.split('-').map(Number);
@@ -40,10 +52,6 @@ function monthCells(monthFirst: Date): (Date | null)[] {
 }
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-const MINUTES = Array.from({ length: 12 }, (_, i) =>
-  String(i * 5).padStart(2, '0'),
-);
 
 function SheetShell({
   open,
@@ -273,11 +281,83 @@ export function OwnerDateField({
   );
 }
 
-function snapMinute(mm: string): string {
-  const m = Number(mm);
-  if (!Number.isFinite(m)) return '00';
-  const snapped = Math.round(m / 5) * 5;
-  return String(Math.min(55, Math.max(0, snapped))).padStart(2, '0');
+function TimeWheelColumn({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  ariaLabel: string;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemH = 40;
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const idx = Math.max(0, options.indexOf(value));
+    el.scrollTop = idx * itemH;
+  }, [options, value]);
+
+  return (
+    <div className="relative flex-1">
+      <div
+        className="pointer-events-none absolute inset-x-2 top-1/2 z-[1] h-10 -translate-y-1/2 rounded-lg"
+        style={{ backgroundColor: 'rgba(241, 89, 66, 0.12)' }}
+        aria-hidden
+      />
+      <div
+        ref={listRef}
+        role="listbox"
+        aria-label={ariaLabel}
+        className="h-[200px] snap-y snap-mandatory overflow-y-auto scroll-smooth px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          maskImage:
+            'linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)',
+          WebkitMaskImage:
+            'linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)',
+        }}
+        onScroll={() => {
+          const el = listRef.current;
+          if (!el) return;
+          const idx = Math.round(el.scrollTop / itemH);
+          const next = options[Math.min(options.length - 1, Math.max(0, idx))];
+          if (next && next !== value) onChange(next);
+        }}
+      >
+        <div style={{ height: itemH * 2 }} aria-hidden />
+        {options.map((opt) => {
+          const selected = opt === value;
+          return (
+            <button
+              key={opt}
+              type="button"
+              role="option"
+              aria-selected={selected}
+              className="flex h-10 w-full snap-center items-center justify-center text-[22px] tabular-nums"
+              style={{
+                color: selected ? ownerTheme.text : ownerTheme.textSecondary,
+                fontWeight: selected ? 700 : 500,
+              }}
+              onClick={() => {
+                onChange(opt);
+                const el = listRef.current;
+                if (!el) return;
+                const idx = options.indexOf(opt);
+                el.scrollTo({ top: idx * itemH, behavior: 'smooth' });
+              }}
+            >
+              {opt}
+            </button>
+          );
+        })}
+        <div style={{ height: itemH * 2 }} aria-hidden />
+      </div>
+    </div>
+  );
 }
 
 export function OwnerTimeField({
@@ -289,12 +369,17 @@ export function OwnerTimeField({
   onChange: (hm: string) => void;
   label?: string;
 }) {
+  const [open, setOpen] = useState(false);
   const hm = normalizeHm(value);
-  const hour = hm.slice(0, 2);
-  const minute = snapMinute(hm.slice(3, 5));
+  const [draftH, setDraftH] = useState(hm.slice(0, 2));
+  const [draftM, setDraftM] = useState(snapMinute(hm.slice(3, 5)));
 
-  const selectClass =
-    'cursor-pointer appearance-none rounded-lg bg-transparent py-1 pl-1 pr-5 text-[15px] font-semibold tabular-nums outline-none';
+  useEffect(() => {
+    if (!open) return;
+    const next = normalizeHm(value);
+    setDraftH(next.slice(0, 2));
+    setDraftM(snapMinute(next.slice(3, 5)));
+  }, [open, value]);
 
   return (
     <div className="min-w-0">
@@ -306,52 +391,60 @@ export function OwnerTimeField({
           {label}
         </span>
       ) : null}
-      <div
-        className="owner-field flex w-full items-center justify-between rounded-xl border-0 bg-white px-3.5 py-3"
-        style={{ color: ownerTheme.text }}
-      >
-        <div className="flex items-center gap-1">
-          <label className="relative">
-            <select
-              aria-label="Hour"
-              value={hour}
-              onChange={(e) => onChange(`${e.target.value}:${minute}`)}
-              className={selectClass}
-              style={{ color: ownerTheme.text }}
-            >
-              {HOURS.map((h) => (
-                <option key={h} value={h}>
-                  {h}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-              style={{ color: '#6C5CE7' }}
-            />
-          </label>
-          <span className="text-[15px] font-semibold">:</span>
-          <label className="relative">
-            <select
-              aria-label="Minute"
-              value={minute}
-              onChange={(e) => onChange(`${hour}:${e.target.value}`)}
-              className={selectClass}
-              style={{ color: ownerTheme.text }}
-            >
-              {MINUTES.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-              style={{ color: '#6C5CE7' }}
-            />
-          </label>
+      <TriggerButton
+        value={`${hm.slice(0, 2)}:${snapMinute(hm.slice(3, 5))}`}
+        ariaLabel={label || 'Pick time'}
+        onClick={() => setOpen(true)}
+      />
+      <SheetShell open={open} onClose={() => setOpen(false)}>
+        <div className="mb-1 flex items-center justify-between px-1">
+          <button
+            type="button"
+            className="rounded-lg px-2 py-2 text-sm font-medium"
+            style={{ color: ownerTheme.textSecondary }}
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </button>
+          <span
+            className="text-sm font-bold"
+            style={{ color: ownerTheme.text }}
+          >
+            Time
+          </span>
+          <button
+            type="button"
+            className="rounded-lg px-2 py-2 text-sm font-bold"
+            style={{ color: ownerTheme.accent }}
+            onClick={() => {
+              onChange(`${draftH}:${draftM}`);
+              setOpen(false);
+            }}
+          >
+            Done
+          </button>
         </div>
-      </div>
+        <div className="flex items-center gap-2 rounded-[14px] bg-white px-2 py-1">
+          <TimeWheelColumn
+            ariaLabel="Hour"
+            options={HOURS}
+            value={draftH}
+            onChange={setDraftH}
+          />
+          <span
+            className="text-2xl font-bold"
+            style={{ color: ownerTheme.text }}
+          >
+            :
+          </span>
+          <TimeWheelColumn
+            ariaLabel="Minute"
+            options={MINUTES}
+            value={draftM}
+            onChange={setDraftM}
+          />
+        </div>
+      </SheetShell>
     </div>
   );
 }

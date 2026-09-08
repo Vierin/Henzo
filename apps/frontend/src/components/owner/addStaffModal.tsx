@@ -1,10 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { Loader2, Mail, Phone, Send, User, X } from 'lucide-react';
 import { ownerTheme } from '@/lib/owner/owner-theme';
-import { createStaff, generateTrainerInvite } from '@/lib/owner/fetch-staff';
+import {
+  createStaff,
+  generateTrainerInvite,
+  isTrainerPlanLimitError,
+} from '@/lib/owner/fetch-staff';
 
+const inputClass =
+  'w-full rounded-[14px] bg-[#FCF3EC] py-3.5 pl-11 pr-3.5 text-[15px] outline-none';
+
+/** Same flows as mobile AddStaffScreen — used if opened as modal. */
 export function AddStaffModal({
   studioId,
   onClose,
@@ -22,9 +30,6 @@ export function AddStaffModal({
   const [inviting, setInviting] = useState(false);
   const [saving, setSaving] = useState(false);
   const busy = inviting || saving;
-
-  const inputClass =
-    'w-full rounded-[12px] bg-[#FCF3EC] px-3.5 py-3 text-sm outline-none';
 
   const inviteViaEmail = async () => {
     const em = inviteEmail.trim();
@@ -45,7 +50,13 @@ export function AddStaffModal({
       await generateTrainerInvite(created.id, em);
       await onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invite failed');
+      if (isTrainerPlanLimitError(e)) {
+        setError(
+          'Trainer limit reached for your plan. Upgrade in Subscription to add more staff.',
+        );
+      } else {
+        setError(e instanceof Error ? e.message : 'Invite failed');
+      }
     } finally {
       setInviting(false);
     }
@@ -69,7 +80,13 @@ export function AddStaffModal({
       });
       await onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Create failed');
+      if (isTrainerPlanLimitError(e)) {
+        setError(
+          'Trainer limit reached for your plan. Upgrade in Subscription to add more staff.',
+        );
+      } else {
+        setError(e instanceof Error ? e.message : 'Create failed');
+      }
     } finally {
       setSaving(false);
     }
@@ -114,10 +131,10 @@ export function AddStaffModal({
         <div className="space-y-5">
           <section>
             <h3
-              className="text-[13px] font-bold uppercase tracking-[0.06em]"
-              style={{ color: ownerTheme.text }}
+              className="text-[13px] font-medium uppercase tracking-wide"
+              style={{ color: ownerTheme.textSecondary }}
             >
-              Invite by email
+              Invite to team
             </h3>
             <p
               className="mt-1 text-sm leading-snug"
@@ -125,23 +142,34 @@ export function AddStaffModal({
             >
               We’ll create a trainer profile and email them a link to join.
             </p>
-            <input
-              type="email"
-              value={inviteEmail}
-              disabled={busy}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="Email"
-              className={`mt-3 ${inputClass}`}
-              style={{ color: ownerTheme.text }}
-            />
+            <div className="relative mt-3">
+              <Mail
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2"
+                style={{ color: ownerTheme.textSecondary }}
+              />
+              <input
+                type="email"
+                value={inviteEmail}
+                disabled={busy}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="Email"
+                className={inputClass}
+                style={{ color: ownerTheme.text }}
+              />
+            </div>
             <button
               type="button"
               disabled={busy}
               onClick={() => void inviteViaEmail()}
-              className="mt-3 w-full rounded-[12px] py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-[14px] py-3.5 text-sm font-semibold text-white disabled:opacity-50"
               style={{ backgroundColor: ownerTheme.accent }}
             >
-              {inviting ? 'Sending…' : 'Send invite'}
+              {inviting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {inviting ? 'Sending…' : 'Send invitation'}
             </button>
           </section>
 
@@ -164,10 +192,10 @@ export function AddStaffModal({
 
           <section>
             <h3
-              className="text-[13px] font-bold uppercase tracking-[0.06em]"
-              style={{ color: ownerTheme.text }}
+              className="text-[13px] font-medium uppercase tracking-wide"
+              style={{ color: ownerTheme.textSecondary }}
             >
-              Add manually
+              Add without registration
             </h3>
             <p
               className="mt-1 text-sm leading-snug"
@@ -176,42 +204,63 @@ export function AddStaffModal({
               Create a profile now — you can send an invite later.
             </p>
             <div className="mt-3 space-y-2.5">
-              <input
-                value={name}
-                disabled={busy}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full name *"
-                className={inputClass}
-                style={{ color: ownerTheme.text }}
-              />
-              <input
-                type="email"
-                value={email}
-                disabled={busy}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className={inputClass}
-                style={{ color: ownerTheme.text }}
-              />
-              <input
-                value={phone}
-                disabled={busy}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone"
-                className={inputClass}
-                style={{ color: ownerTheme.text }}
-              />
+              <div className="relative">
+                <User
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2"
+                  style={{ color: ownerTheme.textSecondary }}
+                />
+                <input
+                  value={name}
+                  disabled={busy}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full name"
+                  className={inputClass}
+                  style={{ color: ownerTheme.text }}
+                />
+              </div>
+              <div className="relative">
+                <Mail
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2"
+                  style={{ color: ownerTheme.textSecondary }}
+                />
+                <input
+                  type="email"
+                  value={email}
+                  disabled={busy}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className={inputClass}
+                  style={{ color: ownerTheme.text }}
+                />
+              </div>
+              <div className="relative">
+                <Phone
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2"
+                  style={{ color: ownerTheme.textSecondary }}
+                />
+                <input
+                  value={phone}
+                  disabled={busy}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone"
+                  className={inputClass}
+                  style={{ color: ownerTheme.text }}
+                />
+              </div>
             </div>
             {error ? (
-              <p className="mt-2 text-sm text-red-600">{error}</p>
+              <p className="mt-2 text-sm text-red-600" role="alert">
+                {error}
+              </p>
             ) : null}
             <button
               type="button"
               disabled={busy}
               onClick={() => void submitManual()}
-              className="mt-3 w-full rounded-[12px] py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-[14px] py-3.5 text-sm font-semibold text-white disabled:opacity-50"
               style={{ backgroundColor: ownerTheme.accent }}
             >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {saving ? 'Saving…' : 'Save'}
             </button>
           </section>
@@ -221,7 +270,7 @@ export function AddStaffModal({
   );
 }
 
-/** Resend / generate invite link for an existing trainer. */
+/** Resend / generate invite link for an existing trainer (mobile share sheet). */
 export function InviteStaffModal({
   member,
   onClose,
@@ -279,14 +328,14 @@ export function InviteStaffModal({
           </button>
         </div>
         <p className="text-sm" style={{ color: ownerTheme.textSecondary }}>
-          Send or copy an invite link so they can join your studio.
+          Generate a link (expires in 7 days). Optionally email it.
         </p>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email (optional)"
-          className="mt-3 w-full rounded-[12px] bg-[#FCF3EC] px-3.5 py-3 text-sm outline-none"
+          className="mt-3 w-full rounded-[14px] bg-[#FCF3EC] px-3.5 py-3.5 text-[15px] outline-none"
           style={{ color: ownerTheme.text }}
         />
         {inviteUrl ? (
@@ -304,11 +353,27 @@ export function InviteStaffModal({
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1500);
               }}
-              className="w-full rounded-[12px] bg-[#FCF3EC] py-3 text-sm font-semibold"
+              className="w-full rounded-[14px] bg-[#FCF3EC] py-3 text-sm font-semibold"
               style={{ color: ownerTheme.text }}
             >
               {copied ? 'Copied' : 'Copy link'}
             </button>
+            {typeof navigator.share === 'function' ? (
+              <button
+                type="button"
+                onClick={() =>
+                  void navigator.share({
+                    title: 'Join my studio on Henzo',
+                    text: 'You are invited to join as a trainer on Henzo.',
+                    url: inviteUrl,
+                  })
+                }
+                className="w-full rounded-[14px] bg-[#FCF3EC] py-3 text-sm font-semibold"
+                style={{ color: ownerTheme.text }}
+              >
+                Share
+              </button>
+            ) : null}
           </div>
         ) : null}
         {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
@@ -316,7 +381,7 @@ export function InviteStaffModal({
           type="button"
           disabled={loading}
           onClick={() => void run()}
-          className="mt-4 w-full rounded-[12px] py-3 text-sm font-semibold text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-[14px] py-3.5 text-sm font-semibold text-white disabled:opacity-50"
           style={{ backgroundColor: ownerTheme.accent }}
         >
           {loading

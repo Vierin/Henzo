@@ -4,15 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ChevronDown,
-  Mail,
-  Phone,
-  Plus,
-  Search,
-  Upload,
-  X,
-} from 'lucide-react';
+import { Mail, Phone, Plus, Search, Upload, X } from 'lucide-react';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import {
@@ -34,6 +26,7 @@ import {
   formatOwnerTime24h,
   isPlaceholderTrainerName,
 } from '@/lib/owner/format-time';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
 
 type StatusFilter = 'all' | ClientStatus;
 type SortKey =
@@ -317,25 +310,17 @@ export default function ClientsPage() {
                   </button>
                 );
               })}
-              <label className="relative ml-0 sm:ml-1">
-                <span className="sr-only">Sort</span>
-                <select
-                  value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  className="appearance-none rounded-[12px] bg-white py-2 pl-3 pr-8 text-sm font-semibold outline-none"
-                  style={{ color: ownerTheme.text }}
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-                  style={{ color: ownerTheme.textSecondary }}
-                />
-              </label>
+              <OwnerSelect
+                value={sortKey}
+                onChange={(v) => setSortKey(v as SortKey)}
+                size="compact"
+                aria-label="Sort"
+                className="ml-0 min-w-[140px] sm:ml-1"
+                options={SORT_OPTIONS.map((o) => ({
+                  value: o.id,
+                  label: o.label,
+                }))}
+              />
             </div>
           </div>
 

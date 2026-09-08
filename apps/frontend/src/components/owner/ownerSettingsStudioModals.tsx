@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Clock, Minus, Plus, X } from 'lucide-react';
+import { Minus, Plus, X } from 'lucide-react';
 import type { ClientReminderRule, OwnerStudio } from '@/lib/owner/types';
 import { ownerTheme } from '@/lib/owner/owner-theme';
-import { normalizeHm, maskHmInput } from '@/lib/owner/add-training-date';
+import { normalizeHm } from '@/lib/owner/add-training-date';
+import { OwnerTimeField } from '@/components/owner/ownerSchedulePickers';
 import { apiClient } from '@/lib/api-client';
 import type { OwnerAccountProfile } from '@/lib/owner/fetch-account';
 
@@ -356,44 +357,18 @@ export function ClientNotificationsModal({
           />
         </div>
         {evening.enabled ? (
-          <label className="mt-3 block">
-            <span
-              className="mb-1 block text-xs font-medium"
-              style={{ color: ownerTheme.textSecondary }}
-            >
-              Time (24h)
-            </span>
-            <span className="relative block">
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="20:00"
-                title="24-hour time, e.g. 20:00"
-                value={evening.time || '20:00'}
-                onChange={(e) => {
-                  setEvening((r) => ({
-                    ...r,
-                    time: maskHmInput(e.target.value),
-                  }));
-                }}
-                onBlur={() =>
-                  setEvening((r) => ({
-                    ...r,
-                    time: normalizeHm(r.time || '20:00'),
-                  }))
-                }
-                className="w-full rounded-xl border-0 bg-white py-2.5 pl-3 pr-10 text-[15px] outline-none"
-                style={{ color: ownerTheme.text }}
-              />
-              <Clock
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2"
-                style={{ color: ownerTheme.text }}
-                aria-hidden
-              />
-            </span>
-          </label>
+          <div className="mt-3">
+            <OwnerTimeField
+              label="Time (24h)"
+              value={evening.time || '20:00'}
+              onChange={(hm) =>
+                setEvening((r) => ({
+                  ...r,
+                  time: hm,
+                }))
+              }
+            />
+          </div>
         ) : null}
       </div>
 

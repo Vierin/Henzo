@@ -4,13 +4,15 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
-import { fetchStaff } from '@/lib/owner/fetch-staff';
+import { fetchStaff, staffHasLinkedAccount } from '@/lib/owner/fetch-staff';
 import { fetchOwnerAccountProfile } from '@/lib/owner/fetch-account';
 import type { OwnerStaffMember } from '@/lib/owner/types';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import { InviteStaffModal } from '@/components/owner/addStaffModal';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
 
 type RoleFilter = 'all' | 'owner' | 'trainer' | 'admin';
 
@@ -82,6 +84,9 @@ export default function StaffPage() {
   const { studio } = useOwnerStudio();
   const [q, setQ] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [inviteMember, setInviteMember] = useState<OwnerStaffMember | null>(
+    null,
+  );
 
   const staffQuery = useQuery({
     queryKey: ['owner-staff', studio?.id],
@@ -178,25 +183,17 @@ export default function StaffPage() {
             style={{ color: ownerTheme.text }}
           />
         </label>
-        <label className="relative shrink-0">
-          <span className="sr-only">Role</span>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
-            className="appearance-none rounded-[12px] bg-white py-2.5 pl-3 pr-8 text-sm font-semibold outline-none"
-            style={{ color: ownerTheme.text }}
-          >
-            {ROLE_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-            style={{ color: ownerTheme.textSecondary }}
-          />
-        </label>
+        <OwnerSelect
+          value={roleFilter}
+          onChange={(v) => setRoleFilter(v as RoleFilter)}
+          size="compact"
+          aria-label="Role"
+          className="w-full shrink-0 sm:w-auto sm:min-w-[140px]"
+          options={ROLE_OPTIONS.map((o) => ({
+            value: o.id,
+            label: o.label,
+          }))}
+        />
       </div>
 
       {staffQuery.isLoading || profileQuery.isLoading ? (
@@ -249,7 +246,14 @@ export default function StaffPage() {
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {filteredTrainers.map((m) => (
                     <li key={m.id}>
-                      <TrainerCard member={m} />
+                      <TrainerCard
+                        member={m}
+                        onInvite={
+                          staffHasLinkedAccount(m)
+                            ? undefined
+                            : () => setInviteMember(m)
+                        }
+                      />
                     </li>
                   ))}
                 </ul>
@@ -258,6 +262,16 @@ export default function StaffPage() {
           )}
         </div>
       )}
+
+      {inviteMember ? (
+        <InviteStaffModal
+          member={inviteMember}
+          onClose={() => setInviteMember(null)}
+          onDone={async () => {
+            await staffQuery.refetch();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -313,10 +327,17 @@ function OwnerCard({
   );
 }
 
-function TrainerCard({ member }: { member: OwnerStaffMember }) {
+function TrainerCard({
+  member,
+  onInvite,
+}: {
+  member: OwnerStaffMember;
+  onInvite?: () => void;
+}) {
   const accent = accentFor(member.id);
   const badge = roleBadgeStyle(member.accessLevel);
   const trainingsCount = member.Training?.length ?? 0;
+  const linked = staffHasLinkedAccount(member);
 
   return (
     <article className="flex h-full overflow-hidden rounded-[14px] bg-white">
@@ -351,12 +372,25 @@ function TrainerCard({ member }: { member: OwnerStaffMember }) {
                 {member.email}
               </p>
             ) : null}
-            <span
-              className="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
-              style={{ backgroundColor: badge.bg, color: badge.color }}
-            >
-              {roleLabel(member.accessLevel)}
-            </span>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span
+                className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={{ backgroundColor: badge.bg, color: badge.color }}
+              >
+                {roleLabel(member.accessLevel)}
+              </span>
+              {!linked ? (
+                <span
+                  className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={{
+                    backgroundColor: ownerTheme.bgSoft,
+                    color: ownerTheme.textSecondary,
+                  }}
+                >
+                  No account
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -374,6 +408,16 @@ function TrainerCard({ member }: { member: OwnerStaffMember }) {
             <IconClients />
             <span className="tabular-nums">0 clients</span>
           </span>
+          {onInvite ? (
+            <button
+              type="button"
+              onClick={onInvite}
+              className="ml-auto text-sm font-semibold"
+              style={{ color: ownerTheme.accent }}
+            >
+              Invite
+            </button>
+          ) : null}
         </div>
       </div>
     </article>

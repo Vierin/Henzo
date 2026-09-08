@@ -14,7 +14,10 @@ import {
   updateTrainingSessionDefaults,
 } from '@/lib/owner/fetch-trainings';
 import { fetchOwnerSessions } from '@/lib/owner/fetch-owner-sessions';
-import { studioTrainingLocations } from '@/lib/owner/training-locations';
+import {
+  extraLocationsToJson,
+  listTrainingLocations,
+} from '@/lib/owner/training-locations';
 import { normalizeHm, todayInputValue } from '@/lib/owner/add-training-date';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import {
@@ -22,6 +25,9 @@ import {
   OwnerTimeField,
 } from '@/components/owner/ownerSchedulePickers';
 import { ToggleSwitch } from '@/components/owner/ownerSettingsStudioModals';
+import { OwnerLocationField } from '@/components/owner/ownerLocationField';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
+import { OwnerTrainingLocationsModal } from '@/components/owner/ownerTrainingLocationsModal';
 import type { OwnerTraining } from '@/lib/owner/types';
 import { formatPriceDots, parsePriceDots } from '@/lib/owner/format-price';
 
@@ -73,11 +79,15 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
-  const { studio } = useOwnerStudio();
+  const { studio, patchStudio } = useOwnerStudio();
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [locationId, setLocationId] = useState('default');
+  const [locationsOpen, setLocationsOpen] = useState(false);
+  const [localLocations, setLocalLocations] = useState(() =>
+    listTrainingLocations(studio),
+  );
   const [duration, setDuration] = useState('60');
   const [capacity, setCapacity] = useState('10');
   const [price, setPrice] = useState('');
@@ -121,7 +131,15 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
   });
 
   const categories = categoriesQuery.data ?? [];
-  const locations = useMemo(() => studioTrainingLocations(studio), [studio]);
+
+  useEffect(() => {
+    setLocalLocations(listTrainingLocations(studio));
+  }, [studio]);
+
+  const selectedLocation =
+    localLocations.find((l) => l.id === locationId) ??
+    localLocations[0] ??
+    null;
   const existing = useMemo(
     () => trainingsQuery.data?.find((t) => t.id === trainingId) ?? null,
     [trainingsQuery.data, trainingId],
@@ -316,38 +334,52 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
         {categories.length > 0 ? (
           <label className="block">
             <FieldLabel>Category *</FieldLabel>
-            <select
+            <OwnerSelect
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className={inputClass}
-              style={fieldStyle}
-            >
-              <option value="">Pick category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {categoryLabel(c, locale)}
-                </option>
-              ))}
-            </select>
+              onChange={setCategoryId}
+              placeholder="Pick category"
+              options={categories.map((c) => ({
+                value: String(c.id),
+                label: categoryLabel(c, locale),
+              }))}
+            />
           </label>
         ) : null}
 
-        {locations.length > 0 ? (
-          <label className="block">
-            <FieldLabel>Address</FieldLabel>
-            <select
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-              className={inputClass}
-              style={fieldStyle}
-            >
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        {selectedLocation ? (
+          <>
+            <OwnerLocationField
+              label="Address"
+              name={selectedLocation.name}
+              address={selectedLocation.address}
+              onClick={() => setLocationsOpen(true)}
+            />
+            <OwnerTrainingLocationsModal
+              open={locationsOpen}
+              mode="pick"
+              selectedId={locationId}
+              locations={localLocations}
+              mainStudioName={studio?.name?.trim() || 'Main studio'}
+              onClose={() => setLocationsOpen(false)}
+              onSelect={(id) => {
+                setLocationId(id);
+                setLocationsOpen(false);
+              }}
+              onChange={(next) => {
+                setLocalLocations(next.locations);
+                void patchStudio({
+                  address: next.address,
+                  latitude: next.lat,
+                  longitude: next.lon,
+                  reminderSettings: {
+                    ...(studio?.reminderSettings ?? {}),
+                    defaultLocationName: next.locationName,
+                    trainingLocations: extraLocationsToJson(next.locations),
+                  },
+                });
+              }}
+            />
+          </>
         ) : null}
 
         <div className="grid grid-cols-2 gap-3">
@@ -391,18 +423,14 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
           </label>
           <label className="block">
             <FieldLabel>Language</FieldLabel>
-            <select
+            <OwnerSelect
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className={inputClass}
-              style={fieldStyle}
-            >
-              {LANGS.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
+              onChange={setLanguage}
+              options={LANGS.map((l) => ({
+                value: l.code,
+                label: l.label,
+              }))}
+            />
           </label>
         </div>
 
