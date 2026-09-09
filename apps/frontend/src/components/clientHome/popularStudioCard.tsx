@@ -61,7 +61,7 @@ export function PopularStudioCard({ studio, locale }: Props) {
           </h3>
 
           {hasCategories ? (
-            <p className="mt-1.5 truncate text-[12px] leading-[1.1] text-[#878787] sm:mt-2 sm:text-[17px]">
+            <p className="mt-1.5 truncate text-[11px] leading-[1.1] text-[#878787] sm:mt-2 sm:text-[14px]">
               {categoryPreview.visible.join(' · ')}
               {categoryPreview.moreCount > 0 ? (
                 <span className="font-semibold text-[#878787]">

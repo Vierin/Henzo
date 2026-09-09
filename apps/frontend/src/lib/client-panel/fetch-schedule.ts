@@ -20,6 +20,7 @@ export type ClientScheduleItem = {
     name: string;
     duration?: number;
     price?: number;
+    language?: string | null;
     displayColor?: string | null;
   } | null;
   trainer: { id?: string; name: string } | null;
@@ -81,9 +82,14 @@ function parseItem(raw: unknown): ClientScheduleItem | null {
           name: String(training.name ?? 'Class'),
           duration: Number(training.duration ?? 0) || undefined,
           price: Number(training.price ?? 0) || undefined,
+          language: training.language
+            ? String(training.language).trim() || null
+            : null,
           displayColor: training.displayColor
             ? String(training.displayColor)
-            : null,
+            : training.display_color
+              ? String(training.display_color)
+              : null,
         }
       : null,
     trainer: trainer

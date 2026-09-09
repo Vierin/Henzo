@@ -30,6 +30,23 @@ export async function updateOwnerSessionStatus(
   });
 }
 
+export async function patchOwnerTrainingSession(
+  sessionId: string,
+  body: {
+    startsAt?: string;
+    trainerId?: string | null;
+    locationId?: string | null;
+    applyToFollowing?: boolean;
+    status?: 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
+    note?: string;
+  },
+): Promise<void> {
+  await apiClient.patch(
+    `/fitness/owner/training-sessions/${encodeURIComponent(sessionId)}`,
+    body,
+  );
+}
+
 export async function fetchOwnerSessionById(
   sessionId: string,
   from: string,

@@ -36,6 +36,8 @@ export type PublicStudioDetail = {
     nameEn: string;
     nameRu?: string;
     nameVn?: string;
+    chipBgHex?: string;
+    chipFgHex?: string | null;
   }[];
   reviews: PublicStudioReview[];
 };
@@ -126,6 +128,9 @@ export function parsePublicStudioDetail(
         nameEn: String(tc.nameEn ?? tc.name_en ?? 'Category'),
         nameRu: String(tc.nameRu ?? tc.name_ru ?? '') || undefined,
         nameVn: String(tc.nameVn ?? tc.name_vn ?? '') || undefined,
+        chipBgHex:
+          String(tc.chipBgHex ?? tc.chip_bg_hex ?? '').trim() || undefined,
+        chipFgHex: String(tc.chipFgHex ?? tc.chip_fg_hex ?? '').trim() || null,
       });
     }
   }

@@ -14,13 +14,12 @@ import { ownerTheme } from '@/lib/owner/owner-theme';
 import { InviteStaffModal } from '@/components/owner/addStaffModal';
 import { OwnerSelect } from '@/components/owner/ownerSelect';
 
-type RoleFilter = 'all' | 'owner' | 'trainer' | 'admin';
+type RoleFilter = 'all' | 'admins' | 'trainer';
 
 const ROLE_OPTIONS: { id: RoleFilter; label: string }[] = [
   { id: 'all', label: 'All roles' },
-  { id: 'owner', label: 'Owner' },
+  { id: 'admins', label: 'Admins' },
   { id: 'trainer', label: 'Trainer' },
-  { id: 'admin', label: 'Admin' },
 ];
 
 const ACCENT_TONES = [
@@ -46,36 +45,26 @@ function accentFor(key: string): string {
   return ACCENT_TONES[h]!;
 }
 
-function roleKey(accessLevel: string | null | undefined): RoleFilter {
+function isAdminAccess(accessLevel: string | null | undefined): boolean {
   const a = (accessLevel || '').toUpperCase();
-  if (a === 'OWNER') return 'owner';
-  if (a === 'ADMIN') return 'admin';
-  return 'trainer';
+  return a === 'ADMIN' || a === 'OWNER';
 }
 
 function roleLabel(accessLevel: string | null | undefined): string {
-  switch (roleKey(accessLevel)) {
-    case 'owner':
-      return 'Owner';
-    case 'admin':
-      return 'Admin';
-    default:
-      return 'Trainer';
-  }
+  const a = (accessLevel || '').toUpperCase();
+  if (a === 'OWNER') return 'Owner';
+  if (a === 'ADMIN') return 'Admin';
+  return 'Trainer';
 }
 
 function roleBadgeStyle(accessLevel: string | null | undefined): {
   bg: string;
   color: string;
 } {
-  switch (roleKey(accessLevel)) {
-    case 'owner':
-      return { bg: '#FEE5DF', color: ownerTheme.accent };
-    case 'admin':
-      return { bg: '#E0E7FF', color: '#4338CA' };
-    default:
-      return { bg: '#DCFCE7', color: '#166534' };
-  }
+  const a = (accessLevel || '').toUpperCase();
+  if (a === 'OWNER') return { bg: '#FEE5DF', color: ownerTheme.accent };
+  if (a === 'ADMIN') return { bg: '#E0E7FF', color: '#4338CA' };
+  return { bg: '#DCFCE7', color: '#166534' };
 }
 
 export default function StaffPage() {
@@ -106,7 +95,8 @@ export default function StaffPage() {
   const ownerName =
     ownerProfile?.name?.trim() || ownerEmail.split('@')[0] || 'Owner';
 
-  const trainers = useMemo(() => {
+  /** Staff rows excluding the signed-in owner account (shown as owner card). */
+  const otherStaff = useMemo(() => {
     return staff.filter((m) => {
       const email = m.email?.trim().toLowerCase() || '';
       if (ownerEmail && email && email === ownerEmail) return false;
@@ -115,32 +105,52 @@ export default function StaffPage() {
     });
   }, [staff, ownerEmail]);
 
+  const admins = useMemo(
+    () => otherStaff.filter((m) => isAdminAccess(m.accessLevel)),
+    [otherStaff],
+  );
+  const trainers = useMemo(
+    () => otherStaff.filter((m) => !isAdminAccess(m.accessLevel)),
+    [otherStaff],
+  );
+
   const query = q.trim().toLowerCase();
 
-  const showOwner =
-    roleFilter === 'all' || roleFilter === 'owner'
-      ? !query ||
-        ownerName.toLowerCase().includes(query) ||
-        ownerEmail.includes(query)
-      : false;
+  const matchesQuery = (
+    name: string,
+    email?: string | null,
+    phone?: string | null,
+  ) => {
+    if (!query) return true;
+    return (
+      name.toLowerCase().includes(query) ||
+      (email || '').toLowerCase().includes(query) ||
+      (phone || '').toLowerCase().includes(query)
+    );
+  };
+
+  const showOwnerCard =
+    (roleFilter === 'all' || roleFilter === 'admins') &&
+    matchesQuery(ownerName, ownerEmail);
+
+  const filteredAdmins = useMemo(() => {
+    if (roleFilter === 'trainer') return [];
+    return admins.filter((m) => matchesQuery(m.name, m.email, m.phone));
+  }, [admins, roleFilter, query]);
 
   const filteredTrainers = useMemo(() => {
-    return trainers.filter((m) => {
-      if (roleFilter === 'owner') return false;
-      if (roleFilter === 'trainer' && roleKey(m.accessLevel) !== 'trainer') {
-        return false;
-      }
-      if (roleFilter === 'admin' && roleKey(m.accessLevel) !== 'admin') {
-        return false;
-      }
-      if (!query) return true;
-      return (
-        m.name.toLowerCase().includes(query) ||
-        (m.email || '').toLowerCase().includes(query) ||
-        (m.phone || '').toLowerCase().includes(query)
-      );
-    });
+    if (roleFilter === 'admins') return [];
+    return trainers.filter((m) => matchesQuery(m.name, m.email, m.phone));
   }, [trainers, roleFilter, query]);
+
+  const showAdminsSection =
+    roleFilter === 'all' || roleFilter === 'admins'
+      ? showOwnerCard || filteredAdmins.length > 0 || roleFilter === 'admins'
+      : false;
+
+  const showTrainersSection = roleFilter === 'all' || roleFilter === 'trainer';
+
+  const adminsCount = (showOwnerCard ? 1 : 0) + filteredAdmins.length;
 
   return (
     <div className="space-y-5 pb-8">
@@ -156,7 +166,7 @@ export default function StaffPage() {
             className="mt-1 text-sm"
             style={{ color: ownerTheme.textSecondary }}
           >
-            Trainers and team members
+            Admins, managers and trainers
           </p>
         </div>
         <Link
@@ -204,25 +214,53 @@ export default function StaffPage() {
         <p className="text-sm text-red-600">Failed to load staff</p>
       ) : (
         <div className="space-y-6">
-          {showOwner ? (
+          {showAdminsSection ? (
             <section>
               <h2
                 className="mb-2.5 text-[13px] font-bold uppercase tracking-[0.08em]"
                 style={{ color: ownerTheme.text }}
               >
-                Owner
+                Admins
+                {adminsCount > 0 ? ` · ${adminsCount}` : ''}
               </h2>
-              <OwnerCard
-                name={ownerName}
-                email={ownerProfile?.email || ''}
-                accent={ownerTheme.accent}
-              />
+              {showOwnerCard || filteredAdmins.length > 0 ? (
+                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {showOwnerCard ? (
+                    <li>
+                      <OwnerCard
+                        name={ownerName}
+                        email={ownerProfile?.email || ''}
+                        accent={ownerTheme.accent}
+                      />
+                    </li>
+                  ) : null}
+                  {filteredAdmins.map((m) => (
+                    <li key={m.id}>
+                      <StaffCard
+                        member={m}
+                        onInvite={
+                          staffHasLinkedAccount(m)
+                            ? undefined
+                            : () => setInviteMember(m)
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="rounded-[14px] bg-white px-4 py-10 text-center">
+                  <p
+                    className="text-sm"
+                    style={{ color: ownerTheme.textSecondary }}
+                  >
+                    No admins yet — add a manager from Add staff
+                  </p>
+                </div>
+              )}
             </section>
           ) : null}
 
-          {(roleFilter === 'all' ||
-            roleFilter === 'trainer' ||
-            roleFilter === 'admin') && (
+          {showTrainersSection ? (
             <section>
               <h2
                 className="mb-2.5 text-[13px] font-bold uppercase tracking-[0.08em]"
@@ -246,7 +284,7 @@ export default function StaffPage() {
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {filteredTrainers.map((m) => (
                     <li key={m.id}>
-                      <TrainerCard
+                      <StaffCard
                         member={m}
                         onInvite={
                           staffHasLinkedAccount(m)
@@ -259,7 +297,7 @@ export default function StaffPage() {
                 </ul>
               )}
             </section>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -287,7 +325,7 @@ function OwnerCard({
 }) {
   const badge = roleBadgeStyle('OWNER');
   return (
-    <article className="flex overflow-hidden rounded-[14px] bg-white">
+    <article className="flex h-full overflow-hidden rounded-[14px] bg-white">
       <span
         className="w-1 shrink-0 self-stretch"
         style={{ backgroundColor: accent }}
@@ -327,7 +365,7 @@ function OwnerCard({
   );
 }
 
-function TrainerCard({
+function StaffCard({
   member,
   onInvite,
 }: {

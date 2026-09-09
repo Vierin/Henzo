@@ -1,0 +1,226 @@
+{
+  "studio": {
+    "hero": {
+      "line1Lead": "De",
+      "line1Highlight": "reservas caóticas",
+      "line1Trail": "",
+      "line2Lead": "a un",
+      "line2Highlight": "horario claro",
+      "line2Trail": "",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "availableForFree": "Disponible gratis",
+      "notification": "Recuerda entrenar hoy a las 15:00",
+      "entryNotificationTitle": "¡Nueva reserva!",
+      "entryNotificationText": "Sam acaba de reservar una sesión.",
+      "entryNotification2Title": "¡Nueva reseña recibida!",
+      "entryNotification2Text": "Un cliente dejó 5 estrellas a tu clase.",
+      "newClientsTitle": "Nuevos clientes",
+      "newBadge": "New",
+      "clientsBadge": "Clientes",
+      "autoBadge": "Auto",
+      "notificationBadge": "Notificación",
+      "activeUserLabel": "Usuario activo",
+      "clients": [
+        {
+          "name": "Ana García",
+          "initials": "AG"
+        },
+        {
+          "name": "Iván Founder",
+          "initials": "IF"
+        },
+        {
+          "name": "María López",
+          "initials": "ML"
+        }
+      ]
+    },
+    "header": {
+      "navBenefits": "Beneficios",
+      "navPricing": "Precios",
+      "navHowItWorks": "Cómo funciona",
+      "navContact": "Contacto",
+      "getApp": "Descargar la app"
+    },
+    "intro": {
+      "description": "Gestiona tu estudio desde el móvil: horarios, slots de coaches y reservas de clientes en un solo flujo.",
+      "secondary": "Descárgala en Android o iOS e incorpora a tu equipo sin fricción."
+    },
+    "statementBeforeSpotlight": {
+      "phrase1Lead": "Tú",
+      "phrase1AccentRotating": [
+        "entrenas.",
+        "enseñas.",
+        "te enfocas."
+      ],
+      "phrase2Lead": "Nosotros",
+      "phrase2AccentRotating": [
+        "llenamos tu horario.",
+        "gestionamos las reservas.",
+        "reducimos los no-shows."
+      ]
+    },
+    "spotlight": {
+      "headingLine1": "Dirige tus clases",
+      "line2BeforeAccent": "Nosotros hacemos funcionar tu ",
+      "line2Accent": "sistema",
+      "slides": [
+        {
+          "stat": "+30%",
+          "featureTitle": "Ocupación de clases",
+          "description": "Slots visibles y gestión de citas más sencilla",
+          "videoSrc": "/video-4.webm",
+          "videoLabel": "Clip spotlight del estudio uno"
+        },
+        {
+          "stat": "-40%",
+          "featureTitle": "Menos clases perdidas",
+          "description": "Los clientes reciben recordatorios y olvidan menos",
+          "videoSrc": "/video-3.webm",
+          "videoLabel": "Clip spotlight del estudio dos"
+        },
+        {
+          "stat": "-70%",
+          "featureTitle": "Menos tiempo en mensajes",
+          "description": "No hace falta responder manualmente a cada cliente",
+          "videoSrc": "/video-2.webm",
+          "videoLabel": "Clip spotlight del estudio tres"
+        },
+        {
+          "stat": "+42%",
+          "featureTitle": "Control del horario",
+          "description": "Todas las clases y citas en un solo lugar",
+          "videoSrc": "/video-1.webm",
+          "videoLabel": "Clip spotlight del estudio cuatro"
+        }
+      ]
+    },
+    "quickStart": {
+      "line1": "Listo para empezar",
+      "line2Before": "en ",
+      "line2Accent": "5 minutos",
+      "steps": [
+        {
+          "label": "Paso 1:",
+          "text": "Añade el nombre y la dirección de tu estudio"
+        },
+        {
+          "label": "Paso 2:",
+          "text": "Sube fotos y crea tu primera clase"
+        },
+        {
+          "label": "Paso 3:",
+          "text": "Empieza a recibir tus primeras reservas"
+        }
+      ]
+    },
+    "pricing": {
+      "titleLine1": "Precios simples",
+      "titleLine2Before": "Resultados ",
+      "titleLine2Accent": "reales",
+      "currency": "€",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "plans": [
+        {
+          "name": "Solo",
+          "subtitle": "Ideal para entrenadores independientes",
+          "price": "0",
+          "priceSub": "/ al mes",
+          "features": [
+            "12 clases al mes",
+            "1 entrenador",
+            "Clientes ilimitados",
+            "Reservas online",
+            "Perfil del estudio",
+            "Notificaciones push"
+          ]
+        },
+        {
+          "name": "Studio",
+          "subtitle": "Para estudios en crecimiento",
+          "price": "22.99",
+          "priceSub": "/ al mes",
+          "features": [
+            "100 clases/mes",
+            "Hasta 4 entrenadores",
+            "Lista de espera",
+            "Recordatorios automáticos (Email y Push)",
+            "Analítica básica (90 días)"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "subtitle": "Para negocios consolidados",
+          "price": "79.99",
+          "priceSub": "/ al mes",
+          "features": [
+            "Clases ilimitadas",
+            "Entrenadores ilimitados",
+            "Varias ubicaciones",
+            "Analítica avanzada",
+            "Roles y permisos del equipo",
+            "Soporte prioritario"
+          ]
+        }
+      ]
+    },
+    "features": {
+      "title": "Hecho para la operativa del estudio",
+      "items": [
+        {
+          "title": "Horarios siempre sincronizados",
+          "description": "Gestiona slots de entrenamiento, evita conflictos y mantén el día a día predecible."
+        },
+        {
+          "title": "Visibilidad de coaches y servicios",
+          "description": "Controla ofertas activas, disponibilidad de coaches y aforo de reservas desde un solo lugar."
+        },
+        {
+          "title": "Experiencia de reserva para clientes",
+          "description": "Dale a tus clientes un flujo de reserva rápido mientras tu equipo controla cada sesión."
+        }
+      ]
+    },
+    "workflow": {
+      "title": "Cómo arrancan los estudios con Henzo",
+      "steps": [
+        {
+          "title": "1. Instala la app",
+          "description": "Descárgala en Android o iOS e inicia sesión como operador del estudio."
+        },
+        {
+          "title": "2. Configura el estudio",
+          "description": "Define coaches, ofertas y tu horario semanal."
+        },
+        {
+          "title": "3. Empieza a recibir reservas",
+          "description": "Abre las reservas a clientes y gestiona las sesiones desde el móvil."
+        }
+      ]
+    },
+    "ctaBanner": {
+      "titleLine1": "Tu estudio.",
+      "titleLine2": "En tus manos.",
+      "description": "Gestiona clases, alumnos y citas desde una sola app móvil",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play"
+    },
+    "finalCta": {
+      "title": "¿Listo para gestionar tu estudio de fitness más rápido?",
+      "description": "Empieza con la app móvil y lleva tu operativa diaria a un solo flujo claro.",
+      "androidCta": "Descargar para Android",
+      "iosCta": "Descargar para iOS",
+      "contactCta": "Contactar ventas"
+    },
+    "footer": {
+      "navBenefits": "Beneficios",
+      "navPricing": "Precios",
+      "navHowItWorks": "Cómo funciona",
+      "ctaTitle": "Empieza tu negocio hoy.",
+      "copyright": "Copyright © Henzo app. Todos los derechos reservados. 2026",
+      "email": "hello@henzo.app"
+    }
+  }
+}

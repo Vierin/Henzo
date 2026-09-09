@@ -1,29 +1,60 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut, Pencil } from 'lucide-react';
-import ClientPanelShell from '@/components/clientPanel/clientPanelShell';
+import { usePathname } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight, Heart, MapPin } from 'lucide-react';
+import { PopularStudioCard } from '@/components/clientHome/popularStudioCard';
 import {
   fetchClientProfileStats,
   fetchClientUser,
-  updateClientProfile,
 } from '@/lib/client-panel/fetch-profile';
-import { clearClientAuthCookie } from '@/lib/client-panel/auth-session-cookie';
-import { getPublicSupabase } from '@/lib/supabase-public';
+import {
+  addFavoriteStudio,
+  fetchClientFavorites,
+  removeFavoriteStudio,
+} from '@/lib/client-panel/fetch-favorites';
+import { clientTheme } from '@/lib/client-panel/client-theme';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
+
+function formatCount(value: number | undefined | null): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return Math.floor(value).toLocaleString('en-US');
+}
+
+function StatSquare({
+  value,
+  label,
+  background,
+  icon,
+}: {
+  value: string;
+  label: string;
+  background: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex min-h-[128px] flex-col justify-between rounded-[14px] px-3 py-3 sm:min-h-[112px] sm:rounded-[16px] sm:px-3.5 sm:py-3.5"
+      style={{ backgroundColor: background, color: clientTheme.text }}
+    >
+      <p className="text-[1.6rem] font-medium leading-none tracking-tight tabular-nums sm:text-[1.75rem]">
+        {value}
+      </p>
+      <div className="flex items-end gap-1.5">
+        <span className="mb-0.5 flex items-center justify-center">{icon}</span>
+        <span className="text-sm leading-tight sm:text-base">{label}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function ClientProfilePage() {
   const pathname = usePathname();
-  const router = useRouter();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
 
   const userQuery = useQuery({
     queryKey: ['client-user'],
@@ -35,176 +66,220 @@ export default function ClientProfilePage() {
     queryFn: fetchClientProfileStats,
   });
 
-  useEffect(() => {
-    if (!userQuery.data) return;
-    setName(userQuery.data.name?.trim() || '');
-    setPhone(userQuery.data.phone?.trim() || '');
-  }, [userQuery.data]);
-
-  const saveMutation = useMutation({
-    mutationFn: () =>
-      updateClientProfile({
-        name: name.trim() || undefined,
-        phone: phone.trim() || undefined,
-      }),
-    onSuccess: async () => {
-      setEditing(false);
-      setFormError(null);
-      await queryClient.invalidateQueries({ queryKey: ['client-user'] });
-    },
-    onError: (err) => {
-      setFormError(err instanceof Error ? err.message : 'Update failed');
-    },
+  const favoritesQuery = useQuery({
+    queryKey: ['client-favorites'],
+    queryFn: fetchClientFavorites,
   });
 
-  const onSave = (e: FormEvent) => {
-    e.preventDefault();
-    saveMutation.mutate();
-  };
-
-  const onLogout = async () => {
-    clearClientAuthCookie();
-    await getPublicSupabase().auth.signOut({ scope: 'local' });
-    router.replace(withLocale('/login', locale));
+  const toggleFavorite = async (studioId: string) => {
+    if (favoriteBusyId) return;
+    const list = favoritesQuery.data ?? [];
+    const isFav = list.some((s) => s.id === studioId);
+    setFavoriteBusyId(studioId);
+    try {
+      if (isFav) await removeFavoriteStudio(studioId);
+      else await addFavoriteStudio(studioId);
+      await queryClient.invalidateQueries({ queryKey: ['client-favorites'] });
+    } finally {
+      setFavoriteBusyId(null);
+    }
   };
 
   const user = userQuery.data;
   const stats = statsQuery.data;
+  const favorites = favoritesQuery.data ?? [];
+  const displayName = user?.name?.trim() || 'Client';
+  const initial = displayName.charAt(0).toUpperCase() || '?';
+  const locationLabel =
+    [user?.city, user?.country].filter(Boolean).join(', ') || null;
 
   return (
-    <ClientPanelShell title="Profile">
+    <div>
+      <h1 className="mb-5 text-[1.75rem] font-bold tracking-tight sm:text-[1.85rem]">
+        Profile
+      </h1>
+
       {userQuery.isLoading ? (
         <p className="text-sm text-[#878787]">Loading…</p>
       ) : userQuery.isError || !user ? (
         <p className="text-sm text-red-600">Failed to load profile</p>
       ) : (
-        <div className="space-y-4">
-          <section className="rounded-[14px] bg-white p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-lg font-bold">
-                  {user.name?.trim() || 'Client'}
-                </p>
-                <p className="mt-0.5 truncate text-sm text-[#878787]">
-                  {user.email}
-                </p>
-                {user.phone ? (
-                  <p className="mt-0.5 text-sm text-[#878787]">{user.phone}</p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing((v) => !v);
-                  setFormError(null);
-                }}
-                className="inline-flex items-center gap-1 rounded-full border border-[#E8E0D8] px-3 py-1.5 text-xs font-semibold text-[#3F3F3F]"
+        <div className="space-y-5">
+          <Link
+            href={withLocale('/profile/edit', locale)}
+            className="flex w-full items-center gap-3.5 rounded-[18px] bg-white p-4 text-left transition hover:bg-[#FFFCF9]"
+          >
+            <span
+              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-[22px] font-semibold"
+              style={{
+                backgroundColor: 'rgba(241, 89, 66, 0.15)',
+                color: clientTheme.text,
+              }}
+            >
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initial
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span
+                className="block truncate text-lg font-bold"
+                style={{ color: clientTheme.text }}
               >
-                <Pencil className="h-3.5 w-3.5" aria-hidden />
-                {editing ? 'Close' : 'Edit'}
-              </button>
+                {displayName}
+              </span>
+              {locationLabel ? (
+                <span className="mt-1 flex items-center gap-1 text-[13px] text-[#878787]">
+                  <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                  <span className="truncate">{locationLabel}</span>
+                </span>
+              ) : user.email ? (
+                <span className="mt-0.5 block truncate text-[13px] text-[#878787]">
+                  {user.email}
+                </span>
+              ) : null}
+            </span>
+            <ChevronRight
+              className="h-5 w-5 shrink-0 text-[#878787]"
+              aria-hidden
+            />
+          </Link>
+
+          <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
+            <StatSquare
+              value={
+                statsQuery.isLoading ? '—' : formatCount(stats?.classesVisited)
+              }
+              label="Classes booked"
+              background="#C2F600"
+              icon={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/images/icons/icon-calendar.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  aria-hidden
+                />
+              }
+            />
+            <StatSquare
+              value={
+                statsQuery.isLoading ? '—' : formatCount(stats?.activePasses)
+              }
+              label="Active passes"
+              background="#FAD0C5"
+              icon={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/images/icons/icon-ticket.svg"
+                  alt=""
+                  width={18}
+                  height={18}
+                  className="mt-0.5"
+                  aria-hidden
+                />
+              }
+            />
+            <StatSquare
+              value={
+                statsQuery.isLoading ? '—' : formatCount(stats?.upcomingClasses)
+              }
+              label="Upcoming"
+              background="#FFFFFF"
+              icon={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/images/icons/icon-flame.svg"
+                  alt=""
+                  width={22}
+                  height={22}
+                  aria-hidden
+                />
+              }
+            />
+            <StatSquare
+              value={
+                statsQuery.isLoading ? '—' : formatCount(stats?.reviewsLeft)
+              }
+              label="Reviews left"
+              background="#FFD0C2"
+              icon={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/images/icons/icon-star.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  aria-hidden
+                />
+              }
+            />
+          </section>
+
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold tracking-tight">Favorites</h2>
+              {favorites.length > 0 ? (
+                <Link
+                  href={withLocale('/favorites', locale)}
+                  className="text-sm font-semibold text-[#F15942] hover:underline"
+                >
+                  See all
+                </Link>
+              ) : null}
             </div>
 
-            {editing ? (
-              <form onSubmit={onSave} className="mt-4 space-y-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-[#878787]">
-                    Name
-                  </span>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-xl border border-[#E8E0D8] px-3 py-2.5 text-sm outline-none focus:border-[#E86D4F]"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-[#878787]">
-                    Phone
-                  </span>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full rounded-xl border border-[#E8E0D8] px-3 py-2.5 text-sm outline-none focus:border-[#E86D4F]"
-                  />
-                </label>
-                {formError ? (
-                  <p className="text-sm text-red-600" role="alert">
-                    {formError}
-                  </p>
-                ) : null}
-                <button
-                  type="submit"
-                  disabled={saveMutation.isPending}
-                  className="w-full rounded-xl bg-[#E86D4F] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            {favoritesQuery.isLoading ? (
+              <p className="text-sm text-[#878787]">Loading…</p>
+            ) : favorites.length === 0 ? (
+              <div className="rounded-[18px] bg-white px-5 py-8 text-center">
+                <p
+                  className="font-semibold"
+                  style={{ color: clientTheme.text }}
                 >
-                  {saveMutation.isPending ? 'Saving…' : 'Save'}
-                </button>
-              </form>
-            ) : null}
-          </section>
-
-          <section className="grid grid-cols-2 gap-3">
-            {[
-              {
-                label: 'Classes visited',
-                value: stats?.classesVisited ?? '—',
-              },
-              {
-                label: 'Hours trained',
-                value: stats?.hoursTrained ?? '—',
-              },
-              {
-                label: 'Upcoming',
-                value: stats?.upcomingClasses ?? '—',
-              },
-              {
-                label: 'Active passes',
-                value: stats?.activePasses ?? '—',
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[14px] bg-white px-4 py-3"
-              >
-                <p className="text-xs text-[#878787]">{item.label}</p>
-                <p className="mt-1 text-xl font-bold tabular-nums">
-                  {item.value}
+                  No favorites yet
                 </p>
+                <p className="mt-1 text-sm text-[#878787]">
+                  Save studios you like to find them faster
+                </p>
+                <Link
+                  href={withLocale('/studios', locale)}
+                  className="mt-4 inline-flex rounded-full bg-[#F15942] px-5 py-2.5 text-sm font-semibold text-white"
+                >
+                  Explore
+                </Link>
               </div>
-            ))}
+            ) : (
+              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {favorites.slice(0, 8).map((studio) => (
+                  <div key={studio.id} className="relative shrink-0">
+                    <PopularStudioCard studio={studio} locale={locale} />
+                    <button
+                      type="button"
+                      disabled={favoriteBusyId === studio.id}
+                      onClick={() => void toggleFavorite(studio.id)}
+                      className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/55 shadow-sm backdrop-blur-[2px] disabled:opacity-50 sm:h-10 sm:w-10"
+                      aria-label={`Remove ${studio.studioName} from favorites`}
+                    >
+                      <Heart
+                        className="h-5 w-5 fill-[#F15942] text-[#F15942] sm:h-[22px] sm:w-[22px]"
+                        aria-hidden
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
-
-          <nav className="overflow-hidden rounded-[14px] bg-white">
-            <Link
-              href={withLocale('/activity', locale)}
-              className="block border-b border-[#F2EDE8] px-4 py-3.5 text-sm font-medium hover:bg-[#F9F4F0]"
-            >
-              My activity
-            </Link>
-            <Link
-              href={withLocale('/favorites', locale)}
-              className="block border-b border-[#F2EDE8] px-4 py-3.5 text-sm font-medium hover:bg-[#F9F4F0]"
-            >
-              Favorites
-            </Link>
-            <Link
-              href={withLocale('/studios', locale)}
-              className="block px-4 py-3.5 text-sm font-medium hover:bg-[#F9F4F0]"
-            >
-              Browse studios
-            </Link>
-          </nav>
-
-          <button
-            type="button"
-            onClick={() => void onLogout()}
-            className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#E8E0D8] bg-white py-3 text-sm font-semibold text-[#E86D4F]"
-          >
-            <LogOut className="h-4 w-4" aria-hidden />
-            Sign out
-          </button>
         </div>
       )}
-    </ClientPanelShell>
+    </div>
   );
 }

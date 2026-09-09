@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ClientProtectedGate from '@/components/clientPanel/clientProtectedGate';
+import ClientLayoutShell from '@/components/clientPanel/clientLayout';
 
 function makeQueryClient() {
   return new QueryClient({
@@ -20,7 +21,9 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(makeQueryClient);
   return (
     <QueryClientProvider client={queryClient}>
-      <ClientProtectedGate>{children}</ClientProtectedGate>
+      <ClientProtectedGate>
+        <ClientLayoutShell>{children}</ClientLayoutShell>
+      </ClientProtectedGate>
     </QueryClientProvider>
   );
 }

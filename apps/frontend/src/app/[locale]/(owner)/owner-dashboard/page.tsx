@@ -19,6 +19,14 @@ import type { OwnerSessionEnrollment } from '@/lib/owner/types';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import { resolveStudioPublicSlug } from '@/utils/slug';
+import { buildStudioBookingUrl } from '@/lib/owner/booking-link';
+import { listStudioPhotoAssets } from '@/lib/owner/studio-photo-assets';
+import { fetchPublicStudioBySlug } from '@/lib/client/fetch-studio-detail';
+import { fetchTrainingCategoriesClient } from '@/lib/client/fetch-training-categories';
+import {
+  trainingCategoryLabel,
+  type PublicTrainingCategory,
+} from '@/lib/client/training-category';
 import { OwnerOnboardingCard } from '@/components/owner/ownerOnboardingCard';
 import {
   OwnerDashboardStatCards,
@@ -27,9 +35,10 @@ import {
 import {
   OwnerDashboardGreeting,
   OwnerDashboardNewClassButton,
+  OwnerDashboardCopyBookingLinkButton,
   OwnerDashboardSchedulePanel,
   OwnerDashboardSidebar,
-  OwnerDashboardViewStudioLink,
+  OwnerDashboardStudioBanner,
   buildLastBookings,
 } from '@/components/owner/ownerDesktopDashboard';
 
@@ -180,6 +189,80 @@ export default function OwnerDashboardPage() {
       )
     : null;
 
+  const publicSlug = studio
+    ? resolveStudioPublicSlug({
+        id: studio.id,
+        name: studio.name,
+        slug: studio.slug,
+      })
+    : null;
+
+  const publicStudioQuery = useQuery({
+    queryKey: ['owner-public-studio-preview', publicSlug],
+    queryFn: () => fetchPublicStudioBySlug(publicSlug!),
+    enabled: Boolean(publicSlug),
+    staleTime: 60_000,
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ['training-categories'],
+    queryFn: fetchTrainingCategoriesClient,
+    staleTime: 300_000,
+  });
+
+  const studioBannerPhoto = useMemo(() => {
+    const assets = studio ? listStudioPhotoAssets(studio) : [];
+    return (
+      assets[0]?.cardUrl ||
+      assets[0]?.heroUrl ||
+      publicStudioQuery.data?.photos?.[0] ||
+      publicStudioQuery.data?.photoUrl ||
+      null
+    );
+  }, [studio, publicStudioQuery.data]);
+
+  const studioBannerCategories = useMemo(() => {
+    const publicStudio = publicStudioQuery.data;
+    if (!publicStudio) return [];
+    const byId = new Map<number, PublicTrainingCategory>(
+      (categoriesQuery.data ?? []).map((c) => [c.id, c]),
+    );
+    const ids =
+      publicStudio.categoryIds.length > 0
+        ? publicStudio.categoryIds
+        : publicStudio.categoryLabels.map((c) => c.id);
+
+    return ids
+      .map((id) => {
+        const cat = byId.get(id);
+        const fallback = publicStudio.categoryLabels.find((c) => c.id === id);
+        const label = cat
+          ? trainingCategoryLabel(cat, locale)
+          : locale === 'ru'
+            ? (fallback?.nameRu || fallback?.nameEn || '').trim()
+            : locale === 'vi'
+              ? (fallback?.nameVn || fallback?.nameEn || '').trim()
+              : (fallback?.nameEn || '').trim();
+        if (!label) return null;
+        return {
+          id,
+          label,
+          chipBgHex: cat?.chipBgHex || fallback?.chipBgHex || ownerTheme.bgSoft,
+          chipFgHex: cat?.chipFgHex || fallback?.chipFgHex || ownerTheme.text,
+        };
+      })
+      .filter(
+        (
+          c,
+        ): c is {
+          id: number;
+          label: string;
+          chipBgHex: string;
+          chipFgHex: string;
+        } => Boolean(c),
+      );
+  }, [publicStudioQuery.data, categoriesQuery.data, locale]);
+
   const onPublish = async () => {
     if (!studio?.id || !checklist?.canPublish) return;
     setPublishing(true);
@@ -194,6 +277,19 @@ export default function OwnerDashboardPage() {
   };
 
   const path = (p: string) => withLocale(p, locale);
+
+  const bookingLink = useMemo(() => {
+    if (!studio?.id) return undefined;
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://henzo.app';
+    return buildStudioBookingUrl({
+      studio: { id: studio.id, name: studio.name, slug: studio.slug },
+      locale,
+      origin,
+    });
+  }, [studio?.id, studio?.name, studio?.slug, locale]);
 
   if (studioLoading) {
     return (
@@ -241,12 +337,28 @@ export default function OwnerDashboardPage() {
           <OwnerDashboardSchedulePanel
             sessions={todaySessions}
             localePath={path}
+            bookingLink={bookingLink}
           />
-          <OwnerDashboardViewStudioLink href={path('/salon-info/studio')} />
+          {previewHref && studio ? (
+            <OwnerDashboardStudioBanner
+              href={previewHref}
+              name={studio.name}
+              address={
+                publicStudioQuery.data?.address || studio.address || null
+              }
+              photoUrl={studioBannerPhoto}
+              rating={publicStudioQuery.data?.avgRating}
+              reviewCount={publicStudioQuery.data?.reviewCount}
+              categories={studioBannerCategories}
+            />
+          ) : null}
         </div>
 
         <div className="space-y-3">
           <OwnerDashboardNewClassButton href={path('/trainings/new')} />
+          {bookingLink ? (
+            <OwnerDashboardCopyBookingLinkButton bookingLink={bookingLink} />
+          ) : null}
           <OwnerDashboardSidebar
             localePath={path}
             lastBookings={lastBookings}

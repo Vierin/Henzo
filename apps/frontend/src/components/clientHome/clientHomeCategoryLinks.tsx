@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { fetchHomeTrainingCategoriesClient } from '@/lib/client/fetch-training-categories';
 import {
   trainingCategoryHref,
-  trainingCategoryIcon,
   trainingCategoryLabel,
   type PublicTrainingCategory,
 } from '@/lib/client/training-category';
@@ -18,10 +17,7 @@ type Props = {
 
 function CategorySkeleton() {
   return (
-    <div className="flex w-[4.75rem] shrink-0 flex-col items-center gap-1.5 sm:w-[5.25rem]">
-      <div className="h-[3.25rem] w-full animate-pulse rounded-2xl bg-[#EDE8E3] sm:h-14" />
-      <div className="h-3 w-10 animate-pulse rounded bg-[#EDE8E3]" />
-    </div>
+    <div className="h-9 w-20 shrink-0 animate-pulse rounded-full bg-[#EDE8E3] sm:h-10 sm:w-24" />
   );
 }
 
@@ -64,7 +60,6 @@ export function ClientHomeCategoryLinks({ initialCategories, locale }: Props) {
               <CategorySkeleton key={`cat-skel-${i}`} />
             ))
           : categories.map((category) => {
-              const Icon = trainingCategoryIcon(category);
               const label = trainingCategoryLabel(category, locale);
               const href = trainingCategoryHref(category, locale);
 
@@ -72,16 +67,13 @@ export function ClientHomeCategoryLinks({ initialCategories, locale }: Props) {
                 <Link
                   key={category.id}
                   href={href}
-                  className="group flex w-[4.75rem] shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl px-2 py-2.5 transition hover:brightness-[0.97] sm:w-[5.25rem] sm:px-3 sm:py-3"
+                  className="inline-flex h-9 shrink-0 snap-start items-center rounded-full px-4 text-sm font-semibold transition hover:brightness-[0.97] sm:h-10 sm:px-5 sm:text-[0.9375rem]"
                   style={{
                     backgroundColor: category.chipBgHex,
                     color: category.chipFgHex ?? '#171717',
                   }}
                 >
-                  <Icon className="h-5 w-5 shrink-0 opacity-95" aria-hidden />
-                  <span className="max-w-full truncate text-center text-xs font-semibold leading-tight sm:text-[0.8rem]">
-                    {label}
-                  </span>
+                  {label}
                 </Link>
               );
             })}

@@ -613,31 +613,6 @@ export function StudioPublicView({
           </aside>
         </div>
 
-        {/* Reviews */}
-        {reviews.length > 0 ? (
-          <section className="mt-8 max-w-3xl">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-[13px] font-semibold uppercase tracking-[0.04em]">
-                Reviews
-              </h2>
-              {reviews.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAllReviews((v) => !v)}
-                  className="text-sm font-semibold uppercase text-[#E86D4F]"
-                >
-                  {showAllReviews ? 'Show less' : 'See more'}
-                </button>
-              ) : null}
-            </div>
-            <div className="mt-2.5 space-y-2.5">
-              {visibleReviews.map((r) => (
-                <ReviewCard key={r.id} review={r} />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
         {/* Upcoming classes */}
         <section id="studio-schedule" className="mt-8 max-w-3xl scroll-mt-24">
           <div className="flex items-center justify-between gap-2">
@@ -679,6 +654,31 @@ export function StudioPublicView({
             </button>
           ) : null}
         </section>
+
+        {/* Reviews */}
+        {reviews.length > 0 ? (
+          <section className="mt-8 max-w-3xl">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-[13px] font-semibold uppercase tracking-[0.04em]">
+                Reviews
+              </h2>
+              {reviews.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAllReviews((v) => !v)}
+                  className="text-sm font-semibold uppercase text-[#E86D4F]"
+                >
+                  {showAllReviews ? 'Show less' : 'See more'}
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-2.5 space-y-2.5">
+              {visibleReviews.map((r) => (
+                <ReviewCard key={r.id} review={r} />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );

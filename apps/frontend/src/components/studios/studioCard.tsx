@@ -136,7 +136,7 @@ export function StudioCard({
     showPopularBadge || (studio.rating >= 4.7 && studio.reviewCount >= 20);
 
   return (
-    <article className="group flex min-h-[207px] overflow-hidden rounded-2xl border border-[#EDE8E3] bg-white shadow-[0_1px_2px_rgba(63,63,63,0.04)]">
+    <article className="group flex min-h-[207px] overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(63,63,63,0.04)]">
       <div className="relative w-[160px] shrink-0 self-stretch bg-[#FDF9E7] sm:w-[176px]">
         {studio.photoUrl ? (
           <Image
@@ -187,6 +187,7 @@ export function StudioCard({
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   onToggleFavorite();
                 }}
                 className="rounded-full p-1 text-[#FF5D7A] hover:bg-[#FFF1ED]"

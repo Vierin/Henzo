@@ -77,7 +77,7 @@ export function ClientHomePopularStudiosCarousel({
     <section className="bg-[#F9F4F0] px-4 pb-10 pt-2 sm:px-6 sm:pb-12">
       <div className="mx-auto max-w-7xl">
         <div className="mb-5 flex items-center justify-between gap-4 sm:mb-6">
-          <h2 className="text-xl font-bold tracking-tight text-[#3F3F3F] sm:text-2xl">
+          <h2 className="text-xl font-medium tracking-tight text-[#3F3F3F] sm:text-2xl">
             {title}
           </h2>
 

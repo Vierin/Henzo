@@ -30,7 +30,7 @@ export function HomeJsonLd({ locale }: HomeJsonLdProps) {
         name: 'Henzo',
         url: base,
         publisher: { '@id': `${base}/#organization` },
-        inLanguage: ['en', 'ru', 'vi', 'cs', 'pl'],
+        inLanguage: ['en', 'ru', 'vi', 'cs', 'pl', 'es'],
       },
       {
         '@type': 'SoftwareApplication',

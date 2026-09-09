@@ -13,6 +13,9 @@ import {
   isTrainerPlanLimitError,
 } from '@/lib/owner/fetch-staff';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
+
+type StaffAccessLevel = 'ADMIN' | 'EMPLOYEE';
 
 /**
  * Mobile parity: `AddStaffScreen` —
@@ -26,6 +29,7 @@ export default function NewStaffPage() {
   const { studio } = useOwnerStudio();
   const queryClient = useQueryClient();
 
+  const [accessLevel, setAccessLevel] = useState<StaffAccessLevel>('EMPLOYEE');
   const [inviteEmail, setInviteEmail] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -59,12 +63,13 @@ export default function NewStaffPage() {
     setFlash(null);
     setInviting(true);
     try {
-      const tempName = em.split('@')[0] || 'Trainer';
+      const tempName =
+        em.split('@')[0] || (accessLevel === 'ADMIN' ? 'Admin' : 'Trainer');
       const created = await createStaff({
         name: tempName,
         studioId: studio.id,
         email: em,
-        accessLevel: 'EMPLOYEE',
+        accessLevel,
       });
       await generateTrainerInvite(created.id, em);
       await refreshStaff();
@@ -102,10 +107,10 @@ export default function NewStaffPage() {
         studioId: studio.id,
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
-        accessLevel: 'EMPLOYEE',
+        accessLevel,
       });
       await refreshStaff();
-      setFlash('Staff member added');
+      setFlash(accessLevel === 'ADMIN' ? 'Admin added' : 'Staff member added');
       window.setTimeout(goBack, 700);
     } catch (e) {
       if (isTrainerPlanLimitError(e)) {
@@ -122,6 +127,27 @@ export default function NewStaffPage() {
 
   return (
     <SettingsSubpageShell title="Add staff">
+      <div className="space-y-2">
+        <p
+          className="text-[13px] font-medium uppercase tracking-wide"
+          style={{ color: ownerTheme.textSecondary }}
+        >
+          Role
+        </p>
+        <OwnerSelect
+          value={accessLevel}
+          onChange={(v) => setAccessLevel(v as StaffAccessLevel)}
+          aria-label="Access level"
+          options={[
+            { value: 'EMPLOYEE', label: 'Trainer' },
+            { value: 'ADMIN', label: 'Admin (manager)' },
+          ]}
+        />
+        <p className="text-sm" style={{ color: ownerTheme.textSecondary }}>
+          Admins can manage the studio. Trainers teach classes.
+        </p>
+      </div>
+
       <div className="space-y-1">
         <p
           className="text-[13px] font-medium uppercase tracking-wide"
@@ -130,7 +156,7 @@ export default function NewStaffPage() {
           Invite to team
         </p>
         <p className="text-sm" style={{ color: ownerTheme.textSecondary }}>
-          We’ll create a trainer profile and email them a link to join.
+          We’ll create a profile and email them a link to join.
         </p>
         <div className="relative mt-3">
           <Mail

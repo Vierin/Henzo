@@ -16,6 +16,7 @@ export type ClientProfileStats = {
   hoursTrained: number;
   upcomingClasses: number;
   activePasses: number;
+  reviewsLeft: number;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -55,6 +56,8 @@ export async function fetchClientProfileStats(): Promise<ClientProfileStats> {
       upcomingClasses:
         Number(m.upcomingClasses ?? m.upcoming_classes ?? 0) || 0,
       activePasses: Number(m.activePasses ?? m.active_passes ?? 0) || 0,
+      reviewsLeft:
+        Number(m.reviewsLeft ?? m.reviews_left ?? m.reviewsCount ?? 0) || 0,
     };
   } catch {
     return {
@@ -62,6 +65,7 @@ export async function fetchClientProfileStats(): Promise<ClientProfileStats> {
       hoursTrained: 0,
       upcomingClasses: 0,
       activePasses: 0,
+      reviewsLeft: 0,
     };
   }
 }
@@ -69,8 +73,41 @@ export async function fetchClientProfileStats(): Promise<ClientProfileStats> {
 export async function updateClientProfile(body: {
   name?: string;
   phone?: string;
+  avatarUrl?: string | null;
 }): Promise<void> {
   await apiClient.put('/auth/profile', body);
+}
+
+export async function deleteClientAccount(): Promise<void> {
+  await apiClient.delete('/auth/account');
+}
+
+const STUDIO_PHOTOS_BUCKET = 'studio-photos';
+
+/** Same path as mobile `uploadProfileAvatar`: `owners/{uid}/avatar.webp`. */
+export async function uploadClientAvatar(file: File): Promise<string> {
+  const { getPublicSupabase } = await import('@/lib/supabase-public');
+  const supabase = getPublicSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.id) throw new Error('Not signed in');
+
+  const path = `owners/${user.id}/avatar.webp`;
+  const { error } = await supabase.storage
+    .from(STUDIO_PHOTOS_BUCKET)
+    .upload(path, file, {
+      upsert: true,
+      contentType: file.type || 'image/jpeg',
+      cacheControl: '3600',
+    });
+  if (error) throw new Error(error.message);
+
+  const { data } = supabase.storage
+    .from(STUDIO_PHOTOS_BUCKET)
+    .getPublicUrl(path);
+  const base = data.publicUrl.split('?')[0];
+  return `${base}?v=${Date.now()}`;
 }
 
 export async function submitStudioReview(

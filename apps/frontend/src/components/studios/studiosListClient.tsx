@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { ClientHomeHeader } from '@/components/clientHome/clientHomeHeader';
@@ -24,7 +24,20 @@ import { fetchStudiosSearchClient } from '@/lib/client/fetch-studios-search';
 import type { PublicStudioPreview } from '@/lib/client/studio-preview';
 import { fetchHomeTrainingCategoriesClient } from '@/lib/client/fetch-training-categories';
 import type { PublicTrainingCategory } from '@/lib/client/training-category';
+import { CLIENT_AUTH_COOKIE } from '@/lib/client-panel/auth-session-cookie';
+import {
+  addFavoriteStudio,
+  fetchClientFavorites,
+  removeFavoriteStudio,
+} from '@/lib/client-panel/fetch-favorites';
 import { isLocale, withLocale, type Locale } from '@/i18n/routing';
+
+function hasClientCookie() {
+  if (typeof document === 'undefined') return false;
+  return document.cookie
+    .split(';')
+    .some((c) => c.trim().startsWith(`${CLIENT_AUTH_COOKIE}=`));
+}
 
 type Props = {
   initialStudios: PublicStudioPreview[];
@@ -76,6 +89,64 @@ export function StudiosListClient({
   );
   const [distance, setDistance] = useState<BrowseDistanceFilter>('auto');
   const [sortBy, setSortBy] = useState<BrowseSortBy>('recommended');
+  const [isClientAuthed, setIsClientAuthed] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const authed = hasClientCookie();
+    setIsClientAuthed(authed);
+    if (!authed) {
+      setFavoriteIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    void fetchClientFavorites()
+      .then((list) => {
+        if (cancelled) return;
+        setFavoriteIds(new Set(list.map((s) => s.id)));
+      })
+      .catch(() => {
+        if (!cancelled) setFavoriteIds(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleFavorite = useCallback(
+    async (studioId: string) => {
+      if (!isClientAuthed) {
+        router.push(withLocale('/login', locale));
+        return;
+      }
+      if (favoriteBusyId) return;
+
+      const wasFavorite = favoriteIds.has(studioId);
+      setFavoriteBusyId(studioId);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (wasFavorite) next.delete(studioId);
+        else next.add(studioId);
+        return next;
+      });
+
+      try {
+        if (wasFavorite) await removeFavoriteStudio(studioId);
+        else await addFavoriteStudio(studioId);
+      } catch {
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          if (wasFavorite) next.add(studioId);
+          else next.delete(studioId);
+          return next;
+        });
+      } finally {
+        setFavoriteBusyId(null);
+      }
+    },
+    [favoriteBusyId, favoriteIds, isClientAuthed, locale, router],
+  );
 
   useEffect(() => {
     if (lockedCategory) setSelectedCategoryId(lockedCategory.id);
@@ -289,6 +360,8 @@ export function StudiosListClient({
                 trainingCategories={categories}
                 nextClasses={derived.classesByStudio.get(studio.id) ?? []}
                 priority={index < 2}
+                isFavorite={favoriteIds.has(studio.id)}
+                onToggleFavorite={() => void toggleFavorite(studio.id)}
               />
             ))}
           </div>

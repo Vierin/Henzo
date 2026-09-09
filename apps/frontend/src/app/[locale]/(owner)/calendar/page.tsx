@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
@@ -22,7 +22,10 @@ import {
 import type { OwnerTrainingSession } from '@/lib/owner/types';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import { OwnerScheduleDateStrip } from '@/components/owner/ownerScheduleDateStrip';
-import { OwnerSessionCard } from '@/components/owner/ownerSessionCard';
+import {
+  OwnerSessionCard,
+  OwnerScheduleEmptyCard,
+} from '@/components/owner/ownerSessionCard';
 import { OwnerCalendarWeekGrid } from '@/components/owner/ownerCalendarWeekGrid';
 import { OwnerCalendarDateModal } from '@/components/owner/ownerCalendarDateModal';
 import { OwnerCalendarSessionPanel } from '@/components/owner/ownerCalendarSessionPanel';
@@ -55,14 +58,19 @@ function findNearestOnDay(
 
 export default function OwnerCalendarPage() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
   const { studio } = useOwnerStudio();
   const path = (p: string) => withLocale(p, locale);
 
+  const deepSessionId = searchParams.get('session')?.trim() || null;
+
   const [selected, setSelected] = useState(() => startOfToday());
   const [calendarOpen, setCalendarOpen] = useState(false);
   /** Manual pick from grid; null → show nearest automatically. */
-  const [pickedSessionId, setPickedSessionId] = useState<string | null>(null);
+  const [pickedSessionId, setPickedSessionId] = useState<string | null>(
+    () => deepSessionId,
+  );
 
   const dayBounds = useMemo(() => dayBoundsIso(selected), [selected]);
   const weekBounds = useMemo(() => weekBoundsIso(selected), [selected]);
@@ -83,6 +91,26 @@ export default function OwnerCalendarPage() {
   const daySessions = dayQuery.data ?? [];
   const weekSessions = weekQuery.data ?? [];
 
+  useEffect(() => {
+    if (!deepSessionId) return;
+    setPickedSessionId(deepSessionId);
+  }, [deepSessionId]);
+
+  useEffect(() => {
+    if (!pickedSessionId) return;
+    const found = weekSessions.find((s) => s.sessionId === pickedSessionId);
+    if (found) {
+      const day = new Date(found.startsAt);
+      setSelected((prev) => (sameDay(prev, day) ? prev : day));
+      return;
+    }
+    if (!weekQuery.isFetched) return;
+    // Stale manual pick (not from deep link) — clear.
+    if (deepSessionId !== pickedSessionId) {
+      setPickedSessionId(null);
+    }
+  }, [pickedSessionId, weekSessions, weekQuery.isFetched, deepSessionId]);
+
   const nearestSession = useMemo(
     () => findNearestSession(weekSessions),
     [weekSessions],
@@ -95,14 +123,6 @@ export default function OwnerCalendarPage() {
     }
     return nearestSession;
   }, [pickedSessionId, weekSessions, nearestSession]);
-
-  useEffect(() => {
-    if (!pickedSessionId) return;
-    if (!weekSessions.some((s) => s.sessionId === pickedSessionId)) {
-      setPickedSessionId(null);
-    }
-  }, [weekSessions, pickedSessionId]);
-
   const weekLabel = formatWeekRangeLabel(weekStart, locale);
 
   const shiftWeek = (dir: -1 | 1) => {
@@ -204,11 +224,7 @@ export default function OwnerCalendarPage() {
           ) : dayQuery.isError ? (
             <p className="text-sm text-red-600">Failed to load sessions</p>
           ) : daySessions.length === 0 ? (
-            <div className="rounded-[14px] bg-white px-4 py-8 text-center">
-              <p className="font-medium" style={{ color: ownerTheme.text }}>
-                No sessions this day
-              </p>
-            </div>
+            <OwnerScheduleEmptyCard title="No sessions this day" />
           ) : (
             <ul className="space-y-2.5">
               {daySessions.map((s) => (
@@ -255,11 +271,7 @@ export default function OwnerCalendarPage() {
         </div>
 
         {panelSession ? (
-          <OwnerCalendarSessionPanel
-            session={panelSession}
-            localePath={path}
-            onClose={() => setPickedSessionId(null)}
-          />
+          <OwnerCalendarSessionPanel session={panelSession} localePath={path} />
         ) : (
           <div className="rounded-[16px] bg-white px-4 py-10 text-center">
             <p className="font-medium" style={{ color: ownerTheme.text }}>

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Heart } from 'lucide-react';
-import ClientPanelShell from '@/components/clientPanel/clientPanelShell';
 import { StudioCard } from '@/components/studios/studioCard';
 import {
   fetchClientFavorites,
@@ -29,7 +28,10 @@ export default function ClientFavoritesPage() {
   });
 
   return (
-    <ClientPanelShell title="Favorites">
+    <div>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight sm:text-[1.75rem]">
+        Favorites
+      </h1>
       {favoritesQuery.isLoading ? (
         <p className="text-sm text-[#878787]">Loading…</p>
       ) : favoritesQuery.isError ? (
@@ -40,9 +42,9 @@ export default function ClientFavoritesPage() {
           <p className="mt-3 text-sm text-[#878787]">No favorite studios yet</p>
           <Link
             href={withLocale('/studios', locale)}
-            className="mt-3 inline-block text-sm font-semibold text-[#E86D4F]"
+            className="mt-4 inline-block text-sm font-semibold text-[#F15942]"
           >
-            Browse studios →
+            Browse studios
           </Link>
         </div>
       ) : (
@@ -54,7 +56,7 @@ export default function ClientFavoritesPage() {
                 type="button"
                 disabled={removeMutation.isPending}
                 onClick={() => removeMutation.mutate(studio.id)}
-                className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-[#E86D4F] shadow-sm disabled:opacity-50"
+                className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-[#F15942] shadow-sm disabled:opacity-50"
                 aria-label={`Remove ${studio.studioName} from favorites`}
               >
                 Remove
@@ -63,6 +65,6 @@ export default function ClientFavoritesPage() {
           ))}
         </ul>
       )}
-    </ClientPanelShell>
+    </div>
   );
 }

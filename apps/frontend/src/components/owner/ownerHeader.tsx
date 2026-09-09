@@ -168,12 +168,12 @@ export default function OwnerHeader() {
             ) : null}
           </div>
 
-          {/* Notifications — mobile parity */}
+          {/* Notifications — mobile parity: pill + count when unread */}
           <button
             type="button"
             className={
               hasUnread
-                ? 'flex h-10 items-center gap-1.5 rounded-full border-0 px-3'
+                ? 'flex h-10 min-w-[52px] items-center justify-center gap-1.5 rounded-full border-0 px-3.5'
                 : 'relative flex h-10 w-10 items-center justify-center rounded-full border-0 bg-white'
             }
             style={
@@ -189,12 +189,12 @@ export default function OwnerHeader() {
             onClick={() => router.push(path('/notifications'))}
           >
             <Bell
-              className="h-[18px] w-[18px]"
+              className="h-[18px] w-[18px] shrink-0"
               strokeWidth={1.75}
               style={{ color: hasUnread ? '#fff' : ownerTheme.text }}
             />
             {hasUnread ? (
-              <span className="text-base font-bold leading-none tabular-nums text-white">
+              <span className="min-w-[0.75rem] text-[15px] font-bold leading-none tabular-nums text-white">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             ) : null}
@@ -205,10 +205,10 @@ export default function OwnerHeader() {
             <button
               type="button"
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="flex max-w-[220px] items-center gap-2.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-white/60 sm:max-w-none"
+              className="flex h-10 max-w-[220px] items-center gap-2 rounded-full bg-white py-0 pl-1 pr-2.5 transition-colors hover:bg-white sm:max-w-none"
             >
               <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold"
+                className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold"
                 style={{
                   backgroundColor: ownerTheme.bgSoft,
                   color: ownerTheme.text,
@@ -227,20 +227,20 @@ export default function OwnerHeader() {
               </span>
               <span className="hidden min-w-0 text-left sm:block">
                 <span
-                  className="block truncate text-sm font-bold leading-tight"
+                  className="block truncate text-[13px] font-bold leading-tight"
                   style={{ color: ownerTheme.text }}
                 >
                   {ownerName}
                 </span>
                 <span
-                  className="mt-0.5 block truncate text-xs font-medium leading-tight"
+                  className="block truncate text-[11px] font-medium leading-tight"
                   style={{ color: ownerTheme.textSecondary }}
                 >
                   Studio Owner
                 </span>
               </span>
               <ChevronDown
-                className={`h-4 w-4 shrink-0 transition-transform ${
+                className={`h-3.5 w-3.5 shrink-0 transition-transform ${
                   showProfileDropdown ? 'rotate-180' : ''
                 }`}
                 style={{ color: ownerTheme.textSecondary }}

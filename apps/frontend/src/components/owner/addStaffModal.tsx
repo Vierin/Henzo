@@ -8,9 +8,12 @@ import {
   generateTrainerInvite,
   isTrainerPlanLimitError,
 } from '@/lib/owner/fetch-staff';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
 
 const inputClass =
   'w-full rounded-[14px] bg-[#FCF3EC] py-3.5 pl-11 pr-3.5 text-[15px] outline-none';
+
+type StaffAccessLevel = 'ADMIN' | 'EMPLOYEE';
 
 /** Same flows as mobile AddStaffScreen — used if opened as modal. */
 export function AddStaffModal({
@@ -22,6 +25,7 @@ export function AddStaffModal({
   onClose: () => void;
   onDone: () => Promise<void> | void;
 }) {
+  const [accessLevel, setAccessLevel] = useState<StaffAccessLevel>('EMPLOYEE');
   const [inviteEmail, setInviteEmail] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -40,12 +44,13 @@ export function AddStaffModal({
     setError(null);
     setInviting(true);
     try {
-      const tempName = em.split('@')[0] || 'Trainer';
+      const tempName =
+        em.split('@')[0] || (accessLevel === 'ADMIN' ? 'Admin' : 'Trainer');
       const created = await createStaff({
         name: tempName,
         studioId,
         email: em,
-        accessLevel: 'EMPLOYEE',
+        accessLevel,
       });
       await generateTrainerInvite(created.id, em);
       await onDone();
@@ -76,7 +81,7 @@ export function AddStaffModal({
         studioId,
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
-        accessLevel: 'EMPLOYEE',
+        accessLevel,
       });
       await onDone();
     } catch (e) {
@@ -134,13 +139,33 @@ export function AddStaffModal({
               className="text-[13px] font-medium uppercase tracking-wide"
               style={{ color: ownerTheme.textSecondary }}
             >
+              Role
+            </h3>
+            <div className="mt-2">
+              <OwnerSelect
+                value={accessLevel}
+                onChange={(v) => setAccessLevel(v as StaffAccessLevel)}
+                aria-label="Access level"
+                options={[
+                  { value: 'EMPLOYEE', label: 'Trainer' },
+                  { value: 'ADMIN', label: 'Admin (manager)' },
+                ]}
+              />
+            </div>
+          </section>
+
+          <section>
+            <h3
+              className="text-[13px] font-medium uppercase tracking-wide"
+              style={{ color: ownerTheme.textSecondary }}
+            >
               Invite to team
             </h3>
             <p
               className="mt-1 text-sm leading-snug"
               style={{ color: ownerTheme.textSecondary }}
             >
-              We’ll create a trainer profile and email them a link to join.
+              We’ll create a profile and email them a link to join.
             </p>
             <div className="relative mt-3">
               <Mail

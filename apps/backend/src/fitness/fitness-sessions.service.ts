@@ -2000,6 +2000,7 @@ export class FitnessSessionsService {
     hoursTrained: number;
     upcomingClasses: number;
     activePasses: number;
+    reviewsLeft: number;
   }> {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     const userId = currentUser.user.id;
@@ -2018,26 +2019,30 @@ export class FitnessSessionsService {
       },
     };
 
-    const [completedEnrollments, upcomingClasses] = await Promise.all([
-      this.prisma.sessionEnrollment.findMany({
-        where: completedWhere,
-        select: {
-          TrainingSession: {
-            select: { startsAt: true, endsAt: true },
+    const [completedEnrollments, upcomingClasses, reviewsLeft] =
+      await Promise.all([
+        this.prisma.sessionEnrollment.findMany({
+          where: completedWhere,
+          select: {
+            TrainingSession: {
+              select: { startsAt: true, endsAt: true },
+            },
           },
-        },
-      }),
-      this.prisma.sessionEnrollment.count({
-        where: {
-          userId,
-          status: SessionEnrollmentStatus.ACTIVE,
-          TrainingSession: {
-            startsAt: { gte: now },
-            status: TrainingSessionStatus.ACTIVE,
+        }),
+        this.prisma.sessionEnrollment.count({
+          where: {
+            userId,
+            status: SessionEnrollmentStatus.ACTIVE,
+            TrainingSession: {
+              startsAt: { gte: now },
+              status: TrainingSessionStatus.ACTIVE,
+            },
           },
-        },
-      }),
-    ]);
+        }),
+        this.prisma.review.count({
+          where: { userId },
+        }),
+      ]);
 
     let totalMinutes = 0;
     for (const enrollment of completedEnrollments) {
@@ -2054,6 +2059,7 @@ export class FitnessSessionsService {
       hoursTrained: Math.floor(totalMinutes / 60),
       upcomingClasses,
       activePasses: 0,
+      reviewsLeft,
     };
   }
 

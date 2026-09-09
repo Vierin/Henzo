@@ -325,16 +325,6 @@ export default function StudioProfileSettingsPage() {
     }
   }
 
-  function movePhoto(index: number, dir: -1 | 1) {
-    setPhotos((prev) => {
-      const next = [...prev];
-      const j = index + dir;
-      if (j < 0 || j >= next.length) return prev;
-      [next[index], next[j]] = [next[j], next[index]];
-      return next;
-    });
-  }
-
   async function onSave() {
     if (!studio || saving || logoUploading || photosProcessing) return;
     const trimmedName = name.trim();
@@ -497,15 +487,7 @@ export default function StudioProfileSettingsPage() {
                   Main
                 </span>
               ) : null}
-              <div className="absolute inset-x-0 bottom-0 flex justify-between bg-gradient-to-t from-black/50 to-transparent p-1.5">
-                <button
-                  type="button"
-                  className="rounded bg-white/90 px-1.5 text-xs font-bold"
-                  disabled={index === 0}
-                  onClick={() => movePhoto(index, -1)}
-                >
-                  ‹
-                </button>
+              <div className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/50 to-transparent p-1.5">
                 <button
                   type="button"
                   className="rounded bg-white/90 p-1"
@@ -515,14 +497,6 @@ export default function StudioProfileSettingsPage() {
                   }
                 >
                   <Trash2 className="h-3.5 w-3.5 text-red-600" />
-                </button>
-                <button
-                  type="button"
-                  className="rounded bg-white/90 px-1.5 text-xs font-bold"
-                  disabled={index === photos.length - 1}
-                  onClick={() => movePhoto(index, 1)}
-                >
-                  ›
                 </button>
               </div>
             </div>

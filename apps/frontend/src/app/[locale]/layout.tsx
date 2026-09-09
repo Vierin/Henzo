@@ -26,6 +26,7 @@ export async function generateMetadata({
         'vi-VN': '/vi',
         'cs-CZ': '/cs',
         'pl-PL': '/pl',
+        'es-ES': '/es',
       },
     },
   };

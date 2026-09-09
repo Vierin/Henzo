@@ -1,6 +1,6 @@
 import type { Locale } from '@/i18n/routing';
 
-/** Static public routes with locale-prefixed URLs (`/en/...`, `/ru/...`, `/vi/...`, `/cs/...`, `/pl/...`). */
+/** Static public routes with locale-prefixed URLs (`/en/...`, `/ru/...`, `/vi/...`, `/cs/...`, `/pl/...`, `/es/...`). */
 export type PublicPageId =
   | 'home'
   | 'business'
@@ -83,6 +83,17 @@ export const PUBLIC_PAGE_COPY: Record<
         'Henzo Fitness',
       ],
     },
+    es: {
+      title:
+        'Henzo Fitness - encuentra y reserva clases de fitness cerca de ti',
+      description:
+        'Descubre estudios y reserva clases cerca. Horarios, categorías y entrenadores en Henzo.',
+      keywords: [
+        'reservar clase fitness',
+        'estudios de fitness cerca',
+        'Henzo Fitness',
+      ],
+    },
   },
   business: {
     en: {
@@ -124,6 +135,16 @@ export const PUBLIC_PAGE_COPY: Record<
       keywords: [
         'aplikacja do studia fitness',
         'zarządzanie studiem',
+        'Henzo Fitness',
+      ],
+    },
+    es: {
+      title: 'Henzo Fitness - opera tu estudio en una sola app móvil',
+      description:
+        'Gestiona tu estudio de fitness desde el móvil: horarios, flujos de coaches y reservas en un solo lugar.',
+      keywords: [
+        'app para estudio fitness',
+        'gestión de estudio',
         'Henzo Fitness',
       ],
     },
@@ -174,6 +195,17 @@ export const PUBLIC_PAGE_COPY: Record<
         'Henzo',
       ],
     },
+    es: {
+      title: 'Estudios de fitness cerca de ti — Henzo',
+      description:
+        'Explora estudios de fitness, compara clases y encuentra el lugar adecuado cerca de ti en Henzo.',
+      keywords: [
+        'estudios de fitness',
+        'estudios cerca',
+        'reservar clase fitness',
+        'Henzo',
+      ],
+    },
   },
   about: {
     en: {
@@ -200,6 +232,11 @@ export const PUBLIC_PAGE_COPY: Record<
       title: 'O Henzo Fitness',
       description:
         'Jak Henzo pomaga studiom fitness uprościć rezerwacje i codzienną operacyjkę.',
+    },
+    es: {
+      title: 'Sobre Henzo Fitness',
+      description:
+        'Cómo Henzo ayuda a los estudios de fitness a simplificar reservas y la operativa diaria.',
     },
   },
   contact: {
@@ -228,6 +265,11 @@ export const PUBLIC_PAGE_COPY: Record<
       description:
         'Skontaktuj się z nami w sprawie podłączenia Twojego studia fitness do Henzo.',
     },
+    es: {
+      title: 'Contacto Henzo Fitness',
+      description:
+        'Habla con nuestro equipo sobre cómo conectar tu estudio de fitness a Henzo.',
+    },
   },
   terms: {
     en: {
@@ -249,6 +291,11 @@ export const PUBLIC_PAGE_COPY: Record<
     pl: {
       title: 'Regulamin',
       description: 'Warunki korzystania z produktów Henzo Fitness.',
+    },
+    es: {
+      title: 'Términos del servicio',
+      description:
+        'Términos y condiciones de uso de los productos Henzo Fitness.',
     },
   },
   privacy: {
@@ -276,6 +323,11 @@ export const PUBLIC_PAGE_COPY: Record<
       title: 'Polityka prywatności',
       description:
         'Jak Henzo Fitness zbiera, wykorzystuje i chroni dane osobowe.',
+    },
+    es: {
+      title: 'Política de privacidad',
+      description:
+        'Cómo Henzo Fitness recopila, usa y protege los datos personales.',
     },
   },
   blog: {
@@ -314,6 +366,16 @@ export const PUBLIC_PAGE_COPY: Record<
       keywords: [
         'wskazówki studio fitness',
         'blog zarządzanie studiem',
+        'Henzo blog',
+      ],
+    },
+    es: {
+      title: 'Blog Henzo - consejos para dueños de estudios de fitness',
+      description:
+        'Guías prácticas sobre horarios, retención y crecimiento de tu estudio de fitness con Henzo.',
+      keywords: [
+        'consejos estudio fitness',
+        'blog gestión de estudio',
         'Henzo blog',
       ],
     },

@@ -18,6 +18,7 @@ export const businessHeaderLanguages: readonly LanguageOption[] = [
   { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
   { code: 'pl', name: 'Polski', flag: '🇵🇱' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
 ];
 
 export function usePublicHeaderState() {

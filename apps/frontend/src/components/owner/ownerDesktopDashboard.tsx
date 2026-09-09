@@ -1,25 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Bell,
-  Building2,
+  ArrowRight,
   ChevronRight,
   Dumbbell,
+  Link2,
+  MapPin,
   Plus,
+  Star,
   UserPlus,
-  UserRound,
 } from 'lucide-react';
 import type {
   OwnerSessionEnrollment,
   OwnerTrainingSession,
 } from '@/lib/owner/types';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import { formatOwnerTime24h } from '@/lib/owner/format-time';
+import { copyTextToClipboard } from '@/lib/owner/booking-link';
 import {
-  formatOwnerTime24h,
-  isPlaceholderTrainerName,
-} from '@/lib/owner/format-time';
-import { OwnerSessionCard } from '@/components/owner/ownerSessionCard';
+  OwnerScheduleEmptyCard,
+  OwnerSessionCard,
+} from '@/components/owner/ownerSessionCard';
 
 export type DashboardNextBooking = {
   key: string;
@@ -34,35 +37,6 @@ function greetingPhrase(hour: number): string {
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
-}
-
-function sessionStatus(session: OwnerTrainingSession): {
-  label: string;
-  bg: string;
-  color: string;
-} {
-  const now = Date.now();
-  const start = new Date(session.startsAt).getTime();
-  const end = new Date(session.endsAt).getTime();
-  if (session.status === 'COMPLETED' || end < now) {
-    return { label: 'Done', bg: '#F3F4F6', color: '#6B7280' };
-  }
-  if (start <= now && now < end) {
-    return { label: 'On going', bg: '#DCFCE7', color: '#166534' };
-  }
-  // Stable pastel by session id hash
-  const palettes = [
-    { bg: '#E0F2FE', color: '#0369A1' },
-    { bg: '#F3E8FF', color: '#7E22CE' },
-    { bg: '#FFEDD5', color: '#C2410C' },
-    { bg: '#FCE7F3', color: '#BE185D' },
-    { bg: '#FEF3C7', color: '#A16207' },
-  ];
-  let h = 0;
-  for (let i = 0; i < session.sessionId.length; i++) {
-    h = (h + session.sessionId.charCodeAt(i) * (i + 1)) % palettes.length;
-  }
-  return { label: 'Upcoming', ...palettes[h]! };
 }
 
 function initials(name: string): string {
@@ -116,86 +90,27 @@ export function OwnerDashboardGreeting({
   );
 }
 
-function DesktopScheduleRow({
-  session,
-  href,
-}: {
-  session: OwnerTrainingSession;
-  href: string;
-}) {
-  const status = sessionStatus(session);
-  const trainerRaw = session.trainer?.name?.trim() || '';
-  const trainer = isPlaceholderTrainerName(trainerRaw) ? '' : trainerRaw;
-  const capacity = session.capacity || 0;
-  const enrolled = session.enrolledCount || 0;
-
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-[#FFFCF9] sm:gap-4"
-    >
-      <div
-        className="w-[5.5rem] shrink-0 text-sm font-semibold tabular-nums sm:w-28"
-        style={{ color: ownerTheme.text }}
-      >
-        {formatOwnerTime24h(session.startsAt)}
-        <span className="text-[#A4A4A4]"> – </span>
-        {formatOwnerTime24h(session.endsAt)}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-[15px] font-bold"
-          style={{ color: ownerTheme.text }}
-        >
-          {session.training?.name || 'Class'}
-        </p>
-        <p
-          className="mt-0.5 truncate text-sm"
-          style={{ color: ownerTheme.textSecondary }}
-        >
-          {trainer || 'No trainer'}
-        </p>
-      </div>
-      <div
-        className="hidden items-center gap-1.5 text-sm font-medium tabular-nums sm:flex"
-        style={{ color: ownerTheme.text }}
-      >
-        <UserRound
-          className="h-3.5 w-3.5"
-          style={{ color: ownerTheme.textSecondary }}
-        />
-        {enrolled} / {capacity || '—'}
-      </div>
-      <span
-        className="hidden rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex"
-        style={{ backgroundColor: status.bg, color: status.color }}
-      >
-        {status.label}
-      </span>
-      <ChevronRight
-        className="h-4 w-4 shrink-0"
-        style={{ color: ownerTheme.textSecondary }}
-      />
-    </Link>
-  );
-}
-
 export function OwnerDashboardSchedulePanel({
   sessions,
   localePath,
+  bookingLink,
 }: {
   sessions: OwnerTrainingSession[];
   localePath: (path: string) => string;
+  bookingLink?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-[16px] bg-white">
-      <div className="flex items-center justify-between gap-2 px-4 py-3.5">
-        <h2 className="text-base font-bold" style={{ color: ownerTheme.text }}>
-          Today&apos;s schedule
+    <section>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2
+          className="text-[13px] font-semibold uppercase tracking-[0.06em]"
+          style={{ color: ownerTheme.text }}
+        >
+          Daily schedule
         </h2>
         <Link
           href={localePath('/calendar')}
-          className="text-sm font-semibold"
+          className="text-[11px] font-semibold uppercase tracking-wide"
           style={{ color: ownerTheme.accent }}
         >
           See all ›
@@ -203,80 +118,156 @@ export function OwnerDashboardSchedulePanel({
       </div>
 
       {sessions.length === 0 ? (
-        <div className="px-4 pb-8 pt-2 text-center">
-          <p className="font-medium" style={{ color: ownerTheme.text }}>
-            No trainings today
-          </p>
-          <p
-            className="mt-1 text-sm"
-            style={{ color: ownerTheme.textSecondary }}
-          >
-            Enjoy your day!
-          </p>
-        </div>
+        <OwnerScheduleEmptyCard
+          title="No bookings yet"
+          subtitle="Share your booking link to start receiving clients."
+          bookingLink={bookingLink}
+        />
       ) : (
-        <>
-          {/* Desktop rows */}
-          <ul className="hidden divide-y divide-[#F1E4DB] lg:block">
-            {sessions.map((s) => (
-              <li key={s.sessionId}>
-                <DesktopScheduleRow
-                  session={s}
-                  href={localePath(`/calendar/session/${s.sessionId}`)}
-                />
-              </li>
-            ))}
-          </ul>
-          {/* Mobile cards — existing style */}
-          <ul className="space-y-2.5 px-3 pb-3 lg:hidden">
-            {sessions.map((s) => (
-              <li key={s.sessionId}>
-                <OwnerSessionCard
-                  session={s}
-                  href={localePath(`/calendar/session/${s.sessionId}`)}
-                />
-              </li>
-            ))}
-          </ul>
-        </>
+        <ul className="space-y-2.5">
+          {sessions.map((s) => (
+            <li key={s.sessionId}>
+              <OwnerSessionCard
+                session={s}
+                href={localePath(`/calendar/session/${s.sessionId}`)}
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
 }
 
-export function OwnerDashboardViewStudioLink({ href }: { href: string }) {
+export function OwnerDashboardStudioBanner({
+  href,
+  name,
+  address,
+  photoUrl,
+  rating,
+  reviewCount,
+  categories = [],
+}: {
+  href: string;
+  name: string;
+  address?: string | null;
+  photoUrl?: string | null;
+  rating?: number | null;
+  reviewCount?: number | null;
+  categories?: {
+    id: number;
+    label: string;
+    chipBgHex: string;
+    chipFgHex: string;
+  }[];
+}) {
+  const visibleTags = categories.slice(0, 3);
+  const moreCount = Math.max(0, categories.length - visibleTags.length);
+  const hasRating = typeof rating === 'number' && rating > 0;
+  const ratingText = hasRating ? rating!.toFixed(1) : null;
+
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-[16px] bg-white px-4 py-3.5 transition hover:bg-[#FFFCF9]"
+      className="group relative flex min-h-[168px] overflow-hidden rounded-[18px] bg-white transition hover:bg-[#FFFCF9]"
     >
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-        style={{
-          backgroundColor: 'rgba(241, 89, 66, 0.12)',
-          color: ownerTheme.accent,
-        }}
-      >
-        <Building2 className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span
-          className="block text-[15px] font-bold"
-          style={{ color: ownerTheme.text }}
-        >
-          View studio
-        </span>
-        <span
-          className="mt-0.5 block text-sm"
-          style={{ color: ownerTheme.textSecondary }}
-        >
-          Check your studio details, location and settings
-        </span>
-      </span>
-      <ChevronRight
-        className="h-4 w-4 shrink-0"
-        style={{ color: ownerTheme.textSecondary }}
-      />
+      <div className="relative w-[38%] max-w-[220px] shrink-0 self-stretch sm:w-[32%]">
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photoUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: ownerTheme.bgSoft }}
+          />
+        )}
+        <div
+          className="absolute inset-y-0 right-0 w-16 sm:w-20"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, #fff 92%)',
+          }}
+          aria-hidden
+        />
+      </div>
+
+      <div className="relative flex min-w-0 flex-1 flex-col py-5 pl-1 pr-4 sm:pl-2 sm:pr-5">
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <h3
+            className="text-[1.25rem] font-bold leading-tight tracking-tight sm:text-[1.35rem]"
+            style={{ color: ownerTheme.text }}
+          >
+            {name || 'Studio'}
+          </h3>
+          {hasRating && ratingText ? (
+            <span className="inline-flex items-center gap-1 text-sm">
+              <Star
+                className="h-3.5 w-3.5 fill-[#B7D356] text-[#B7D356]"
+                aria-hidden
+              />
+              <span className="font-semibold text-[#7BA01A]">{ratingText}</span>
+              {(reviewCount ?? 0) > 0 ? (
+                <span style={{ color: ownerTheme.textSecondary }}>
+                  ({reviewCount}{' '}
+                  {(reviewCount ?? 0) === 1 ? 'review' : 'reviews'})
+                </span>
+              ) : null}
+            </span>
+          ) : null}
+        </div>
+
+        {address ? (
+          <p
+            className="mt-2 flex items-start gap-1.5 text-sm leading-snug"
+            style={{ color: ownerTheme.textSecondary }}
+          >
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="line-clamp-2">{address}</span>
+          </p>
+        ) : null}
+
+        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+          <div className="min-w-0 flex flex-wrap items-center gap-1.5">
+            {visibleTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
+                style={{
+                  backgroundColor: tag.chipBgHex,
+                  color: tag.chipFgHex,
+                }}
+              >
+                {tag.label}
+              </span>
+            ))}
+            {moreCount > 0 ? (
+              <span
+                className="rounded-full px-2.5 py-0.5 text-[12px] font-medium"
+                style={{
+                  backgroundColor: ownerTheme.bgSoft,
+                  color: ownerTheme.textSecondary,
+                }}
+              >
+                +{moreCount} more
+              </span>
+            ) : null}
+          </div>
+
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition group-hover:bg-[#FFF8F4]"
+            style={{
+              color: ownerTheme.accent,
+              boxShadow: `inset 0 0 0 1.5px ${ownerTheme.accent}`,
+            }}
+          >
+            View studio
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </span>
+        </div>
+      </div>
     </Link>
   );
 }
@@ -291,6 +282,36 @@ export function OwnerDashboardNewClassButton({ href }: { href: string }) {
       <Plus className="h-4 w-4" strokeWidth={2.5} />
       New class
     </Link>
+  );
+}
+
+export function OwnerDashboardCopyBookingLinkButton({
+  bookingLink,
+}: {
+  bookingLink: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = async () => {
+    const ok = await copyTextToClipboard(bookingLink);
+    if (!ok) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => void onCopy()}
+      className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-transparent py-3 text-sm font-semibold transition hover:bg-[#FFF8F4]"
+      style={{
+        color: ownerTheme.accent,
+        boxShadow: `inset 0 0 0 1.5px ${ownerTheme.accent}`,
+      }}
+    >
+      <Link2 className="h-4 w-4" strokeWidth={2.25} />
+      {copied ? 'Copied!' : 'Copy booking link'}
+    </button>
   );
 }
 
@@ -311,11 +332,6 @@ export function OwnerDashboardSidebar({
       label: 'Create class',
       href: localePath('/trainings/new'),
       icon: <Dumbbell className="h-4 w-4" />,
-    },
-    {
-      label: 'Client reminders',
-      href: localePath('/salon-info'),
-      icon: <Bell className="h-4 w-4" />,
     },
   ];
 
