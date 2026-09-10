@@ -823,7 +823,11 @@ class _PublicStudioScheduleScreenState
 
                                   FilledButton(
                                     onPressed: _loadSchedule,
-                                    child: const Text('Retry'),
+                                    child: Text(
+                                      context
+                                          .read<LocaleProvider>()
+                                          .t('common.retry'),
+                                    ),
                                   ),
                                 ],
                               ),

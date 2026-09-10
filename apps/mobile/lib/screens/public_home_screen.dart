@@ -196,6 +196,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       showDragHandle: true,
       backgroundColor: AppColors.backgroundPrimary,
       builder: (ctx) {
+        final loc = context.read<LocaleProvider>();
         return SafeArea(
           top: false,
           child: Padding(
@@ -205,7 +206,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Share your location',
+                  loc.t('clientMap.locationPromptTitle'),
                   style: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
@@ -214,7 +215,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'To show nearby studios, allow location access or choose city manually.',
+                  loc.t('clientMap.locationPromptBody'),
                   style: TextStyle(
                     fontSize: 14.sp,
                     color: AppColors.textSecondary,
@@ -234,7 +235,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text('Use current location'),
+                    child: Text(loc.t('clientHome.locationPickerUseCity')),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -250,7 +251,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text('Enter city manually'),
+                    child: Text(loc.t('clientHome.enterCityManually')),
                   ),
                 ),
               ],
@@ -718,23 +719,32 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
           );
     if (!mounted) return;
     if (ok) {
+      final loc = context.read<LocaleProvider>();
       if (wasFavorite) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(content: Text('Removed from favorites')),
+            SnackBar(content: Text(loc.t('clientFavorites.removed'))),
           );
       } else {
         HapticFeedback.lightImpact();
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Added to favorites')));
+          ..showSnackBar(
+            SnackBar(content: Text(loc.t('clientHome.addedToFavorites'))),
+          );
       }
     } else {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Failed to update favorites')),
+          SnackBar(
+            content: Text(
+              context.read<LocaleProvider>().t(
+                'clientHome.failedToUpdateFavorites',
+              ),
+            ),
+          ),
         );
     }
     setState(() => _favoriteLoadingIds.remove(studio.id));

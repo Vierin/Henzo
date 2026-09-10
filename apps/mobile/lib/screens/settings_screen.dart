@@ -558,7 +558,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted) return;
       if (upload.url == null) {
-        _showSnack(upload.error ?? context.read<LocaleProvider>().t('profileForm.uploadLogoFailed'));
+        _showSnack(
+          context.read<LocaleProvider>().t(
+            upload.error ?? 'profileForm.uploadLogoFailed',
+          ),
+        );
         return;
       }
       setState(() => _logoUrl = upload.url);

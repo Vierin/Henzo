@@ -61,7 +61,8 @@
     "distanceKmShort": "{value} км",
     "minShort": "мин",
     "distanceMSshort": "{value} м",
-    "signInToUploadPhoto": "Войдите снова, чтобы загрузить фото"
+    "signInToUploadPhoto": "Войдите снова, чтобы загрузить фото",
+    "dateTbd": "Дата уточняется"
   },
   "nav": {
     "dashboard": "Дашборд",
@@ -217,7 +218,9 @@
     "filterByTime": "Фильтр по времени",
     "activitiesByTimePeriod": "Занятия по времени суток",
     "activitiesByStartTime": "Занятия по времени начала",
-    "failedToUpdateFavorites": "Не удалось обновить избранное"
+    "failedToUpdateFavorites": "Не удалось обновить избранное",
+    "enterCityManually": "Ввести город вручную",
+    "addedToFavorites": "Добавлено в избранное"
   },
   "clientShell": {
     "home": "Главная",
@@ -279,7 +282,8 @@
     "notificationsTitle": "Будьте в курсе",
     "notificationsSubtitle": "Включите уведомления о занятиях и обновлениях студий.",
     "manageNotifications": "Уведомления",
-    "failedToUpdateFavorites": "Не удалось обновить избранное"
+    "failedToUpdateFavorites": "Не удалось обновить избранное",
+    "startWorkout": "Начать тренировку"
   },
   "clientStudioDetail": {
     "shareInvite": "{name} приглашает вас посмотреть {studio} в Henzo",
@@ -439,7 +443,8 @@
     "showMore": "Подробнее",
     "noTrainingsToday": "На сегодня занятий нет",
     "enjoyYourDay": "Хорошего дня!",
-    "studioNowActive": "Студия теперь активна"
+    "studioNowActive": "Студия теперь активна",
+    "loadingSalonData": "Загрузка данных салона..."
   },
   "ownerSession": {
     "detailTitle": "Занятие",
@@ -845,7 +850,8 @@
     "daysAgo": "{n} дн. назад",
     "sectionToday": "СЕГОДНЯ",
     "sectionYesterday": "ВЧЕРА",
-    "sectionEarlier": "ПРЕДЫДУЩИЕ"
+    "sectionEarlier": "ПРЕДЫДУЩИЕ",
+    "sessionNotFound": "Сессия не найдена"
   },
   "settings": {
     "languageEn": "English",
@@ -922,7 +928,8 @@
       "classesThisMonth": "Занятия",
       "trainers": "Тренеры",
       "upgradeHint": "Перейдите на Studio для расширения"
-    }
+    },
+    "languageEs": "Испанский"
   },
   "calendar": {
     "scheduleTitle": "Расписание",
@@ -1179,7 +1186,11 @@
     "weekdayFri": "ПТ",
     "weekdaySat": "СБ",
     "weekdaySun": "ВС",
-    "language": "Язык"
+    "language": "Язык",
+    "addedWithSessions": "Тренировка добавлена. Создано занятий: {created}{skipped}",
+    "addedWithOneSession": "Тренировка и занятие добавлены{skipped}",
+    "skippedConflicts": ", пропущено из-за конфликтов: {n}",
+    "studioOwnerFallback": "Владелец студии"
   },
   "trainer": {
     "role": "Тренер",
@@ -1224,7 +1235,16 @@
     "currentMonth": "Текущий месяц",
     "previousMonth": "Прошлый месяц",
     "currentWeek": "Текущая неделя",
-    "previousWeek": "Прошлая неделя"
+    "previousWeek": "Прошлая неделя",
+    "weekdays": [
+      "Пн",
+      "Вт",
+      "Ср",
+      "Чт",
+      "Пт",
+      "Сб",
+      "Вс"
+    ]
   },
   "bookings": {
     "bookingCancelled": "Запись отменена",
@@ -1261,5 +1281,11 @@
   },
   "publicClassDetail": {
     "notFound": "Этот класс больше недоступен."
+  },
+  "workSchedule": {
+    "title": "Рабочий график",
+    "subtitle": "Укажите временной диапазон работы",
+    "start": "Начало",
+    "end": "Конец"
   }
 }

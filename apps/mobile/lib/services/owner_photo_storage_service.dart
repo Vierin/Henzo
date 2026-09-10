@@ -154,7 +154,7 @@ class OwnerPhotoStorageService {
     final authUid = authenticatedOwnerId;
     if (Supabase.instance.client.auth.currentSession == null ||
         authUid == null) {
-      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+      return (url: null, error: 'accountSettings.reloginToUploadPhoto');
     }
     final expectedPrefix = 'owners/$authUid/';
     if (!storagePath.startsWith(expectedPrefix)) {
@@ -200,14 +200,14 @@ class OwnerPhotoStorageService {
     required XFile file,
   }) async {
     if (authenticatedOwnerId == null) {
-      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+      return (url: null, error: 'accountSettings.reloginToUploadPhoto');
     }
     final bytes = await convertXFileToWebp(
       file,
       maxEdge: galleryMaxEdge,
     );
     if (bytes == null) {
-      return (url: null, error: 'Фото больше 3 MB после сжатия');
+      return (url: null, error: 'profileForm.photoTooLarge');
     }
     return uploadStudioGalleryWebpBytes(bytes: bytes);
   }
@@ -216,14 +216,14 @@ class OwnerPhotoStorageService {
     required Uint8List croppedBytes,
   }) async {
     if (authenticatedOwnerId == null) {
-      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+      return (url: null, error: 'accountSettings.reloginToUploadPhoto');
     }
     final bytes = await convertBytesToWebp(
       croppedBytes,
       maxEdge: galleryMaxEdge,
     );
     if (bytes == null) {
-      return (url: null, error: 'Фото больше 3 MB после сжатия');
+      return (url: null, error: 'profileForm.photoTooLarge');
     }
     return uploadStudioGalleryWebpBytes(bytes: bytes);
   }
@@ -260,7 +260,7 @@ class OwnerPhotoStorageService {
     bool originalAlreadyPrepared = false,
   }) async {
     if (authenticatedOwnerId == null) {
-      return (asset: null, error: 'Нет сессии Supabase — войдите снова');
+      return (asset: null, error: 'accountSettings.reloginToUploadPhoto');
     }
 
     final original = originalAlreadyPrepared
@@ -279,7 +279,7 @@ class OwnerPhotoStorageService {
       maxEdge: galleryMaxEdge,
     );
     if (original == null || hero == null || card == null) {
-      return (asset: null, error: 'Фото больше 3 MB после сжатия');
+      return (asset: null, error: 'profileForm.photoTooLarge');
     }
 
     final originalUpload = await uploadWebpBytes(
@@ -324,14 +324,14 @@ class OwnerPhotoStorageService {
     required XFile file,
   }) async {
     if (authenticatedOwnerId == null) {
-      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+      return (url: null, error: 'accountSettings.reloginToUploadPhoto');
     }
     final bytes = await convertXFileToWebp(
       file,
       maxEdge: avatarMaxEdge,
     );
     if (bytes == null) {
-      return (url: null, error: 'Фото больше 3 MB после сжатия');
+      return (url: null, error: 'profileForm.photoTooLarge');
     }
     return uploadWebpBytes(
       bytes: bytes,
@@ -345,14 +345,14 @@ class OwnerPhotoStorageService {
     required XFile file,
   }) async {
     if (authenticatedOwnerId == null) {
-      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+      return (url: null, error: 'accountSettings.reloginToUploadPhoto');
     }
     final bytes = await convertXFileToWebp(
       file,
       maxEdge: avatarMaxEdge,
     );
     if (bytes == null) {
-      return (url: null, error: 'Фото больше 3 MB после сжатия');
+      return (url: null, error: 'profileForm.photoTooLarge');
     }
     return uploadWebpBytes(
       bytes: bytes,

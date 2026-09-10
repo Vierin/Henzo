@@ -61,7 +61,8 @@
     "distanceKmShort": "{value} km",
     "minShort": "min",
     "distanceMSshort": "{value} m",
-    "signInToUploadPhoto": "Please sign in again to upload photo"
+    "signInToUploadPhoto": "Please sign in again to upload photo",
+    "dateTbd": "Date TBD"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -217,7 +218,9 @@
     "filterByTime": "Filter by time",
     "activitiesByTimePeriod": "Activities by time period",
     "activitiesByStartTime": "Activities by start time",
-    "failedToUpdateFavorites": "Failed to update favorites"
+    "failedToUpdateFavorites": "Failed to update favorites",
+    "enterCityManually": "Enter city manually",
+    "addedToFavorites": "Added to favorites"
   },
   "clientShell": {
     "home": "Home",
@@ -279,7 +282,8 @@
     "notificationsTitle": "Stay in the loop",
     "notificationsSubtitle": "Enable notifications to get reminders about your upcoming classes and studio updates.",
     "manageNotifications": "Manage notifications",
-    "failedToUpdateFavorites": "Failed to update favorites"
+    "failedToUpdateFavorites": "Failed to update favorites",
+    "startWorkout": "Start workout"
   },
   "clientStudioDetail": {
     "shareInvite": "{name} invites you to check out {studio} on Henzo",
@@ -439,7 +443,8 @@
     "showMore": "Show more",
     "noTrainingsToday": "No trainings scheduled for today",
     "enjoyYourDay": "Enjoy your day!",
-    "studioNowActive": "Studio is now active"
+    "studioNowActive": "Studio is now active",
+    "loadingSalonData": "Loading studio data..."
   },
   "ownerSession": {
     "detailTitle": "Class",
@@ -845,7 +850,8 @@
     "daysAgo": "{n} days ago",
     "sectionToday": "TODAY",
     "sectionYesterday": "YESTERDAY",
-    "sectionEarlier": "EARLIER"
+    "sectionEarlier": "EARLIER",
+    "sessionNotFound": "Session not found"
   },
   "settings": {
     "languageEn": "English",
@@ -922,7 +928,8 @@
       "classesThisMonth": "Classes",
       "trainers": "Trainers",
       "upgradeHint": "Upgrade to Studio for more"
-    }
+    },
+    "languageEs": "Spanish"
   },
   "calendar": {
     "scheduleTitle": "Schedule",
@@ -1179,7 +1186,11 @@
     "weekdayFri": "FR",
     "weekdaySat": "SA",
     "weekdaySun": "SU",
-    "language": "Language"
+    "language": "Language",
+    "addedWithSessions": "Training added. Sessions created: {created}{skipped}",
+    "addedWithOneSession": "Training and session added{skipped}",
+    "skippedConflicts": ", skipped due to conflicts: {n}",
+    "studioOwnerFallback": "Studio owner"
   },
   "trainer": {
     "role": "Trainer",
@@ -1224,7 +1235,16 @@
     "currentMonth": "Current month",
     "previousMonth": "Previous month",
     "currentWeek": "Current week",
-    "previousWeek": "Previous week"
+    "previousWeek": "Previous week",
+    "weekdays": [
+      "Mo",
+      "Tu",
+      "We",
+      "Th",
+      "Fr",
+      "Sa",
+      "Su"
+    ]
   },
   "bookings": {
     "bookingCancelled": "Booking cancelled",
@@ -1261,5 +1281,11 @@
   },
   "publicClassDetail": {
     "notFound": "This class is no longer available."
+  },
+  "workSchedule": {
+    "title": "Work schedule",
+    "subtitle": "Set your work time range",
+    "start": "Start",
+    "end": "End"
   }
 }

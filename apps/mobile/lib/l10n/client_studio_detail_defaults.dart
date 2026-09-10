@@ -51,6 +51,23 @@ const Map<String, Map<String, String>> clientStudioDetailDefaults = {
     'reviewsOnCount': 'trên {count} đánh giá',
     'upcomingClassesTitle': 'Lớp sắp tới',
   },
+  'es': {
+    'shareInvite': '{name} te invita a conocer {studio} en Henzo',
+    'share': 'Compartir',
+    'addressCopied': 'Dirección copiada',
+    'readMore': 'Ver más',
+    'readLess': 'Ver menos',
+    'viewSchedule': 'Ver horario',
+    'viewScheduleSubtitle': 'Ver todas las clases y reservar',
+    'reviewsTitle': 'Reseñas',
+    'reviewsSeeMore': 'Ver más',
+    'reviewsRating': '{rating} ({count} reseñas)',
+    'reviewsDaysAgo': 'hace {count} días',
+    'reviewsHoursAgo': 'hace {count} h',
+    'reviewsJustNow': 'Justo ahora',
+    'reviewsOnCount': 'en {count} reseñas',
+    'upcomingClassesTitle': 'Próximas clases',
+  },
 };
 
 void mergeClientStudioDetailDefaults(

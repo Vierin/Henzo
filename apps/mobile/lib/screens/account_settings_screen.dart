@@ -134,7 +134,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           );
         }
       } else {
-        _showSnack(upload.error ?? context.read<LocaleProvider>().t('accountSettings.uploadPhotoFailed'));
+        _showSnack(
+          context.read<LocaleProvider>().t(
+            upload.error ?? 'accountSettings.uploadPhotoFailed',
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

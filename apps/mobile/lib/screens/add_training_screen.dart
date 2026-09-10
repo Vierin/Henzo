@@ -523,6 +523,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     ('en', 'English'),
     ('ru', 'Русский'),
     ('vi', 'Tiếng Việt'),
+    ('es', 'Español'),
   ];
 
   String _languageLabel() {
@@ -1562,20 +1563,23 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             endsOnDate: _isRecurring ? _recurringEndDayOnly : sessionDay,
           );
       if (!mounted) return;
+      final loc = context.read<LocaleProvider>();
       final skippedText = recurringResult.skippedCount > 0
-          ? ', пропущено из-за конфликтов: ${recurringResult.skippedCount}'
+          ? loc
+                .t('addTraining.skippedConflicts')
+                .replaceAll('{n}', '${recurringResult.skippedCount}')
           : '';
       final createdN = recurringResult.createdCount;
+      final message = (!_isRecurring && createdN == 1)
+          ? loc
+                .t('addTraining.addedWithOneSession')
+                .replaceAll('{skipped}', skippedText)
+          : loc
+                .t('addTraining.addedWithSessions')
+                .replaceAll('{created}', '$createdN')
+                .replaceAll('{skipped}', skippedText);
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(
-            _isRecurring
-                ? 'Тренировка добавлена. Создано занятий: $createdN$skippedText'
-                : createdN == 1
-                ? 'Тренировка и занятие добавлены$skippedText'
-                : 'Тренировка добавлена. Создано занятий: $createdN$skippedText',
-          ),
-        ),
+        SnackBar(content: Text(message)),
       );
       context.read<ServicesStaffCache>().invalidateServices(studioId);
       context.read<OwnerSessionsCache>().invalidate();
@@ -1649,7 +1653,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final user = context.read<AuthService>().user;
     final ownerName = user?.name?.trim().isNotEmpty == true
         ? user!.name!.trim()
-        : (user?.email ?? 'Владелец студии');
+        : (user?.email ?? loc.t('addTraining.studioOwnerFallback'));
     final textTheme = Theme.of(context).textTheme;
     return PopScope(
       canPop: _step == 1,

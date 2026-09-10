@@ -149,7 +149,9 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(upload.error ?? locale.t('errors.generic'))),
+          SnackBar(
+            content: Text(locale.t(upload.error ?? 'errors.generic')),
+          ),
         );
       }
     } catch (e) {

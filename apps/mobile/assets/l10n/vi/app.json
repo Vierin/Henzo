@@ -61,7 +61,8 @@
     "distanceKmShort": "{value} km",
     "minShort": "phút",
     "distanceMSshort": "{value} m",
-    "signInToUploadPhoto": "Đăng nhập lại để tải ảnh"
+    "signInToUploadPhoto": "Đăng nhập lại để tải ảnh",
+    "dateTbd": "Chưa có ngày"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",
@@ -217,7 +218,9 @@
     "filterByTime": "Lọc theo thời gian",
     "activitiesByTimePeriod": "Hoạt động theo buổi",
     "activitiesByStartTime": "Hoạt động theo giờ bắt đầu",
-    "failedToUpdateFavorites": "Không thể cập nhật yêu thích"
+    "failedToUpdateFavorites": "Không thể cập nhật yêu thích",
+    "enterCityManually": "Nhập thành phố thủ công",
+    "addedToFavorites": "Đã thêm vào yêu thích"
   },
   "clientShell": {
     "home": "Trang chủ",
@@ -279,7 +282,8 @@
     "notificationsTitle": "Luôn cập nhật",
     "notificationsSubtitle": "Bật thông báo về lớp sắp tới và cập nhật studio.",
     "manageNotifications": "Quản lý thông báo",
-    "failedToUpdateFavorites": "Không thể cập nhật yêu thích"
+    "failedToUpdateFavorites": "Không thể cập nhật yêu thích",
+    "startWorkout": "Bắt đầu tập"
   },
   "clientStudioDetail": {
     "shareInvite": "{name} mời bạn xem {studio} trên Henzo",
@@ -439,7 +443,8 @@
     "showMore": "Xem thêm",
     "noTrainingsToday": "Không có lớp nào hôm nay",
     "enjoyYourDay": "Chúc bạn một ngày tốt lành!",
-    "studioNowActive": "Studio đã hoạt động"
+    "studioNowActive": "Studio đã hoạt động",
+    "loadingSalonData": "Đang tải dữ liệu studio..."
   },
   "ownerSession": {
     "detailTitle": "Buổi tập",
@@ -845,7 +850,8 @@
     "daysAgo": "{n} ngày trước",
     "sectionToday": "HÔM NAY",
     "sectionYesterday": "HÔM QUA",
-    "sectionEarlier": "TRƯỚC ĐÓ"
+    "sectionEarlier": "TRƯỚC ĐÓ",
+    "sessionNotFound": "Không tìm thấy buổi tập"
   },
   "settings": {
     "languageEn": "English",
@@ -922,7 +928,8 @@
       "classesThisMonth": "Lớp",
       "trainers": "Huấn luyện viên",
       "upgradeHint": "Nâng cấp lên Studio để mở rộng"
-    }
+    },
+    "languageEs": "Tiếng Tây Ban Nha"
   },
   "calendar": {
     "scheduleTitle": "Lịch",
@@ -1179,7 +1186,11 @@
     "weekdayFri": "T6",
     "weekdaySat": "T7",
     "weekdaySun": "CN",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "addedWithSessions": "Đã thêm buổi tập. Số buổi đã tạo: {created}{skipped}",
+    "addedWithOneSession": "Đã thêm buổi tập và lịch{skipped}",
+    "skippedConflicts": ", bỏ qua do trùng lịch: {n}",
+    "studioOwnerFallback": "Chủ studio"
   },
   "trainer": {
     "role": "Huấn luyện viên",
@@ -1224,7 +1235,16 @@
     "currentMonth": "Tháng hiện tại",
     "previousMonth": "Tháng trước",
     "currentWeek": "Tuần hiện tại",
-    "previousWeek": "Tuần trước"
+    "previousWeek": "Tuần trước",
+    "weekdays": [
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "CN"
+    ]
   },
   "bookings": {
     "bookingCancelled": "Đã hủy đặt chỗ",
@@ -1261,5 +1281,11 @@
   },
   "publicClassDetail": {
     "notFound": "Lớp học này không còn khả dụng."
+  },
+  "workSchedule": {
+    "title": "Lịch làm việc",
+    "subtitle": "Chọn khoảng thời gian làm việc",
+    "start": "Bắt đầu",
+    "end": "Kết thúc"
   }
 }
