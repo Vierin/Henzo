@@ -91,7 +91,7 @@ export function ClientLocationPicker({
     setError(null);
   };
 
-  const useGps = async () => {
+  const detectGps = async () => {
     setError(null);
     if (!navigator.geolocation) {
       setError('Geolocation is not supported in this browser');
@@ -195,7 +195,7 @@ export function ClientLocationPicker({
 
             <button
               type="button"
-              onClick={() => void useGps()}
+              onClick={() => void detectGps()}
               disabled={locating}
               className="mt-2 flex w-full items-center gap-2 rounded-xl px-2 py-2.5 text-left text-sm font-semibold text-[#4D39A8] hover:bg-[#F5F2FF] disabled:opacity-60"
             >

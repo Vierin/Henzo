@@ -111,7 +111,7 @@ export function OwnerSelect({
           style={{ borderColor: ownerTheme.borderSoft }}
         >
           {placeholder != null && placeholder !== '' ? (
-            <li role="option">
+            <li role="option" aria-selected={value === ''}>
               <button
                 type="button"
                 className="flex w-full items-center gap-2 rounded-[12px] px-3.5 py-2.5 text-left text-[15px] transition hover:bg-[#FFF8F4]"
