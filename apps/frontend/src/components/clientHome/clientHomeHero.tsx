@@ -7,6 +7,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { ClientHomeHeader } from '@/components/clientHome/clientHomeHeader';
 import { ClientHomeCategoryLinks } from '@/components/clientHome/clientHomeCategoryLinks';
 import { ClientLocationPicker } from '@/components/clientHome/clientLocationPicker';
+import { ClientLocationPrompt } from '@/components/clientHome/clientLocationPrompt';
 import type { PublicTrainingCategory } from '@/lib/client/training-category';
 import { withLocale, type Locale } from '@/i18n/routing';
 
@@ -39,6 +40,7 @@ export function ClientHomeHero({ categories, locale }: Props) {
 
   return (
     <section className="relative flex min-h-[90svh] flex-col overflow-hidden bg-[#F9F4F0] font-wix-madefor-display">
+      <ClientLocationPrompt />
       <div
         className="pointer-events-none absolute inset-y-0 right-0 hidden w-[60%] bg-[url('/images/hero-bg.webp')] bg-cover bg-center lg:block [mask-image:linear-gradient(to_right,transparent_0%,black_32%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_32%)]"
         aria-hidden

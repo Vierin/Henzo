@@ -231,6 +231,20 @@
       "searchPlaceholder": "¿Qué estás buscando?",
       "searchHint": "Yoga, Pilates, Gym, Boxing...",
       "popularNearYou": "Popular cerca de ti"
+    },
+    "locationPrompt": {
+      "title": "Comparte tu ubicación",
+      "body": "Para mostrar estudios cerca de ti, permite el acceso a la ubicación o elige tu ciudad.",
+      "useCurrent": "Usar ubicación actual",
+      "enterManual": "Introducir ciudad manualmente",
+      "detecting": "Detectando…",
+      "searchPlaceholder": "Buscar ciudad…",
+      "popular": "Populares",
+      "noCities": "No se encontraron ciudades",
+      "searching": "Buscando…",
+      "back": "Atrás",
+      "unsupported": "La geolocalización no es compatible con este navegador",
+      "detectFailed": "No se pudo detectar tu ubicación. Permite el acceso o busca una ciudad."
     }
   }
 }
