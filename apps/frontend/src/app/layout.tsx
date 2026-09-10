@@ -9,6 +9,7 @@ import Toaster from '@/components/Toaster';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import CookieBanner from '@/components/CookieBanner';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { ClientLocationProvider } from '@/contexts/ClientLocationContext';
 import { EnvValidator } from '@/components/EnvValidator';
 import LoadingFallback from '@/components/LoadingFallback';
 
@@ -93,16 +94,18 @@ export default async function RootLayout({
       >
         <EnvValidator />
         <LanguageProvider>
-          <div className="flex-1">
-            <Suspense
-              fallback={<LoadingFallback message="" fullScreen={true} />}
-            >
-              {children}
-            </Suspense>
-          </div>
-          <ConditionalFooter />
-          <CookieBanner />
-          <Toaster />
+          <ClientLocationProvider>
+            <div className="flex-1">
+              <Suspense
+                fallback={<LoadingFallback message="" fullScreen={true} />}
+              >
+                {children}
+              </Suspense>
+            </div>
+            <ConditionalFooter />
+            <CookieBanner />
+            <Toaster />
+          </ClientLocationProvider>
         </LanguageProvider>
         {/* Google Analytics */}
         <Script

@@ -75,6 +75,25 @@ main {
 	display: none;
 }
 
+/* Owner business panel: no gray borders on form fields */
+.owner-panel input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']),
+.owner-panel select,
+.owner-panel textarea,
+.owner-panel .owner-field {
+	border-color: transparent !important;
+	border-width: 0 !important;
+	box-shadow: none !important;
+}
+
+.owner-panel input:not([type='checkbox']):not([type='radio']):focus,
+.owner-panel select:focus,
+.owner-panel textarea:focus,
+.owner-panel .owner-field:focus {
+	outline: none !important;
+	box-shadow: none !important;
+	--tw-ring-shadow: 0 0 #0000 !important;
+}
+
 /* Custom styles for rsuite TimePicker to reduce width */
 .rs-picker-input-group {
 	width: 120px !important;

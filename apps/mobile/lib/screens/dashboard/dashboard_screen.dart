@@ -772,11 +772,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _openSessionDetail(s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: ColoredBox(
+        child: Container(
+          decoration: BoxDecoration(
             color: AppColors.primary500,
-            child: Padding(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
               child: Stack(
                 clipBehavior: Clip.none,
@@ -975,7 +976,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-        ),
       ),
     );
   }
@@ -1144,7 +1144,7 @@ class _RingsPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
+      ..strokeWidth = 1.0;
     final center = Offset(size.width / 2, size.height / 2);
     const radii = <double>[10, 36, 62, 88, 114];
     for (final r in radii) {

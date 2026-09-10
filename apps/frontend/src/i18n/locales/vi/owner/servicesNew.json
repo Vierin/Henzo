@@ -1,4 +1,4 @@
-{
+﻿{
 	"back": "Quay lại",
 	"title": "Thêm dịch vụ mới",
 	"subtitle": "Tạo dịch vụ mới cho salon của bạn với thông tin về giá và thời lượng.",
@@ -21,7 +21,7 @@
 	"duration": "Thời lượng (phút) *",
 	"durationPlaceholder": "60",
 	"durationHelp": "Nhập thời lượng bằng phút (ví dụ: 60 cho 1 giờ)",
-	"price": "Giá (₫) *",
+	"price": "Giá *",
 	"pricePlaceholder": "50000",
 	"priceHelp": "Nhập giá bằng đồng Việt Nam (chỉ số, ví dụ: 50000)",
 	"cancel": "Hủy",

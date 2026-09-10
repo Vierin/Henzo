@@ -14,6 +14,7 @@ const OG_LOCALE: Record<Locale, string> = {
   vi: 'vi_VN',
   cs: 'cs_CZ',
   pl: 'pl_PL',
+  es: 'es_ES',
 };
 
 export function siteBaseUrl(): string {
@@ -48,6 +49,7 @@ export function hreflangLanguages(
     'vi-VN': `/vi${p}`,
     'cs-CZ': `/cs${p}`,
     'pl-PL': `/pl${p}`,
+    'es-ES': `/es${p}`,
   };
 }
 

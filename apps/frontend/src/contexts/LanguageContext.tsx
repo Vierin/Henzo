@@ -87,17 +87,21 @@ export function LanguageProvider({
     pathNoLocale.startsWith('/owner-dashboard') ||
     pathNoLocale.startsWith('/salon-info') ||
     pathNoLocale.startsWith('/services') ||
+    pathNoLocale.startsWith('/trainings') ||
     pathNoLocale.startsWith('/staff') ||
     pathNoLocale.startsWith('/calendar') ||
     pathNoLocale.startsWith('/marketing') ||
     pathNoLocale.startsWith('/profile-settings') ||
     pathNoLocale.startsWith('/subscription') ||
     pathNoLocale.startsWith('/clients') ||
-    pathNoLocale.startsWith('/owner-help');
+    pathNoLocale.startsWith('/owner-help') ||
+    pathNoLocale.startsWith('/business/complete-setup');
 
   const isClientPage =
-    pathNoLocale.startsWith('/dashboard') ||
+    pathNoLocale.startsWith('/activity') ||
     pathNoLocale.startsWith('/favorites') ||
+    pathNoLocale.startsWith('/profile') ||
+    pathNoLocale.startsWith('/dashboard') ||
     pathNoLocale.startsWith('/reviews') ||
     pathNoLocale.startsWith('/settings');
 
@@ -118,7 +122,10 @@ export function LanguageProvider({
     ownerModule = 'owner/salonInfo';
   } else if (pathNoLocale.startsWith('/profile-settings')) {
     ownerModule = 'owner/profileSettings';
-  } else if (pathNoLocale.startsWith('/services')) {
+  } else if (
+    pathNoLocale.startsWith('/services') ||
+    pathNoLocale.startsWith('/trainings')
+  ) {
     if (pathNoLocale.includes('/new')) {
       ownerModule = 'owner/servicesNew';
       // Load categories module for category selector
@@ -126,6 +133,8 @@ export function LanguageProvider({
     } else {
       ownerModule = 'owner/services';
     }
+  } else if (pathNoLocale.startsWith('/business/complete-setup')) {
+    ownerModule = 'owner/onboarding';
   } else if (pathNoLocale.startsWith('/staff')) {
     if (pathNoLocale.includes('/new')) {
       ownerModule = 'owner/staffNew';
@@ -165,11 +174,9 @@ export function LanguageProvider({
     publicModules.push('public/homepage');
     publicModules.push('public/categories');
   } else if (pathNoLocale.startsWith('/studio/')) {
-    // Studio share landing (AppOpenLanding)
-    publicModules.push('public/appOpen');
+    publicModules.push('public/appOpen', 'public/homepage');
   } else if (pathNoLocale.startsWith('/class')) {
-    // Class share landing (AppOpenLanding)
-    publicModules.push('public/appOpen');
+    publicModules.push('public/classDetail', 'public/appOpen', 'shared/auth');
   } else if (pathNoLocale.startsWith('/trainer-invite')) {
     // Trainer invite landing (AppOpenLanding)
     publicModules.push('public/appOpen');
@@ -184,39 +191,30 @@ export function LanguageProvider({
     publicModules.push('shared/auth');
   } else if (pathNoLocale.startsWith('/category/')) {
     publicModules.push('public/categories');
-    // Homepage module needed for search components
     publicModules.push('public/homepage');
-    // Salon module needed for SalonCard component
     publicModules.push('public/salon');
-    // Booking module needed for BookingModal component
-    publicModules.push('public/booking');
-    // Auth module needed for BookingAuthForm in BookingModal
-    publicModules.push('shared/auth');
-  } else if (pathNoLocale.startsWith('/salons')) {
-    // Salons page needs homepage and categories for search and sorting
+  } else if (
+    pathNoLocale.startsWith('/studios') ||
+    pathNoLocale.startsWith('/salons')
+  ) {
     publicModules.push('public/homepage', 'public/categories');
-    // Salon module needed for SalonCard component
     publicModules.push('public/salon');
-    // Booking module needed for BookingModal component
-    publicModules.push('public/booking');
-    // Auth module needed for BookingAuthForm in BookingModal
-    publicModules.push('shared/auth');
-    // Core weekdays module needed for BookingModal date selector
-    publicModules.push('core/weekdays');
-    // Homepage module needed for minutesShort translation
-    publicModules.push('public/homepage');
   } else if (pathNoLocale.startsWith('/map')) {
     publicModules.push('public/map');
     // Categories module needed for category filter buttons
     publicModules.push('public/categories');
+  } else if (
+    pathNoLocale.startsWith('/business/login') ||
+    pathNoLocale.startsWith('/business/register')
+  ) {
+    publicModules.push('shared/auth', 'public/homepage');
   } else if (pathNoLocale.startsWith('/business/complete-setup')) {
-    // Owner salonInfo module needed for WorkingHoursSection component
-    ownerModule = 'owner/salonInfo';
+    // Keep salonInfo + onboarding keys available for setup flow
+    ownerModule = 'owner/onboarding';
     publicModules.push('public/business');
-    // Core weekdays module needed for days of week translations
     publicModules.push('core/weekdays');
   } else if (pathNoLocale.startsWith('/business')) {
-    publicModules.push('public/business');
+    publicModules.push('public/business', 'public/homepage');
   } else if (pathNoLocale.startsWith('/contact')) {
     publicModules.push('public/contact');
   } else if (pathNoLocale.startsWith('/about')) {
@@ -225,10 +223,10 @@ export function LanguageProvider({
     publicModules.push('public/blog', 'public/homepage');
   } else if (
     pathNoLocale.startsWith('/login') ||
+    pathNoLocale.startsWith('/register') ||
     pathNoLocale.startsWith('/forgot-password') ||
     pathNoLocale.startsWith('/check-email')
   ) {
-    // Auth module needed for login, forgot-password, and check-email pages
     publicModules.push('shared/auth');
   }
 
@@ -272,6 +270,10 @@ export function LanguageProvider({
     modulesToLoad.push('owner/feedback');
     // Load onboarding module for OnboardingChecklist component on dashboard
     modulesToLoad.push('owner/onboarding');
+    // Account settings under /salon-info/account
+    if (pathNoLocale.startsWith('/salon-info')) {
+      modulesToLoad.push('owner/profileSettings');
+    }
     // Load header module for OwnerHeader component
     modulesToLoad.push('ui/header');
     // Load footer module for footer links in header dropdown

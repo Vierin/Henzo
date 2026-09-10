@@ -1,4 +1,4 @@
-{
+﻿{
 	"title": "Services",
 	"subtitle": "Manage your salon services and pricing",
 	"addNew": "Add New",
@@ -47,8 +47,8 @@
 	"serviceGroupLabel": "Service Group (optional)",
 	"serviceGroupHint": "Use groups to structure your services on the salon page.",
 	"durationLabel": "Duration (minutes)",
-	"priceLabel": "Price (₫)",
-	"priceHint": "Numbers only (e.g., 50000 for 50K ₫)",
+	"priceLabel": "Price (â‚«)",
+	"priceHint": "Numbers only (e.g., 50000 for 50K â‚«)",
 	"cancel": "Cancel",
 	"updateService": "Update Service",
 	"addService": "Add Service",

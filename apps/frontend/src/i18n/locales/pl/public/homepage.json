@@ -1,273 +1,371 @@
 {
-	"heroTitle": "Znajdź swój <span class=\"text-[#ff5b5b]\">idealny <br> salon beauty</span> w pobliżu",
-	"heroSubtitle": "Rezerwuj wizyty w najwyżej ocenianych salonach w Twojej okolicy. Porównuj ceny, czytaj opinie i zadbaj o siebie już dziś.",
-	"topRatedTitle": "Najwyżej oceniane salony beauty & wellness",
-	"topRatedSubtitle": "Odkryj wysoko oceniane salony i spa w Twojej okolicy. Rezerwuj stylizację, masaże, pielęgnację twarzy, manicure i inne usługi.",
-	"popularCategories": "Popularne kategorie",
-	"onlineBooking": "Rezerwacja online",
-	"minutesShort": "min",
-	"toBook": "do rezerwacji",
-	"free": "Za darmo",
-	"booking": "Rezerwacja",
-	"search": "Szukaj",
-	"searchPlaceholder": "Szukaj usług...",
-	"locationPlaceholder": "Twoja lokalizacja",
-	"datePlaceholder": "Wybierz datę",
-	"timePlaceholder": "Wybierz godzinę",
-	"anyNearestTime": "Najbliższy wolny termin",
-	"searchButton": "Szukaj",
-	"featuredSalons": "Polecane salony",
-	"popularServices": "Popularne usługi",
-	"recommendedServices": "Rekomendowane usługi",
-	"howItWorks": "Jak to działa — <span class=\"text-[#ff5b5b]\">3 proste kroki</span>",
-	"howItWorksSubtitle": "Znalezienie i zarezerwowanie idealnego terminu nigdy nie było prostsze",
-	"step1": "01",
-	"step2": "02",
-	"step3": "03",
-	"step1Title": "Szukaj i odkrywaj",
-	"step2Title": "Wybierz i zarezerwuj",
-	"step3Title": "Ciesz się",
-	"step1Description": "Podaj lokalizację i znajdź salony w pobliżu z zweryfikowanymi opiniami oraz konkurencyjnymi cenami. Użyj smart filtrów do precyzyjnego wyszukiwania.",
-	"step2Description": "Wybierz usługę, dogodny czas i ulubionego specjalistę. Natychmiastowa rezerwacja online w kilka kliknięć — bez zbędnych telefonów.",
-	"step3Description": "Przyjdź na wizytę i ciesz się świetną obsługą. Po wizycie oceń salon i pomóż innym.",
-	"bookNow": "Zarezerwuj",
-	"whyChooseHenzo": "Henzo: smart rozwiązania dla salonów",
-	"whyChooseSubtitle": "Doświadcz maksymalnej wygody i pewności przy każdej rezerwacji.",
-	"easyBooking": "Łatwa rezerwacja",
-	"easyBookingDescription": "Rezerwacja w kilka kliknięć. Zabezpiecz miejsce natychmiast.",
-	"flexibleScheduling": "Elastyczny grafik",
-	"flexibleSchedulingDescription": "Znajdź odpowiedni termin nawet w ostatniej chwili.",
-	"trustedReviews": "Wiarygodne opinie",
-	"trustedReviewsDescription": "Czytaj prawdziwe opinie klientów i wybieraj to, co najlepsze.",
-	"startExploring": "Przeglądaj salony",
-	"salonOwner": "Masz salon?",
-	"salonOwnerSubtitle": "Dołącz do naszej selekcji elitarnych miejsc beauty i dotrzyj do tysięcy osób szukających stylu co miesiąc.",
-	"registerBusiness": "Zarejestruj firmę",
-	"seeAllSalons": "Zobacz wszystkie salony",
-	"noSalonsAvailable": "Brak dostępnych salonów",
-	"checkBackLater": "Sprawdź później — salony pojawią się wkrótce.",
-	"studio": {
-		"hero": {
-			"line1Lead": "Od",
-			"line1Highlight": "chaotycznych",
-			"line1Trail": "rezerwacji",
-			"line2Lead": "do",
-			"line2Highlight": "przejrzystego grafiku",
-			"line2Trail": "",
-			"storeAppStore": "App Store",
-			"storeGooglePlay": "Google Play",
-			"availableForFree": "Dostępne za darmo",
-			"notification": "Pamiętaj o treningu dziś o 15:00",
-			"entryNotificationTitle": "Nowa rezerwacja!",
-			"entryNotificationText": "Sam właśnie zarezerwował trening.",
-			"entryNotification2Title": "Nowa opinia!",
-			"entryNotification2Text": "Klient wystawił 5 gwiazdek za Twoje zajęcia.",
-			"newClientsTitle": "Nowi klienci",
-			"newBadge": "New",
-			"clientsBadge": "Klienci",
-			"autoBadge": "Auto",
-			"notificationBadge": "Powiadomienie",
-			"activeUserLabel": "Aktywny użytkownik",
-			"clients": [
-				{
-					"name": "Anna Nowak",
-					"initials": "AN"
-				},
-				{
-					"name": "Ivan Founder",
-					"initials": "IF"
-				},
-				{
-					"name": "Maria Kowalska",
-					"initials": "MK"
-				}
-			]
-		},
-		"header": {
-			"navBenefits": "Korzyści",
-			"navPricing": "Cennik",
-			"navHowItWorks": "Jak to działa",
-			"navContact": "Kontakt",
-			"getApp": "Pobierz aplikację"
-		},
-		"intro": {
-			"description": "Prowadź studio z telefonu: grafik, sloty trenerów i rezerwacje klientów w jednym flow.",
-			"secondary": "Pobierz na Androida lub iOS i włącz zespół bez zbędnych komplikacji."
-		},
-		"statementBeforeSpotlight": {
-			"phrase1Lead": "Ty",
-			"phrase1AccentRotating": [
-				"trenujesz.",
-				"uczysz.",
-				"skupiasz się."
-			],
-			"phrase2Lead": "My",
-			"phrase2AccentRotating": [
-				"wypełniamy Twój grafik.",
-				"obsługujemy rezerwacje.",
-				"zmniejszamy no-show."
-			]
-		},
-		"spotlight": {
-			"headingLine1": "Prowadź swoje zajęcia",
-			"line2BeforeAccent": "My uruchomimy Twój ",
-			"line2Accent": "system",
-			"slides": [
-				{
-					"stat": "+30%",
-					"featureTitle": "Obłożenie zajęć",
-					"description": "Widoczne sloty i łatwiejsze zarządzanie rezerwacjami",
-					"videoSrc": "/video-4.webm",
-					"videoLabel": "Studio spotlight klip jeden"
-				},
-				{
-					"stat": "-40%",
-					"featureTitle": "Mniej opuszczonych zajęć",
-					"description": "Klienci dostają przypomnienia i rzadziej zapominają",
-					"videoSrc": "/video-3.webm",
-					"videoLabel": "Studio spotlight klip dwa"
-				},
-				{
-					"stat": "-70%",
-					"featureTitle": "Mniej czasu na korespondencję",
-					"description": "Nie musisz już ręcznie odpisywać każdemu klientowi",
-					"videoSrc": "/video-2.webm",
-					"videoLabel": "Studio spotlight klip trzy"
-				},
-				{
-					"stat": "+42%",
-					"featureTitle": "Kontrola grafiku",
-					"description": "Wszystkie zajęcia i rezerwacje w jednym miejscu",
-					"videoSrc": "/video-1.webm",
-					"videoLabel": "Studio spotlight klip cztery"
-				}
-			]
-		},
-		"quickStart": {
-			"line1": "Gotowe do startu",
-			"line2Before": "w ",
-			"line2Accent": "5 minut",
-			"steps": [
-				{
-					"label": "Krok 1:",
-					"text": "Dodaj nazwę i adres studia"
-				},
-				{
-					"label": "Krok 2:",
-					"text": "Wgraj zdjęcia i utwórz pierwsze zajęcia"
-				},
-				{
-					"label": "Krok 3:",
-					"text": "Zacznij przyjmować pierwsze rezerwacje"
-				}
-			]
-		},
-		"pricing": {
-			"titleLine1": "Prosty cennik",
-			"titleLine2Before": "Realne ",
-			"titleLine2Accent": "efekty",
-			"currency": "PLN",
-			"storeAppStore": "App Store",
-			"storeGooglePlay": "Google Play",
-			"plans": [
-				{
-					"name": "Solo",
-					"subtitle": "Idealny dla niezależnych trenerów",
-					"price": "0",
-					"priceSub": "/ za 1 miesiąc",
-					"features": [
-						"12 zajęć miesięcznie",
-						"1 trener",
-						"Nieograniczona liczba klientów",
-						"Rezerwacje online",
-						"Profil studia",
-						"Powiadomienia push"
-					]
-				},
-				{
-					"name": "Studio",
-					"subtitle": "Dla rosnących studiów",
-					"price": "99",
-					"priceSub": "/ za 1 miesiąc",
-					"features": [
-						"100 zajęć miesięcznie",
-						"Do 4 trenerów",
-						"Lista oczekujących",
-						"Automatyczne przypomnienia (Email & Push)",
-						"Podstawowa analityka (90 dni)"
-					]
-				},
-				{
-					"name": "Enterprise",
-					"subtitle": "Dla ugruntowanych biznesów",
-					"price": "299",
-					"priceSub": "/ za 1 miesiąc",
-					"features": [
-						"Nieograniczona liczba zajęć",
-						"Nieograniczona liczba trenerów",
-						"Wiele lokalizacji",
-						"Zaawansowana analityka",
-						"Role i uprawnienia zespołu",
-						"Priorytetowe wsparcie"
-					]
-				}
-			]
-		},
-		"features": {
-			"title": "Stworzone do operacji studia",
-			"items": [
-				{
-					"title": "Grafiki, które zostają zsynchronizowane",
-					"description": "Zarządzaj slotami treningów, unikaj konfliktów i utrzymuj codzienną pracę przewidywalną."
-				},
-				{
-					"title": "Widoczność trenerów i usług",
-					"description": "Kontroluj aktywne oferty, dostępność trenerów i pojemność rezerwacji z jednego miejsca."
-				},
-				{
-					"title": "Doświadczenie rezerwacji dla klientów",
-					"description": "Daj klientom szybki flow rezerwacji, a zespół zachowa pełną kontrolę nad sesjami."
-				}
-			]
-		},
-		"workflow": {
-			"title": "Jak studia startują z Henzo",
-			"steps": [
-				{
-					"title": "1. Zainstaluj aplikację",
-					"description": "Pobierz na Androida lub iOS i zaloguj się jako operator studia."
-				},
-				{
-					"title": "2. Skonfiguruj studio",
-					"description": "Ustaw trenerów, oferty i tygodniowy grafik."
-				},
-				{
-					"title": "3. Zacznij przyjmować rezerwacje",
-					"description": "Otwórz rezerwacje dla klientów i zarządzaj sesjami z telefonu."
-				}
-			]
-		},
-		"ctaBanner": {
-			"titleLine1": "Twoje studio.",
-			"titleLine2": "W Twoich rękach.",
-			"description": "Zarządzaj zajęciami, kursantami i rezerwacjami w jednej aplikacji mobilnej",
-			"storeAppStore": "App Store",
-			"storeGooglePlay": "Google Play"
-		},
-		"finalCta": {
-			"title": "Gotowy przyspieszyć pracę studia fitness?",
-			"description": "Zacznij od aplikacji mobilnej i przenieś codzienną operacyjkę do jednego przejrzystego flow.",
-			"androidCta": "Pobierz na Androida",
-			"iosCta": "Pobierz na iOS",
-			"contactCta": "Kontakt ze sprzedażą"
-		},
-		"footer": {
-			"navBenefits": "Korzyści",
-			"navPricing": "Cennik",
-			"navHowItWorks": "Jak to działa",
-			"ctaTitle": "Zacznij biznes już dziś.",
-			"copyright": "Copyright © Henzo app. Wszelkie prawa zastrzeżone. 2026",
-			"email": "hello@henzo.app"
-		}
-	}
+  "heroTitle": "Znajdź swój <span class=\"text-[#ff5b5b]\">idealny <br> salon beauty</span> w pobliżu",
+  "heroSubtitle": "Rezerwuj wizyty w najwyżej ocenianych salonach w Twojej okolicy. Porównuj ceny, czytaj opinie i zadbaj o siebie już dziś.",
+  "topRatedTitle": "Najwyżej oceniane salony beauty & wellness",
+  "topRatedSubtitle": "Odkryj wysoko oceniane salony i spa w Twojej okolicy. Rezerwuj stylizację, masaże, pielęgnację twarzy, manicure i inne usługi.",
+  "popularCategories": "Popularne kategorie",
+  "onlineBooking": "Rezerwacja online",
+  "minutesShort": "min",
+  "toBook": "do rezerwacji",
+  "free": "Za darmo",
+  "booking": "Rezerwacja",
+  "search": "Szukaj",
+  "searchPlaceholder": "Szukaj usług...",
+  "locationPlaceholder": "Twoja lokalizacja",
+  "datePlaceholder": "Wybierz datę",
+  "timePlaceholder": "Wybierz godzinę",
+  "anyNearestTime": "Najbliższy wolny termin",
+  "searchButton": "Szukaj",
+  "featuredSalons": "Polecane salony",
+  "popularServices": "Popularne usługi",
+  "recommendedServices": "Rekomendowane usługi",
+  "howItWorks": "Jak to działa — <span class=\"text-[#ff5b5b]\">3 proste kroki</span>",
+  "howItWorksSubtitle": "Znalezienie i zarezerwowanie idealnego terminu nigdy nie było prostsze",
+  "step1": "01",
+  "step2": "02",
+  "step3": "03",
+  "step1Title": "Szukaj i odkrywaj",
+  "step2Title": "Wybierz i zarezerwuj",
+  "step3Title": "Ciesz się",
+  "step1Description": "Podaj lokalizację i znajdź salony w pobliżu z zweryfikowanymi opiniami oraz konkurencyjnymi cenami. Użyj smart filtrów do precyzyjnego wyszukiwania.",
+  "step2Description": "Wybierz usługę, dogodny czas i ulubionego specjalistę. Natychmiastowa rezerwacja online w kilka kliknięć — bez zbędnych telefonów.",
+  "step3Description": "Przyjdź na wizytę i ciesz się świetną obsługą. Po wizycie oceń salon i pomóż innym.",
+  "bookNow": "Zarezerwuj",
+  "whyChooseHenzo": "Henzo: smart rozwiązania dla salonów",
+  "whyChooseSubtitle": "Doświadcz maksymalnej wygody i pewności przy każdej rezerwacji.",
+  "easyBooking": "Łatwa rezerwacja",
+  "easyBookingDescription": "Rezerwacja w kilka kliknięć. Zabezpiecz miejsce natychmiast.",
+  "flexibleScheduling": "Elastyczny grafik",
+  "flexibleSchedulingDescription": "Znajdź odpowiedni termin nawet w ostatniej chwili.",
+  "trustedReviews": "Wiarygodne opinie",
+  "trustedReviewsDescription": "Czytaj prawdziwe opinie klientów i wybieraj to, co najlepsze.",
+  "startExploring": "Przeglądaj salony",
+  "salonOwner": "Masz salon?",
+  "salonOwnerSubtitle": "Dołącz do naszej selekcji elitarnych miejsc beauty i dotrzyj do tysięcy osób szukających stylu co miesiąc.",
+  "registerBusiness": "Zarejestruj firmę",
+  "seeAllSalons": "Zobacz wszystkie salony",
+  "noSalonsAvailable": "Brak dostępnych salonów",
+  "checkBackLater": "Sprawdź później — salony pojawią się wkrótce.",
+  "studio": {
+    "hero": {
+      "line1Lead": "Od",
+      "line1Highlight": "chaotycznych",
+      "line1Trail": "rezerwacji",
+      "line2Lead": "do",
+      "line2Highlight": "przejrzystego grafiku",
+      "line2Trail": "",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "availableForFree": "Dostępne za darmo",
+      "notification": "Pamiętaj o treningu dziś o 15:00",
+      "entryNotificationTitle": "Nowa rezerwacja!",
+      "entryNotificationText": "Asia właśnie zarezerwowała trening.",
+      "entryNotification2Title": "Nowa opinia!",
+      "entryNotification2Text": "Klient wystawił 5 gwiazdek za Twoje zajęcia.",
+      "newClientsTitle": "Nowi klienci",
+      "newBadge": "New",
+      "clientsBadge": "Klienci",
+      "autoBadge": "Auto",
+      "notificationBadge": "Powiadomienie",
+      "activeUserLabel": "Aktywny użytkownik",
+      "clients": [
+        {
+          "name": "Anna Nowak",
+          "initials": "AN"
+        },
+        {
+          "name": "Jan Głowacki",
+          "initials": "JG"
+        },
+        {
+          "name": "Maria Kowalska",
+          "initials": "MK"
+        }
+      ]
+    },
+    "header": {
+      "navBenefits": "Korzyści",
+      "navPricing": "Cennik",
+      "navHowItWorks": "Jak to działa",
+      "navContact": "Kontakt",
+      "getApp": "Pobierz aplikację"
+    },
+    "intro": {
+      "description": "Prowadź studio z telefonu: grafik, sloty trenerów i rezerwacje klientów w jednym flow.",
+      "secondary": "Pobierz na Androida lub iOS i włącz zespół bez zbędnych komplikacji."
+    },
+    "statementBeforeSpotlight": {
+      "phrase1Lead": "Ty",
+      "phrase1AccentRotating": [
+        "trenujesz.",
+        "uczysz.",
+        "skupiasz się."
+      ],
+      "phrase2Lead": "My",
+      "phrase2AccentRotating": [
+        "wypełniamy Twój grafik.",
+        "obsługujemy rezerwacje.",
+        "zmniejszamy no-show."
+      ]
+    },
+    "spotlight": {
+      "headingLine1": "Prowadź swoje zajęcia",
+      "line2BeforeAccent": "My uruchomimy Twój ",
+      "line2Accent": "system",
+      "slides": [
+        {
+          "stat": "+30%",
+          "featureTitle": "Obłożenie zajęć",
+          "description": "Widoczne sloty i łatwiejsze zarządzanie rezerwacjami",
+          "videoSrc": "/video-4.webm",
+          "videoLabel": "Studio spotlight klip jeden"
+        },
+        {
+          "stat": "-40%",
+          "featureTitle": "Mniej opuszczonych zajęć",
+          "description": "Klienci dostają przypomnienia i rzadziej zapominają",
+          "videoSrc": "/video-3.webm",
+          "videoLabel": "Studio spotlight klip dwa"
+        },
+        {
+          "stat": "-70%",
+          "featureTitle": "Mniej czasu na korespondencję",
+          "description": "Nie musisz już ręcznie odpisywać każdemu klientowi",
+          "videoSrc": "/video-2.webm",
+          "videoLabel": "Studio spotlight klip trzy"
+        },
+        {
+          "stat": "+42%",
+          "featureTitle": "Kontrola grafiku",
+          "description": "Wszystkie zajęcia i rezerwacje w jednym miejscu",
+          "videoSrc": "/video-1.webm",
+          "videoLabel": "Studio spotlight klip cztery"
+        }
+      ]
+    },
+    "quickStart": {
+      "line1": "Gotowe do startu",
+      "line2Before": "w ",
+      "line2Accent": "5 minut",
+      "steps": [
+        {
+          "label": "Krok 1:",
+          "text": "Dodaj nazwę i adres studia"
+        },
+        {
+          "label": "Krok 2:",
+          "text": "Wgraj zdjęcia i utwórz pierwsze zajęcia"
+        },
+        {
+          "label": "Krok 3:",
+          "text": "Zacznij przyjmować pierwsze rezerwacje"
+        }
+      ]
+    },
+    "pricing": {
+      "titleLine1": "Prosty cennik",
+      "titleLine2Before": "Realne ",
+      "titleLine2Accent": "efekty",
+      "currency": "PLN",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "plans": [
+        {
+          "name": "Solo",
+          "subtitle": "Idealny dla niezależnych trenerów",
+          "price": "0",
+          "priceSub": "/ za 1 miesiąc",
+          "features": [
+            "12 zajęć miesięcznie",
+            "1 trener",
+            "Nieograniczona liczba klientów",
+            "Rezerwacje online",
+            "Profil studia",
+            "Powiadomienia push"
+          ]
+        },
+        {
+          "name": "Studio",
+          "subtitle": "Dla rosnących studiów",
+          "price": "99",
+          "priceSub": "/ za 1 miesiąc",
+          "features": [
+            "100 zajęć miesięcznie",
+            "Do 4 trenerów",
+            "Lista oczekujących",
+            "Automatyczne przypomnienia (Email & Push)",
+            "Podstawowa analityka (90 dni)"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "subtitle": "Dla ugruntowanych biznesów",
+          "price": "299",
+          "priceSub": "/ za 1 miesiąc",
+          "features": [
+            "Nieograniczona liczba zajęć",
+            "Nieograniczona liczba trenerów",
+            "Wiele lokalizacji",
+            "Zaawansowana analityka",
+            "Role i uprawnienia zespołu",
+            "Priorytetowe wsparcie"
+          ]
+        }
+      ]
+    },
+    "features": {
+      "title": "Stworzone do operacji studia",
+      "items": [
+        {
+          "title": "Grafiki, które zostają zsynchronizowane",
+          "description": "Zarządzaj slotami treningów, unikaj konfliktów i utrzymuj codzienną pracę przewidywalną."
+        },
+        {
+          "title": "Widoczność trenerów i usług",
+          "description": "Kontroluj aktywne oferty, dostępność trenerów i pojemność rezerwacji z jednego miejsca."
+        },
+        {
+          "title": "Doświadczenie rezerwacji dla klientów",
+          "description": "Daj klientom szybki flow rezerwacji, a zespół zachowa pełną kontrolę nad sesjami."
+        }
+      ]
+    },
+    "workflow": {
+      "title": "Jak studia startują z Henzo",
+      "steps": [
+        {
+          "title": "1. Zainstaluj aplikację",
+          "description": "Pobierz na Androida lub iOS i zaloguj się jako operator studia."
+        },
+        {
+          "title": "2. Skonfiguruj studio",
+          "description": "Ustaw trenerów, oferty i tygodniowy grafik."
+        },
+        {
+          "title": "3. Zacznij przyjmować rezerwacje",
+          "description": "Otwórz rezerwacje dla klientów i zarządzaj sesjami z telefonu."
+        }
+      ]
+    },
+    "ctaBanner": {
+      "titleLine1": "Twoje studio.",
+      "titleLine2": "W Twoich rękach.",
+      "description": "Zarządzaj zajęciami, kursantami i rezerwacjami w jednej aplikacji mobilnej",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play"
+    },
+    "finalCta": {
+      "title": "Gotowy przyspieszyć pracę studia fitness?",
+      "description": "Zacznij od aplikacji mobilnej i przenieś codzienną operacyjkę do jednego przejrzystego flow.",
+      "androidCta": "Pobierz na Androida",
+      "iosCta": "Pobierz na iOS",
+      "contactCta": "Kontakt ze sprzedażą"
+    },
+    "footer": {
+      "navBenefits": "Korzyści",
+      "navPricing": "Cennik",
+      "navHowItWorks": "Jak to działa",
+      "ctaTitle": "Zacznij biznes już dziś.",
+      "copyright": "Copyright © Henzo app. Wszelkie prawa zastrzeżone. 2026",
+      "email": "hello@henzo.app"
+    }
+  },
+  "client": {
+    "header": {
+      "explore": "Explore",
+      "classes": "Classes",
+      "trainers": "Trainers",
+      "blog": "Blog",
+      "location": "Da Nang, Vietnam",
+      "login": "Log in",
+      "signUp": "Sign up",
+      "forBusiness": "Business"
+    },
+    "hero": {
+      "line1": "Znajdź kolejny trening",
+      "line2Highlight": "i społeczność.",
+      "subtitle": "Odkrywaj studia fitness, zajęcia i trenerów w pobliżu. Poznawaj ludzi o podobnych zainteresowaniach i bądź zmotywowany.",
+      "searchPlaceholder": "Czego szukasz?",
+      "floatingCardTitle": "Find your next class",
+      "floatingCardSubtitle": "3,200+ classes happening today",
+      "categories": {
+        "yoga": "Yoga",
+        "pilates": "Pilates",
+        "gym": "Gym",
+        "boxing": "Boxing",
+        "padel": "Padel",
+        "surfing": "Surfing",
+        "more": "More"
+      },
+      "features": {
+        "findClasses": {
+          "title": "Find classes that fit you",
+          "subtitle": "Yoga, gym, pilates and more"
+        },
+        "bookFast": {
+          "title": "Book in seconds",
+          "subtitle": "Fast and easy booking"
+        },
+        "reminders": {
+          "title": "Stay on track with reminders",
+          "subtitle": "Never miss a class"
+        },
+        "allInOne": {
+          "title": "All in one place",
+          "subtitle": "Manage bookings and favorites"
+        }
+      },
+      "searchHint": "Joga, pilates, siłownia, boks...",
+      "popularNearYou": "Popularne w pobliżu"
+    },
+    "appPromo": {
+      "eyebrow": "Why people love Henzo",
+      "title": "Your fitness life in one app",
+      "subtitle": "Book classes, manage your schedule and never miss a workout.",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "qrLabel": "Scan to download the app",
+      "pills": {
+        "easyBooking": "Easy booking",
+        "smartReminders": "Smart reminders",
+        "memberships": "Manage memberships",
+        "trackActivity": "Track your activity"
+      }
+    },
+    "businessPromo": {
+      "badge": "Built for studio owners",
+      "titleLead": "Grow your studio with",
+      "titleBrand": "Henzo",
+      "title": "Grow your studio with Henzo",
+      "subtitle": "All the tools you need to run and grow your business in one simple platform.",
+      "features": {
+        "bookings": "Online bookings 24/7",
+        "clients": "Client & membership management",
+        "schedule": "Reports & insights",
+        "reminders": "Automated reminders"
+      },
+      "cta": "Join Henzo for free",
+      "noCreditCard": "No credit card required",
+      "statBookings": "New bookings",
+      "statValue": "+28%"
+    },
+    "popularStudios": {
+      "title": "Popular studios near you",
+      "seeAll": "See all studios",
+      "distanceMeters": "{value} m",
+      "distanceKilometers": "{value} km"
+    },
+    "nearbyClasses": {
+      "badge": "Near you",
+      "titleLead": "Classes happening",
+      "titleHighlight": "near you",
+      "subtitle": "Explore upcoming classes at top studios around Da Nang. Book your spot in seconds.",
+      "viewSchedule": "View full schedule",
+      "seeAll": "See all",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "durationMin": "{value} min",
+      "book": "Book"
+    }
+  }
 }

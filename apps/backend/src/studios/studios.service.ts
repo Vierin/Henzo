@@ -26,6 +26,7 @@ import {
   assertValidReminderSettingsText,
   assertValidStudioDescription,
 } from '../lib/text-content';
+import { resolveCreateStudioCurrency } from './studio-currency';
 
 @Injectable()
 export class StudiosService {
@@ -530,6 +531,7 @@ export class StudiosService {
           descriptionRu: true,
           slug: true,
           timezone: true,
+          currency: true,
           _count: {
             select: {
               Review: true,
@@ -947,6 +949,8 @@ export class StudiosService {
         latitude: true,
         longitude: true,
         slug: true,
+        reminderSettings: true,
+        currency: true,
         _count: {
           select: {
             Review: true,
@@ -960,6 +964,7 @@ export class StudiosService {
             name: true,
             duration: true,
             price: true,
+            trainingCategoryId: true,
           },
           orderBy: {
             id: 'asc', // Consistent ordering
@@ -974,62 +979,58 @@ export class StudiosService {
     // Get Studio IDs for aggregate queries
     const studioIds = studios.map((s) => s.id);
 
-    // Calculate average ratings for all Studios in one query (only if we have Studios)
-    let ratingMap = new Map<
-      string,
-      { avgRating: number; reviewCount: number }
-    >();
-    if (studioIds.length > 0) {
-      const ratingAggregates = await this.prisma.review.groupBy({
-        by: ['studioId'],
-        where: {
-          studioId: { in: studioIds },
-        },
-        _avg: {
-          rating: true,
-        },
-        _count: {
-          rating: true,
-        },
-      });
-
-      // Create a map for quick lookup
-      ratingMap = new Map(
-        ratingAggregates.map((agg) => [
-          agg.studioId,
-          {
-            avgRating: agg._avg.rating || 0,
-            reviewCount: agg._count.rating,
-          },
-        ]),
-      );
-    }
+    const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
+      await this.getStudioDiscoveryMeta(studioIds);
 
     // Calculate pagination info
     const totalPages = Math.ceil(total / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
 
-    // Transform to match expected format (Service -> services) and add ratings
+    // Mobile browse-card parity: locationName + training categories
     let transformedStudios = studios.map((studio: any) => {
       const ratingData = ratingMap.get(studio.id) || {
         avgRating: 0,
         reviewCount: 0,
       };
+      const studioName = resolveStudioBrandNameForDiscovery({
+        name: studio.name,
+        slug: studio.slug,
+        reminderSettings: studio.reminderSettings,
+      });
+      const avgRating = Math.round(ratingData.avgRating * 10) / 10;
 
       return {
-        ...studio,
+        id: studio.id,
+        name: studioName,
+        studioName,
+        description: studio.description,
+        address: studio.address,
+        locationName: resolveBrowseStudioLocationName(studio.reminderSettings),
+        phone: studio.phone,
+        logoUrl: studio.logoUrl,
+        photos: studio.photos,
+        photoGallery: studio.photoGallery,
+        workingHours: studio.workingHours,
+        createdAt: studio.createdAt,
+        latitude: studio.latitude,
+        longitude: studio.longitude,
+        slug: studio.slug,
+        currency: studio.currency,
+        _count: studio._count,
         services: (studio.Training || []).map((service: any) => ({
           id: service.id,
           name: service.name,
           duration: service.duration,
           price: service.price,
+          trainingCategoryId: service.trainingCategoryId,
         })),
-        Training: undefined, // Remove Prisma field
-        reviews: [], // Empty array - not needed for cards, use avgRating instead
-        avgRating: Math.round(ratingData.avgRating * 10) / 10, // Round to 1 decimal
+        reviews: [],
+        avgRating,
         reviewCount: ratingData.reviewCount,
-        rating: Math.round(ratingData.avgRating * 10) / 10, // Alias for compatibility
+        rating: avgRating,
+        categories: categoriesByStudio.get(studio.id) ?? [],
+        trainingCategoryIds: categoryIdsByStudio.get(studio.id) ?? [],
       };
     });
 
@@ -1220,6 +1221,7 @@ export class StudiosService {
             descriptionRu: true,
             slug: true,
             timezone: true,
+            currency: true,
             status: true,
             autoConfirmBookings: true,
             Training: {
@@ -1333,6 +1335,7 @@ export class StudiosService {
       let latitude = createStudioDto.latitude;
       let longitude = createStudioDto.longitude;
       let timezone = createStudioDto.timezone?.trim() || undefined;
+      const currency = resolveCreateStudioCurrency(createStudioDto.currency);
 
       if (createStudioDto.address && !latitude && !longitude) {
         try {
@@ -1391,6 +1394,7 @@ export class StudiosService {
             latitude,
             longitude,
             timezone,
+            currency,
             ownerId,
             status: 'DRAFT',
             // Unclaimed (ops) studios require owner confirmation until settings change.
@@ -1486,6 +1490,7 @@ export class StudiosService {
             descriptionVi: true,
             descriptionRu: true,
             slug: true,
+            currency: true,
             ...(usesStudioModel
               ? {
                   Training: true,
@@ -1798,6 +1803,7 @@ export class StudiosService {
           descriptionVi: true,
           descriptionRu: true,
           slug: true,
+          currency: true,
           reminderSettings: true,
           claimedAt: true,
           intendedOwnerEmail: true,
@@ -2026,7 +2032,7 @@ export class StudiosService {
       }
 
       // Fast lookup by slug using indexed field
-      const Studio = await this.prisma.Studio.findUnique({
+      let Studio = await this.prisma.Studio.findUnique({
         where: { slug },
         select: {
           id: true,
@@ -2051,6 +2057,7 @@ export class StudiosService {
           descriptionRu: true,
           slug: true,
           timezone: true,
+          currency: true,
           claimedAt: true,
           intendedOwnerEmail: true,
           _count: {
@@ -2096,6 +2103,88 @@ export class StudiosService {
           },
         },
       });
+
+      // Composite SEO slug `{name}-{cuid}` when DB slug is null / outdated
+      if (!Studio) {
+        const idMatch = slug.match(/-c[a-z0-9]{19,}$/i);
+        const extractedId = idMatch
+          ? idMatch[0].substring(1)
+          : /^c[a-z0-9]{19,}$/i.test(slug)
+            ? slug
+            : null;
+        if (extractedId) {
+          Studio = await this.prisma.Studio.findUnique({
+            where: { id: extractedId },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              address: true,
+              phone: true,
+              email: true,
+              website: true,
+              instagram: true,
+              logoUrl: true,
+              photos: true,
+              photoGallery: true,
+              workingHours: true,
+              reminderSettings: true,
+              ownerId: true,
+              createdAt: true,
+              latitude: true,
+              longitude: true,
+              descriptionEn: true,
+              descriptionVi: true,
+              descriptionRu: true,
+              slug: true,
+              timezone: true,
+              claimedAt: true,
+              intendedOwnerEmail: true,
+              _count: {
+                select: {
+                  Review: true,
+                  Training: true,
+                  Booking: true,
+                  Trainer: true,
+                },
+              },
+              Training: {
+                take: 50,
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  descriptionEn: true,
+                  descriptionVi: true,
+                  descriptionRu: true,
+                  duration: true,
+                  price: true,
+                  studioId: true,
+                  categoryId: true,
+                  trainingCategoryId: true,
+                  trainingCategory: {
+                    select: {
+                      id: true,
+                      name_en: true,
+                      name_vn: true,
+                      name_ru: true,
+                    },
+                  },
+                },
+              },
+              Trainer: {
+                select: {
+                  id: true,
+                  name: true,
+                  accessLevel: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          });
+        }
+      }
 
       if (!Studio) {
         return null;
@@ -2575,7 +2664,12 @@ export class StudiosService {
     const categoriesByStudio = new Map<string, string[]>();
     const categoryIdsByStudio = new Map<string, number[]>();
     for (const [sid, pairs] of pairMap) {
-      pairs.sort((a, b) => a.id - b.id);
+      pairs.sort((a, b) => {
+        const aOther = a.label.trim().toLowerCase() === 'other';
+        const bOther = b.label.trim().toLowerCase() === 'other';
+        if (aOther !== bOther) return aOther ? 1 : -1;
+        return a.id - b.id;
+      });
       categoriesByStudio.set(
         sid,
         pairs.map((p) => p.label),
@@ -2606,6 +2700,7 @@ export class StudiosService {
         photos: true,
         photoGallery: true,
         reminderSettings: true,
+        currency: true,
         _count: {
           select: {
             Training: true,
@@ -2652,6 +2747,8 @@ export class StudiosService {
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,
         photoGallery: Studio.photoGallery,
+        slug: Studio.slug,
+        currency: Studio.currency,
         avgRating: ratingData.avgRating,
         reviewCount: ratingData.reviewCount,
         categories,
@@ -2767,6 +2864,7 @@ export class StudiosService {
             logoUrl: true,
             photos: true,
             reminderSettings: true,
+            currency: true,
           }
         : {
             id: true,
@@ -2779,6 +2877,7 @@ export class StudiosService {
             photos: true,
             photoGallery: true,
             reminderSettings: true,
+            currency: true,
             _count: {
               select: {
                 Review: true,
@@ -2848,6 +2947,7 @@ export class StudiosService {
           reviewCount: r.reviewCount,
           trainingCategoryIds: categoryIdsByStudio.get(s.id) ?? [],
           categories: categoriesByStudio.get(s.id) ?? [],
+          currency: s.currency,
         };
       }
 
@@ -2862,6 +2962,8 @@ export class StudiosService {
         photos: s.photos,
         photoGallery: s.photoGallery,
         logoUrl: s.logoUrl,
+        slug: s.slug,
+        currency: s.currency,
         distance: s.distance,
         avgRating: r.avgRating,
         reviewCount: r.reviewCount,

@@ -170,9 +170,9 @@ export function LandingStatement() {
       <h2 id="landing-statement-before-spotlight-heading" className="sr-only">
         {titleText}
       </h2>
-      <div className="mx-auto flex w-full max-w-4xl flex-col flex-wrap items-baseline justify-center gap-6 px-4 text-center sm:flex-row sm:items-start sm:justify-start sm:gap-12 md:gap-8 xl:max-w-5xl min-[1800px]:max-w-7xl min-[1800px]:gap-16">
+      <div className="mx-auto flex w-full max-w-4xl flex-col flex-wrap items-start justify-start gap-6 px-4 text-left sm:flex-row sm:gap-12 md:gap-8 xl:max-w-5xl min-[1800px]:max-w-7xl min-[1800px]:gap-16">
         <p
-          className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal text-[8vw] sm:text-[4vw]"
+          className="inline-flex max-w-full flex-nowrap items-baseline justify-start font-normal text-[8vw] sm:text-[4vw]"
           style={{ lineHeight: LINE_EM }}
         >
           <span className="shrink-0 text-[#3F3F3F]">{phrase1Lead}</span>
@@ -182,7 +182,7 @@ export function LandingStatement() {
           <PhraseAccentRotator words={rotating1} />
         </p>
         <p
-          className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal text-[8vw] sm:text-[4vw]"
+          className="inline-flex max-w-full flex-nowrap items-baseline justify-start font-normal text-[8vw] sm:text-[4vw]"
           style={{ lineHeight: LINE_EM }}
         >
           <span className="shrink-0 text-[#3F3F3F]">{phrase2Lead}</span>

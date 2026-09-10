@@ -41,15 +41,21 @@ export default function ConditionalFooter() {
     return null;
   }
 
-  // Studio share landing (AppOpenLanding, full-bleed)
-  if (pathname.includes('/studio/')) {
+  // Claim / invite / class deep-link landings — no marketing footer
+  if (
+    pathname.includes('/studio-claim/') ||
+    pathname.includes('/trainer-invite/') ||
+    /\/class(\/|$|\?)/.test(pathname)
+  ) {
     return null;
   }
 
-  // Claim / invite landings — no marketing footer
+  // Auth pages use ClientAuthShell mini-footer
   if (
-    pathname.includes('/studio-claim/') ||
-    pathname.includes('/trainer-invite/')
+    /\/login(\/|$|\?)/.test(pathname) ||
+    pathname.includes('/register') ||
+    pathname.includes('/forgot-password') ||
+    pathname.includes('/check-email')
   ) {
     return null;
   }
@@ -63,10 +69,16 @@ export default function ConditionalFooter() {
     pathname.includes('/owner-dashboard') ||
     pathname.includes('/calendar') ||
     pathname.includes('/services') ||
+    pathname.includes('/trainings') ||
     pathname.includes('/staff') ||
+    pathname.includes('/clients') ||
     pathname.includes('/subscription') ||
     pathname.includes('/salon-info') ||
-    pathname.includes('/profile-settings')
+    pathname.includes('/profile-settings') ||
+    pathname.includes('/business/complete-setup') ||
+    pathname.includes('/activity') ||
+    pathname.includes('/favorites') ||
+    /\/profile(\/|$)/.test(pathname)
   ) {
     return null;
   }

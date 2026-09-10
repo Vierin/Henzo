@@ -96,9 +96,17 @@
     },
     "statementBeforeSpotlight": {
       "phrase1Lead": "Вы",
-      "phrase1AccentRotating": ["тренируете.", "обучаете.", "вдохновляете."],
+      "phrase1AccentRotating": [
+        "тренируете.",
+        "обучаете.",
+        "вдохновляете."
+      ],
       "phrase2Lead": "Мы",
-      "phrase2AccentRotating": ["записываем.", "напоминаем.", "автоматизируем."]
+      "phrase2AccentRotating": [
+        "записываем.",
+        "напоминаем.",
+        "автоматизируем."
+      ]
     },
     "spotlight": {
       "headingLine1": "Проводите свои занятия",
@@ -158,7 +166,7 @@
       "titleLine1": "Простые тарифы",
       "titleLine2Before": "Реальные ",
       "titleLine2Accent": "результаты",
-      "currency": "VND",
+      "currency": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
       "plans": [
@@ -260,6 +268,104 @@
       "ctaTitle": "Запустите свой бизнес уже сегодня.",
       "copyright": "Copyright © Henzo app. Все права защищены. 2026",
       "email": "hello@henzo.app"
+    }
+  },
+  "client": {
+    "header": {
+      "explore": "Обзор",
+      "classes": "Занятия",
+      "trainers": "Тренеры",
+      "blog": "Блог",
+      "location": "Дананг, Вьетнам",
+      "login": "Войти",
+      "signUp": "Регистрация",
+      "forBusiness": "Бизнес"
+    },
+    "hero": {
+      "line1": "Найди следующую тренировку",
+      "line2Highlight": "и сообщество.",
+      "subtitle": "Открывай фитнес-студии, занятия и тренеров рядом. Знакомься с единомышленниками, оставайся в тонусе и делай спорт социальным.",
+      "searchPlaceholder": "Что вы ищете?",
+      "floatingCardTitle": "Найди следующее занятие",
+      "floatingCardSubtitle": "3 200+ занятий сегодня",
+      "categories": {
+        "yoga": "Йога",
+        "pilates": "Пилатес",
+        "gym": "Зал",
+        "boxing": "Бокс",
+        "padel": "Падел",
+        "surfing": "Сёрфинг",
+        "more": "Ещё"
+      },
+      "features": {
+        "findClasses": {
+          "title": "Занятия под вас",
+          "subtitle": "Йога, зал, пилатес и другое"
+        },
+        "bookFast": {
+          "title": "Бронь за секунды",
+          "subtitle": "Быстрая и простая запись"
+        },
+        "reminders": {
+          "title": "Напоминания",
+          "subtitle": "Не пропустите занятие"
+        },
+        "allInOne": {
+          "title": "Всё в одном месте",
+          "subtitle": "Брони и избранное"
+        }
+      },
+      "searchHint": "Йога, пилатес, зал, бокс...",
+      "popularNearYou": "Популярное рядом"
+    },
+    "appPromo": {
+      "eyebrow": "Почему выбирают Henzo",
+      "title": "Вся фитнес-жизнь в одном приложении",
+      "subtitle": "Бронируйте занятия, управляйте расписанием и не пропускайте тренировки.",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "qrLabel": "Сканируйте, чтобы скачать",
+      "pills": {
+        "easyBooking": "Простая запись",
+        "smartReminders": "Умные напоминания",
+        "memberships": "Управление абонементами",
+        "trackActivity": "Отслеживание активности"
+      }
+    },
+    "businessPromo": {
+      "badge": "Для владельцев студий",
+      "titleLead": "Развивайте студию с",
+      "titleBrand": "Henzo",
+      "title": "Развивайте студию с Henzo",
+      "subtitle": "Все инструменты для управления и роста бизнеса на одной платформе.",
+      "features": {
+        "bookings": "Онлайн-запись 24/7",
+        "clients": "Клиенты и абонементы",
+        "schedule": "Отчёты и аналитика",
+        "reminders": "Автоматические напоминания"
+      },
+      "cta": "Подключить Henzo бесплатно",
+      "noCreditCard": "Без карты",
+      "statBookings": "Новые записи",
+      "statValue": "+28%"
+    },
+    "popularStudios": {
+      "title": "Популярные студии рядом",
+      "seeAll": "Все студии",
+      "distanceMeters": "{value} м",
+      "distanceKilometers": "{value} км"
+    },
+    "nearbyClasses": {
+      "badge": "Рядом с вами",
+      "titleLead": "Занятия",
+      "titleHighlight": "рядом с вами",
+      "subtitle": "Смотрите ближайшие занятия в лучших студиях Дананга. Бронируйте за пару секунд.",
+      "viewSchedule": "Всё расписание",
+      "seeAll": "Все",
+      "today": "Сегодня",
+      "tomorrow": "Завтра",
+      "durationMin": "{value} мин",
+      "book": "Запись"
     }
   }
 }

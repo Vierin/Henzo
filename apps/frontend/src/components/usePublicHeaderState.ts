@@ -9,9 +9,16 @@ import { prepareScrollTriggersForLocaleNavigation } from '@/utils/viewport';
 export const publicHeaderLanguages: readonly LanguageOption[] = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+];
+
+/** Full locale set — only on `/business` marketing surfaces. */
+export const businessHeaderLanguages: readonly LanguageOption[] = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
   { code: 'pl', name: 'Polski', flag: '🇵🇱' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
 ];
 
 export function usePublicHeaderState() {

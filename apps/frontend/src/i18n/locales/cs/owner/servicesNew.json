@@ -1,4 +1,4 @@
-{
+﻿{
 	"back": "Back",
 	"title": "Add New Service",
 	"subtitle": "Create a new service for your salon with pricing and duration details.",
@@ -21,7 +21,7 @@
 	"duration": "Duration (minutes) *",
 	"durationPlaceholder": "60",
 	"durationHelp": "Enter duration in minutes (e.g., 60 for 1 hour)",
-	"price": "Price (₫) *",
+	"price": "Price *",
 	"pricePlaceholder": "50000",
 	"priceHelp": "Enter price in Vietnamese Dong (numbers only, e.g., 50000)",
 	"cancel": "Cancel",

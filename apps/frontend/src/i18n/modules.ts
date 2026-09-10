@@ -28,6 +28,7 @@ export type TranslationModule =
   | 'public/notFound'
   | 'public/blog'
   | 'public/appOpen'
+  | 'public/classDetail'
   // Owner panel
   | 'owner/dashboard'
   | 'owner/salonInfo'
@@ -99,6 +100,7 @@ export const moduleDependencies: Record<
   'public/notFound': ['core/common', 'ui/header', 'ui/footer'],
   'public/blog': ['core/common', 'ui/header', 'ui/footer'],
   'public/appOpen': ['core/common'],
+  'public/classDetail': ['core/common', 'ui/header', 'shared/auth'],
 
   // Owner - depend on core, shared
   'owner/dashboard': ['core/common', 'shared/emptyStates'],

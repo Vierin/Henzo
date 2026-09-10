@@ -1,6 +1,6 @@
 /**
- * Subscription plan configuration
- * Prices in Vietnamese dong (VND).
+ * Subscription plan configuration (marketing / legacy helpers).
+ * Live mobile prices come from RevenueCat; amounts here are EUR defaults.
  */
 
 export type SubscriptionInterval = 'monthly' | 'annual';
@@ -8,77 +8,70 @@ export type SubscriptionInterval = 'monthly' | 'annual';
 export interface SubscriptionPlanConfig {
   id: SubscriptionInterval;
   nameKey: string;
-  priceVnd: number;
+  priceEur: number;
   priceLabelKey: string;
-  saveAmountVnd?: number; // economy when choosing annual vs 12× monthly
+  saveAmountEur?: number;
 }
 
-/** Prices in VND. Monthly 395k, Annual 3980k. */
-export const PRICE_MONTHLY_VND = 395_000;
-export const PRICE_ANNUAL_VND = 3_980_000;
-/** Regular price for 12 months (monthly × 12). Used for strikethrough on annual plan. */
-export const PRICE_12_MONTHS_VND = PRICE_MONTHLY_VND * 12;
-export const SAVE_ANNUAL_VND = PRICE_12_MONTHS_VND - PRICE_ANNUAL_VND; // 1 530 000
-/** Savings for annual vs 12× monthly, in percent (rounded). */
+/** EUR marketing defaults. Monthly ≈ Studio tier, annual = 12× with discount. */
+export const PRICE_MONTHLY_EUR = 20.99;
+export const PRICE_ANNUAL_EUR = 209.9;
+export const PRICE_12_MONTHS_EUR = PRICE_MONTHLY_EUR * 12;
+export const SAVE_ANNUAL_EUR = PRICE_12_MONTHS_EUR - PRICE_ANNUAL_EUR;
 export const SAVE_ANNUAL_PERCENT = Math.round(
-  (SAVE_ANNUAL_VND / PRICE_12_MONTHS_VND) * 100,
+  (SAVE_ANNUAL_EUR / PRICE_12_MONTHS_EUR) * 100,
 );
 
-/** Fallback % only if API does not send annualPromotionPercent (legacy). */
+/** @deprecated use PRICE_MONTHLY_EUR */
+export const PRICE_MONTHLY_VND = PRICE_MONTHLY_EUR;
+/** @deprecated use PRICE_ANNUAL_EUR */
+export const PRICE_ANNUAL_VND = PRICE_ANNUAL_EUR;
+/** @deprecated */
+export const PRICE_12_MONTHS_VND = PRICE_12_MONTHS_EUR;
+/** @deprecated */
+export const SAVE_ANNUAL_VND = SAVE_ANNUAL_EUR;
+
 export const ANNUAL_LAUNCH_PROMO_PERCENT = 10;
 
-/** Discounted annual total in VND from percent off (e.g. admin-configured Stripe coupon). */
 export function annualPriceAfterPercentOff(
-  baseAnnualVnd: number,
+  baseAnnual: number,
   percentOff: number,
 ): number {
-  if (!percentOff || percentOff <= 0 || percentOff >= 100) return baseAnnualVnd;
-  return Math.round((baseAnnualVnd * (100 - percentOff)) / 100);
+  if (!percentOff || percentOff <= 0 || percentOff >= 100) return baseAnnual;
+  return Math.round(baseAnnual * (100 - percentOff) * 100) / 100;
 }
 
 export function annualPriceAfterLaunchPromo(
-  baseAnnualVnd: number = PRICE_ANNUAL_VND,
+  baseAnnual: number = PRICE_ANNUAL_EUR,
 ): number {
-  return annualPriceAfterPercentOff(baseAnnualVnd, ANNUAL_LAUNCH_PROMO_PERCENT);
+  return annualPriceAfterPercentOff(baseAnnual, ANNUAL_LAUNCH_PROMO_PERCENT);
 }
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlanConfig[] = [
   {
     id: 'monthly',
     nameKey: 'owner.subscription.monthly',
-    priceVnd: PRICE_MONTHLY_VND,
+    priceEur: PRICE_MONTHLY_EUR,
     priceLabelKey: 'owner.subscription.perMonth',
   },
   {
     id: 'annual',
     nameKey: 'owner.subscription.annual',
-    priceVnd: PRICE_ANNUAL_VND,
+    priceEur: PRICE_ANNUAL_EUR,
     priceLabelKey: 'owner.subscription.perYear',
-    saveAmountVnd: SAVE_ANNUAL_VND,
+    saveAmountEur: SAVE_ANNUAL_EUR,
   },
 ] as const;
 
-/** Format VND for display (e.g. 390 000 ₫ or 3 150 000 ₫) */
-export function formatVnd(amount: number): string {
-  const s = amount.toLocaleString('vi-VN'); // "390.000" or "3.150.000"
-  return `${s.replace(/\./g, ' ')} ₫`;
+/** Format EUR for display (legacy helper; prefer formatMoney). */
+export function formatEur(amount: number): string {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
 }
 
-/** Feature bullets on the owner subscription plan card (translation keys). */
-export const SUBSCRIPTION_FEATURE_KEYS = [
-  'owner.subscription.basic.masters',
-  'owner.subscription.basic.prioritySupport',
-  'owner.subscription.basic.marketing',
-  'owner.subscription.basic.analytics',
-  'owner.subscription.basic.crm',
-  'owner.subscription.basic.services',
-] as const;
-
-/** Legacy single plan (STARTER) for API compatibility. */
-export type SubscriptionPlanType = 'STARTER';
-export const SUBSCRIPTION_PLANS_LEGACY: Record<
-  SubscriptionPlanType,
-  { id: SubscriptionPlanType; name: string; price: number }
-> = {
-  STARTER: { id: 'STARTER', name: 'Starter', price: 390000 },
-};
+/** @deprecated use formatEur / formatMoney */
+export function formatVnd(amount: number): string {
+  return formatEur(amount);
+}
