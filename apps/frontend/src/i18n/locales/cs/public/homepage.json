@@ -366,6 +366,20 @@
       "tomorrow": "Tomorrow",
       "durationMin": "{value} min",
       "book": "Book"
+    },
+    "locationPrompt": {
+      "title": "Sdílejte svou polohu",
+      "body": "Abychom vám ukázali studia poblíž, povolte přístup k poloze nebo vyberte město.",
+      "useCurrent": "Použít aktuální polohu",
+      "enterManual": "Zadat město ručně",
+      "detecting": "Zjišťování…",
+      "searchPlaceholder": "Hledat město…",
+      "popular": "Oblíbené",
+      "noCities": "Žádná města nenalezena",
+      "searching": "Hledání…",
+      "back": "Zpět",
+      "unsupported": "Geolokace není v tomto prohlížeči podporována",
+      "detectFailed": "Nepodařilo se zjistit polohu. Povolte přístup nebo vyhledejte město."
     }
   }
 }

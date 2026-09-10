@@ -366,6 +366,20 @@
       "tomorrow": "Tomorrow",
       "durationMin": "{value} min",
       "book": "Book"
+    },
+    "locationPrompt": {
+      "title": "Udostępnij swoją lokalizację",
+      "body": "Aby pokazać studia w pobliżu, zezwól na dostęp do lokalizacji lub wybierz miasto.",
+      "useCurrent": "Użyj bieżącej lokalizacji",
+      "enterManual": "Wprowadź miasto ręcznie",
+      "detecting": "Wykrywanie…",
+      "searchPlaceholder": "Szukaj miasta…",
+      "popular": "Popularne",
+      "noCities": "Nie znaleziono miast",
+      "searching": "Szukanie…",
+      "back": "Wstecz",
+      "unsupported": "Geolokalizacja nie jest obsługiwana w tej przeglądarce",
+      "detectFailed": "Nie udało się wykryć lokalizacji. Zezwól na dostęp lub wyszukaj miasto."
     }
   }
 }

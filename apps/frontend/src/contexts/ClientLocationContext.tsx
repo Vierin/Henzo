@@ -19,7 +19,10 @@ import {
 
 type ClientLocationContextValue = {
   location: ClientLocation;
+  /** True after localStorage hydrate. */
   isHydrated: boolean;
+  /** True when the user (or a previous visit) saved a city — not the default. */
+  hasUserLocation: boolean;
   setLocation: (next: ClientLocation) => void;
   label: (fallback?: string) => string;
 };
@@ -32,11 +35,15 @@ export function ClientLocationProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState<ClientLocation>(
     DEFAULT_CLIENT_LOCATION,
   );
+  const [hasUserLocation, setHasUserLocation] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     const stored = readStoredClientLocation();
-    if (stored) setLocationState(stored);
+    if (stored) {
+      setLocationState(stored);
+      setHasUserLocation(true);
+    }
     setIsHydrated(true);
   }, []);
 
@@ -50,17 +57,19 @@ export function ClientLocationProvider({ children }: { children: ReactNode }) {
     if (!normalized.city) return;
     writeStoredClientLocation(normalized);
     setLocationState(normalized);
+    setHasUserLocation(true);
   }, []);
 
   const value = useMemo<ClientLocationContextValue>(
     () => ({
       location,
       isHydrated,
+      hasUserLocation,
       setLocation,
       label: (fallback = 'Set location') =>
-        displayLocationLabel(location, fallback),
+        hasUserLocation ? displayLocationLabel(location, fallback) : fallback,
     }),
-    [location, isHydrated, setLocation],
+    [location, isHydrated, hasUserLocation, setLocation],
   );
 
   return (

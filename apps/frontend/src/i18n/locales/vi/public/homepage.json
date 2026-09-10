@@ -366,6 +366,20 @@
       "tomorrow": "Ngày mai",
       "durationMin": "{value} phút",
       "book": "Đặt chỗ"
+    },
+    "locationPrompt": {
+      "title": "Chia sẻ vị trí của bạn",
+      "body": "Để hiển thị studio gần bạn, hãy cho phép truy cập vị trí hoặc chọn thành phố.",
+      "useCurrent": "Dùng vị trí hiện tại",
+      "enterManual": "Nhập thành phố thủ công",
+      "detecting": "Đang xác định…",
+      "searchPlaceholder": "Tìm thành phố…",
+      "popular": "Phổ biến",
+      "noCities": "Không tìm thấy thành phố",
+      "searching": "Đang tìm…",
+      "back": "Quay lại",
+      "unsupported": "Trình duyệt không hỗ trợ định vị",
+      "detectFailed": "Không thể xác định vị trí. Hãy cho phép truy cập hoặc tìm thành phố."
     }
   }
 }

@@ -410,6 +410,20 @@
       "tomorrow": "Tomorrow",
       "durationMin": "{value} min",
       "book": "Book"
+    },
+    "locationPrompt": {
+      "title": "Share your location",
+      "body": "To show studios near you, allow location access or choose your city.",
+      "useCurrent": "Use current location",
+      "enterManual": "Enter city manually",
+      "detecting": "Detecting…",
+      "searchPlaceholder": "Search city…",
+      "popular": "Popular",
+      "noCities": "No cities found",
+      "searching": "Searching…",
+      "back": "Back",
+      "unsupported": "Geolocation is not supported in this browser",
+      "detectFailed": "Could not detect your location. Allow location access or search a city."
     }
   }
 }
