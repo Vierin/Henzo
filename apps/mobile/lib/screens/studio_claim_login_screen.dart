@@ -53,6 +53,7 @@ class _StudioClaimLoginScreenState extends State<StudioClaimLoginScreen> {
     'en': 'English',
     'ru': 'Русский',
     'vi': 'Tiếng Việt',
+    'es': 'Español',
   };
 
   @override

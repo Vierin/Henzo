@@ -424,6 +424,7 @@ class ClientProfileHealthSection extends StatelessWidget {
     required this.caloriesLabel,
     required this.health,
     this.onStartWorkout,
+    this.startWorkoutLabel,
   });
 
   final String title;
@@ -441,6 +442,7 @@ class ClientProfileHealthSection extends StatelessWidget {
   final String caloriesLabel;
   final HealthData? health;
   final VoidCallback? onStartWorkout;
+  final String? startWorkoutLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -563,7 +565,7 @@ class ClientProfileHealthSection extends StatelessWidget {
                   onPressed: onStartWorkout,
                   icon: const Icon(Icons.watch_rounded, size: 16),
                   label: Text(
-                    'Начать тренировку',
+                    startWorkoutLabel ?? 'Start workout',
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w600,

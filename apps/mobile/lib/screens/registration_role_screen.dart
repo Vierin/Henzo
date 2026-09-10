@@ -46,6 +46,7 @@ class _RegistrationRoleScreenState extends State<RegistrationRoleScreen> {
     'en': 'English',
     'ru': 'Русский',
     'vi': 'Tiếng Việt',
+    'es': 'Español',
   };
 
   bool _isProvisioning = false;

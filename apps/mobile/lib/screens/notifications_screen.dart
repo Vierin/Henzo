@@ -1209,7 +1209,13 @@ Future<void> _openBookingSessionDetail(
   if (match == null) {
     ScaffoldMessenger.maybeOf(
       context,
-    )?.showSnackBar(const SnackBar(content: Text('Session not found')));
+    )?.showSnackBar(
+      SnackBar(
+        content: Text(
+          context.read<LocaleProvider>().t('notifications.sessionNotFound'),
+        ),
+      ),
+    );
     return;
   }
 

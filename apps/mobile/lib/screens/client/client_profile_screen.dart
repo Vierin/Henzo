@@ -302,7 +302,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
     final displayName = user?.name?.trim().isNotEmpty == true
         ? user!.name!.trim()
-        : 'Client';
+        : locale.t('common.client');
     final email = (user?.email ?? '').trim();
     final location = locStore.hasCity ? locStore.city!.trim() : null;
     final favorites = favStore.favorites;
@@ -406,7 +406,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                     // "Start workout" button temporarily hidden. To restore:
                     // onStartWorkout: () =>
                     //     WorkoutService.sendToWatch(workoutType: 'yoga'),
+                    // startWorkoutLabel: t('startWorkout'),
                     onStartWorkout: null,
+                    startWorkoutLabel: t('startWorkout'),
                   ),
                 ],
                 const SizedBox(height: 24),

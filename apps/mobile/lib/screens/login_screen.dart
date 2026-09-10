@@ -253,6 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
     'en': 'English',
     'ru': 'Русский',
     'vi': 'Tiếng Việt',
+    'es': 'Español',
   };
 
   @override

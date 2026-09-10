@@ -27,12 +27,14 @@ const Map<String, String> _languageLabels = {
   'en': 'English',
   'ru': 'Русский',
   'vi': 'Tiếng Việt',
+  'es': 'Español',
 };
 
 const Map<String, String> kTrainingLanguageFlags = {
   'en': '🇺🇸',
   'ru': '🇷🇺',
   'vi': '🇻🇳',
+  'es': '🇪🇸',
 };
 
 class _LanguageBottomSheet extends StatelessWidget {

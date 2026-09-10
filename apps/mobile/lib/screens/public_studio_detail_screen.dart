@@ -165,7 +165,9 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _loadStudio,
-                  child: const Text('Retry'),
+                  child: Text(
+                    context.read<LocaleProvider>().t('common.retry'),
+                  ),
                 ),
               ],
             ),

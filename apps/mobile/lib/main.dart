@@ -74,6 +74,7 @@ Future<void> main() async {
         initializeDateFormatting('en'),
         initializeDateFormatting('ru'),
         initializeDateFormatting('vi'),
+        initializeDateFormatting('es'),
       ]);
       final loadedEnv = await loadAppEnv();
       assertValidReleaseConfiguration();
@@ -364,6 +365,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   Locale('en'),
                   Locale('ru'),
                   Locale('vi'),
+                  Locale('es'),
                 ],
                 home: locale.isLoaded
                     ? const AuthWrapper()

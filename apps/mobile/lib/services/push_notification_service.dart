@@ -31,7 +31,7 @@ class PushNotificationService {
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'henzo_default',
     'Henzo',
-    description: 'Уведомления приложения Henzo',
+    description: 'Henzo app notifications',
     importance: Importance.high,
     playSound: true,
     enableVibration: true,
@@ -73,7 +73,7 @@ class PushNotificationService {
               actions: [
                 DarwinNotificationAction.plain(
                   'START_WORKOUT',
-                  'Начать',
+                  'Start',
                   options: {DarwinNotificationActionOption.foreground},
                 ),
               ],
@@ -335,7 +335,7 @@ class PushNotificationService {
       android: AndroidNotificationDetails(
         'henzo_default',
         'Henzo',
-        channelDescription: 'Уведомления приложения Henzo',
+        channelDescription: 'Henzo app notifications',
         importance: Importance.high,
         priority: Priority.high,
       ),

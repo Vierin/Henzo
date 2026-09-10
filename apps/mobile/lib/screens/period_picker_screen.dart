@@ -91,6 +91,10 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+    final weekdays = locale.tList('periodPicker.weekdays');
+    final weekdayLabels =
+        weekdays.length == 7 ? weekdays : _weekdays;
     final now = DateTime.now();
     final firstOfMonth = DateTime(_displayMonth.year, _displayMonth.month);
     final lastOfMonth = DateTime(_displayMonth.year, _displayMonth.month + 1, 0);
@@ -235,7 +239,7 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
                     ),
                     const SizedBox(height: 16),
                     Row(
-                      children: _weekdays
+                      children: weekdayLabels
                           .map((d) => Expanded(
                                 child: Center(
                                   child: Text(

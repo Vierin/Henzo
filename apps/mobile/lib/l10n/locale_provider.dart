@@ -26,6 +26,7 @@ class LocaleProvider extends ChangeNotifier {
   String get languageTag {
     if (_localeCode == 'en') return 'en';
     if (_localeCode == 'vi') return 'vi';
+    if (_localeCode == 'es') return 'es';
     return 'ru';
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../common/henzo_modal.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Modal: Work schedule time range with wheel pickers.
@@ -13,8 +15,8 @@ class WorkScheduleTimeModal extends StatefulWidget {
     required this.startMinute,
     required this.endHour,
     required this.endMinute,
-    this.title = 'Work schedule',
-    this.subtitle = 'Укажите временной диапазон работы',
+    required this.title,
+    required this.subtitle,
   });
 
   final int startHour;
@@ -30,9 +32,10 @@ class WorkScheduleTimeModal extends StatefulWidget {
     required int startMinute,
     required int endHour,
     required int endMinute,
-    String title = 'Work schedule',
-    String subtitle = 'Укажите временной диапазон работы',
+    String? title,
+    String? subtitle,
   }) {
+    final loc = context.read<LocaleProvider>();
     return showHenzoModalBottomSheet<(int, int, int, int)?>(
       context: context,
       isScrollControlled: true,
@@ -42,8 +45,8 @@ class WorkScheduleTimeModal extends StatefulWidget {
         startMinute: startMinute.clamp(0, 59),
         endHour: endHour.clamp(0, 23),
         endMinute: endMinute.clamp(0, 59),
-        title: title,
-        subtitle: subtitle,
+        title: title ?? loc.t('workSchedule.title'),
+        subtitle: subtitle ?? loc.t('workSchedule.subtitle'),
       ),
     );
   }
@@ -91,6 +94,7 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = context.watch<LocaleProvider>();
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.backgroundPrimary,
@@ -149,7 +153,7 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
           ),
           const SizedBox(height: 24),
           _TimeWheelRow(
-            label: 'Start',
+            label: loc.t('workSchedule.start'),
             hourController: _startHourCtrl,
             minuteController: _startMinCtrl,
             selectedHour: _startHour,
@@ -159,7 +163,7 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
           ),
           const SizedBox(height: 20),
           _TimeWheelRow(
-            label: 'End',
+            label: loc.t('workSchedule.end'),
             hourController: _endHourCtrl,
             minuteController: _endMinCtrl,
             selectedHour: _endHour,
@@ -181,7 +185,7 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Отмена'),
+                  child: Text(loc.t('common.cancel')),
                 ),
               ),
               const SizedBox(width: 12),
@@ -196,7 +200,7 @@ class _WorkScheduleTimeModalState extends State<WorkScheduleTimeModal> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Готово'),
+                  child: Text(loc.t('common.done')),
                 ),
               ),
             ],

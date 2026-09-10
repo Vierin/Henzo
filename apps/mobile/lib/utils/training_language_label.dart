@@ -7,6 +7,8 @@ String trainingLanguageLabel(String code) {
       return 'Русский';
     case 'vi':
       return 'Tiếng Việt';
+    case 'es':
+      return 'Español';
     default:
       return code.trim();
   }

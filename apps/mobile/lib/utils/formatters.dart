@@ -194,8 +194,8 @@ String formatCalendarWeekdayDayMonthUpper(DateTime day, String localeCode) =>
     DateFormat('EEE, d MMM', localeCode).format(day).toUpperCase();
 
 /// Passes list: `01.05 14:30`
-String dateTimeLabelDayMonthHm(DateTime? dt) {
-  if (dt == null) return 'Date TBD';
+String dateTimeLabelDayMonthHm(DateTime? dt, {String? dateTbd}) {
+  if (dt == null) return dateTbd ?? 'Date TBD';
   final local = dt.toLocal();
   String two(int v) => v.toString().padLeft(2, '0');
   return '${two(local.day)}.${two(local.month)} '
