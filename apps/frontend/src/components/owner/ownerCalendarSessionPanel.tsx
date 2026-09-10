@@ -151,7 +151,7 @@ export function OwnerCalendarSessionPanel({
               />
             </svg>
             <span
-              className="absolute inset-0 flex items-center justify-center text-base font-extrabold tracking-tight"
+              className="absolute inset-0 flex items-center justify-center text-base font-medium tracking-tight"
               style={{ color: ownerTheme.text }}
             >
               {pct}%
@@ -165,7 +165,7 @@ export function OwnerCalendarSessionPanel({
               CAPACITY
             </p>
             <p
-              className="mt-1 text-[15px] font-bold tracking-tight tabular-nums"
+              className="mt-1 text-[15px] font-normal tracking-tight tabular-nums"
               style={{ color: ownerTheme.text }}
             >
               {enrolled} of {capacity || '—'} booked

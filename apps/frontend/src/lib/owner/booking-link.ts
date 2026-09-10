@@ -8,7 +8,7 @@ export function buildStudioBookingUrl(params: {
 }): string {
   const slug = resolveStudioPublicSlug({
     id: params.studio.id,
-    name: params.studio.name,
+    name: params.studio.name ?? '',
     slug: params.studio.slug,
   });
   const locale = params.locale?.trim();

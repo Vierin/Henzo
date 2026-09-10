@@ -1,4 +1,5 @@
 ﻿import type { PublicStudioPreview } from '@/lib/client/studio-preview';
+import { parseStudioCurrency, type StudioCurrency } from '@/lib/format-money';
 
 export type NearbyClassSession = {
   sessionId: string;
@@ -11,6 +12,8 @@ export type NearbyClassSession = {
   durationMin: number;
   capacity: number;
   bookedCount: number;
+  price?: number;
+  currency: StudioCurrency;
   displayColorHex?: string;
   distanceKm?: number;
 };
@@ -75,6 +78,9 @@ export function parseNearbyClassSession(
 
   const trainerName = String(trainer?.name ?? '').trim();
   const locationName = locationRaw || studio.studioName;
+  const rawPrice = Number(map.price ?? training?.price ?? 0);
+  const price =
+    Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : undefined;
 
   return {
     sessionId: String(map.id),
@@ -87,6 +93,8 @@ export function parseNearbyClassSession(
     durationMin,
     capacity,
     bookedCount,
+    price,
+    currency: parseStudioCurrency(studio.currency),
     displayColorHex: training?.displayColor
       ? String(training.displayColor)
       : undefined,

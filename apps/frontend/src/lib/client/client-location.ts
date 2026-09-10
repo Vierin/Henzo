@@ -7,20 +7,18 @@ export type ClientLocation = {
   lng: number;
 };
 
-/** Default until user picks / GPS — Da Nang (same as prior static home). */
+/** Default until user picks / GPS. */
 export const DEFAULT_CLIENT_LOCATION: ClientLocation = {
-  city: 'Da Nang',
-  country: 'VN',
-  lat: 16.0544,
-  lng: 108.2022,
+  city: 'Madrid',
+  country: 'ES',
+  lat: 40.4168,
+  lng: -3.7038,
 };
 
 export const QUICK_CITIES: ClientLocation[] = [
   DEFAULT_CLIENT_LOCATION,
-  { city: 'Ho Chi Minh City', country: 'VN', lat: 10.8231, lng: 106.6297 },
-  { city: 'Hanoi', country: 'VN', lat: 21.0285, lng: 105.8542 },
-  { city: 'Prague', country: 'CZ', lat: 50.0755, lng: 14.4378 },
-  { city: 'Warsaw', country: 'PL', lat: 52.2297, lng: 21.0122 },
+  { city: 'Barcelona', country: 'ES', lat: 41.3874, lng: 2.1686 },
+  { city: 'Valencia', country: 'ES', lat: 39.4699, lng: -0.3763 },
 ];
 
 export function readStoredClientLocation(): ClientLocation | null {

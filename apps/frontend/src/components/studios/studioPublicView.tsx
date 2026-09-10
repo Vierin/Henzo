@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
@@ -17,6 +18,7 @@ import {
   Star,
 } from 'lucide-react';
 import { ClientHomeHeader } from '@/components/clientHome/clientHomeHeader';
+import { PublicScheduleSessionCard } from '@/components/studios/publicScheduleSessionCard';
 import {
   fetchPublicStudioScheduleClient,
   type PublicScheduleSession,
@@ -29,6 +31,7 @@ import {
   type PublicTrainingCategory,
 } from '@/lib/client/training-category';
 import { type Locale } from '@/i18n/routing';
+import { resolveStudioPublicSlug } from '@/utils/slug';
 
 type Props = {
   studio: PublicStudioDetail;
@@ -37,6 +40,8 @@ type Props = {
   trainingCategories?: PublicTrainingCategory[];
 };
 
+const UPCOMING_PREVIEW_LIMIT = 5;
+
 const CHIP_FALLBACK: [string, string][] = [
   ['#FFEB3B', '#3F3F3F'],
   ['#E91E8C', '#FFFFFF'],
@@ -44,30 +49,6 @@ const CHIP_FALLBACK: [string, string][] = [
   ['#5BC0EB', '#FFFFFF'],
   ['#8BC34A', '#3F3F3F'],
 ];
-
-function formatSessionWhen(iso: string, timeZone?: string) {
-  try {
-    return new Intl.DateTimeFormat('en', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: timeZone || undefined,
-    }).format(new Date(iso));
-  } catch {
-    return new Date(iso).toLocaleString();
-  }
-}
-
-function formatPrice(price: number) {
-  if (!Number.isFinite(price)) return null;
-  return new Intl.NumberFormat('en', {
-    style: 'decimal',
-    maximumFractionDigits: 0,
-  }).format(price);
-}
 
 function directionsUrl(studio: PublicStudioDetail): string | null {
   if (
@@ -287,57 +268,6 @@ function ReviewCard({ review }: { review: PublicStudioReview }) {
   );
 }
 
-function SessionCard({
-  session,
-  timezone,
-}: {
-  session: PublicScheduleSession;
-  timezone?: string;
-}) {
-  const accent = session.displayColor || '#E86D4F';
-  const price = session.price != null ? formatPrice(session.price) : null;
-  const spots =
-    session.capacity != null
-      ? `${session.enrolledCount ?? 0}/${session.capacity}`
-      : null;
-
-  return (
-    <article className="flex gap-3 rounded-[14px] bg-white p-3.5 sm:p-4">
-      <div
-        className="w-1 shrink-0 self-stretch rounded-full"
-        style={{ backgroundColor: accent }}
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-[#3F3F3F]">
-          {session.trainingName || 'Class'}
-        </p>
-        <p className="mt-0.5 text-sm text-[#878787]">
-          {formatSessionWhen(session.startsAt, timezone)}
-          {session.durationMinutes ? ` · ${session.durationMinutes} min` : ''}
-        </p>
-        {(session.trainerName || session.locationName) && (
-          <p className="mt-0.5 truncate text-sm text-[#878787]">
-            {[session.trainerName, session.locationName]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        )}
-        {spots ? (
-          <p className="mt-1 text-xs text-[#878787]">{spots} spots</p>
-        ) : null}
-      </div>
-      {price ? (
-        <div className="shrink-0 self-center text-right">
-          <p className="text-sm font-semibold" style={{ color: accent }}>
-            {price}
-          </p>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
 export function StudioPublicView({
   studio,
   initialSessions,
@@ -346,7 +276,6 @@ export function StudioPublicView({
 }: Props) {
   const [sessions, setSessions] = useState(initialSessions);
   const [descOpen, setDescOpen] = useState(false);
-  const [showAllSessions, setShowAllSessions] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
@@ -368,7 +297,13 @@ export function StudioPublicView({
     [sessions],
   );
 
-  const visibleSessions = showAllSessions ? upcoming : upcoming.slice(0, 3);
+  const visibleSessions = upcoming.slice(0, UPCOMING_PREVIEW_LIMIT);
+  const studioSlug = resolveStudioPublicSlug({
+    id: studio.id,
+    name: studio.name,
+    slug: studio.slug,
+  });
+  const scheduleHref = `/${locale}/studio/${encodeURIComponent(studioSlug)}/schedule`;
   const reviews = studio.reviews ?? [];
   const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 1);
   const avg =
@@ -402,13 +337,6 @@ export function StudioPublicView({
     } catch {
       // ignore
     }
-  };
-
-  const scrollToSchedule = () => {
-    setShowAllSessions(true);
-    document
-      .getElementById('studio-schedule')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const igHref = studio.instagram
@@ -594,9 +522,8 @@ export function StudioPublicView({
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={scrollToSchedule}
+            <Link
+              href={scheduleHref}
               className="relative mt-5 flex w-full items-center gap-3 rounded-[14px] bg-[#E86D4F] px-3.5 py-3.5 text-left text-white hover:bg-[#d85e42]"
             >
               <CalendarDays className="h-5 w-5 shrink-0" aria-hidden />
@@ -609,7 +536,7 @@ export function StudioPublicView({
                 </span>
               </span>
               <ChevronRight className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2" />
-            </button>
+            </Link>
           </aside>
         </div>
 
@@ -619,14 +546,13 @@ export function StudioPublicView({
             <h2 className="text-[13px] font-semibold uppercase tracking-[0.04em]">
               Upcoming classes
             </h2>
-            {upcoming.length > 3 ? (
-              <button
-                type="button"
-                onClick={() => setShowAllSessions((v) => !v)}
+            {upcoming.length > UPCOMING_PREVIEW_LIMIT ? (
+              <Link
+                href={scheduleHref}
                 className="text-sm font-semibold uppercase text-[#E86D4F]"
               >
-                {showAllSessions ? 'Show less' : 'See more'}
-              </button>
+                See more
+              </Link>
             ) : null}
           </div>
 
@@ -638,21 +564,17 @@ export function StudioPublicView({
             <ul className="mt-3 space-y-2.5">
               {visibleSessions.map((session) => (
                 <li key={session.id}>
-                  <SessionCard session={session} timezone={studio.timezone} />
+                  <PublicScheduleSessionCard
+                    session={session}
+                    locale={locale}
+                    currency={studio.currency}
+                    studioId={studio.id}
+                    studioName={studio.name}
+                  />
                 </li>
               ))}
             </ul>
           )}
-
-          {!showAllSessions && upcoming.length > 3 ? (
-            <button
-              type="button"
-              onClick={scrollToSchedule}
-              className="mt-3 w-full rounded-[14px] border border-[#E8E0DA] bg-white py-3 text-sm font-semibold text-[#E86D4F]"
-            >
-              See all {upcoming.length} classes
-            </button>
-          ) : null}
         </section>
 
         {/* Reviews */}

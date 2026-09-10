@@ -3,6 +3,7 @@ import {
   fetchPublicApiJson,
 } from '@/lib/client/fetch-popular-studios';
 import type { PublicStudioPreview } from '@/lib/client/studio-preview';
+import { formatMoney, type StudioCurrency } from '@/lib/format-money';
 
 export type BrowseClassItem = {
   sessionId: string;
@@ -143,15 +144,10 @@ export function formatBrowseClassTime(iso: string, locale = 'en'): string {
   }).format(new Date(iso));
 }
 
-export function formatBrowseClassPrice(price?: number): string {
+export function formatBrowseClassPrice(
+  price?: number,
+  currency: StudioCurrency = 'EUR',
+): string {
   if (price == null || price <= 0) return '';
-  try {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      maximumFractionDigits: 0,
-    }).format(price);
-  } catch {
-    return `${Math.round(price)}₫`;
-  }
+  return formatMoney(price, currency);
 }

@@ -3,36 +3,14 @@
 import { useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import {
+  addDays,
+  clampDay,
+  mondayOf,
+  sameDay,
+  startOfToday,
+} from '@/lib/owner/schedule-dates';
 import type { Locale } from '@/i18n/routing';
-
-function addDays(base: Date, days: number) {
-  const d = new Date(base);
-  d.setDate(d.getDate() + days);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function sameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-/** Monday 00:00 of the ISO week containing [day]. */
-function mondayOf(day: Date) {
-  const d = addDays(day, 0);
-  const js = d.getDay(); // Sun=0 … Sat=6
-  const delta = js === 0 ? -6 : 1 - js;
-  return addDays(d, delta);
-}
 
 const PAST_WEEKS = 12;
 const FUTURE_WEEKS = 26;
@@ -42,9 +20,18 @@ type Props = {
   selected: Date;
   onSelect: (day: Date) => void;
   locale: Locale;
+  /** Inclusive local-day bounds (e.g. booking window). */
+  minDate?: Date | null;
+  maxDate?: Date | null;
 };
 
-export function OwnerScheduleDateStrip({ selected, onSelect, locale }: Props) {
+export function OwnerScheduleDateStrip({
+  selected,
+  onSelect,
+  locale,
+  minDate,
+  maxDate,
+}: Props) {
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -59,17 +46,32 @@ export function OwnerScheduleDateStrip({ selected, onSelect, locale }: Props) {
     [weekStart],
   );
 
-  const minMonday = useMemo(
-    () => addDays(mondayOf(today), -PAST_WEEKS * 7),
-    [today],
+  const rangeMin = useMemo(
+    () => (minDate ? addDays(minDate, 0) : null),
+    [minDate],
   );
-  const maxMonday = useMemo(
-    () => addDays(mondayOf(today), FUTURE_WEEKS * 7),
-    [today],
+  const rangeMax = useMemo(
+    () => (maxDate ? addDays(maxDate, 0) : null),
+    [maxDate],
   );
+
+  const minMonday = useMemo(() => {
+    if (rangeMin) return mondayOf(rangeMin);
+    return addDays(mondayOf(today), -PAST_WEEKS * 7);
+  }, [rangeMin, today]);
+  const maxMonday = useMemo(() => {
+    if (rangeMax) return mondayOf(rangeMax);
+    return addDays(mondayOf(today), FUTURE_WEEKS * 7);
+  }, [rangeMax, today]);
 
   const canPrev = weekStart.getTime() > minMonday.getTime();
   const canNext = weekStart.getTime() < maxMonday.getTime();
+
+  const isDisabled = (day: Date) => {
+    if (rangeMin && day.getTime() < rangeMin.getTime()) return true;
+    if (rangeMax && day.getTime() > rangeMax.getTime()) return true;
+    return false;
+  };
 
   const shiftWeek = (dir: -1 | 1) => {
     if (dir < 0 && !canPrev) return;
@@ -77,8 +79,7 @@ export function OwnerScheduleDateStrip({ selected, onSelect, locale }: Props) {
     const nextMonday = addDays(weekStart, dir * 7);
     if (nextMonday.getTime() < minMonday.getTime()) return;
     if (nextMonday.getTime() > maxMonday.getTime()) return;
-    // Keep weekday (Mon→Mon, Wed→Wed, …)
-    onSelect(addDays(selected, dir * 7));
+    onSelect(clampDay(addDays(selected, dir * 7), rangeMin, rangeMax));
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -137,16 +138,18 @@ export function OwnerScheduleDateStrip({ selected, onSelect, locale }: Props) {
         {days.map((day) => {
           const active = sameDay(day, selected);
           const isToday = sameDay(day, today);
+          const disabled = isDisabled(day);
           const iso = `${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`;
           return (
             <button
               key={iso}
               type="button"
+              disabled={disabled}
               onClick={() => {
                 if (Date.now() < ignoreClickUntilRef.current) return;
-                onSelect(addDays(day, 0));
+                onSelect(clampDay(day, rangeMin, rangeMax));
               }}
-              className={`flex min-w-0 flex-col items-center justify-center rounded-xl px-0.5 py-2.5 text-center transition-colors sm:px-1 ${
+              className={`flex min-w-0 flex-col items-center justify-center rounded-xl px-0.5 py-2.5 text-center transition-colors sm:px-1 disabled:cursor-not-allowed disabled:opacity-35 ${
                 active ? 'text-white' : 'text-[#3F3F3F]'
               }`}
               style={{

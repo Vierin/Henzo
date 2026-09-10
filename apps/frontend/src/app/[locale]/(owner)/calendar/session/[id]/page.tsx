@@ -70,12 +70,6 @@ function initials(name: string): string {
   return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
 }
 
-function progressColor(ratio: number, accent: string) {
-  if (ratio < 0.5) return '#E26152';
-  if (ratio < 1) return '#B7D356';
-  return accent;
-}
-
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
@@ -406,7 +400,7 @@ export default function SessionDetailPage() {
                     cy="36"
                     r={ringR}
                     fill="none"
-                    stroke={progressColor(ratio, accent)}
+                    stroke={accent}
                     strokeWidth="7"
                     strokeLinecap="round"
                     strokeDasharray={ringC}
@@ -414,7 +408,7 @@ export default function SessionDetailPage() {
                   />
                 </svg>
                 <span
-                  className="absolute inset-0 flex items-center justify-center text-base font-extrabold"
+                  className="absolute inset-0 flex items-center justify-center text-base font-medium"
                   style={{ color: ownerTheme.text }}
                 >
                   {pct}%
@@ -428,7 +422,7 @@ export default function SessionDetailPage() {
                   Capacity
                 </p>
                 <p
-                  className="mt-1 text-[15px] font-bold tabular-nums"
+                  className="mt-1 text-[15px] font-normal tabular-nums"
                   style={{ color: ownerTheme.text }}
                 >
                   {enrolled} of {capacity || '—'} booked

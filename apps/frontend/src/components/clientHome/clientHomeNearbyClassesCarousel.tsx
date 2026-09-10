@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, ChevronRight, MapPin } from 'lucide-react';
+import { Calendar, ChevronRight } from 'lucide-react';
 import { playStoreUrl } from '@/constants/appStores';
 import { useClientLocation } from '@/contexts/ClientLocationContext';
 import { fetchNearbyClassGroupsClient } from '@/lib/client/fetch-nearby-classes';
@@ -10,11 +10,9 @@ import { NearbyClassCard } from '@/components/clientHome/nearbyClassCard';
 import type { Locale } from '@/i18n/routing';
 
 type Copy = {
-  badge: string;
   titleLead: string;
   titleHighlight: string;
   subtitle: string;
-  viewSchedule: string;
   seeAll: string;
   today: string;
   tomorrow: string;
@@ -28,8 +26,8 @@ type Props = {
 
 function ClassRowSkeleton() {
   return (
-    <div className="w-[min(100%,260px)] shrink-0 snap-start sm:w-[272px]">
-      <div className="h-[108px] animate-pulse rounded-[14px] bg-[#EDE8E3]" />
+    <div className="w-[min(100%,380px)] shrink-0 snap-start sm:w-[420px]">
+      <div className="h-[120px] animate-pulse rounded-[16px] bg-[#EDE8E3]" />
     </div>
   );
 }
@@ -91,35 +89,17 @@ export function ClientHomeNearbyClassesCarousel({
   return (
     <section
       id="nearby-classes"
-      className="bg-white px-4 py-10 sm:px-6 sm:py-12"
+      className="bg-[#F9F4F0] px-4 py-10 sm:px-6 sm:py-12"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-[#F9F4F0] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#878787]">
-              <MapPin className="h-3.5 w-3.5 text-[#E86D4F]" aria-hidden />
-              {copy.badge}
-            </span>
-            <h2 className="mt-4 text-2xl font-bold tracking-tight text-[#3F3F3F] sm:text-3xl lg:text-[2rem]">
-              {copy.titleLead}{' '}
-              <span className="text-[#E86D4F]">{copy.titleHighlight}</span>
-            </h2>
-            <p className="mt-3 text-base leading-relaxed text-[#878787] sm:text-lg">
-              {subtitle}
-            </p>
-          </div>
-
-          <a
-            href={playStoreUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex shrink-0 items-center gap-2 self-start text-sm font-semibold text-[#3F3F3F] transition hover:text-[#E86D4F] lg:self-auto"
-          >
-            {copy.viewSchedule}
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E0D8]">
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </span>
-          </a>
+        <div className="mb-6 max-w-2xl sm:mb-8">
+          <h2 className="text-2xl font-bold tracking-tight text-[#3F3F3F] sm:text-3xl lg:text-[2rem]">
+            {copy.titleLead}{' '}
+            <span className="text-[#E86D4F]">{copy.titleHighlight}</span>
+          </h2>
+          <p className="mt-3 text-base leading-relaxed text-[#878787] sm:text-lg">
+            {subtitle}
+          </p>
         </div>
 
         {isLoading ? (
@@ -128,7 +108,7 @@ export function ClientHomeNearbyClassesCarousel({
               <Calendar className="h-4 w-4 text-[#878787]" aria-hidden />
               <div className="h-4 w-32 animate-pulse rounded bg-[#EDE8E3]" />
             </div>
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+            <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1">
               {Array.from({ length: 4 }).map((_, i) => (
                 <ClassRowSkeleton key={`sk-${i}`} />
               ))}
@@ -154,7 +134,7 @@ export function ClientHomeNearbyClassesCarousel({
                   </a>
                 </div>
 
-                <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-hide snap-x snap-mandatory">
+                <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1 scrollbar-hide snap-x snap-mandatory">
                   {group.classes.map((session) => (
                     <NearbyClassCard
                       key={session.sessionId}

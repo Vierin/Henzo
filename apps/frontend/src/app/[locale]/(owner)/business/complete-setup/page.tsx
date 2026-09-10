@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
+import { defaultCurrencyForLocale } from '@/lib/format-money';
 
 export default function CompleteSetupPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function CompleteSetupPage() {
         name: name.trim(),
         address: address.trim() || undefined,
         phone: phone.trim() || undefined,
+        currency: defaultCurrencyForLocale(locale),
       });
       router.replace(withLocale('/owner-dashboard', locale));
     } catch (err) {

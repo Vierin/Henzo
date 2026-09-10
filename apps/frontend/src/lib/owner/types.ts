@@ -16,6 +16,7 @@ export type OwnerStudio = {
   workingHours?: unknown;
   status?: string | null;
   timezone?: string | null;
+  currency?: string | null;
   autoConfirmBookings?: boolean | null;
   reminderSettings?: {
     bookingPeriodDays?: number;

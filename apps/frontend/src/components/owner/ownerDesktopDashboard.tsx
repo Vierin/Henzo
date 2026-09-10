@@ -23,6 +23,7 @@ import {
   OwnerScheduleEmptyCard,
   OwnerSessionCard,
 } from '@/components/owner/ownerSessionCard';
+import { OwnerFeaturedSessionCard } from '@/components/owner/ownerDashboardCards';
 
 export type DashboardNextBooking = {
   key: string;
@@ -229,7 +230,7 @@ export function OwnerDashboardStudioBanner({
           </p>
         ) : null}
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+        <div className="mt-3 flex items-center justify-between gap-3">
           <div className="min-w-0 flex flex-wrap items-center gap-1.5">
             {visibleTags.map((tag) => (
               <span
@@ -318,9 +319,11 @@ export function OwnerDashboardCopyBookingLinkButton({
 export function OwnerDashboardSidebar({
   localePath,
   lastBookings,
+  featuredSession,
 }: {
   localePath: (path: string) => string;
   lastBookings: DashboardNextBooking[];
+  featuredSession?: OwnerTrainingSession | null;
 }) {
   const actions = [
     {
@@ -367,6 +370,15 @@ export function OwnerDashboardSidebar({
           ))}
         </ul>
       </div>
+
+      {featuredSession ? (
+        <div className="hidden lg:block">
+          <OwnerFeaturedSessionCard
+            session={featuredSession}
+            href={localePath(`/calendar/session/${featuredSession.sessionId}`)}
+          />
+        </div>
+      ) : null}
 
       <div className="overflow-hidden rounded-[16px] bg-white">
         <div className="flex items-center justify-between gap-2 px-4 pb-1 pt-3.5">

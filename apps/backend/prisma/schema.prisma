@@ -84,6 +84,8 @@ model Studio {
   descriptionVi    String?
   descriptionRu    String?
   timezone         String        @default("Asia/Ho_Chi_Minh") // IANA timezone identifier
+  /// ISO 4217 class-price currency: EUR | PLN | USD | VND
+  currency         String        @default("EUR")
   slug             String?       @unique // SEO-friendly slug for studio URLs
   status           StudioStatus   @default(DRAFT) // Studio publication status
   /// When true, new class enrollments are ACTIVE immediately.

@@ -3,6 +3,7 @@ import {
   resolvePopularStudiosApiBases,
 } from '@/lib/client/fetch-popular-studios';
 import { extractStudioIdFromSlug, isValidStudioSlug } from '@/utils/slug';
+import { parseStudioCurrency, type StudioCurrency } from '@/lib/format-money';
 
 export type PublicStudioReview = {
   id: string;
@@ -28,6 +29,9 @@ export type PublicStudioDetail = {
   latitude?: number;
   longitude?: number;
   timezone?: string;
+  currency: StudioCurrency;
+  /** Bookable window length in days (studio reminderSettings). */
+  bookingPeriodDays: number;
   avgRating?: number;
   reviewCount?: number;
   categoryIds: number[];
@@ -42,6 +46,23 @@ export type PublicStudioDetail = {
   reviews: PublicStudioReview[];
 };
 
+const DEFAULT_BOOKING_PERIOD_DAYS = 28;
+const MIN_BOOKING_PERIOD_DAYS = 1;
+const MAX_BOOKING_PERIOD_DAYS = 60;
+
+export function parseBookingPeriodDays(raw: unknown): number {
+  let days = DEFAULT_BOOKING_PERIOD_DAYS;
+  if (typeof raw === 'number' && Number.isFinite(raw)) days = Math.floor(raw);
+  else if (typeof raw === 'string') {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n)) days = n;
+  }
+  return Math.max(
+    MIN_BOOKING_PERIOD_DAYS,
+    Math.min(MAX_BOOKING_PERIOD_DAYS, days),
+  );
+}
+
 export type PublicScheduleSession = {
   id: string;
   startsAt: string;
@@ -54,6 +75,11 @@ export type PublicScheduleSession = {
   durationMinutes?: number;
   locationName?: string;
   displayColor?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionRu?: string;
+  descriptionVi?: string;
+  categoryName?: string;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -182,6 +208,10 @@ export function parsePublicStudioDetail(
     latitude: typeof data.latitude === 'number' ? data.latitude : undefined,
     longitude: typeof data.longitude === 'number' ? data.longitude : undefined,
     timezone: data.timezone ? String(data.timezone) : undefined,
+    currency: parseStudioCurrency(data.currency),
+    bookingPeriodDays: parseBookingPeriodDays(
+      asRecord(data.reminderSettings)?.bookingPeriodDays,
+    ),
     avgRating: Number(data.avgRating ?? data.averageRating ?? 0) || undefined,
     reviewCount:
       Number(data.reviewCount ?? count?.Review ?? count?.reviews ?? 0) ||
@@ -193,7 +223,7 @@ export function parsePublicStudioDetail(
   };
 }
 
-async function fetchPublicStudioById(
+export async function fetchPublicStudioById(
   id: string,
 ): Promise<PublicStudioDetail | null> {
   const encoded = encodeURIComponent(id);
@@ -251,7 +281,12 @@ function parseScheduleSessions(raw: unknown): PublicScheduleSession[] {
         trainingName: String(
           m.trainingName ?? training?.name ?? 'Class',
         ).trim(),
-        trainerName: trainer?.name ? String(trainer.name).trim() : undefined,
+        trainerName: (() => {
+          const raw = trainer?.name
+            ? String(trainer.name).trim()
+            : String(m.trainerName ?? '').trim();
+          return raw || undefined;
+        })(),
         capacity: Number(m.capacity ?? 0) || undefined,
         enrolledCount:
           Number(
@@ -271,6 +306,31 @@ function parseScheduleSessions(raw: unknown): PublicScheduleSession[] {
         displayColor:
           String(m.displayColor ?? training?.displayColor ?? '').trim() ||
           undefined,
+        description: (() => {
+          const en = String(training?.descriptionEn ?? '').trim();
+          const ru = String(training?.descriptionRu ?? '').trim();
+          const vi = String(training?.descriptionVi ?? '').trim();
+          const base = String(training?.description ?? '').trim();
+          return en || base || ru || vi || undefined;
+        })(),
+        descriptionEn:
+          String(training?.descriptionEn ?? '').trim() || undefined,
+        descriptionRu:
+          String(training?.descriptionRu ?? '').trim() || undefined,
+        descriptionVi:
+          String(training?.descriptionVi ?? '').trim() || undefined,
+        categoryName: (() => {
+          const cat =
+            asRecord(training?.trainingCategory) ??
+            asRecord(m.trainingCategory);
+          if (!cat) return undefined;
+          return (
+            String(cat.name_en ?? cat.nameEn ?? '').trim() ||
+            String(cat.name_ru ?? cat.nameRu ?? '').trim() ||
+            String(cat.name_vn ?? cat.nameVn ?? '').trim() ||
+            undefined
+          );
+        })(),
       };
     })
     .filter((s): s is PublicScheduleSession => s != null)
@@ -279,20 +339,46 @@ function parseScheduleSessions(raw: unknown): PublicScheduleSession[] {
     );
 }
 
+export type PublicScheduleFetchOpts = {
+  from?: Date | string;
+  to?: Date | string;
+  limit?: number;
+};
+
+function buildSchedulePath(
+  studioId: string,
+  opts?: PublicScheduleFetchOpts,
+): string {
+  const from =
+    opts?.from instanceof Date
+      ? opts.from.toISOString()
+      : opts?.from?.trim() || new Date().toISOString();
+  const q = new URLSearchParams({
+    from,
+    limit: String(opts?.limit ?? 60),
+  });
+  if (opts?.to) {
+    q.set(
+      'to',
+      opts.to instanceof Date ? opts.to.toISOString() : String(opts.to),
+    );
+  }
+  return `/studios/${encodeURIComponent(studioId)}/schedule?${q.toString()}`;
+}
+
 export async function fetchPublicStudioSchedule(
   studioId: string,
+  opts?: PublicScheduleFetchOpts,
 ): Promise<PublicScheduleSession[]> {
-  const from = new Date().toISOString();
-  const path = `/studios/${encodeURIComponent(studioId)}/schedule?from=${encodeURIComponent(from)}&limit=60`;
-  const raw = await fetchPublicApiJson(path, 60);
+  const raw = await fetchPublicApiJson(buildSchedulePath(studioId, opts), 60);
   return parseScheduleSessions(raw);
 }
 
 export async function fetchPublicStudioScheduleClient(
   studioId: string,
+  opts?: PublicScheduleFetchOpts,
 ): Promise<PublicScheduleSession[]> {
-  const from = new Date().toISOString();
-  const path = `/studios/${encodeURIComponent(studioId)}/schedule?from=${encodeURIComponent(from)}&limit=60`;
+  const path = buildSchedulePath(studioId, opts);
   for (const base of resolvePopularStudiosApiBases()) {
     try {
       const res = await fetch(`${base}${path}`);

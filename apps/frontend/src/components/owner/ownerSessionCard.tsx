@@ -170,7 +170,7 @@ export function OwnerScheduleEmptyCard({
 }: {
   title?: string;
   subtitle?: string;
-  /** When set, shows a full-width “Copy booking link” action. */
+  /** When set, shows a compact “Copy booking link” action. */
   bookingLink?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -233,7 +233,7 @@ export function OwnerScheduleEmptyCard({
         <button
           type="button"
           onClick={() => void onCopy()}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[12px] py-2.5 text-sm font-semibold transition hover:bg-[#FFF8F4]"
+          className="inline-flex w-fit items-center justify-center gap-2 self-start rounded-[12px] px-3.5 py-2 text-sm font-semibold transition hover:bg-[#FFF8F4]"
           style={{
             color: ownerTheme.accent,
             boxShadow: `inset 0 0 0 1.5px ${ownerTheme.accent}`,

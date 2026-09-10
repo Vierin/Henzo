@@ -323,13 +323,13 @@
       "location": "Set location",
       "login": "Log in",
       "signUp": "Sign up",
-      "forBusiness": "For business"
+      "forBusiness": "Business"
     },
     "hero": {
-      "line1": "Move. Feel good.",
-      "line2Highlight": "Live better.",
-      "subtitle": "Discover and book the best fitness, wellness and sports classes near you.",
-      "searchPlaceholder": "Search classes, studios or trainers...",
+      "line1": "Find your next workout",
+      "line2Highlight": "and community.",
+      "subtitle": "Discover fitness studios, classes and trainers near you. Meet like-minded people, stay motivated and make fitness a social experience.",
+      "searchPlaceholder": "What are you looking for?",
       "floatingCardTitle": "Find your next class",
       "floatingCardSubtitle": "3,200+ classes happening today",
       "categories": {
@@ -358,7 +358,9 @@
           "title": "All in one place",
           "subtitle": "Manage bookings and favorites"
         }
-      }
+      },
+      "searchHint": "Yoga, Pilates, Gym, Boxing...",
+      "popularNearYou": "Popular near you"
     },
     "appPromo": {
       "eyebrow": "Why people love Henzo",
@@ -375,15 +377,21 @@
       }
     },
     "businessPromo": {
+      "badge": "Built for studio owners",
+      "titleLead": "Grow your studio with",
+      "titleBrand": "Henzo",
       "title": "Grow your studio with Henzo",
       "subtitle": "All the tools you need to run and grow your business in one simple platform.",
       "features": {
         "bookings": "Online bookings 24/7",
         "clients": "Client & membership management",
-        "schedule": "Schedule & payments",
+        "schedule": "Reports & insights",
         "reminders": "Automated reminders"
       },
-      "cta": "Join Henzo for free"
+      "cta": "Join Henzo for free",
+      "noCreditCard": "No credit card required",
+      "statBookings": "New bookings",
+      "statValue": "+28%"
     },
     "popularStudios": {
       "title": "Popular studios near you",
@@ -400,7 +408,8 @@
       "seeAll": "See all",
       "today": "Today",
       "tomorrow": "Tomorrow",
-      "durationMin": "{value} min"
+      "durationMin": "{value} min",
+      "book": "Book"
     }
   }
 }

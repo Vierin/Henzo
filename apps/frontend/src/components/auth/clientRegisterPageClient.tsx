@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { withLocale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { ClientAuthShell } from '@/components/auth/clientAuthShell';
@@ -17,14 +17,19 @@ import {
   verifyClientRegistrationCode,
 } from '@/lib/auth/api';
 import { getPublicSupabase } from '@/lib/supabase-public';
+import { safeInternalNext } from '@/lib/client/book-session';
 
 type Step = 'form' | 'verify';
 
 export function ClientRegisterPageClient() {
   const t = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const params = useParams();
   const locale = (params?.locale as string) ?? 'en';
+  const nextPath =
+    safeInternalNext(searchParams.get('next')) ??
+    withLocale('/activity', locale as 'en' | 'ru' | 'vi');
 
   const [step, setStep] = useState<Step>('form');
   const [name, setName] = useState('');
@@ -91,7 +96,7 @@ export function ClientRegisterPageClient() {
       );
       clearOwnerAuthCookie();
       setClientAuthCookie();
-      router.replace(withLocale('/activity', locale as 'en' | 'ru' | 'vi'));
+      router.replace(nextPath);
     } catch (err) {
       setError(
         err instanceof Error
@@ -232,7 +237,14 @@ export function ClientRegisterPageClient() {
         <p className="mt-6 text-center text-sm text-[#878787]">
           {String(t('auth.alreadyHaveAccount'))}{' '}
           <Link
-            href={withLocale('/login', locale as 'en' | 'ru' | 'vi')}
+            href={
+              searchParams.get('next')
+                ? withLocale(
+                    `/login?next=${encodeURIComponent(searchParams.get('next')!)}`,
+                    locale as 'en' | 'ru' | 'vi',
+                  )
+                : withLocale('/login', locale as 'en' | 'ru' | 'vi')
+            }
             className="font-semibold text-[#E86D4F] transition hover:text-[#d85e42]"
           >
             {String(t('auth.signIn'))}

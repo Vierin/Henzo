@@ -34,7 +34,13 @@ import {
 import { OwnerLocationField } from '@/components/owner/ownerLocationField';
 import { OwnerSelect } from '@/components/owner/ownerSelect';
 import { OwnerTrainingLocationsModal } from '@/components/owner/ownerTrainingLocationsModal';
-import { formatPriceDots, parsePriceDots } from '@/lib/owner/format-price';
+import {
+  formatMoney,
+  formatPriceInput,
+  parsePriceInput,
+  parseStudioCurrency,
+  priceInputPlaceholder,
+} from '@/lib/format-money';
 
 const MAX_DURATION = 480;
 const LANGS = [
@@ -71,6 +77,7 @@ export function AddTrainingForm() {
   const pathname = usePathname();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
   const { studio, patchStudio } = useOwnerStudio();
+  const currency = parseStudioCurrency(studio?.currency);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
@@ -153,8 +160,15 @@ export function AddTrainingForm() {
     if (!found) return;
     setName(found.name);
     if (found.duration > 0) setDuration(String(found.duration));
-    if (found.price > 0)
-      setPrice(formatPriceDots(Math.round(Number(found.price))));
+    if (found.price > 0) {
+      const amount = Number(found.price);
+      setPrice(
+        formatPriceInput(
+          String(currency === 'VND' ? Math.round(amount) : amount),
+          currency,
+        ),
+      );
+    }
     if (found.trainingCategoryId != null) {
       setCategoryId(String(found.trainingCategoryId));
     }
@@ -184,7 +198,7 @@ export function AddTrainingForm() {
   const validateStep1 = (): boolean => {
     const d = Number(duration) || 0;
     const c = Number(capacity) || 0;
-    const p = parsePriceDots(price);
+    const p = parsePriceInput(price, currency);
     if (!name.trim()) {
       setError('Enter a training name');
       return false;
@@ -253,7 +267,7 @@ export function AddTrainingForm() {
         const created = await createTraining({
           name: trimmedName,
           duration: Number(duration),
-          price: parsePriceDots(price),
+          price: parsePriceInput(price, currency),
           studioId: studio.id,
           description: description.trim() || undefined,
           language: language || undefined,
@@ -386,7 +400,7 @@ export function AddTrainingForm() {
                       >
                         {t.duration > 0 ? `${t.duration} min` : '—'}
                         {t.price > 0
-                          ? ` · ${formatPriceDots(Math.round(Number(t.price)))}`
+                          ? ` · ${formatMoney(Number(t.price), currency)}`
                           : ''}
                       </span>
                     </button>
@@ -484,12 +498,14 @@ export function AddTrainingForm() {
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <FieldLabel>Price *</FieldLabel>
+              <FieldLabel>Price ({currency}) *</FieldLabel>
               <input
-                inputMode="numeric"
+                inputMode={currency === 'VND' ? 'numeric' : 'decimal'}
                 value={price}
-                onChange={(e) => setPrice(formatPriceDots(e.target.value))}
-                placeholder="150.000"
+                onChange={(e) =>
+                  setPrice(formatPriceInput(e.target.value, currency))
+                }
+                placeholder={priceInputPlaceholder(currency)}
                 className={inputClass}
                 style={fieldStyle}
               />

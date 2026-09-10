@@ -33,11 +33,30 @@ export function weekDays(weekStart: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 }
 
+export function dayBoundsIso(date: Date): { from: string; to: string } {
+  const start = addDays(date, 0);
+  const end = addDays(date, 0);
+  end.setHours(23, 59, 59, 999);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
 export function weekBoundsIso(dayInWeek: Date): { from: string; to: string } {
   const start = mondayOf(dayInWeek);
   const end = addDays(start, 6);
   end.setHours(23, 59, 59, 999);
   return { from: start.toISOString(), to: end.toISOString() };
+}
+
+/** Clamp day into [min, max] inclusive (local calendar days). */
+export function clampDay(
+  day: Date,
+  min?: Date | null,
+  max?: Date | null,
+): Date {
+  let d = addDays(day, 0);
+  if (min && d.getTime() < addDays(min, 0).getTime()) d = addDays(min, 0);
+  if (max && d.getTime() > addDays(max, 0).getTime()) d = addDays(max, 0);
+  return d;
 }
 
 export function formatWeekRangeLabel(weekStart: Date, locale: string): string {

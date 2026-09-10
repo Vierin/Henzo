@@ -20,6 +20,7 @@ import {
   startBusinessGoogleOAuth,
   startClientGoogleOAuth,
 } from '@/utils/oauth';
+import { safeInternalNext } from '@/lib/client/book-session';
 
 export function ClientLoginPageClient() {
   const t = useTranslation();
@@ -28,6 +29,9 @@ export function ClientLoginPageClient() {
   const params = useParams();
   const locale = (params?.locale as string) ?? 'en';
   const isBusinessIntent = searchParams.get('intent') === 'business';
+  const nextPath =
+    safeInternalNext(searchParams.get('next')) ??
+    withLocale('/activity', locale as 'en' | 'ru' | 'vi');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -97,7 +101,7 @@ export function ClientLoginPageClient() {
     );
     clearOwnerAuthCookie();
     setClientAuthCookie();
-    router.replace(withLocale('/activity', locale as 'en' | 'ru' | 'vi'));
+    router.replace(nextPath);
   };
 
   const redirectOwnerPanel = async () => {
@@ -175,7 +179,7 @@ export function ClientLoginPageClient() {
 
     const { error: oauthError } = await startClientGoogleOAuth({
       provider,
-      next: withLocale('/activity', locale as 'en' | 'ru' | 'vi'),
+      next: nextPath,
     });
 
     if (oauthError) {
@@ -276,7 +280,14 @@ export function ClientLoginPageClient() {
           <p className="mt-6 text-center text-sm text-[#878787]">
             {String(t('auth.noAccountRegister'))}{' '}
             <Link
-              href={withLocale('/register', locale as 'en' | 'ru' | 'vi')}
+              href={
+                searchParams.get('next')
+                  ? withLocale(
+                      `/register?next=${encodeURIComponent(searchParams.get('next')!)}`,
+                      locale as 'en' | 'ru' | 'vi',
+                    )
+                  : withLocale('/register', locale as 'en' | 'ru' | 'vi')
+              }
               className="font-semibold text-[#E86D4F] transition hover:text-[#d85e42]"
             >
               {String(t('auth.registerLink'))}

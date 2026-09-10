@@ -1,14 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import {
-  ChevronDown,
-  Loader2,
-  MapPin,
-  Navigation,
-  Search,
-  X,
-} from 'lucide-react';
+import { ChevronDown, Loader2, MapPin, Navigation, Search } from 'lucide-react';
 import { useClientLocation } from '@/contexts/ClientLocationContext';
 import {
   QUICK_CITIES,
@@ -23,11 +16,14 @@ import {
 type Props = {
   fallbackLabel?: string;
   className?: string;
+  /** Compact trigger for hero search bar (no pill border). */
+  variant?: 'default' | 'hero';
 };
 
 export function ClientLocationPicker({
   fallbackLabel = 'Set location',
   className = '',
+  variant = 'default',
 }: Props) {
   const { location, setLocation, label, isHydrated } = useClientLocation();
   const [open, setOpen] = useState(false);
@@ -132,13 +128,23 @@ export function ClientLocationPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-full items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-white/80 px-2.5 py-2 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:px-3"
+        className={
+          variant === 'hero'
+            ? 'flex max-w-full items-center gap-1.5 rounded-xl px-1 py-1 text-left text-sm font-semibold text-[#3F3F3F] transition hover:bg-[#F9F4F0]'
+            : 'flex max-w-full items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-white/80 px-2.5 py-2 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:px-3'
+        }
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={display}
       >
         <MapPin className="h-4 w-4 shrink-0 text-[#E86D4F]" aria-hidden />
-        <span className="max-w-[7.5rem] truncate sm:max-w-[10rem]">
+        <span
+          className={
+            variant === 'hero'
+              ? 'max-w-[8rem] truncate sm:max-w-[11rem]'
+              : 'max-w-[7.5rem] truncate sm:max-w-[10rem]'
+          }
+        >
           {display}
         </span>
         <ChevronDown
@@ -167,10 +173,22 @@ export function ClientLocationPicker({
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#878787] hover:bg-black/5"
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#C4B8AE] transition hover:bg-[#E86D4F]/10 hover:text-[#E86D4F]"
                   aria-label="Clear"
                 >
-                  <X className="h-4 w-4" />
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M4 4l8 8M12 4L4 12"
+                      stroke="currentColor"
+                      strokeWidth="1.25"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </button>
               ) : null}
             </div>

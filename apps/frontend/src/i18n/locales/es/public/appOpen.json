@@ -1,0 +1,41 @@
+{
+  "openApp": "Open Henzo App",
+  "orDownload": "or download the app",
+  "didntOpen": "App didn't open?",
+  "download": "Download Henzo",
+  "appStore": "App Store",
+  "googlePlay": "Google Play",
+  "language": "Language",
+  "trainerInvite": {
+    "title": "You've been invited!",
+    "description": "You've been added as a trainer on Henzo. Open the app to complete your registration.",
+    "expiry": "This invitation expires in 7 days."
+  },
+  "studioClaim": {
+    "title": "Manage your studio",
+    "description": "Open Henzo to take control of your studio and manage bookings.",
+    "expiry": "This link expires in 72 hours."
+  },
+  "studioClaimConfirm": {
+    "loading": "Confirming booking…",
+    "title": "Booking confirmed",
+    "alreadyTitle": "Booking already confirmed",
+    "description": "The class booking for {studio} is confirmed. Download Henzo or open the app to manage your studio.",
+    "client": "Client",
+    "class": "Class",
+    "when": "When",
+    "manageCta": "Manage studio in Henzo",
+    "openManagePage": "continue here",
+    "errorTitle": "Couldn’t confirm booking",
+    "errorGeneric": "This link is invalid or expired."
+  },
+  "studioShare": {
+    "titleNamed": "Join {name} on Henzo",
+    "titleGeneric": "You're invited to a studio",
+    "description": "Open Henzo to view the studio schedule and book a class."
+  },
+  "classInvite": {
+    "title": "You're invited to a class",
+    "description": "Open Henzo to view the class details and book your spot."
+  }
+}

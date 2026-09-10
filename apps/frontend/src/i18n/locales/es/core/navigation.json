@@ -1,0 +1,20 @@
+{
+	"home": "Home",
+	"salons": "Salons",
+	"map": "Map",
+	"categories": "Categories",
+	"about": "About",
+	"contact": "Contact",
+	"business": "Business",
+	"login": "Login",
+	"register": "Register",
+	"logout": "Logout",
+	"profile": "Profile",
+	"dashboard": "Dashboard",
+	"bookings": "Bookings",
+	"services": "Services",
+	"staff": "Staff",
+	"settings": "Settings",
+	"help": "Help",
+	"support": "Support"
+}

@@ -1492,7 +1492,7 @@ function EditTab({
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Price (VND)">
+            <Field label="Price">
               <input
                 type="number"
                 min={1}

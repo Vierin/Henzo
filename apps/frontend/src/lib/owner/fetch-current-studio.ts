@@ -27,6 +27,7 @@ export async function createCurrentStudio(body: {
   phone?: string;
   email?: string;
   timezone?: string;
+  currency?: string;
 }): Promise<OwnerStudio> {
   return apiClient.post<OwnerStudio>('/studios/current', body);
 }

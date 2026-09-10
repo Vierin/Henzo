@@ -276,9 +276,15 @@ export function StudioCard({
               <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#3F3F3F]">
                 {firstClass.className}
               </span>
-              {formatBrowseClassPrice(firstClass.price) ? (
+              {formatBrowseClassPrice(
+                firstClass.price,
+                studio.currency ?? 'EUR',
+              ) ? (
                 <span className="shrink-0 text-[11px] font-semibold text-[#3F3F3F]">
-                  {formatBrowseClassPrice(firstClass.price)}
+                  {formatBrowseClassPrice(
+                    firstClass.price,
+                    studio.currency ?? 'EUR',
+                  )}
                 </span>
               ) : null}
             </div>

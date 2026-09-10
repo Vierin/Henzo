@@ -29,18 +29,30 @@ export function OwnerCalendarDateModal({
   locale,
   onClose,
   onSelect,
+  minDate,
+  maxDate,
 }: {
   open: boolean;
   selected: Date;
   locale: Locale;
   onClose: () => void;
   onSelect: (day: Date) => void;
+  minDate?: Date | null;
+  maxDate?: Date | null;
 }) {
   const [viewMonth, setViewMonth] = useState(
     () => new Date(selected.getFullYear(), selected.getMonth(), 1),
   );
   const [draft, setDraft] = useState(selected);
   const today = useMemo(() => startOfToday(), []);
+  const rangeMin = useMemo(
+    () => (minDate ? addDays(minDate, 0) : null),
+    [minDate],
+  );
+  const rangeMax = useMemo(
+    () => (maxDate ? addDays(maxDate, 0) : null),
+    [maxDate],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +73,12 @@ export function OwnerCalendarDateModal({
   const monthLabel = viewMonth
     .toLocaleDateString(locale, { month: 'long', year: 'numeric' })
     .toUpperCase();
+
+  const isOutOfRange = (day: Date) => {
+    if (rangeMin && day.getTime() < rangeMin.getTime()) return true;
+    if (rangeMax && day.getTime() > rangeMax.getTime()) return true;
+    return false;
+  };
 
   if (!open) return null;
 
@@ -143,14 +161,16 @@ export function OwnerCalendarDateModal({
           <div className="grid grid-cols-7 gap-1.5">
             {cells.map((day, i) => {
               if (!day) return <div key={`e-${i}`} />;
+              const disabled = isOutOfRange(day);
               const isSelected = sameDay(day, draft);
               const isToday = sameDay(day, today);
               return (
                 <button
                   key={`${day.getTime()}`}
                   type="button"
+                  disabled={disabled}
                   onClick={() => setDraft(addDays(day, 0))}
-                  className="aspect-square rounded-full text-sm font-medium"
+                  className="aspect-square rounded-full text-sm font-medium disabled:cursor-not-allowed disabled:opacity-30"
                   style={{
                     backgroundColor: isSelected
                       ? ownerTheme.accent

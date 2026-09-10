@@ -26,6 +26,7 @@ import {
   assertValidReminderSettingsText,
   assertValidStudioDescription,
 } from '../lib/text-content';
+import { resolveCreateStudioCurrency } from './studio-currency';
 
 @Injectable()
 export class StudiosService {
@@ -530,6 +531,7 @@ export class StudiosService {
           descriptionRu: true,
           slug: true,
           timezone: true,
+          currency: true,
           _count: {
             select: {
               Review: true,
@@ -948,6 +950,7 @@ export class StudiosService {
         longitude: true,
         slug: true,
         reminderSettings: true,
+        currency: true,
         _count: {
           select: {
             Review: true,
@@ -1013,6 +1016,7 @@ export class StudiosService {
         latitude: studio.latitude,
         longitude: studio.longitude,
         slug: studio.slug,
+        currency: studio.currency,
         _count: studio._count,
         services: (studio.Training || []).map((service: any) => ({
           id: service.id,
@@ -1217,6 +1221,7 @@ export class StudiosService {
             descriptionRu: true,
             slug: true,
             timezone: true,
+            currency: true,
             status: true,
             autoConfirmBookings: true,
             Training: {
@@ -1330,6 +1335,7 @@ export class StudiosService {
       let latitude = createStudioDto.latitude;
       let longitude = createStudioDto.longitude;
       let timezone = createStudioDto.timezone?.trim() || undefined;
+      const currency = resolveCreateStudioCurrency(createStudioDto.currency);
 
       if (createStudioDto.address && !latitude && !longitude) {
         try {
@@ -1388,6 +1394,7 @@ export class StudiosService {
             latitude,
             longitude,
             timezone,
+            currency,
             ownerId,
             status: 'DRAFT',
             // Unclaimed (ops) studios require owner confirmation until settings change.
@@ -1483,6 +1490,7 @@ export class StudiosService {
             descriptionVi: true,
             descriptionRu: true,
             slug: true,
+            currency: true,
             ...(usesStudioModel
               ? {
                   Training: true,
@@ -1795,6 +1803,7 @@ export class StudiosService {
           descriptionVi: true,
           descriptionRu: true,
           slug: true,
+          currency: true,
           reminderSettings: true,
           claimedAt: true,
           intendedOwnerEmail: true,
@@ -2048,6 +2057,7 @@ export class StudiosService {
           descriptionRu: true,
           slug: true,
           timezone: true,
+          currency: true,
           claimedAt: true,
           intendedOwnerEmail: true,
           _count: {
@@ -2654,7 +2664,12 @@ export class StudiosService {
     const categoriesByStudio = new Map<string, string[]>();
     const categoryIdsByStudio = new Map<string, number[]>();
     for (const [sid, pairs] of pairMap) {
-      pairs.sort((a, b) => a.id - b.id);
+      pairs.sort((a, b) => {
+        const aOther = a.label.trim().toLowerCase() === 'other';
+        const bOther = b.label.trim().toLowerCase() === 'other';
+        if (aOther !== bOther) return aOther ? 1 : -1;
+        return a.id - b.id;
+      });
       categoriesByStudio.set(
         sid,
         pairs.map((p) => p.label),
@@ -2685,6 +2700,7 @@ export class StudiosService {
         photos: true,
         photoGallery: true,
         reminderSettings: true,
+        currency: true,
         _count: {
           select: {
             Training: true,
@@ -2732,6 +2748,7 @@ export class StudiosService {
         photos: Studio.photos,
         photoGallery: Studio.photoGallery,
         slug: Studio.slug,
+        currency: Studio.currency,
         avgRating: ratingData.avgRating,
         reviewCount: ratingData.reviewCount,
         categories,
@@ -2847,6 +2864,7 @@ export class StudiosService {
             logoUrl: true,
             photos: true,
             reminderSettings: true,
+            currency: true,
           }
         : {
             id: true,
@@ -2859,6 +2877,7 @@ export class StudiosService {
             photos: true,
             photoGallery: true,
             reminderSettings: true,
+            currency: true,
             _count: {
               select: {
                 Review: true,
@@ -2928,6 +2947,7 @@ export class StudiosService {
           reviewCount: r.reviewCount,
           trainingCategoryIds: categoryIdsByStudio.get(s.id) ?? [],
           categories: categoriesByStudio.get(s.id) ?? [],
+          currency: s.currency,
         };
       }
 
@@ -2943,6 +2963,7 @@ export class StudiosService {
         photoGallery: s.photoGallery,
         logoUrl: s.logoUrl,
         slug: s.slug,
+        currency: s.currency,
         distance: s.distance,
         avgRating: r.avgRating,
         reviewCount: r.reviewCount,

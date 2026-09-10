@@ -12,14 +12,12 @@ export async function ClientHomeNearbyClassesSection({ locale }: Props) {
   const nearby = dict?.homepage?.client?.nearbyClasses ?? {};
 
   const copy = {
-    badge: String(nearby.badge ?? 'Near you'),
     titleLead: String(nearby.titleLead ?? 'Classes happening'),
     titleHighlight: String(nearby.titleHighlight ?? 'near you'),
     subtitle: String(
       nearby.subtitle ??
         'Explore upcoming classes at top studios around Da Nang. Book your spot in seconds.',
     ),
-    viewSchedule: String(nearby.viewSchedule ?? 'View full schedule'),
     seeAll: String(nearby.seeAll ?? 'See all'),
     today: String(nearby.today ?? 'Today'),
     tomorrow: String(nearby.tomorrow ?? 'Tomorrow'),

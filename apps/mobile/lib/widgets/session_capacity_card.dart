@@ -59,7 +59,7 @@ class SessionCapacityCard extends StatelessWidget {
                     '$pct%',
                     style: TextStyle(
                       fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                       letterSpacing: -0.5,
                     ),
@@ -90,7 +90,7 @@ class SessionCapacityCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15.sp,
                       letterSpacing: -0.3,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                       color: AppColors.textPrimary,
                     ),
                   ),

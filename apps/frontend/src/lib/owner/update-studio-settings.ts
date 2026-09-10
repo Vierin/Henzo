@@ -16,6 +16,7 @@ export type UpdateCurrentStudioBody = {
   photoGallery?: unknown[];
   workingHours?: unknown;
   autoConfirmBookings?: boolean;
+  currency?: string;
   reminderSettings?: OwnerStudio['reminderSettings'];
 };
 
@@ -64,6 +65,7 @@ export function studioUpdatePayload(
       studio.autoConfirmBookings == null
         ? true
         : Boolean(studio.autoConfirmBookings),
+    ...(studio.currency ? { currency: studio.currency } : {}),
     reminderSettings: studio.reminderSettings ?? undefined,
     ...patch,
   };

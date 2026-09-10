@@ -4,18 +4,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   Activity,
+  ArrowRight,
+  BarChart3,
   Bell,
   Calendar,
-  Check,
   CreditCard,
-  QrCode,
+  Users,
 } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { withLocale } from '@/i18n/routing';
 import { usePublicHeaderState } from '@/components/usePublicHeaderState';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
 import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
-import { playStoreUrl } from '@/constants/appStores';
 
 const APP_BASE = 'homepage.client.appPromo';
 const BUSINESS_BASE = 'homepage.client.businessPromo';
@@ -160,60 +160,131 @@ export function ClientHomeAppPromoSection() {
 export function ClientHomeBusinessPromoSection() {
   const t = useTranslation();
   const { currentLocale } = usePublicHeaderState();
-  const locale = currentLocale as 'en' | 'ru' | 'vi';
+  const locale = currentLocale as 'en' | 'ru' | 'vi' | 'pl' | 'cs' | 'es';
   const businessPath = withLocale('/business', locale);
 
-  const title = String(t(`${BUSINESS_BASE}.title`));
+  const titleLead = String(
+    t(`${BUSINESS_BASE}.titleLead`) || 'Grow your studio with',
+  );
+  const titleBrand = String(t(`${BUSINESS_BASE}.titleBrand`) || 'Henzo');
   const subtitle = String(t(`${BUSINESS_BASE}.subtitle`));
   const cta = String(t(`${BUSINESS_BASE}.cta`));
+  const noCard = String(
+    t(`${BUSINESS_BASE}.noCreditCard`) || 'No credit card required',
+  );
+  const bookingsLabel = String(
+    t(`${BUSINESS_BASE}.statBookings`) || 'New bookings',
+  );
+  const bookingsValue = String(t(`${BUSINESS_BASE}.statValue`) || '+28%');
+
+  const featureIcons = {
+    bookings: Calendar,
+    clients: Users,
+    schedule: BarChart3,
+    reminders: Bell,
+  } as const;
 
   return (
     <section className="bg-[#F9F4F0] px-4 pb-10 pt-2 sm:px-6 sm:pb-12">
       <div className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-[2rem] bg-[#EDE8F5] px-5 py-5 sm:rounded-[2.5rem] sm:px-8 sm:py-6 lg:px-10 lg:py-7">
-          <div className="grid items-center gap-6 lg:grid-cols-2 lg:gap-8 xl:gap-10">
-            <div className="max-w-lg">
-              <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl">
-                {title}
+        <div className="overflow-hidden rounded-[2rem] bg-[#E4E3F3] sm:rounded-[2.5rem]">
+          <div className="grid items-stretch gap-6 lg:grid-cols-2 lg:gap-10 xl:gap-14">
+            <div className="max-w-xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+              <h2 className="text-[1.85rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl lg:text-[2.6rem]">
+                {titleLead} <span className="text-[#5B45C6]">{titleBrand}</span>
               </h2>
-              <p className="mt-2 text-base leading-relaxed text-[#878787] sm:mt-3 sm:text-lg">
+
+              <p className="mt-3 max-w-md text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
                 {subtitle}
               </p>
 
-              <ul className="mt-4 space-y-2 sm:mt-5 sm:space-y-2.5">
-                {BUSINESS_FEATURES.map((key) => (
-                  <li key={key} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3F3287] text-white">
-                      <Check
-                        className="h-3.5 w-3.5"
-                        strokeWidth={3}
-                        aria-hidden
-                      />
-                    </span>
-                    <span className="text-base font-medium text-[#3F3F3F]">
-                      {String(t(`${BUSINESS_BASE}.features.${key}`))}
-                    </span>
-                  </li>
-                ))}
+              <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:mt-8 sm:grid-cols-4 sm:gap-3">
+                {BUSINESS_FEATURES.map((key) => {
+                  const Icon = featureIcons[key];
+                  return (
+                    <li
+                      key={key}
+                      className="flex flex-col items-start gap-2.5 sm:items-center sm:text-center"
+                    >
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#DDD8E8] text-[#5B45C6]">
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </span>
+                      <span className="text-[13px] font-medium leading-snug text-[#878787] sm:text-sm">
+                        {String(t(`${BUSINESS_BASE}.features.${key}`))}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
 
-              <Link
-                href={businessPath}
-                className="mt-5 inline-flex items-center rounded-full bg-[#3F3287] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#342a73] sm:mt-6 sm:px-8 sm:py-3.5 sm:text-base"
-              >
-                {cta}
-              </Link>
+              <div className="mt-7 flex flex-wrap items-center gap-3 sm:mt-9 sm:gap-4">
+                <Link
+                  href={businessPath}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#3F3287] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#342a73] sm:rounded-[18px] sm:px-6 sm:py-4 sm:text-base"
+                >
+                  {cta}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                <span className="text-sm text-[#3F3F3F]">{noCard}</span>
+              </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+            <div className="relative flex min-h-[20rem] items-end justify-center sm:min-h-[24rem] lg:min-h-full">
               <Image
-                src="/images/business.webp"
+                src="/images/business-coach.png"
                 alt=""
-                width={1200}
-                height={900}
-                className="mx-auto h-auto max-h-[14rem] w-auto max-w-full object-contain sm:max-h-[18rem] lg:max-h-[20rem]"
-                sizes="(max-width: 1024px) 90vw, 50vw"
+                width={900}
+                height={700}
+                className="relative z-0 h-auto w-[108%] max-w-none translate-y-1 object-contain object-bottom sm:w-[112%] lg:w-[118%] lg:max-h-[28rem]"
+                sizes="(max-width: 1024px) 95vw, 50vw"
+                priority={false}
               />
+
+              <div className="absolute bottom-[42%] left-3 z-10 w-[148px] overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-12px_rgba(63,50,135,0.28)] sm:bottom-[44%] sm:left-5 sm:w-[168px] lg:left-2">
+                <div className="px-3 pt-3 sm:px-3.5 sm:pt-3.5">
+                  <p className="text-[11px] font-medium text-[#3F3F3F] sm:text-xs">
+                    {bookingsLabel}
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-[#3F3F3F] sm:text-xl">
+                    {bookingsValue}
+                  </p>
+                </div>
+                <svg
+                  viewBox="0 0 120 36"
+                  preserveAspectRatio="none"
+                  className="mt-2 block h-9 w-full"
+                  aria-hidden
+                >
+                  <defs>
+                    <linearGradient
+                      id="bizBookingsFill"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="#5B45C6"
+                        stopOpacity="0.28"
+                      />
+                      <stop offset="100%" stopColor="#5B45C6" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0 28 C18 26 22 18 36 16 C50 14 54 22 68 14 C82 6 90 10 120 4 L120 36 L0 36 Z"
+                    fill="url(#bizBookingsFill)"
+                  />
+                  <path
+                    d="M0 28 C18 26 22 18 36 16 C50 14 54 22 68 14 C82 6 90 10 120 4"
+                    fill="none"
+                    stroke="#5B45C6"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>

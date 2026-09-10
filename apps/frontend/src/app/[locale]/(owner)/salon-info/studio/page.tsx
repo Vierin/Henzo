@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ImagePlus, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { SettingsSubpageShell } from '@/components/owner/settingsSubpageShell';
 import { OwnerLocationField } from '@/components/owner/ownerLocationField';
+import { OwnerSelect } from '@/components/owner/ownerSelect';
 import { OwnerTrainingLocationsModal } from '@/components/owner/ownerTrainingLocationsModal';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
@@ -36,8 +37,25 @@ import {
   uploadStudioGalleryAsset,
   uploadStudioLogo,
 } from '@/lib/owner/upload-studio-media';
+import {
+  STUDIO_CURRENCIES,
+  parseStudioCurrency,
+  type StudioCurrency,
+} from '@/lib/format-money';
 
 const DESCRIPTION_MAX = 250;
+
+const CURRENCY_OPTIONS = STUDIO_CURRENCIES.map((code) => ({
+  value: code,
+  label:
+    code === 'EUR'
+      ? '€  Euro (EUR)'
+      : code === 'PLN'
+        ? 'zł  Polish zloty (PLN)'
+        : code === 'USD'
+          ? '$  US dollar (USD)'
+          : '₫  Vietnamese dong (VND)',
+}));
 
 function SectionLabel({
   children,
@@ -190,6 +208,7 @@ export default function StudioProfileSettingsPage() {
   const [locations, setLocations] = useState<TrainingLocationItem[]>([]);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [currency, setCurrency] = useState<StudioCurrency>('EUR');
   const [socialLinks, setSocialLinks] = useState<StudioSocialLink[]>([]);
 
   const [locationsOpen, setLocationsOpen] = useState(false);
@@ -214,6 +233,7 @@ export default function StudioProfileSettingsPage() {
     setLocations(listTrainingLocations(studio));
     setPhone(studio.phone ?? '');
     setEmail(studio.email ?? '');
+    setCurrency(parseStudioCurrency(studio.currency));
     setSocialLinks(studioSocialLinksFromStudio(studio));
   }, [studio]);
 
@@ -253,6 +273,7 @@ export default function StudioProfileSettingsPage() {
       locsChanged ||
       phone.trim() !== (studio.phone ?? '').trim() ||
       email.trim() !== (studio.email ?? '').trim() ||
+      currency !== parseStudioCurrency(studio.currency) ||
       studioSocialLinksSnapshot(socialLinks) !==
         studioSocialLinksSnapshot(studioSocialLinksFromStudio(studio))
     );
@@ -269,6 +290,7 @@ export default function StudioProfileSettingsPage() {
     lon,
     phone,
     email,
+    currency,
     socialLinks,
   ]);
 
@@ -366,6 +388,7 @@ export default function StudioProfileSettingsPage() {
           : {}),
         ...(phone.trim() ? { phone: phone.trim() } : { phone: '' }),
         ...(email.trim() ? { email: email.trim() } : { email: '' }),
+        currency,
         website: socialPayload.website,
         instagram: socialPayload.instagram,
         logoUrl: logoUrl ?? '',
@@ -554,6 +577,21 @@ export default function StudioProfileSettingsPage() {
             {description.length}/{DESCRIPTION_MAX}
           </p>
         </div>
+
+        <label className="block">
+          <span
+            className="mb-1.5 block text-[13px] font-medium"
+            style={{ color: ownerTheme.textSecondary }}
+          >
+            Currency
+          </span>
+          <OwnerSelect
+            value={currency}
+            onChange={(v) => setCurrency(parseStudioCurrency(v))}
+            options={CURRENCY_OPTIONS}
+            aria-label="Studio currency"
+          />
+        </label>
 
         <OwnerLocationField
           name={locationName}

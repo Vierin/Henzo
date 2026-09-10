@@ -1,4 +1,6 @@
-﻿export type StudioPhotoCropRect = {
+﻿import { parseStudioCurrency, type StudioCurrency } from '@/lib/format-money';
+
+export type StudioPhotoCropRect = {
   x: number;
   y: number;
   w: number;
@@ -22,6 +24,7 @@ export type PublicStudioPreview = {
   lat?: number;
   lng?: number;
   photoUrl?: string;
+  currency?: StudioCurrency;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -178,6 +181,7 @@ export function parsePublicStudioPreview(
           ? data.longitude
           : undefined,
     photoUrl: resolveStudioHomePhotoUrl(data),
+    currency: parseStudioCurrency(data.currency),
   };
 }
 
@@ -185,10 +189,18 @@ export function formatCategoryPreview(categories: string[], maxVisible = 3) {
   if (categories.length === 0) {
     return { visible: [] as string[], moreCount: 0 };
   }
-  const visible = categories.slice(0, maxVisible);
+
+  const rest: string[] = [];
+  const other: string[] = [];
+  for (const name of categories) {
+    if (name.trim().toLowerCase() === 'other') other.push(name);
+    else rest.push(name);
+  }
+  const sorted = [...rest, ...other];
+  const visible = sorted.slice(0, maxVisible);
   return {
     visible,
-    moreCount: Math.max(0, categories.length - visible.length),
+    moreCount: Math.max(0, sorted.length - visible.length),
   };
 }
 

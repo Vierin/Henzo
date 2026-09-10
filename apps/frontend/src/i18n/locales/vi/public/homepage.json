@@ -279,13 +279,13 @@
       "location": "Đà Nẵng, Việt Nam",
       "login": "Đăng nhập",
       "signUp": "Đăng ký",
-      "forBusiness": "Dành cho doanh nghiệp"
+      "forBusiness": "Doanh nghiệp"
     },
     "hero": {
-      "line1": "Vận động. Cảm thấy tốt.",
-      "line2Highlight": "Sống tốt hơn.",
-      "subtitle": "Khám phá và đặt các lớp fitness, wellness và thể thao tốt nhất gần bạn.",
-      "searchPlaceholder": "Tìm lớp học, studio hoặc huấn luyện viên...",
+      "line1": "Tìm buổi tập tiếp theo",
+      "line2Highlight": "và cộng đồng.",
+      "subtitle": "Khám phá studio, lớp học và HLV gần bạn. Kết nối người cùng chí hướng, giữ động lực và biến fitness thành trải nghiệm xã hội.",
+      "searchPlaceholder": "Bạn đang tìm gì?",
       "floatingCardTitle": "Tìm lớp tiếp theo",
       "floatingCardSubtitle": "3.200+ lớp hôm nay",
       "categories": {
@@ -314,7 +314,9 @@
           "title": "Tất cả ở một nơi",
           "subtitle": "Quản lý đặt chỗ và yêu thích"
         }
-      }
+      },
+      "searchHint": "Yoga, Pilates, Gym, Boxing...",
+      "popularNearYou": "Phổ biến gần bạn"
     },
     "appPromo": {
       "eyebrow": "Vì sao mọi người yêu thích Henzo",
@@ -331,15 +333,21 @@
       }
     },
     "businessPromo": {
+      "badge": "Dành cho chủ studio",
+      "titleLead": "Phát triển studio với",
+      "titleBrand": "Henzo",
       "title": "Phát triển studio với Henzo",
       "subtitle": "Mọi công cụ bạn cần để vận hành và phát triển doanh nghiệp trên một nền tảng.",
       "features": {
         "bookings": "Đặt lịch trực tuyến 24/7",
         "clients": "Quản lý khách hàng & gói thành viên",
-        "schedule": "Lịch trình & thanh toán",
+        "schedule": "Báo cáo & thống kê",
         "reminders": "Nhắc nhở tự động"
       },
-      "cta": "Tham gia Henzo miễn phí"
+      "cta": "Tham gia Henzo miễn phí",
+      "noCreditCard": "Không cần thẻ tín dụng",
+      "statBookings": "Đặt chỗ mới",
+      "statValue": "+28%"
     },
     "popularStudios": {
       "title": "Studio phổ biến gần bạn",
@@ -356,7 +364,8 @@
       "seeAll": "Xem tất cả",
       "today": "Hôm nay",
       "tomorrow": "Ngày mai",
-      "durationMin": "{value} phút"
+      "durationMin": "{value} phút",
+      "book": "Đặt chỗ"
     }
   }
 }

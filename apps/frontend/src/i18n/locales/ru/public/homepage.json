@@ -166,7 +166,7 @@
       "titleLine1": "Простые тарифы",
       "titleLine2Before": "Реальные ",
       "titleLine2Accent": "результаты",
-      "currency": "VND",
+      "currency": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
       "plans": [
@@ -279,13 +279,13 @@
       "location": "Дананг, Вьетнам",
       "login": "Войти",
       "signUp": "Регистрация",
-      "forBusiness": "Для бизнеса"
+      "forBusiness": "Бизнес"
     },
     "hero": {
-      "line1": "Двигайся. Чувствуй.",
-      "line2Highlight": "Живи лучше.",
-      "subtitle": "Находите и бронируйте лучшие фитнес, wellness и спортивные занятия рядом с вами.",
-      "searchPlaceholder": "Поиск занятий, студий или тренеров...",
+      "line1": "Найди следующую тренировку",
+      "line2Highlight": "и сообщество.",
+      "subtitle": "Открывай фитнес-студии, занятия и тренеров рядом. Знакомься с единомышленниками, оставайся в тонусе и делай спорт социальным.",
+      "searchPlaceholder": "Что вы ищете?",
       "floatingCardTitle": "Найди следующее занятие",
       "floatingCardSubtitle": "3 200+ занятий сегодня",
       "categories": {
@@ -314,7 +314,9 @@
           "title": "Всё в одном месте",
           "subtitle": "Брони и избранное"
         }
-      }
+      },
+      "searchHint": "Йога, пилатес, зал, бокс...",
+      "popularNearYou": "Популярное рядом"
     },
     "appPromo": {
       "eyebrow": "Почему выбирают Henzo",
@@ -331,15 +333,21 @@
       }
     },
     "businessPromo": {
+      "badge": "Для владельцев студий",
+      "titleLead": "Развивайте студию с",
+      "titleBrand": "Henzo",
       "title": "Развивайте студию с Henzo",
       "subtitle": "Все инструменты для управления и роста бизнеса на одной платформе.",
       "features": {
         "bookings": "Онлайн-запись 24/7",
         "clients": "Клиенты и абонементы",
-        "schedule": "Расписание и оплаты",
+        "schedule": "Отчёты и аналитика",
         "reminders": "Автоматические напоминания"
       },
-      "cta": "Подключить Henzo бесплатно"
+      "cta": "Подключить Henzo бесплатно",
+      "noCreditCard": "Без карты",
+      "statBookings": "Новые записи",
+      "statValue": "+28%"
     },
     "popularStudios": {
       "title": "Популярные студии рядом",
@@ -356,7 +364,8 @@
       "seeAll": "Все",
       "today": "Сегодня",
       "tomorrow": "Завтра",
-      "durationMin": "{value} мин"
+      "durationMin": "{value} мин",
+      "book": "Запись"
     }
   }
 }

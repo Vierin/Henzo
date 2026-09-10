@@ -1,4 +1,4 @@
-{
+﻿{
 	"title": "Dịch vụ",
 	"subtitle": "Quản lý dịch vụ và giá cả của salon",
 	"addNew": "Thêm mới",
@@ -47,8 +47,8 @@
 	"serviceGroupLabel": "Nhóm dịch vụ (tùy chọn)",
 	"serviceGroupHint": "Sử dụng nhóm để cấu trúc dịch vụ của bạn trên trang salon.",
 	"durationLabel": "Thời lượng (phút)",
-	"priceLabel": "Giá (₫)",
-	"priceHint": "Chỉ số (ví dụ: 50000 cho 50K ₫)",
+	"priceLabel": "Giá",
+	"priceHint": "Nhập giá theo tiền tệ của studio",
 	"cancel": "Hủy",
 	"updateService": "Cập nhật dịch vụ",
 	"addService": "Thêm dịch vụ",

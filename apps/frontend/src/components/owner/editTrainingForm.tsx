@@ -29,7 +29,12 @@ import { OwnerLocationField } from '@/components/owner/ownerLocationField';
 import { OwnerSelect } from '@/components/owner/ownerSelect';
 import { OwnerTrainingLocationsModal } from '@/components/owner/ownerTrainingLocationsModal';
 import type { OwnerTraining } from '@/lib/owner/types';
-import { formatPriceDots, parsePriceDots } from '@/lib/owner/format-price';
+import {
+  formatPriceInput,
+  parsePriceInput,
+  parseStudioCurrency,
+  priceInputPlaceholder,
+} from '@/lib/format-money';
 
 const MAX_DURATION = 480;
 const LANGS = [
@@ -80,6 +85,7 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
   const pathname = usePathname();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
   const { studio, patchStudio } = useOwnerStudio();
+  const currency = parseStudioCurrency(studio?.currency);
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -193,7 +199,12 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
   function seedFromTraining(t: OwnerTraining) {
     setName(t.name);
     setDuration(String(t.duration > 0 ? t.duration : 60));
-    setPrice(formatPriceDots(Math.round(Number(t.price) || 0)));
+    const amount = Number(t.price) || 0;
+    setPrice(
+      currency === 'VND'
+        ? formatPriceInput(String(Math.round(amount)), currency)
+        : formatPriceInput(String(amount), currency),
+    );
     setDescription((t.description ?? '').trim());
     setLanguage(t.language || 'en');
     if (t.trainingCategoryId != null) {
@@ -223,7 +234,7 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
 
     const d = Number(duration) || 0;
     const c = Number(capacity) || 0;
-    const p = parsePriceDots(price);
+    const p = parsePriceInput(price, currency);
     if (!name.trim()) {
       setError('Enter a training name');
       return;
@@ -411,12 +422,14 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <FieldLabel>Price *</FieldLabel>
+            <FieldLabel>Price ({currency}) *</FieldLabel>
             <input
-              inputMode="numeric"
+              inputMode={currency === 'VND' ? 'numeric' : 'decimal'}
               value={price}
-              onChange={(e) => setPrice(formatPriceDots(e.target.value))}
-              placeholder="150.000"
+              onChange={(e) =>
+                setPrice(formatPriceInput(e.target.value, currency))
+              }
+              placeholder={priceInputPlaceholder(currency)}
               className={inputClass}
               style={fieldStyle}
             />

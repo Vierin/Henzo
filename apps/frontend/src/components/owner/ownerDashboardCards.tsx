@@ -129,14 +129,24 @@ export function OwnerFeaturedSessionCard({
         className="relative overflow-hidden rounded-[22px] p-4 text-white sm:p-5"
         style={{ backgroundColor: ownerTheme.accent }}
       >
-        <div
-          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border-[18px] border-white/18"
+        {/* Concentric rings — mobile parity (_RingsPainter), top-right only */}
+        <svg
+          className="pointer-events-none absolute -right-[85px] -top-[85px] h-[200px] w-[200px] opacity-[0.18]"
+          viewBox="0 0 200 200"
+          fill="none"
           aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-16 -left-8 h-36 w-36 rounded-full border-[14px] border-white/18"
-          aria-hidden
-        />
+        >
+          {[10, 36, 62, 88, 114].map((r) => (
+            <circle
+              key={r}
+              cx="100"
+              cy="100"
+              r={r}
+              stroke="#FFFFFF"
+              strokeWidth="1.4"
+            />
+          ))}
+        </svg>
 
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/90">
@@ -146,7 +156,8 @@ export function OwnerFeaturedSessionCard({
           <button
             type="button"
             onClick={() => setEditScopeOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-white/90"
+            style={{ color: ownerTheme.accent }}
             aria-label="Edit session"
           >
             <Pencil className="h-3.5 w-3.5" />

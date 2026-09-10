@@ -16,7 +16,7 @@ import {
 } from '@/lib/client/training-category';
 import type { OwnerTraining } from '@/lib/owner/types';
 import { ownerTheme } from '@/lib/owner/owner-theme';
-import { formatPriceDots } from '@/lib/owner/format-price';
+import { formatMoney, parseStudioCurrency } from '@/lib/format-money';
 import {
   isPlaceholderTrainerName,
   trainingLanguageLabel,
@@ -210,6 +210,7 @@ export default function TrainingsPage() {
               <TrainingCatalogCard
                 item={item}
                 studioLabel={studioLabel}
+                currency={parseStudioCurrency(studio?.currency)}
                 href={withLocale(`/trainings/${item.id}/edit`, locale)}
               />
             </li>
@@ -272,10 +273,12 @@ function CategoryPill({
 function TrainingCatalogCard({
   item,
   studioLabel,
+  currency,
   href,
 }: {
   item: OwnerTraining;
   studioLabel: string;
+  currency: ReturnType<typeof parseStudioCurrency>;
   href: string;
 }) {
   const accent = item.displayColor || ownerTheme.accent;
@@ -342,7 +345,7 @@ function TrainingCatalogCard({
             className="text-xl font-bold tabular-nums"
             style={{ color: ownerTheme.text }}
           >
-            {formatPriceDots(price)}
+            {formatMoney(price, currency)}
           </p>
         </div>
       </div>

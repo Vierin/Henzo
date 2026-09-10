@@ -362,6 +362,7 @@ export default function OwnerDashboardPage() {
           <OwnerDashboardSidebar
             localePath={path}
             lastBookings={lastBookings}
+            featuredSession={featured}
           />
         </div>
       </div>

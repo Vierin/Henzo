@@ -7,6 +7,7 @@ import {
   IsInt,
   IsNumber,
   IsBoolean,
+  IsIn,
   Min,
   Max,
   MaxLength,
@@ -15,6 +16,7 @@ import {
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { NoEmbeddedLinks } from '../../common/validators/no-embedded-links.validator';
 import { STUDIO_DESCRIPTION_MAX } from '../../lib/text-content';
+import { STUDIO_CURRENCIES } from '../studio-currency';
 
 export class UpdateStudioDto {
   @IsOptional()
@@ -32,6 +34,10 @@ export class UpdateStudioDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsIn([...STUDIO_CURRENCIES])
+  currency?: (typeof STUDIO_CURRENCIES)[number];
 
   @IsOptional()
   @IsNumber()
