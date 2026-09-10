@@ -145,7 +145,7 @@ export default function ClientsPage() {
   }, [listQuery.data]);
 
   const filtered = useMemo(() => {
-    let list =
+    const list =
       statusFilter === 'all'
         ? [...allClients]
         : allClients.filter((c) => clientStatus(c) === statusFilter);

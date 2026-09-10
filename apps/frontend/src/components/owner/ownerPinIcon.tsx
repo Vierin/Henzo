@@ -9,7 +9,6 @@ export function OwnerPinIcon({
   height?: number;
 }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/images/icons/icon-pin.svg"
       alt=""

@@ -169,7 +169,7 @@ export function OwnerAddressPickerModal({
     await applyCoords(coords.lat, coords.lon);
   }
 
-  async function useCurrentLocation() {
+  async function detectCurrentLocation() {
     if (!navigator.geolocation) {
       setError('Geolocation is not available');
       return;
@@ -263,7 +263,7 @@ export function OwnerAddressPickerModal({
             <button
               type="button"
               disabled={gpsLoading}
-              onClick={() => void useCurrentLocation()}
+              onClick={() => void detectCurrentLocation()}
               className="inline-flex items-center gap-1.5 text-sm font-semibold disabled:opacity-50"
               style={{ color: ownerTheme.accent }}
             >

@@ -161,7 +161,6 @@ export default function ClientHeader() {
                 }}
               >
                 {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={avatarUrl}
                     alt=""

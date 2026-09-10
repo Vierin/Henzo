@@ -264,7 +264,6 @@ export default function SessionDetailPage() {
           className="inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-white disabled:opacity-50"
           style={{ backgroundColor: ownerTheme.accent }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/icons/icon-share.svg"
             alt=""

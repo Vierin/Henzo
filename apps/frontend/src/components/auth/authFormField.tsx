@@ -19,10 +19,7 @@ export function AuthFieldIcon({
   width: number;
   height: number;
 }) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" width={width} height={height} aria-hidden />
-  );
+  return <img src={src} alt="" width={width} height={height} aria-hidden />;
 }
 
 type AuthFormFieldProps = Omit<

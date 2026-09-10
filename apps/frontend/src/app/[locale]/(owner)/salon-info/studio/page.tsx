@@ -451,7 +451,6 @@ export default function StudioProfileSettingsPage() {
                 style={{ color: ownerTheme.textSecondary }}
               />
             ) : logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoUrl}
                 alt=""
@@ -499,7 +498,6 @@ export default function StudioProfileSettingsPage() {
               key={photo.id}
               className="relative h-36 w-36 shrink-0 overflow-hidden rounded-[14px] md:h-40 md:w-40"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.cardUrl || photo.heroUrl}
                 alt=""
@@ -639,7 +637,6 @@ export default function StudioProfileSettingsPage() {
             key={link.platform}
             className="flex items-center gap-2.5 rounded-[14px] bg-white px-3.5 py-3"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={socialPlatformIconSrc(link.platform)}
               alt=""
@@ -731,7 +728,6 @@ export default function StudioProfileSettingsPage() {
                 setSocialDraft('');
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={socialPlatformIconSrc(platform)}
                 alt=""

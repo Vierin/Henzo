@@ -215,7 +215,6 @@ export default function OwnerHeader() {
                 }}
               >
                 {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={avatarUrl}
                     alt=""

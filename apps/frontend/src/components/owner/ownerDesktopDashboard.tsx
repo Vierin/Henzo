@@ -174,7 +174,6 @@ export function OwnerDashboardStudioBanner({
     >
       <div className="relative w-[38%] max-w-[220px] shrink-0 self-stretch sm:w-[32%]">
         {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photoUrl}
             alt=""

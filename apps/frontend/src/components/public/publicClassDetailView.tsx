@@ -893,7 +893,6 @@ export function PublicClassDetailView({
                 style={{ backgroundColor: accent }}
               >
                 {studio.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={studio.photoUrl}
                     alt=""
@@ -904,7 +903,6 @@ export function PublicClassDetailView({
                 <div className="relative z-10 flex w-full items-end gap-3">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/95 text-lg font-bold text-[#3F3F3F]">
                     {studio.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={studio.photoUrl}
                         alt=""

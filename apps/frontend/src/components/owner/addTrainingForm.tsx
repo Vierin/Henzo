@@ -379,7 +379,7 @@ export function AddTrainingForm() {
                 role="listbox"
               >
                 {nameSuggestions.map((t) => (
-                  <li key={t.id} role="option">
+                  <li key={t.id} role="option" aria-selected={false}>
                     <button
                       type="button"
                       className="flex w-full flex-col px-3.5 py-2.5 text-left hover:bg-[#FCF3EC]"

@@ -232,7 +232,6 @@ export default function OwnerNotificationsPage() {
     void markAll.mutateAsync().catch(() => {
       markedRef.current = false;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount after first fetch
   }, [inboxQuery.isSuccess]);
 
   const visible = useMemo(

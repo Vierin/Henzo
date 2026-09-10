@@ -117,7 +117,6 @@ export default function ClientProfilePage() {
               }}
             >
               {user.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.avatarUrl}
                   alt=""
@@ -159,7 +158,6 @@ export default function ClientProfilePage() {
               label="Classes booked"
               background="#C2F600"
               icon={
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="/images/icons/icon-calendar.svg"
                   alt=""
@@ -176,7 +174,6 @@ export default function ClientProfilePage() {
               label="Active passes"
               background="#FAD0C5"
               icon={
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="/images/icons/icon-ticket.svg"
                   alt=""
@@ -194,7 +191,6 @@ export default function ClientProfilePage() {
               label="Upcoming"
               background="#FFFFFF"
               icon={
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="/images/icons/icon-flame.svg"
                   alt=""
@@ -211,7 +207,6 @@ export default function ClientProfilePage() {
               label="Reviews left"
               background="#FFD0C2"
               icon={
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="/images/icons/icon-star.svg"
                   alt=""

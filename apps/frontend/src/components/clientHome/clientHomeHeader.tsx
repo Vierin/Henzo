@@ -116,7 +116,6 @@ function ClientHomeHeaderContent() {
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F8EDE5] text-[#3F3F3F] sm:h-9 sm:w-9">
                 {clientUser?.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={clientUser.avatarUrl}
                     alt=""
