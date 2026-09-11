@@ -81,5 +81,5 @@ export function parsePriceInput(raw: string, currency: StudioCurrency): number {
 }
 
 export function priceInputPlaceholder(currency: StudioCurrency): string {
-  return currency === 'VND' ? '150.000' : '20.99';
+  return currency === 'VND' ? '150.000' : '22.99';
 }

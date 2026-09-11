@@ -92,5 +92,12 @@
 		"analytics": "Безлимитные имейл напоминания",
 		"crm": "Персональный менеджер",
 		"prioritySupport": "Маркетинговые инструменты"
-	}
+	},
+	"manageInAppStore": "Manage in App Store / Google Play (Henzo app).",
+	"checkoutSuccess": "Subscription activated.",
+	"checkoutCancelled": "Checkout cancelled.",
+	"studioTitle": "Studio",
+	"studioTagline": "Up to 4 trainers · 100 classes / month",
+	"enterpriseTitle": "Enterprise",
+	"enterpriseTagline": "Unlimited trainers, classes & locations"
 }

@@ -8,9 +8,11 @@ import {
 } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { StripePricingService } from './stripe-pricing.service';
-import { StripeCheckoutService } from './stripe-checkout.service';
 import { SubscriptionsService } from './subscriptions.service';
-import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import {
+  CreateBillingPortalDto,
+  CreateCheckoutSessionDto,
+} from './dto/create-checkout-session.dto';
 import { SyncCheckoutSessionDto } from './dto/sync-checkout-session.dto';
 
 @Controller('subscriptions')
@@ -18,7 +20,6 @@ export class SubscriptionsController {
   constructor(
     private readonly authService: AuthService,
     private readonly stripePricing: StripePricingService,
-    private readonly checkout: StripeCheckoutService,
     private readonly subscriptions: SubscriptionsService,
   ) {}
 
@@ -37,6 +38,7 @@ export class SubscriptionsController {
 
   /**
    * Stripe Checkout (subscription) — web only; mobile uses RevenueCat IAP.
+   * Supports Studio + Enterprise × monthly/annual.
    */
   @Post('create-checkout-session')
   async createCheckoutSession(
@@ -47,16 +49,40 @@ export class SubscriptionsController {
     if (user.role !== 'OWNER') {
       throw new ForbiddenException('Only studio owners can subscribe');
     }
-    const url = await this.checkout.createSubscriptionCheckoutSession({
-      userId: user.id,
-      email: user.email,
-      interval: body.interval,
-    });
+    const url = await this.subscriptions.createCheckoutSessionForOwner(
+      user.id,
+      user.email,
+      {
+        plan: body.plan,
+        interval: body.interval,
+        successUrl: body.successUrl,
+        cancelUrl: body.cancelUrl,
+      },
+    );
     return { url };
   }
 
   /**
-   * Current studio subscription for the authenticated owner (mobile dashboard / subscription screen).
+   * Stripe Customer Portal — manage/cancel Stripe-billed subscriptions.
+   */
+  @Post('billing-portal')
+  async createBillingPortal(
+    @Headers('authorization') authHeader: string,
+    @Body() body: CreateBillingPortalDto,
+  ) {
+    const { user } = await this.authService.getCurrentUser(authHeader);
+    if (user.role !== 'OWNER') {
+      throw new ForbiddenException('Only studio owners can manage billing');
+    }
+    const url = await this.subscriptions.createBillingPortalForOwner(
+      user.id,
+      body.returnUrl,
+    );
+    return { url };
+  }
+
+  /**
+   * Current studio subscription for the authenticated owner.
    */
   @Get('current')
   async getCurrent(@Headers('authorization') authHeader: string) {
@@ -71,8 +97,7 @@ export class SubscriptionsController {
   }
 
   /**
-   * Current plan usage (monthly sessions, trainers) vs. caps for the owner's
-   * studio. Powers the settings usage counter and the limit dialog.
+   * Current plan usage (monthly sessions, trainers) vs. caps.
    */
   @Get('usage')
   async getUsage(@Headers('authorization') authHeader: string) {
@@ -87,7 +112,7 @@ export class SubscriptionsController {
   }
 
   /**
-   * After Stripe Checkout redirect: pull session + subscription from Stripe and persist Pro in DB.
+   * After Stripe Checkout redirect: pull session + subscription and persist.
    */
   @Post('sync-checkout-session')
   async syncCheckoutSession(
@@ -106,7 +131,7 @@ export class SubscriptionsController {
   }
 
   /**
-   * Pro plan amounts in VND for mobile UI — from Stripe Price objects, cached server-side.
+   * Pro plan amounts in EUR — Studio + Enterprise from Stripe Price objects.
    */
   @Get('pro-prices')
   async getProPrices(@Headers('authorization') authHeader: string) {

@@ -4,12 +4,24 @@ import Stripe from 'stripe';
 
 export type SubscriptionPriceSource = 'stripe' | 'fallback';
 
-export interface ProPricesPayload {
-  monthlyVnd: number;
-  annualVnd: number;
-  twelveMonthsCompareVnd: number;
+export interface TierPrices {
+  /** Major units (e.g. 22.99 EUR). */
+  monthly: number;
+  annual: number;
+  twelveMonthsCompare: number;
   annualSavePercent: number;
+}
+
+export interface ProPricesPayload {
+  currency: 'EUR';
   source: SubscriptionPriceSource;
+  /** Studio amounts at root — web/mobile convenience. */
+  monthly: number;
+  annual: number;
+  twelveMonthsCompare: number;
+  annualSavePercent: number;
+  studio: TierPrices;
+  enterprise: TierPrices;
 }
 
 @Injectable()
@@ -27,72 +39,130 @@ export class StripePricingService {
     }
   }
 
-  private getFallbackPrices(): ProPricesPayload {
-    const monthlyVnd = parseInt(
-      this.config.get<string>('FALLBACK_PRO_PRICE_MONTHLY_VND') || '395000',
-      10,
-    );
-    const annualVnd = parseInt(
-      this.config.get<string>('FALLBACK_PRO_PRICE_ANNUAL_VND') || '3980000',
-      10,
-    );
-    const twelveMonthsCompareVnd = monthlyVnd * 12;
+  private tierFromAmounts(monthly: number, annual: number): TierPrices {
+    const twelveMonthsCompare = Math.round(monthly * 12 * 100) / 100;
     const annualSavePercent =
-      twelveMonthsCompareVnd > 0 && twelveMonthsCompareVnd > annualVnd
+      twelveMonthsCompare > 0 && twelveMonthsCompare > annual
         ? Math.round(
-            ((twelveMonthsCompareVnd - annualVnd) / twelveMonthsCompareVnd) *
-              100,
+            ((twelveMonthsCompare - annual) / twelveMonthsCompare) * 100,
           )
         : 0;
     return {
-      monthlyVnd,
-      annualVnd,
-      twelveMonthsCompareVnd,
+      monthly,
+      annual,
+      twelveMonthsCompare,
       annualSavePercent,
-      source: 'fallback',
     };
   }
 
-  private async fetchFromStripe(): Promise<ProPricesPayload | null> {
-    const monthlyId = this.config.get<string>('STRIPE_MONTHLY_PRICE_ID');
-    const annualId = this.config.get<string>('STRIPE_YEARLY_PRICE_ID');
-    if (!this.stripe || !monthlyId || !annualId) {
-      return null;
+  private parseEurEnv(key: string, fallback: number): number {
+    const raw = this.config.get<string>(key)?.trim();
+    if (!raw) return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+
+  private getFallbackPrices(): ProPricesPayload {
+    const studioMonthly = this.parseEurEnv(
+      'FALLBACK_PRO_PRICE_MONTHLY_EUR',
+      22.99,
+    );
+    const studioAnnual = this.parseEurEnv(
+      'FALLBACK_PRO_PRICE_ANNUAL_EUR',
+      229.9,
+    );
+    const enterpriseMonthly = this.parseEurEnv(
+      'FALLBACK_ENTERPRISE_PRICE_MONTHLY_EUR',
+      69.99,
+    );
+    const enterpriseAnnual = this.parseEurEnv(
+      'FALLBACK_ENTERPRISE_PRICE_ANNUAL_EUR',
+      699.9,
+    );
+    const studio = this.tierFromAmounts(studioMonthly, studioAnnual);
+    const enterprise = this.tierFromAmounts(
+      enterpriseMonthly,
+      enterpriseAnnual,
+    );
+    return {
+      currency: 'EUR',
+      source: 'fallback',
+      monthly: studio.monthly,
+      annual: studio.annual,
+      twelveMonthsCompare: studio.twelveMonthsCompare,
+      annualSavePercent: studio.annualSavePercent,
+      studio,
+      enterprise,
+    };
+  }
+
+  /** Stripe `unit_amount` → major currency units (EUR cents → euros). */
+  private unitAmountToMajor(unitAmount: number, currency: string): number {
+    const c = currency.toLowerCase();
+    if (c === 'eur' || c === 'usd' || c === 'pln') {
+      return Math.round(unitAmount) / 100;
     }
+    // zero-decimal (legacy VND etc.)
+    return unitAmount;
+  }
+
+  private async retrieveMajorAmount(
+    priceId: string | undefined,
+  ): Promise<number | null> {
+    if (!this.stripe || !priceId?.trim()) return null;
     try {
-      const [monthlyPrice, annualPrice] = await Promise.all([
-        this.stripe.prices.retrieve(monthlyId),
-        this.stripe.prices.retrieve(annualId),
-      ]);
-      const m = monthlyPrice.unit_amount;
-      const a = annualPrice.unit_amount;
-      if (m == null || a == null) {
-        this.logger.warn('Stripe price missing unit_amount');
-        return null;
-      }
-      if (monthlyPrice.currency !== 'vnd' || annualPrice.currency !== 'vnd') {
+      const price = await this.stripe.prices.retrieve(priceId.trim());
+      if (price.unit_amount == null) return null;
+      if (price.currency !== 'eur') {
         this.logger.warn(
-          `Unexpected Stripe currency monthly=${monthlyPrice.currency} annual=${annualPrice.currency}`,
+          `Expected EUR Stripe price, got ${price.currency} for ${priceId}`,
         );
       }
-      const twelveMonthsCompareVnd = m * 12;
-      const annualSavePercent =
-        twelveMonthsCompareVnd > a
-          ? Math.round(
-              ((twelveMonthsCompareVnd - a) / twelveMonthsCompareVnd) * 100,
-            )
-          : 0;
-      return {
-        monthlyVnd: m,
-        annualVnd: a,
-        twelveMonthsCompareVnd,
-        annualSavePercent,
-        source: 'stripe',
-      };
+      return this.unitAmountToMajor(price.unit_amount, price.currency);
     } catch (e) {
-      this.logger.warn(`Stripe prices retrieve failed: ${e}`);
+      this.logger.warn(`Stripe prices retrieve failed for ${priceId}: ${e}`);
       return null;
     }
+  }
+
+  private async fetchFromStripe(): Promise<ProPricesPayload | null> {
+    const studioMonthlyId = this.config.get<string>('STRIPE_MONTHLY_PRICE_ID');
+    const studioAnnualId = this.config.get<string>('STRIPE_YEARLY_PRICE_ID');
+    const enterpriseMonthlyId = this.config.get<string>(
+      'STRIPE_ENTERPRISE_MONTHLY_PRICE_ID',
+    );
+    const enterpriseAnnualId = this.config.get<string>(
+      'STRIPE_ENTERPRISE_YEARLY_PRICE_ID',
+    );
+
+    const [sm, sa, em, ea] = await Promise.all([
+      this.retrieveMajorAmount(studioMonthlyId),
+      this.retrieveMajorAmount(studioAnnualId),
+      this.retrieveMajorAmount(enterpriseMonthlyId),
+      this.retrieveMajorAmount(enterpriseAnnualId),
+    ]);
+
+    if (sm == null || sa == null) {
+      return null;
+    }
+
+    const fallback = this.getFallbackPrices();
+    const studio = this.tierFromAmounts(sm, sa);
+    const enterprise = this.tierFromAmounts(
+      em ?? fallback.enterprise.monthly,
+      ea ?? fallback.enterprise.annual,
+    );
+
+    return {
+      currency: 'EUR',
+      source: 'stripe',
+      monthly: studio.monthly,
+      annual: studio.annual,
+      twelveMonthsCompare: studio.twelveMonthsCompare,
+      annualSavePercent: studio.annualSavePercent,
+      studio,
+      enterprise,
+    };
   }
 
   /** In-memory TTL cache; refresh from Stripe after expiry. */
@@ -111,7 +181,7 @@ export class StripePricingService {
     const payload = fromStripe ?? this.getFallbackPrices();
     this.cache = { expiresAtMs: now + ttlMs, payload };
     if (!fromStripe) {
-      this.logger.debug('Using fallback Pro subscription prices for mobile');
+      this.logger.debug('Using fallback Pro subscription prices (EUR)');
     }
     return payload;
   }

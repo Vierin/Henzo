@@ -136,7 +136,11 @@ export class AdminService {
       this.prisma.adminEventLog.count({
         where: {
           type: {
-            in: ['subscription_failed', 'revenuecat_webhook_error'],
+            in: [
+              'subscription_failed',
+              'revenuecat_webhook_error',
+              'stripe_webhook_error',
+            ],
           },
           createdAt: { gte: last24h },
         },
@@ -772,6 +776,7 @@ export class AdminService {
           'email_reminder_failed',
           'subscription_failed',
           'revenuecat_webhook_error',
+          'stripe_webhook_error',
           'admin_action',
           'admin_subscription_changed',
         ],
@@ -2040,7 +2045,13 @@ export class AdminService {
       type: { in: string[] };
       createdAt?: { gte?: Date; lte?: Date };
     } = {
-      type: { in: ['subscription_failed', 'revenuecat_webhook_error'] },
+      type: {
+        in: [
+          'subscription_failed',
+          'revenuecat_webhook_error',
+          'stripe_webhook_error',
+        ],
+      },
     };
     if (from || to) {
       where.createdAt = {};
@@ -2132,6 +2143,7 @@ export class AdminService {
           in: [
             'subscription_failed',
             'revenuecat_webhook_error',
+            'stripe_webhook_error',
             'admin_subscription_changed',
           ],
         },
