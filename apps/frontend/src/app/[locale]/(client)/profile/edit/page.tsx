@@ -14,6 +14,7 @@ import {
 import { clearClientAuthCookie } from '@/lib/client-panel/auth-session-cookie';
 import { clientTheme } from '@/lib/client-panel/client-theme';
 import { getPublicSupabase } from '@/lib/supabase-public';
+import { useTranslation } from '@/contexts/LanguageContext';
 import {
   extractLocaleFromPath,
   hardNavigateToLocalePath,
@@ -53,6 +54,7 @@ function initialsFrom(name: string, email: string) {
 export default function ClientProfileEditPage() {
   const pathname = usePathname();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
+  const t = useTranslation();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -100,14 +102,6 @@ export default function ClientProfileEditPage() {
         phone: userQuery.data?.phone ?? undefined,
         avatarUrl: avatarUrl || undefined,
       });
-      const nextEmail = email.trim();
-      const current = userQuery.data?.email?.trim() ?? '';
-      if (nextEmail && nextEmail !== current) {
-        const { error } = await getPublicSupabase().auth.updateUser({
-          email: nextEmail,
-        });
-        if (error) throw new Error(error.message);
-      }
     },
     onSuccess: async () => {
       setProfileErr(null);
@@ -334,11 +328,20 @@ export default function ClientProfileEditPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                  className={inputClass}
+                  readOnly
+                  disabled
+                  className={`${inputClass} opacity-70`}
                   style={{ color: clientTheme.text }}
                 />
+                <span
+                  className="mt-1 block text-xs"
+                  style={{ color: clientTheme.textSecondary }}
+                >
+                  {String(
+                    t('clientSettings.emailCannotBeChanged') ||
+                      'Email cannot be changed',
+                  )}
+                </span>
               </label>
 
               {profileMsg ? (

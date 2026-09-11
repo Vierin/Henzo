@@ -195,21 +195,6 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
       return;
     }
 
-    final newEmail = _emailController.text.trim();
-    if (newEmail.isNotEmpty && newEmail != (auth.user?.email ?? '')) {
-      final emailRes = await auth.updateEmail(newEmail);
-      if (!mounted) return;
-      if (!emailRes.success) {
-        setState(() => _savingProfile = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(emailRes.errorRaw ?? locale.t('errors.generic')),
-          ),
-        );
-        return;
-      }
-    }
-
     setState(() => _savingProfile = false);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -369,10 +354,26 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
                       const SizedBox(height: AuthFormStyles.fieldGap),
                       TextFormField(
                         controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: AuthFormStyles.fieldTextStyle,
+                        readOnly: true,
+                        enableInteractiveSelection: true,
+                        style: AuthFormStyles.fieldTextStyle.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                         decoration: AuthFormStyles.fieldDecoration(
                           hintText: locale.t('profileForm.email'),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            locale.t('profileForm.emailReadOnlyHint'),
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
