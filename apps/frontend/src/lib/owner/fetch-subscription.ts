@@ -220,6 +220,32 @@ export async function openBillingPortal(returnUrl: string): Promise<string> {
   return url;
 }
 
+export async function changeSubscriptionPlan(params: {
+  plan: CheckoutPlan;
+  interval: CheckoutInterval;
+}): Promise<OwnerSubscription | null> {
+  const raw = await apiClient.post<unknown>(
+    '/subscriptions/change-plan',
+    params,
+  );
+  const root = asRecord(raw);
+  const data = asRecord(root?.data) ?? root;
+  if (!data) return null;
+  const type = data.type ? String(data.type) : null;
+  return {
+    plan: type,
+    type,
+    tier: type,
+    status: data.status ? String(data.status) : null,
+    currentPeriodEnd: data.currentPeriodEnd
+      ? String(data.currentPeriodEnd)
+      : null,
+    billingProvider: data.billingProvider ? String(data.billingProvider) : null,
+    cancelAtPeriodEnd: Boolean(data.cancelAtPeriodEnd),
+    hasStripeCustomer: Boolean(data.hasStripeCustomer),
+  };
+}
+
 export function planBadgeLabel(sub: OwnerSubscription | null): string {
   const raw = (
     sub?.type ||

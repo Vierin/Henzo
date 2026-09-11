@@ -232,6 +232,13 @@ export class SubscriptionsService {
           'Active App Store / Google Play subscription. Manage billing in the store.',
       });
     }
+    if (existing && this.isActiveStripePaid(existing)) {
+      throw new ConflictException({
+        code: 'STRIPE_ACTIVE',
+        message:
+          'Already subscribed via Stripe. Use change-plan to upgrade or the billing portal to manage.',
+      });
+    }
 
     if (
       !params.successUrl.startsWith('http://') &&
@@ -294,6 +301,81 @@ export class SubscriptionsService {
       stripeCustomerId: sub.stripeCustomerId,
       returnUrl,
     });
+  }
+
+  /**
+   * Upgrade/downgrade an active Stripe subscription (e.g. Studio → Enterprise).
+   * Uses Stripe subscription item update + proration; does not open Checkout.
+   */
+  async changePlanForOwner(
+    userId: string,
+    params: { plan: CheckoutPlan; interval: CheckoutInterval },
+  ) {
+    const studio = await this.prisma.studio.findFirst({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new NotFoundException('Studio not found');
+    }
+    const existing = await this.prisma.subscription.findUnique({
+      where: { studioId: studio.id },
+    });
+    if (!existing) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (existing.manualOverride) {
+      throw new ConflictException({
+        code: 'MANUAL_OVERRIDE',
+        message: 'Subscription is managed by support; contact Henzo',
+      });
+    }
+    if (this.isActiveRevenueCatPaid(existing)) {
+      throw new ConflictException({
+        code: 'REVENUECAT_ACTIVE',
+        message:
+          'Active App Store / Google Play subscription. Manage billing in the store.',
+      });
+    }
+    if (!this.isActiveStripePaid(existing) || !existing.stripeSubscriptionId) {
+      throw new BadRequestException({
+        code: 'NO_STRIPE_SUBSCRIPTION',
+        message: 'No active Stripe subscription to change',
+      });
+    }
+
+    const targetType =
+      params.plan === 'enterprise'
+        ? SubscriptionType.ENTERPRISE
+        : SubscriptionType.STUDIO;
+    if (existing.type === targetType) {
+      return this.toCurrentPayload(existing);
+    }
+
+    const priceId = this.checkout.resolvePriceId(params.plan, params.interval);
+    const stripeSub = await this.checkout.updateSubscriptionPrice({
+      stripeSubscriptionId: existing.stripeSubscriptionId,
+      newPriceId: priceId,
+      plan: params.plan,
+      interval: params.interval,
+    });
+
+    const updated = await this.applyStripeSubscription({
+      studioId: studio.id,
+      userId,
+      stripeSub,
+      tier: targetType,
+    });
+
+    this.analytics.track(userId, 'subscription_plan_changed', {
+      studio_id: studio.id,
+      provider: 'stripe',
+      from: existing.type,
+      to: targetType,
+      interval: params.interval,
+    });
+
+    return this.toCurrentPayload(updated);
   }
 
   async syncCheckoutSession(userId: string, sessionId: string) {

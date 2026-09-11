@@ -24,3 +24,14 @@ export class CreateBillingPortalDto {
   @MaxLength(2048)
   returnUrl: string;
 }
+
+/** Upgrade/downgrade an existing Stripe subscription (same customer). */
+export class ChangePlanDto {
+  @IsString()
+  @IsIn(['studio', 'enterprise'])
+  plan: 'studio' | 'enterprise';
+
+  @IsString()
+  @IsIn(['monthly', 'annual'])
+  interval: 'monthly' | 'annual';
+}

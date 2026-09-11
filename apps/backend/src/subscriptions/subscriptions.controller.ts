@@ -12,6 +12,7 @@ import { SubscriptionsService } from './subscriptions.service';
 import {
   CreateBillingPortalDto,
   CreateCheckoutSessionDto,
+  ChangePlanDto,
 } from './dto/create-checkout-session.dto';
 import { SyncCheckoutSessionDto } from './dto/sync-checkout-session.dto';
 
@@ -60,6 +61,25 @@ export class SubscriptionsController {
       },
     );
     return { url };
+  }
+
+  /**
+   * Change plan on an existing Stripe subscription (Studio ↔ Enterprise).
+   */
+  @Post('change-plan')
+  async changePlan(
+    @Headers('authorization') authHeader: string,
+    @Body() body: ChangePlanDto,
+  ) {
+    const { user } = await this.authService.getCurrentUser(authHeader);
+    if (user.role !== 'OWNER') {
+      throw new ForbiddenException('Only studio owners can change plans');
+    }
+    const data = await this.subscriptions.changePlanForOwner(user.id, {
+      plan: body.plan,
+      interval: body.interval,
+    });
+    return { success: true, data };
   }
 
   /**

@@ -128,6 +128,32 @@ export class StripeCheckoutService {
     }
   }
 
+  /** Switch price on an existing Stripe subscription (upgrade/downgrade). */
+  async updateSubscriptionPrice(params: {
+    stripeSubscriptionId: string;
+    newPriceId: string;
+    plan: CheckoutPlan;
+    interval: CheckoutInterval;
+  }): Promise<Stripe.Subscription> {
+    const stripe = this.getStripe();
+    const sub = await stripe.subscriptions.retrieve(
+      params.stripeSubscriptionId,
+    );
+    const itemId = sub.items.data[0]?.id;
+    if (!itemId) {
+      throw new BadRequestException('Stripe subscription has no items');
+    }
+    return stripe.subscriptions.update(params.stripeSubscriptionId, {
+      items: [{ id: itemId, price: params.newPriceId }],
+      proration_behavior: 'create_prorations',
+      metadata: {
+        ...sub.metadata,
+        plan: params.plan,
+        interval: params.interval,
+      },
+    });
+  }
+
   /** Used after Checkout redirect (web success URL with `session_id`). */
   async retrieveCheckoutSessionExpanded(sessionId: string) {
     const stripe = this.getStripe();
