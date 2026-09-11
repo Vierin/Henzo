@@ -41,6 +41,7 @@
   "price": "Price",
   "free": "Free",
   "calendar": "Calendar",
+  "addToCalendar": "Add to calendar",
   "directions": "Directions",
   "durationMin": "({min} min)",
   "shareForClass": "Join me for {class}!",

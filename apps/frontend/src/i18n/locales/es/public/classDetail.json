@@ -48,5 +48,6 @@
   "description": "Descripción",
   "getDirections": "Cómo llegar",
   "aboutStudio": "Sobre el estudio",
-  "reviewsLabel": "{rating} · {count} reseñas"
+  "reviewsLabel": "{rating} · {count} reseñas",
+  "addToCalendar": "Añadir al calendario"
 }

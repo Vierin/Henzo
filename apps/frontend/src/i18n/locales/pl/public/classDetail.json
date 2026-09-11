@@ -48,5 +48,6 @@
   "description": "Opis",
   "getDirections": "Nawigacja",
   "aboutStudio": "O studiu",
-  "reviewsLabel": "{rating} · {count} opinii"
+  "reviewsLabel": "{rating} · {count} opinii",
+  "addToCalendar": "Dodaj do kalendarza"
 }

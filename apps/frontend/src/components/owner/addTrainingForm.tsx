@@ -45,6 +45,7 @@ import {
 const MAX_DURATION = 480;
 const LANGS = [
   { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
   { code: 'ru', label: 'Русский' },
   { code: 'vi', label: 'Tiếng Việt' },
 ] as const;

@@ -91,7 +91,7 @@ export function ClientHomeNearbyClassesCarousel({
       id="nearby-classes"
       className="bg-[#F9F4F0] px-4 py-10 sm:px-6 sm:py-12"
     >
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto min-w-0 max-w-7xl">
         <div className="mb-6 max-w-2xl sm:mb-8">
           <h2 className="text-2xl font-bold tracking-tight text-[#3F3F3F] sm:text-3xl lg:text-[2rem]">
             {copy.titleLead}{' '}
@@ -108,7 +108,7 @@ export function ClientHomeNearbyClassesCarousel({
               <Calendar className="h-4 w-4 text-[#878787]" aria-hidden />
               <div className="h-4 w-32 animate-pulse rounded bg-[#EDE8E3]" />
             </div>
-            <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1">
+            <div className="flex min-w-0 gap-4 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
               {Array.from({ length: 4 }).map((_, i) => (
                 <ClassRowSkeleton key={`sk-${i}`} />
               ))}
@@ -134,7 +134,7 @@ export function ClientHomeNearbyClassesCarousel({
                   </a>
                 </div>
 
-                <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1 scrollbar-hide snap-x snap-mandatory">
+                <div className="flex min-w-0 gap-4 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
                   {group.classes.map((session) => (
                     <NearbyClassCard
                       key={session.sessionId}

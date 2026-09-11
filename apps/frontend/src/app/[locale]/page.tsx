@@ -33,7 +33,7 @@ export default async function HomePage({
     <>
       <HomeJsonLd locale={locale} />
       <div className="min-h-screen overflow-x-clip font-wix-madefor-display text-[#3F3F3F]">
-        <main className="w-full">
+        <main className="w-full min-w-0">
           <ClientHomeHero categories={categories} locale={locale} />
           <ClientHomePopularStudiosSection locale={locale} />
           <ClientHomeNearbyClassesSection locale={locale} />

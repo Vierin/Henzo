@@ -92,7 +92,7 @@ function OutlineActionButton({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className="w-full whitespace-nowrap rounded-full border border-[#F15942] px-3.5 py-2 text-xs font-bold leading-tight text-[#F15942] disabled:opacity-50"
+      className="w-full whitespace-nowrap rounded-full border border-[#F15942] px-3.5 py-2 text-xs font-normal leading-tight text-[#F15942] disabled:opacity-50"
     >
       {children}
     </button>
@@ -111,7 +111,7 @@ function FilledActionButton({
   disabled?: boolean;
 }) {
   const className =
-    'inline-flex w-full items-center justify-center whitespace-nowrap rounded-full bg-[#F15942] px-3.5 py-2 text-xs font-bold leading-tight text-white disabled:opacity-50';
+    'inline-flex w-full items-center justify-center whitespace-nowrap rounded-full bg-[#F15942] px-3.5 py-2 text-xs font-normal leading-tight text-white disabled:opacity-50';
   if (href) {
     return (
       <Link href={href} className={className}>
@@ -182,12 +182,12 @@ function ScheduleCard({
 
         <div className="flex w-[72px] shrink-0 flex-col items-start justify-center py-3 pl-3 pr-3">
           <span
-            className="text-[17px] font-semibold leading-none tracking-tight tabular-nums"
+            className="text-[17px] font-normal leading-none tracking-tight tabular-nums"
             style={{ color: clientTheme.text }}
           >
             {formatOwnerTime24h(item.startsAt)}
           </span>
-          <span className="mt-2 text-[11px] font-semibold leading-none text-[#A4A4A4]">
+          <span className="mt-2 text-[11px] font-normal leading-none text-[#A4A4A4]">
             {formatPassDayMonth(item.startsAt, locale)}
           </span>
         </div>
@@ -201,7 +201,7 @@ function ScheduleCard({
         <div className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-3.5 pr-3.5 sm:gap-4 sm:pr-4">
           <div className="min-w-0 flex-1">
             <p
-              className="truncate text-[17px] font-bold leading-snug tracking-tight"
+              className="truncate text-[17px] font-normal leading-snug tracking-tight"
               style={{ color: clientTheme.text }}
             >
               {item.training?.name || 'Class'}
@@ -249,7 +249,7 @@ function ScheduleCard({
           <div className="flex shrink-0 flex-col items-stretch justify-center gap-1.5">
             {mode === 'upcoming' ? (
               isWaitlisted || isPending ? (
-                <span className="rounded-lg border border-[#EF6C00]/66 bg-[#FFF3E0] px-2.5 py-1.5 text-center text-[12px] font-bold text-[#EF6C00]">
+                <span className="rounded-lg border border-[#EF6C00]/66 bg-[#FFF3E0] px-2.5 py-1.5 text-center text-[12px] font-normal text-[#EF6C00]">
                   {isWaitlisted ? 'Waitlist' : 'Waiting'}
                 </span>
               ) : onCancel ? (
@@ -268,7 +268,7 @@ function ScheduleCard({
             ) : null}
 
             {mode === 'past' && item.hasReview ? (
-              <span className="text-center text-[12px] font-semibold text-[#A4A4A4]">
+              <span className="text-center text-[12px] font-normal text-[#A4A4A4]">
                 Reviewed
               </span>
             ) : null}
@@ -293,7 +293,7 @@ function ScheduleCard({
                 key={n}
                 type="button"
                 onClick={() => setRating(n)}
-                className={`h-8 w-8 rounded-full text-sm font-bold ${
+                className={`h-8 w-8 rounded-full text-sm font-normal ${
                   n <= rating
                     ? 'bg-[#FFB800] text-white'
                     : 'bg-white text-[#878787]'
@@ -314,14 +314,14 @@ function ScheduleCard({
             <button
               type="button"
               onClick={() => setReviewOpen(false)}
-              className="flex-1 rounded-full border border-[#E8E0D8] py-2 text-sm font-semibold text-[#878787]"
+              className="flex-1 rounded-full border border-[#E8E0D8] py-2 text-sm font-normal text-[#878787]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="flex-1 rounded-full bg-[#F15942] py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-full bg-[#F15942] py-2 text-sm font-normal text-white disabled:opacity-50"
             >
               Submit
             </button>
@@ -398,7 +398,7 @@ export default function ClientActivityPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold tracking-tight sm:text-[1.75rem]">
+      <h1 className="mb-4 text-2xl font-normal tracking-tight sm:text-[1.75rem]">
         Activity
       </h1>
       <div className="mb-4 flex rounded-full bg-white p-1">
@@ -407,7 +407,7 @@ export default function ClientActivityPage() {
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`flex-1 rounded-full py-2 text-sm font-semibold capitalize ${
+            className={`flex-1 rounded-full py-2 text-sm font-normal capitalize ${
               tab === key
                 ? 'bg-[#F15942] text-white'
                 : 'text-[#878787] hover:text-[#3F3F3F]'
@@ -429,7 +429,7 @@ export default function ClientActivityPage() {
           </p>
           <Link
             href={withLocale('/studios', locale)}
-            className="mt-3 inline-block text-sm font-semibold text-[#E86D4F]"
+            className="mt-3 inline-block text-sm font-normal text-[#E86D4F]"
           >
             Browse studios →
           </Link>
@@ -443,7 +443,7 @@ export default function ClientActivityPage() {
                 className={index === 0 ? 'pt-0' : 'pt-3'}
               >
                 <p
-                  className="text-lg font-bold leading-none"
+                  className="text-lg font-normal leading-none"
                   style={{ color: clientTheme.text }}
                 >
                   {entry.year}

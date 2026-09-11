@@ -92,22 +92,21 @@ export function ClientHomeAppPromoSection() {
   const subtitle = String(t(`${APP_BASE}.subtitle`));
   const storeAppStore = String(t(`${APP_BASE}.storeAppStore`));
   const storeGooglePlay = String(t(`${APP_BASE}.storeGooglePlay`));
-  const qrLabel = String(t(`${APP_BASE}.qrLabel`));
 
   return (
     <section className="bg-[#F9F4F0] px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6">
       <div className="mx-auto max-w-7xl">
         <div className="overflow-hidden rounded-[2rem] bg-[#FDF5F0] px-5 py-8 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-          <div className="flex items-center justify-between">
-            <div className="max-w-md basis-1/3">
-              <h2 className="text-[2rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-6xl">
+          <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+            <div className="w-full max-w-md lg:basis-1/3">
+              <h2 className="text-[2rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-5xl lg:text-6xl">
                 {title}
               </h2>
               <p className="mt-3 text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
                 {subtitle}
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-4 sm:mt-8">
+              <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
                 <StoreBadgeLinks
                   appStoreLabel={storeAppStore}
                   googlePlayLabel={storeGooglePlay}
@@ -117,8 +116,8 @@ export function ClientHomeAppPromoSection() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full basis-1/3">
-              <StudioPhoneFrame className="max-w-[250px] sm:max-w-[270px] lg:max-w-[290px]" />
+            <div className="relative mx-auto w-full max-w-[250px] sm:max-w-[270px] lg:basis-1/3 lg:max-w-[290px]">
+              <StudioPhoneFrame className="max-w-full" />
 
               {APP_PILLS.map(({ key, icon, color, className }) => (
                 <FeaturePill
@@ -134,7 +133,8 @@ export function ClientHomeAppPromoSection() {
             <div className="hidden lg:block" aria-hidden />
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:hidden">
+          {/* Feature chips: tablet only — absolute pills cover desktop, skip phone */}
+          <div className="mt-8 hidden gap-3 sm:grid sm:grid-cols-2 lg:hidden">
             {APP_PILLS.map(({ key, icon: Icon, color }) => (
               <div
                 key={key}
@@ -185,31 +185,31 @@ export function ClientHomeBusinessPromoSection() {
   } as const;
 
   return (
-    <section className="bg-[#F9F4F0] px-4 pb-10 pt-2 sm:px-6 sm:pb-12">
+    <section className="bg-[#F9F4F0] px-4 pb-8 pt-2 sm:px-6 sm:pb-12">
       <div className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-[2rem] bg-[#E4E3F3] sm:rounded-[2.5rem]">
-          <div className="grid items-stretch gap-6 lg:grid-cols-2 lg:gap-10 xl:gap-14">
-            <div className="max-w-xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-              <h2 className="text-[1.85rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl lg:text-[2.6rem]">
+        <div className="overflow-hidden rounded-[1.75rem] bg-[#E4E3F3] sm:rounded-[2.5rem]">
+          <div className="grid items-stretch gap-0 lg:grid-cols-2 lg:gap-10 xl:gap-14">
+            <div className="max-w-xl px-5 pb-5 pt-6 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+              <h2 className="text-[1.55rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl lg:text-[2.6rem]">
                 {titleLead} <span className="text-[#5B45C6]">{titleBrand}</span>
               </h2>
 
-              <p className="mt-3 max-w-md text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
                 {subtitle}
               </p>
 
-              <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:mt-8 sm:grid-cols-4 sm:gap-3">
+              <ul className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 sm:mt-8 sm:grid-cols-4 sm:gap-3">
                 {BUSINESS_FEATURES.map((key) => {
                   const Icon = featureIcons[key];
                   return (
                     <li
                       key={key}
-                      className="flex flex-col items-start gap-2.5 sm:items-center sm:text-center"
+                      className="flex flex-col items-start gap-1.5 sm:items-center sm:gap-2.5 sm:text-center"
                     >
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#DDD8E8] text-[#5B45C6]">
-                        <Icon className="h-5 w-5" aria-hidden />
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#DDD8E8] text-[#5B45C6] sm:h-11 sm:w-11">
+                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
                       </span>
-                      <span className="text-[13px] font-medium leading-snug text-[#878787] sm:text-sm">
+                      <span className="text-[12px] font-medium leading-snug text-[#878787] sm:text-sm">
                         {String(t(`${BUSINESS_BASE}.features.${key}`))}
                       </span>
                     </li>
@@ -217,30 +217,32 @@ export function ClientHomeBusinessPromoSection() {
                 })}
               </ul>
 
-              <div className="mt-7 flex flex-wrap items-center gap-3 sm:mt-9 sm:gap-4">
+              <div className="mt-5 flex flex-col items-start gap-2 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                 <Link
                   href={businessPath}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-[#3F3287] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#342a73] sm:rounded-[18px] sm:px-6 sm:py-4 sm:text-base"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#3F3287] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#342a73] sm:rounded-[18px] sm:px-6 sm:py-4 sm:text-base"
                 >
                   {cta}
                   <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
-                <span className="text-sm text-[#3F3F3F]">{noCard}</span>
+                <span className="text-xs text-[#3F3F3F] sm:text-sm">
+                  {noCard}
+                </span>
               </div>
             </div>
 
-            <div className="relative flex min-h-[20rem] items-end justify-center sm:min-h-[24rem] lg:min-h-full">
+            <div className="relative flex max-h-[14rem] items-end justify-center overflow-hidden sm:max-h-none sm:min-h-[24rem] lg:min-h-full">
               <Image
                 src="/images/business-coach.png"
                 alt=""
                 width={900}
                 height={700}
-                className="relative z-0 h-auto w-[108%] max-w-none translate-y-1 object-contain object-bottom sm:w-[112%] lg:w-[118%] lg:max-h-[28rem]"
+                className="relative z-0 h-full max-h-[14rem] w-[100%] max-w-none object-cover object-[center_20%] sm:h-auto sm:max-h-none sm:w-[112%] sm:translate-y-1 sm:object-contain sm:object-bottom lg:w-[118%] lg:max-h-[28rem]"
                 sizes="(max-width: 1024px) 95vw, 50vw"
                 priority={false}
               />
 
-              <div className="absolute bottom-[42%] left-3 z-10 w-[148px] overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-12px_rgba(63,50,135,0.28)] sm:bottom-[44%] sm:left-5 sm:w-[168px] lg:left-2">
+              <div className="absolute bottom-[38%] left-3 z-10 hidden w-[148px] overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-12px_rgba(63,50,135,0.28)] sm:bottom-[44%] sm:left-5 sm:block sm:w-[168px] lg:left-2">
                 <div className="px-3 pt-3 sm:px-3.5 sm:pt-3.5">
                   <p className="text-[11px] font-medium text-[#3F3F3F] sm:text-xs">
                     {bookingsLabel}

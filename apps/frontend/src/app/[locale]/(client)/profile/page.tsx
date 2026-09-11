@@ -163,6 +163,7 @@ export default function ClientProfilePage() {
                   alt=""
                   width={20}
                   height={20}
+                  className="brightness-0"
                   aria-hidden
                 />
               }

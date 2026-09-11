@@ -32,13 +32,17 @@ class OwnerImagePicker {
     await Future<void>.delayed(Duration.zero);
   }
 
+  /// Match [OwnerPhotoStorageService.galleryOriginalMaxEdge] so gallery
+  /// originals are not pre-crushed below the web hero target (1520).
+  static const double _galleryPickMaxEdge = 2400;
+
   static Future<XFile?> pickSingleFromGallery() async {
     configure();
     await _prepareForExternalPicker();
     return _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1536,
-      maxHeight: 1536,
+      maxWidth: _galleryPickMaxEdge,
+      maxHeight: _galleryPickMaxEdge,
       requestFullMetadata: false,
     );
   }
@@ -47,8 +51,8 @@ class OwnerImagePicker {
     configure();
     await _prepareForExternalPicker();
     return _picker.pickMultiImage(
-      maxWidth: 1536,
-      maxHeight: 1536,
+      maxWidth: _galleryPickMaxEdge,
+      maxHeight: _galleryPickMaxEdge,
       requestFullMetadata: false,
       limit: limit,
     );

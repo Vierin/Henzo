@@ -48,5 +48,6 @@
   "description": "Mô tả",
   "getDirections": "Chỉ đường",
   "aboutStudio": "Về studio",
-  "reviewsLabel": "{rating} · {count} đánh giá"
+  "reviewsLabel": "{rating} · {count} đánh giá",
+  "addToCalendar": "Thêm vào lịch"
 }

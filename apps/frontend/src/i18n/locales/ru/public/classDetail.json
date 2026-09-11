@@ -48,5 +48,6 @@
   "description": "Описание",
   "getDirections": "Маршрут",
   "aboutStudio": "О студии",
-  "reviewsLabel": "{rating} · {count} отзывов"
+  "reviewsLabel": "{rating} · {count} отзывов",
+  "addToCalendar": "Добавить в календарь"
 }

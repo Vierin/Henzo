@@ -131,7 +131,7 @@ export function ClientLocationPicker({
         className={
           variant === 'hero'
             ? 'flex max-w-full items-center gap-1.5 rounded-xl px-1 py-1 text-left text-sm font-semibold text-[#3F3F3F] transition hover:bg-[#F9F4F0]'
-            : 'flex max-w-full items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-white/80 px-2.5 py-2 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:px-3'
+            : 'flex h-10 max-w-full items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-white/80 px-2.5 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:px-3'
         }
         aria-expanded={open}
         aria-haspopup="dialog"

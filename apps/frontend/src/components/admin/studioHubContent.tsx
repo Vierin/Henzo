@@ -1302,7 +1302,7 @@ function EditTab({
               {uploading ? 'Compressing & uploading…' : 'Upload photo'}
             </label>
             <p className="text-xs text-zinc-400">
-              Images are compressed to WebP (max ~1600px) before upload.
+              Images are compressed to WebP (max ~1520px) before upload.
             </p>
             <label className="block text-sm">
               <span className="text-zinc-500">

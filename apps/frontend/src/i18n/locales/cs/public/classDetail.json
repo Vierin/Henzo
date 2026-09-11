@@ -48,5 +48,6 @@
   "description": "Popis",
   "getDirections": "Navigace",
   "aboutStudio": "O studiu",
-  "reviewsLabel": "{rating} · {count} recenzí"
+  "reviewsLabel": "{rating} · {count} recenzí",
+  "addToCalendar": "Přidat do kalendáře"
 }

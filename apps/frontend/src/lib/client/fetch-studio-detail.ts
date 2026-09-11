@@ -26,6 +26,8 @@ export type PublicStudioDetail = {
   instagram?: string;
   photos: string[];
   photoUrl?: string;
+  /** Studio brand logo — omit UI badge when missing. */
+  logoUrl?: string;
   latitude?: number;
   longitude?: number;
   timezone?: string;
@@ -205,6 +207,7 @@ export function parsePublicStudioDetail(
     instagram: String(data.instagram ?? '').trim() || undefined,
     photos,
     photoUrl: photos[0],
+    logoUrl: String(data.logoUrl ?? data.logo_url ?? '').trim() || undefined,
     latitude: typeof data.latitude === 'number' ? data.latitude : undefined,
     longitude: typeof data.longitude === 'number' ? data.longitude : undefined,
     timezone: data.timezone ? String(data.timezone) : undefined,

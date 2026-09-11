@@ -88,7 +88,7 @@ function CategoryPill({
 
   return (
     <span
-      className="inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-semibold tracking-[-0.02em]"
+      className="inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-normal tracking-[-0.02em]"
       style={{ backgroundColor: bg, color: fg }}
     >
       {label}
@@ -132,6 +132,13 @@ export function StudioCard({
 
   const ratingText = studio.rating.toFixed(1);
   const firstClass = nextClasses[0] ?? null;
+  const classHref = firstClass
+    ? `${withLocale('/class', locale)}?${new URLSearchParams({
+        studioId: firstClass.studioId,
+        sessionId: firstClass.sessionId,
+        startsAt: firstClass.startsAt,
+      }).toString()}`
+    : null;
   const popular =
     showPopularBadge || (studio.rating >= 4.7 && studio.reviewCount >= 20);
 
@@ -154,7 +161,7 @@ export function StudioCard({
         )}
 
         {popular ? (
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#FFF1ED]/95 px-2 py-1 text-[11px] font-semibold text-[#E86D4F]">
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#FFF1ED]/95 px-2 py-1 text-[11px] font-normal text-[#E86D4F]">
             <Flame className="h-3 w-3" aria-hidden />
             Popular
           </span>
@@ -164,7 +171,7 @@ export function StudioCard({
       <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-3.5">
         <div className="flex items-start gap-2">
           <Link href={href} className="min-w-0 flex-1">
-            <h2 className="text-[15px] font-bold leading-[1.2] tracking-[-0.03em] text-[#2B2B2B] line-clamp-2 hover:text-[#E86D4F] sm:text-base">
+            <h2 className="text-[15px] font-normal leading-[1.2] tracking-[-0.03em] text-[#2B2B2B] line-clamp-2 hover:text-[#E86D4F] sm:text-base">
               {studio.studioName}
             </h2>
           </Link>
@@ -176,7 +183,7 @@ export function StudioCard({
                   className="h-3.5 w-3.5 fill-[#FFB800] text-[#FFB800]"
                   aria-hidden
                 />
-                <span className="font-semibold">{ratingText}</span>
+                <span className="font-normal">{ratingText}</span>
                 {studio.reviewCount > 0 ? (
                   <span className="text-[#878787]">({studio.reviewCount})</span>
                 ) : null}
@@ -246,7 +253,7 @@ export function StudioCard({
                 ))}
             {(moreFromIds > 0 ||
               (visibleIds.length === 0 && moreFromNames > 0)) && (
-              <span className="text-[11px] font-medium text-[#878787]">
+              <span className="text-[11px] font-normal text-[#878787]">
                 +{moreFromIds > 0 ? moreFromIds : moreFromNames} more
               </span>
             )}
@@ -256,38 +263,41 @@ export function StudioCard({
         {/* Nearest trainings slot — mobile browse parity, no description */}
         <div className="mt-auto pt-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[#3F3F3F]">
+            <span className="text-[11px] font-normal uppercase tracking-[0.04em] text-[#3F3F3F]">
               Classes
             </span>
             <Link
               href={href}
-              className="inline-flex items-center text-[11px] font-medium uppercase tracking-wide text-[#E86D4F] hover:underline"
+              className="inline-flex items-center text-[11px] font-normal uppercase tracking-wide text-[#E86D4F] hover:underline"
             >
               See all
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
 
-          {firstClass ? (
-            <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-[#F8F3EB] px-2 py-2">
-              <span className="shrink-0 text-[12px] font-bold text-[#E86D4F]">
+          {firstClass && classHref ? (
+            <Link
+              href={classHref}
+              className="mt-1.5 flex items-center gap-2 rounded-lg bg-[#F8F3EB] px-2 py-2 transition hover:bg-[#F3EBDF]"
+            >
+              <span className="shrink-0 text-[12px] font-normal text-[#E86D4F]">
                 {formatBrowseClassTime(firstClass.startsAt, locale)}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#3F3F3F]">
+              <span className="min-w-0 flex-1 truncate text-[12px] font-normal text-[#3F3F3F]">
                 {firstClass.className}
               </span>
               {formatBrowseClassPrice(
                 firstClass.price,
                 studio.currency ?? 'EUR',
               ) ? (
-                <span className="shrink-0 text-[11px] font-semibold text-[#3F3F3F]">
+                <span className="shrink-0 text-[11px] font-normal text-[#3F3F3F]">
                   {formatBrowseClassPrice(
                     firstClass.price,
                     studio.currency ?? 'EUR',
                   )}
                 </span>
               ) : null}
-            </div>
+            </Link>
           ) : (
             <p className="mt-1.5 text-[12px] text-[#3F3F3F]">
               No classes today
@@ -297,7 +307,7 @@ export function StudioCard({
           <div className="mt-2.5 flex justify-end">
             <Link
               href={href}
-              className="inline-flex items-center gap-1 rounded-full bg-[#E86D4F] px-3.5 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#d85e42]"
+              className="inline-flex items-center gap-1 rounded-full bg-[#E86D4F] px-3.5 py-1.5 text-[12px] font-normal text-white transition hover:bg-[#d85e42]"
             >
               View studio
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />

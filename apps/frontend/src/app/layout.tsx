@@ -8,6 +8,7 @@ import './globals.css';
 import Toaster from '@/components/Toaster';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import CookieBanner from '@/components/CookieBanner';
+import { ClientLocationPrompt } from '@/components/clientHome/clientLocationPrompt';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ClientLocationProvider } from '@/contexts/ClientLocationContext';
 import { EnvValidator } from '@/components/EnvValidator';
@@ -103,6 +104,7 @@ export default async function RootLayout({
               </Suspense>
             </div>
             <ConditionalFooter />
+            <ClientLocationPrompt />
             <CookieBanner />
             <Toaster />
           </ClientLocationProvider>

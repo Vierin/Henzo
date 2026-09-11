@@ -176,7 +176,12 @@ export function LanguageProvider({
   } else if (pathNoLocale.startsWith('/studio/')) {
     publicModules.push('public/appOpen', 'public/homepage');
   } else if (pathNoLocale.startsWith('/class')) {
-    publicModules.push('public/classDetail', 'public/appOpen', 'shared/auth');
+    publicModules.push(
+      'public/classDetail',
+      'public/appOpen',
+      'shared/auth',
+      'public/homepage',
+    );
   } else if (pathNoLocale.startsWith('/trainer-invite')) {
     // Trainer invite landing (AppOpenLanding)
     publicModules.push('public/appOpen');
