@@ -582,7 +582,7 @@ class AuthService extends ChangeNotifier {
         accessToken: accessToken,
       );
 
-      return _finalizeOAuthSignIn(
+      return await _finalizeOAuthSignIn(
         logTag: 'login.google',
         registerAsOwner: registerAsOwner,
         syncIfMissing: syncIfMissing,
@@ -670,7 +670,7 @@ class AuthService extends ChangeNotifier {
         givenName,
         familyName,
       ].where((s) => s.isNotEmpty).join(' ');
-      return _finalizeOAuthSignIn(
+      return await _finalizeOAuthSignIn(
         logTag: 'login.apple',
         registerAsOwner: registerAsOwner,
         syncIfMissing: syncIfMissing,
