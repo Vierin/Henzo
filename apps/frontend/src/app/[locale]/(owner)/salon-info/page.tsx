@@ -391,7 +391,7 @@ export default function OwnerSettingsPage() {
             </span>
             <span
               className="text-sm font-medium"
-              style={{ color: ownerTheme.textSecondary }}
+              style={{ color: ownerTheme.text }}
             >
               Subscription & billing
             </span>
