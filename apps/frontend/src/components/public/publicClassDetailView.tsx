@@ -411,13 +411,11 @@ function ConfirmationTicket({
           <div className="relative inline-block pt-10 sm:pt-12">
             <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-[18%] sm:-translate-x-[10%]">
               <div className="relative h-[52px] w-[96px] sm:h-[60px] sm:w-[110px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/cloud.webp"
                   alt=""
                   className="absolute inset-0 h-full w-full object-contain"
                 />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/icon-rocket.png"
                   alt=""
@@ -1039,7 +1037,6 @@ export function PublicClassDetailView({
                 style={{ backgroundColor: accent }}
               >
                 {studio.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={studio.photoUrl}
                     alt=""
@@ -1050,7 +1047,6 @@ export function PublicClassDetailView({
                 <div className="relative z-10 flex w-full items-end gap-3">
                   {studio.logoUrl ? (
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-white/95 sm:h-14 sm:w-14 sm:rounded-2xl">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={studio.logoUrl}
                         alt=""
