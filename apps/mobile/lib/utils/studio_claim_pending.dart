@@ -145,7 +145,7 @@ class StudioClaimPending {
       }
       final uri = Uri.tryParse(deepLink);
       if (uri == null || !looksLikeClaimUri(uri)) return false;
-      return storeFromUri(uri);
+      return await storeFromUri(uri);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[StudioClaimPending] install referrer failed: $e');
