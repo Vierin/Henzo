@@ -199,12 +199,24 @@ function AuthCallbackInner() {
       const intent = peekOAuthIntent();
       const oauthError =
         searchParams.get('error_description') ?? searchParams.get('error');
-      const codeFromUrl = searchParams.get('code');
+      // Prefer window.location — useSearchParams can lag on the first paint
+      // after a hard OAuth redirect (shows Missing auth code on remount).
+      const urlParams = new URLSearchParams(window.location.search);
+      const codeFromUrl =
+        searchParams.get('code') ?? urlParams.get('code') ?? null;
       const codeFromStore = sessionStorage.getItem(OAUTH_CODE_KEY);
       const code = codeFromUrl || codeFromStore;
 
-      const typeParam = searchParams.get('type') ?? intent?.type ?? null;
-      const nextRaw = searchParams.get('next') ?? intent?.next ?? null;
+      const typeParam =
+        searchParams.get('type') ??
+        urlParams.get('type') ??
+        intent?.type ??
+        null;
+      const nextRaw =
+        searchParams.get('next') ??
+        urlParams.get('next') ??
+        intent?.next ??
+        null;
       const localeFromNext =
         extractLocaleFromPath(nextRaw ?? '') ??
         extractLocaleFromPath(window.location.pathname) ??
@@ -214,24 +226,40 @@ function AuthCallbackInner() {
           ? 'business'
           : typeParam;
 
-      if (oauthError) {
+      if (
+        oauthError ||
+        urlParams.get('error') ||
+        urlParams.get('error_description')
+      ) {
+        const errMsg =
+          oauthError ||
+          urlParams.get('error_description') ||
+          urlParams.get('error') ||
+          'OAuth error';
         sessionStorage.removeItem(OAUTH_CODE_KEY);
         consumeOAuthIntent();
         if (type === 'business') {
-          failToBusiness(localeFromNext, oauthError);
+          failToBusiness(localeFromNext, errMsg);
         } else {
-          failToLogin(localeFromNext, 'oauth', oauthError);
+          failToLogin(localeFromNext, 'oauth', errMsg);
         }
         return;
       }
 
       const publicSb = getPublicSupabase();
 
-      // Already signed in from a parallel Strict Mode mount.
+      // Session may already exist: sibling Strict Mode mount finished exchange
+      // and cleared the URL/code before this effect ran.
       const existing = (await publicSb.auth.getSession()).data.session;
-      if (existing && (code || intent)) {
+      const codeAlreadyExchanged =
+        !!code && sessionStorage.getItem(lockKey(code)) === 'done';
+      if (existing && (!code || codeAlreadyExchanged)) {
         sessionStorage.removeItem(OAUTH_CODE_KEY);
+        if (code) sessionStorage.setItem(lockKey(code), 'done');
         consumeOAuthIntent();
+        if (alive) {
+          window.history.replaceState({}, '', '/auth/callback');
+        }
         await finishWithSession(
           existing,
           type,
@@ -279,9 +307,13 @@ function AuthCallbackInner() {
       if (lockState === '1') {
         // Another effect owns the exchange — wait for session.
         const session = await waitForSession(publicSb, 40);
-        sessionStorage.removeItem(OAUTH_CODE_KEY);
-        consumeOAuthIntent();
         if (session) {
+          sessionStorage.setItem(lock, 'done');
+          sessionStorage.removeItem(OAUTH_CODE_KEY);
+          consumeOAuthIntent();
+          if (alive) {
+            window.history.replaceState({}, '', '/auth/callback');
+          }
           await finishWithSession(
             session,
             type,
@@ -291,7 +323,7 @@ function AuthCallbackInner() {
           );
           return;
         }
-        // Owner mount aborted — take over.
+        // Owner mount aborted without session — take over exchange.
         sessionStorage.setItem(lock, '1');
       } else {
         sessionStorage.setItem(lock, '1');
@@ -351,18 +383,22 @@ function AuthCallbackInner() {
       }
 
       sessionStorage.setItem(lock, 'done');
-      sessionStorage.removeItem(OAUTH_CODE_KEY);
+      // Keep pending code until finish succeeds so a remount can recover via
+      // sessionStorage if URL was already cleaned.
       consumeOAuthIntent();
-      window.history.replaceState({}, '', '/auth/callback');
-
-      if (!alive) return;
-      await finishWithSession(
-        data.session,
-        type,
-        nextRaw,
-        localeFromNext,
-        intent?.type,
-      );
+      if (alive) {
+        window.history.replaceState({}, '', '/auth/callback');
+        sessionStorage.removeItem(OAUTH_CODE_KEY);
+        await finishWithSession(
+          data.session,
+          type,
+          nextRaw,
+          localeFromNext,
+          intent?.type,
+        );
+      }
+      // If !alive, leave OAUTH_CODE_KEY + lock=done; remount finishes via
+      // existing session / stored code path above.
     };
 
     void run();

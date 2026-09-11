@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 import { useClientLocation } from '@/contexts/ClientLocationContext';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -13,15 +14,36 @@ import {
   reverseGeocodeCity,
   type CitySuggestion,
 } from '@/lib/client/mapbox-public';
+import { stripLocaleFromPath } from '@/i18n/routing';
+import { isRouteMatch, ownerRoutes } from '@/config/routes';
 
 const T = 'homepage.client.locationPrompt';
 
+/** Skip owner/admin/auth shells — location is for client discovery UX. */
+function shouldOfferLocationPrompt(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const path = stripLocaleFromPath(pathname);
+  if (path.startsWith('/admin')) return false;
+  if (path.startsWith('/auth')) return false;
+  if (isRouteMatch(path, ownerRoutes)) return false;
+  if (
+    path.startsWith('/business/login') ||
+    path.startsWith('/business/register')
+  ) {
+    return false;
+  }
+  if (path.startsWith('/login') || path.startsWith('/register')) return false;
+  if (path.startsWith('/forgot-password')) return false;
+  return true;
+}
+
 /**
- * First-visit location gate (mobile parity): shown on home when no city is saved.
+ * First-visit location gate (mobile parity): shown site-wide when no city is saved.
  * Offers GPS or manual city pick; dismissible without saving.
  */
 export function ClientLocationPrompt() {
   const t = useTranslation();
+  const pathname = usePathname();
   const { isHydrated, hasUserLocation, setLocation } = useClientLocation();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'ask' | 'manual'>('ask');
@@ -35,9 +57,10 @@ export function ClientLocationPrompt() {
 
   useEffect(() => {
     if (!isHydrated || hasUserLocation || shownRef.current) return;
+    if (!shouldOfferLocationPrompt(pathname)) return;
     shownRef.current = true;
     setOpen(true);
-  }, [isHydrated, hasUserLocation]);
+  }, [isHydrated, hasUserLocation, pathname]);
 
   useEffect(() => {
     if (!open || mode !== 'manual') return;

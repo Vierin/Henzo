@@ -74,9 +74,9 @@ export function ClientHomePopularStudiosCarousel({
   }
 
   return (
-    <section className="bg-[#F9F4F0] px-4 pb-10 pt-2 sm:px-6 sm:pb-12">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-5 flex items-center justify-between gap-4 sm:mb-6">
+    <section className="bg-[#F9F4F0] pb-10 pt-2 sm:pb-12">
+      <div className="mx-auto min-w-0 max-w-7xl">
+        <div className="mb-5 flex items-center justify-between gap-4 px-4 sm:mb-6 sm:px-6">
           <h2 className="text-xl font-medium tracking-tight text-[#3F3F3F] sm:text-2xl">
             {title}
           </h2>
@@ -84,14 +84,14 @@ export function ClientHomePopularStudiosCarousel({
           <div className="flex shrink-0 items-center">
             <Link
               href={seeAllHref}
-              className="hidden text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F] sm:inline"
+              className="text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F]"
             >
               {seeAllLabel}
             </Link>
           </div>
         </div>
 
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-hide snap-x snap-mandatory sm:gap-5">
+        <div className="flex min-w-0 gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory scroll-px-4 sm:gap-5 sm:px-6 sm:scroll-px-6">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <StudioCardSkeleton key={`skeleton-${i}`} />
@@ -103,15 +103,6 @@ export function ClientHomePopularStudiosCarousel({
                   locale={locale}
                 />
               ))}
-        </div>
-
-        <div className="mt-4 sm:hidden">
-          <Link
-            href={seeAllHref}
-            className="text-sm font-medium text-[#3F3F3F] hover:text-[#E86D4F]"
-          >
-            {seeAllLabel}
-          </Link>
         </div>
       </div>
     </section>

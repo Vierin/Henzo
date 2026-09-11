@@ -3,7 +3,7 @@ export async function compressImageForAdminUpload(
   file: File,
   options?: { maxEdge?: number; quality?: number },
 ): Promise<{ base64: string; contentType: string; fileName: string }> {
-  const maxEdge = options?.maxEdge ?? 1600;
+  const maxEdge = options?.maxEdge ?? 1520;
   const quality = options?.quality ?? 0.82;
 
   if (!file.type.startsWith('image/') || file.type === 'image/gif') {

@@ -18,8 +18,8 @@ class OwnerPhotoStorageService {
   /// Profile avatar in lists / hero cards.
   static const int avatarMaxEdge = 512;
 
-  /// Studio gallery cards.
-  static const int galleryMaxEdge = 1200;
+  /// Studio gallery hero/card — ~760px CSS @2x on web studio detail.
+  static const int galleryMaxEdge = 1520;
 
   /// Uncropped gallery source kept for re-adjust.
   static const int galleryOriginalMaxEdge = 2400;

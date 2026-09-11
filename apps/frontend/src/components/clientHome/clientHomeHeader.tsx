@@ -1,16 +1,18 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { UserRound } from 'lucide-react';
-import { withLocale, type Locale } from '@/i18n/routing';
+import { stripLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 import {
   publicHeaderLanguages,
   usePublicHeaderState,
 } from '@/components/usePublicHeaderState';
 import { LanguageDropdown } from '@/components/landing/languageDropdown';
+import { ClientLocationPicker } from '@/components/clientHome/clientLocationPicker';
 import { CLIENT_AUTH_COOKIE } from '@/lib/client-panel/auth-session-cookie';
 import {
   fetchClientUser,
@@ -24,6 +26,19 @@ function hasClientCookie() {
     .some((c) => c.trim().startsWith(`${CLIENT_AUTH_COOKIE}=`));
 }
 
+/** Location chip in header on browse/studio pages — not on home (picker lives in hero). */
+function shouldShowHeaderLocation(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const path = stripLocaleFromPath(pathname);
+  return (
+    path === '/studios' ||
+    path.startsWith('/studios/') ||
+    path.startsWith('/studio/') ||
+    path.startsWith('/category/') ||
+    path.startsWith('/class')
+  );
+}
+
 function ClientHomeHeaderContent() {
   const {
     currentLocale,
@@ -34,8 +49,13 @@ function ClientHomeHeaderContent() {
     handleLanguageSelect,
   } = usePublicHeaderState();
   const t = useTranslation();
+  const pathname = usePathname();
   const locale = currentLocale as Locale;
   const homePath = withLocale('/', locale);
+  const showLocation = useMemo(
+    () => shouldShowHeaderLocation(pathname),
+    [pathname],
+  );
   const [isClientAuthed, setIsClientAuthed] = useState(false);
   const [clientUser, setClientUser] = useState<ClientProfileUser | null>(null);
 
@@ -64,32 +84,46 @@ function ClientHomeHeaderContent() {
   const forBusiness = String(
     t('homepage.client.header.forBusiness') || 'Business',
   );
+  const locationFallback = String(
+    t('homepage.client.header.location') || 'Set location',
+  );
 
   const displayName =
     clientUser?.name?.trim() || clientUser?.email?.split('@')[0] || 'Profile';
 
+  // No display utilities here — callers add `hidden` / `inline-flex` (Tailwind
+  // source order otherwise lets `inline-flex` override `hidden`).
   const ghostBtn =
-    'inline-flex items-center rounded-full bg-white/90 px-3.5 py-2 text-sm font-medium text-[#3F3F3F] transition hover:bg-white hover:text-[#E86D4F] sm:px-4 sm:py-2.5';
+    'h-10 items-center rounded-full bg-white/90 px-3.5 text-sm font-medium text-[#3F3F3F] transition hover:bg-white hover:text-[#E86D4F] sm:px-4';
 
   return (
     <header className="relative z-40 bg-transparent">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-        <Link
-          href={homePath}
-          className="flex min-w-0 shrink-0 items-center"
-          aria-label="Henzo"
-        >
-          <Image
-            src="/logo.png"
-            alt="Henzo"
-            width={120}
-            height={40}
-            className="h-8 w-auto object-contain sm:h-10"
-            priority
-          />
-        </Link>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link
+            href={homePath}
+            className="flex min-w-0 shrink-0 items-center"
+            aria-label="Henzo"
+          >
+            <Image
+              src="/logo.png"
+              alt="Henzo"
+              width={120}
+              height={40}
+              className="h-8 w-auto object-contain sm:h-10"
+              priority
+            />
+          </Link>
+        </div>
 
         <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+          {showLocation ? (
+            <ClientLocationPicker
+              fallbackLabel={locationFallback}
+              className="min-w-0"
+            />
+          ) : null}
+
           <LanguageDropdown
             dropdownRef={dropdownRef}
             isOpen={isLanguageDropdownOpen}
@@ -97,7 +131,7 @@ function ClientHomeHeaderContent() {
             languages={publicHeaderLanguages}
             onToggle={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
             onSelect={handleLanguageSelect}
-            buttonClassName="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
+            buttonClassName="flex h-10 items-center gap-1 rounded-full bg-white/90 px-2.5 text-xs font-medium text-[#3F3F3F] transition hover:bg-white sm:gap-2 sm:px-3 sm:text-sm"
           />
 
           {!isClientAuthed ? (
@@ -112,9 +146,9 @@ function ClientHomeHeaderContent() {
           {isClientAuthed ? (
             <Link
               href={withLocale('/profile', locale)}
-              className="flex max-w-[min(100%,220px)] items-center gap-2 rounded-full bg-white/90 py-1 pl-1 pr-3 transition hover:bg-white sm:max-w-[280px]"
+              className="flex h-10 max-w-[min(100%,220px)] items-center gap-2 rounded-full bg-white/90 py-0 pl-1 pr-2.5 transition hover:bg-white sm:max-w-[280px]"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F8EDE5] text-[#3F3F3F] sm:h-9 sm:w-9">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F8EDE5] text-[#3F3F3F]">
                 {clientUser?.avatarUrl ? (
                   <img
                     src={clientUser.avatarUrl}
@@ -122,7 +156,7 @@ function ClientHomeHeaderContent() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <UserRound className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+                  <UserRound className="h-[18px] w-[18px]" />
                 )}
               </span>
               <span className="min-w-0 truncate text-sm font-semibold text-[#3F3F3F]">
@@ -133,14 +167,14 @@ function ClientHomeHeaderContent() {
             <>
               <Link
                 href={withLocale('/login', locale)}
-                className={`hidden sm:inline-flex ${ghostBtn}`}
+                className={`inline-flex ${ghostBtn}`}
               >
                 {login}
               </Link>
 
               <Link
                 href={withLocale('/register', locale)}
-                className="inline-flex items-center rounded-full bg-[#E86D4F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d85e42] sm:px-5 sm:py-2.5"
+                className="hidden h-10 items-center rounded-full bg-[#E86D4F] px-4 text-sm font-semibold text-white transition hover:bg-[#d85e42] sm:inline-flex sm:px-5"
               >
                 {signUp}
               </Link>

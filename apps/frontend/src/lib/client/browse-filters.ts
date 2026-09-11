@@ -35,6 +35,7 @@ export const BROWSE_TIME_PERIODS: {
 
 export const BROWSE_LANGUAGES: { value: string; label: string }[] = [
   { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
   { value: 'ru', label: 'Русский' },
   { value: 'vi', label: 'Tiếng Việt' },
 ];

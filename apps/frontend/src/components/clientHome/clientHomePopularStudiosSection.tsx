@@ -15,7 +15,7 @@ export async function ClientHomePopularStudiosSection({ locale }: Props) {
 
   const popular = dict?.homepage?.client?.popularStudios ?? {};
   const title = String(popular.title ?? 'Popular studios near you');
-  const seeAllLabel = String(popular.seeAll ?? 'See all studios');
+  const seeAllLabel = String(popular.seeAll ?? 'See all');
 
   return (
     <ClientHomePopularStudiosCarousel

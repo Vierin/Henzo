@@ -5,6 +5,11 @@ const BUCKET = 'studio-photos';
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_SOURCE = MAX_BYTES * 8;
 
+/** Match mobile `OwnerPhotoStorageService` edges. */
+const AVATAR_MAX_EDGE = 512;
+const GALLERY_MAX_EDGE = 1520;
+const GALLERY_ORIGINAL_MAX_EDGE = 2400;
+
 function randomId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID().replace(/-/g, '').slice(0, 12);
@@ -82,7 +87,7 @@ async function ownerUid(): Promise<string> {
 /** Mobile: `owners/{uid}/logo.webp` */
 export async function uploadStudioLogo(file: File): Promise<string> {
   const uid = await ownerUid();
-  const { blob, contentType } = await resizeToBlob(file, 512);
+  const { blob, contentType } = await resizeToBlob(file, AVATAR_MAX_EDGE);
   const ext = contentType === 'image/webp' ? 'webp' : 'jpg';
   return uploadPath(`owners/${uid}/logo.${ext}`, blob, contentType);
 }
@@ -93,9 +98,9 @@ export async function uploadStudioGalleryAsset(
 ): Promise<StudioPhotoAsset> {
   const uid = await ownerUid();
   const photoId = `p_${randomId()}`;
-  const original = await resizeToBlob(file, 2400);
-  const hero = await resizeToBlob(file, 1200);
-  const card = await resizeToBlob(file, 1200);
+  const original = await resizeToBlob(file, GALLERY_ORIGINAL_MAX_EDGE);
+  const hero = await resizeToBlob(file, GALLERY_MAX_EDGE);
+  const card = await resizeToBlob(file, GALLERY_MAX_EDGE);
   const ext = (ct: string) => (ct === 'image/webp' ? 'webp' : 'jpg');
 
   const [originalUrl, heroUrl, cardUrl] = await Promise.all([

@@ -46,6 +46,7 @@ export default function OwnerHeader() {
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
     { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   ] as const;
 

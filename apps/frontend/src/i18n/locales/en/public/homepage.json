@@ -395,7 +395,7 @@
     },
     "popularStudios": {
       "title": "Popular studios near you",
-      "seeAll": "See all studios",
+      "seeAll": "See all",
       "distanceMeters": "{value} m",
       "distanceKilometers": "{value} km"
     },

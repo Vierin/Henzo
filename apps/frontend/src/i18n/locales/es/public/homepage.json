@@ -1,4 +1,51 @@
 {
+  "heroTitle": "Encuentra tu <span class=\"text-[#ff5b5b]\">estudio de fitness</span> cerca",
+  "heroSubtitle": "Reserva clases en estudios top cerca de ti. Compara precios, lee reseñas y entrena hoy.",
+  "topRatedTitle": "Estudios de fitness mejor valorados",
+  "topRatedSubtitle": "Descubre estudios y clases cerca de ti. Reserva yoga, pilates, gym y más.",
+  "popularCategories": "Categorías populares",
+  "onlineBooking": "Reserva online",
+  "minutesShort": "min",
+  "toBook": "para reservar",
+  "free": "Gratis",
+  "booking": "Reserva",
+  "search": "Buscar",
+  "searchPlaceholder": "Buscar servicios...",
+  "locationPlaceholder": "Tu ubicación",
+  "datePlaceholder": "Seleccionar fecha",
+  "timePlaceholder": "Seleccionar hora",
+  "anyNearestTime": "Cualquier hora cercana",
+  "searchButton": "Buscar",
+  "featuredSalons": "Estudios destacados",
+  "popularServices": "Servicios populares",
+  "recommendedServices": "Servicios recomendados",
+  "howItWorks": "Cómo funciona — <span class=\"text-[#ff5b5b]\">3 pasos simples</span>",
+  "howItWorksSubtitle": "Encontrar y reservar tu clase nunca ha sido tan fácil",
+  "step1": "01",
+  "step2": "02",
+  "step3": "03",
+  "step1Title": "Busca y descubre",
+  "step2Title": "Elige y reserva",
+  "step3Title": "Disfruta",
+  "step1Description": "Introduce tu ubicación para encontrar estudios cercanos con reseñas verificadas y precios competitivos.",
+  "step2Description": "Elige una clase, un horario conveniente y reserva online en unos clics.",
+  "step3Description": "Ve a tu clase y disfruta. Valora tu visita para ayudar a otros.",
+  "bookNow": "Reservar",
+  "whyChooseHenzo": "Henzo: fitness más simple",
+  "whyChooseSubtitle": "Conveniencia y confianza en cada reserva.",
+  "easyBooking": "Reserva fácil",
+  "easyBookingDescription": "Reserva en unos clics. Guarda tu plaza al instante.",
+  "flexibleScheduling": "Horario flexible",
+  "flexibleSchedulingDescription": "Encuentra el momento adecuado, incluso a última hora.",
+  "trustedReviews": "Reseñas fiables",
+  "trustedReviewsDescription": "Lee reseñas reales y elige lo mejor.",
+  "startExploring": "Explorar estudios",
+  "salonOwner": "¿Tienes un estudio?",
+  "salonOwnerSubtitle": "Únete a Henzo y llega a miles de personas que buscan clases cada mes.",
+  "registerBusiness": "Registrar tu negocio",
+  "seeAllSalons": "Ver todos los estudios",
+  "noSalonsAvailable": "No hay estudios disponibles",
+  "checkBackLater": "Vuelve más tarde para ver estudios disponibles.",
   "studio": {
     "hero": {
       "line1Lead": "De",
@@ -120,6 +167,7 @@
       "titleLine2Before": "Resultados ",
       "titleLine2Accent": "reales",
       "currency": "€",
+      "currencyEuro": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
       "plans": [
@@ -162,6 +210,49 @@
             "Analítica avanzada",
             "Roles y permisos del equipo",
             "Soporte prioritario"
+          ]
+        }
+      ],
+      "plansEuro": [
+        {
+          "name": "Solo",
+          "subtitle": "Perfect for independent trainers",
+          "price": "0",
+          "priceSub": "/ per 1 month",
+          "features": [
+            "12 classes per month",
+            "1 trainer",
+            "Unlimited clients",
+            "Online bookings",
+            "Studio profile",
+            "Push notifications"
+          ]
+        },
+        {
+          "name": "Studio",
+          "subtitle": "For growing studios",
+          "price": "22.99",
+          "priceSub": "/ per 1 month",
+          "features": [
+            "100 classes/month",
+            "Up to 4 trainers",
+            "Waitlist",
+            "Automated reminders (Email & Push)",
+            "Basic Analytics (90 days)"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "subtitle": "For established businesses",
+          "price": "79.99",
+          "priceSub": "/ per 1 month",
+          "features": [
+            "Unlimited classes",
+            "Unlimited trainers",
+            "Multiple locations",
+            "Advanced analytics",
+            "Team roles & permissions",
+            "Priority support"
           ]
         }
       ]
@@ -224,13 +315,101 @@
     }
   },
   "client": {
+    "header": {
+      "explore": "Explorar",
+      "classes": "Clases",
+      "trainers": "Entrenadores",
+      "blog": "Blog",
+      "location": "Elegir ubicación",
+      "login": "Iniciar sesión",
+      "signUp": "Registrarse",
+      "forBusiness": "Business"
+    },
     "hero": {
       "line1": "Encuentra tu próximo entrenamiento",
       "line2Highlight": "y comunidad.",
       "subtitle": "Descubre estudios de fitness, clases y entrenadores cerca de ti. Conoce gente afín, mantente motivado y haz del fitness una experiencia social.",
       "searchPlaceholder": "¿Qué estás buscando?",
+      "floatingCardTitle": "Encuentra tu próxima clase",
+      "floatingCardSubtitle": "Más de 3.200 clases hoy",
+      "categories": {
+        "yoga": "Yoga",
+        "pilates": "Pilates",
+        "gym": "Gym",
+        "boxing": "Boxing",
+        "padel": "Padel",
+        "surfing": "Surf",
+        "more": "Más"
+      },
+      "features": {
+        "findClasses": {
+          "title": "Clases que encajan contigo",
+          "subtitle": "Yoga, gym, pilates y más"
+        },
+        "bookFast": {
+          "title": "Reserva en segundos",
+          "subtitle": "Rápido y fácil"
+        },
+        "reminders": {
+          "title": "Recuerda con alertas",
+          "subtitle": "No te pierdas ninguna clase"
+        },
+        "allInOne": {
+          "title": "Todo en un solo lugar",
+          "subtitle": "Gestiona reservas y favoritos"
+        }
+      },
       "searchHint": "Yoga, Pilates, Gym, Boxing...",
       "popularNearYou": "Popular cerca de ti"
+    },
+    "appPromo": {
+      "eyebrow": "Por qué la gente elige Henzo",
+      "title": "Tu vida fitness en una app",
+      "subtitle": "Reserva clases, organiza tu agenda y no te pierdas ningún entrenamiento.",
+      "storeAppStore": "App Store",
+      "storeGooglePlay": "Google Play",
+      "qrLabel": "Escanea para descargar la app",
+      "pills": {
+        "easyBooking": "Reserva fácil",
+        "smartReminders": "Recordatorios inteligentes",
+        "memberships": "Gestiona membresías",
+        "trackActivity": "Sigue tu actividad"
+      }
+    },
+    "businessPromo": {
+      "badge": "Hecho para dueños de estudios",
+      "titleLead": "Haz crecer tu estudio con",
+      "titleBrand": "Henzo",
+      "title": "Haz crecer tu estudio con Henzo",
+      "subtitle": "Todas las herramientas para gestionar y hacer crecer tu negocio en una plataforma simple.",
+      "features": {
+        "bookings": "Reservas online 24/7",
+        "clients": "Gestión de clientes y membresías",
+        "schedule": "Informes e insights",
+        "reminders": "Recordatorios automáticos"
+      },
+      "cta": "Únete a Henzo gratis",
+      "noCreditCard": "Sin tarjeta de crédito",
+      "statBookings": "Nuevas reservas",
+      "statValue": "+28%"
+    },
+    "popularStudios": {
+      "title": "Estudios populares cerca de ti",
+      "seeAll": "Ver todo",
+      "distanceMeters": "{value} m",
+      "distanceKilometers": "{value} km"
+    },
+    "nearbyClasses": {
+      "badge": "Cerca de ti",
+      "titleLead": "Clases que ocurren",
+      "titleHighlight": "cerca de ti",
+      "subtitle": "Explora próximas clases en estudios top cerca de ti. Reserva tu plaza en segundos.",
+      "viewSchedule": "Ver horario completo",
+      "seeAll": "Ver todo",
+      "today": "Hoy",
+      "tomorrow": "Mañana",
+      "durationMin": "{value} min",
+      "book": "Reservar"
     },
     "locationPrompt": {
       "title": "Comparte tu ubicación",

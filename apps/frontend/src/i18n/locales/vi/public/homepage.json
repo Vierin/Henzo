@@ -351,7 +351,7 @@
     },
     "popularStudios": {
       "title": "Studio phổ biến gần bạn",
-      "seeAll": "Xem tất cả studio",
+      "seeAll": "Xem tất cả",
       "distanceMeters": "{value} m",
       "distanceKilometers": "{value} km"
     },

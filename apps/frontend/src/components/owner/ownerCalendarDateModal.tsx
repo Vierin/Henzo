@@ -43,7 +43,6 @@ export function OwnerCalendarDateModal({
   const [viewMonth, setViewMonth] = useState(
     () => new Date(selected.getFullYear(), selected.getMonth(), 1),
   );
-  const [draft, setDraft] = useState(selected);
   const today = useMemo(() => startOfToday(), []);
   const rangeMin = useMemo(
     () => (minDate ? addDays(minDate, 0) : null),
@@ -56,7 +55,6 @@ export function OwnerCalendarDateModal({
 
   useEffect(() => {
     if (!open) return;
-    setDraft(selected);
     setViewMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
   }, [open, selected]);
 
@@ -162,14 +160,17 @@ export function OwnerCalendarDateModal({
             {cells.map((day, i) => {
               if (!day) return <div key={`e-${i}`} />;
               const disabled = isOutOfRange(day);
-              const isSelected = sameDay(day, draft);
+              const isSelected = sameDay(day, selected);
               const isToday = sameDay(day, today);
               return (
                 <button
                   key={`${day.getTime()}`}
                   type="button"
                   disabled={disabled}
-                  onClick={() => setDraft(addDays(day, 0))}
+                  onClick={() => {
+                    onSelect(addDays(day, 0));
+                    onClose();
+                  }}
                   className="aspect-square rounded-full text-sm font-medium disabled:cursor-not-allowed disabled:opacity-30"
                   style={{
                     backgroundColor: isSelected
@@ -186,18 +187,6 @@ export function OwnerCalendarDateModal({
             })}
           </div>
         </div>
-
-        <button
-          type="button"
-          className="mt-4 w-full rounded-[12px] py-3 text-[15px] font-bold text-white"
-          style={{ backgroundColor: ownerTheme.accent }}
-          onClick={() => {
-            onSelect(draft);
-            onClose();
-          }}
-        >
-          Show week
-        </button>
       </div>
     </div>
   );

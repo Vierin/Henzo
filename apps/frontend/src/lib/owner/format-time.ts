@@ -38,6 +38,7 @@ export function trainingLanguageLabel(code: string | null | undefined): string {
   if (c === 'en') return 'English';
   if (c === 'ru') return 'Русский';
   if (c === 'vi') return 'Tiếng Việt';
+  if (c === 'es') return 'Español';
   return code!.trim();
 }
 

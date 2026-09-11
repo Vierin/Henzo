@@ -124,7 +124,7 @@ export default function ClientSidebar({
         {renderNavItem(
           '/studios',
           <Search className="h-5 w-5" />,
-          'Browse',
+          'Explore',
           pathNoLocale.startsWith('/studios') ||
             pathNoLocale.startsWith('/studio/') ||
             pathNoLocale.startsWith('/category/'),
