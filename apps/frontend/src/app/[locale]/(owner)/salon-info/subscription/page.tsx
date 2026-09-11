@@ -24,6 +24,11 @@ import {
 import { formatMoney } from '@/lib/format-money';
 import { extractLocaleFromPath, type Locale } from '@/i18n/routing';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import {
+  OwnerUsageChip,
+  UsageCalendarIcon,
+  UsagePeopleIcon,
+} from '@/components/owner/ownerUsageChips';
 
 type PlanTier = 'solo' | 'studio' | 'enterprise';
 
@@ -123,6 +128,8 @@ export default function SubscriptionSettingsPage() {
   const periodLabel = formatPeriodEnd(subQuery.data?.currentPeriodEnd, locale);
   const isStripe = provider === 'STRIPE';
   const isRevenueCat = provider === 'REVENUECAT';
+  /** Portal CTA for any paid web plan; click fails cleanly if no Stripe customer. */
+  const showManageBilling = paidActive && !isRevenueCat && !syncingCheckout;
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -252,16 +259,46 @@ export default function SubscriptionSettingsPage() {
     setChangeLoading(true);
     setBanner(null);
     try {
-      await changeSubscriptionPlan({ plan: 'enterprise', interval });
-      await queryClient.invalidateQueries({ queryKey: ['owner-subscription'] });
-      await queryClient.invalidateQueries({ queryKey: ['owner-usage'] });
-      setBanner({
-        kind: 'ok',
-        text:
-          t('owner.subscription.switchSuccess') ||
-          'Subscription plan updated successfully',
-      });
+      if (isStripe) {
+        await changeSubscriptionPlan({ plan: 'enterprise', interval });
+        await queryClient.invalidateQueries({
+          queryKey: ['owner-subscription'],
+        });
+        await queryClient.invalidateQueries({ queryKey: ['owner-usage'] });
+        setBanner({
+          kind: 'ok',
+          text:
+            t('owner.subscription.switchSuccess') ||
+            'Subscription plan updated successfully',
+        });
+        return;
+      }
+      // Paid Studio without STRIPE provider (legacy / sync lag) → Checkout
+      await startCheckout('enterprise');
     } catch (err) {
+      const code = apiErrorCode(err);
+      if (code === 'NO_STRIPE_SUBSCRIPTION' || code === 'STRIPE_ACTIVE') {
+        await startCheckout('enterprise');
+        return;
+      }
+      if (code === 'REVENUECAT_ACTIVE') {
+        setBanner({
+          kind: 'info',
+          text:
+            t('owner.subscription.manageInAppStore') ||
+            'Active App Store / Google Play subscription. Manage billing in the store.',
+        });
+        return;
+      }
+      if (code === 'MANUAL_OVERRIDE') {
+        setBanner({
+          kind: 'info',
+          text:
+            t('owner.subscription.manualOverride') ||
+            'Subscription is managed by support; contact Henzo.',
+        });
+        return;
+      }
       setBanner({
         kind: 'err',
         text: apiErrorMessage(
@@ -282,13 +319,18 @@ export default function SubscriptionSettingsPage() {
       const url = await openBillingPortal(returnUrl);
       window.location.href = url;
     } catch (err) {
+      const code = apiErrorCode(err);
       setBanner({
-        kind: 'err',
-        text: apiErrorMessage(
-          err,
-          t('owner.subscription.checkoutError') ||
-            'Failed to open billing portal',
-        ),
+        kind: code === 'NO_STRIPE_CUSTOMER' ? 'info' : 'err',
+        text:
+          code === 'NO_STRIPE_CUSTOMER'
+            ? t('owner.subscription.noStripeBilling') ||
+              'Billing portal is not available for this subscription yet. Use Upgrade or contact support.'
+            : apiErrorMessage(
+                err,
+                t('owner.subscription.checkoutError') ||
+                  'Failed to open billing portal',
+              ),
       });
       setPortalLoading(false);
     }
@@ -305,8 +347,9 @@ export default function SubscriptionSettingsPage() {
 
   const busy = syncingCheckout || checkoutLoading != null || changeLoading;
   const showCatalog = !paidActive && !syncingCheckout;
+  // Studio → Enterprise for any paid Studio except App Store / Play
   const showStudioUpgrade =
-    paidActive && isStripe && activeTier === 'studio' && !syncingCheckout;
+    paidActive && activeTier === 'studio' && !isRevenueCat && !syncingCheckout;
 
   return (
     <SettingsSubpageShell
@@ -435,33 +478,19 @@ export default function SubscriptionSettingsPage() {
           </div>
 
           {(usage?.classesLimit != null || usage?.trainersLimit != null) && (
-            <div className="space-y-2">
-              {usage.classesLimit != null ? (
-                <div className="rounded-[14px] bg-white px-4 py-3.5 text-sm">
-                  <span style={{ color: ownerTheme.textSecondary }}>
-                    Classes this month{' '}
-                  </span>
-                  <span
-                    className="font-semibold"
-                    style={{ color: ownerTheme.text }}
-                  >
-                    {usage.classesUsed}/{usage.classesLimit}
-                  </span>
-                </div>
-              ) : null}
-              {usage.trainersLimit != null ? (
-                <div className="rounded-[14px] bg-white px-4 py-3.5 text-sm">
-                  <span style={{ color: ownerTheme.textSecondary }}>
-                    Trainers{' '}
-                  </span>
-                  <span
-                    className="font-semibold"
-                    style={{ color: ownerTheme.text }}
-                  >
-                    {usage.trainersUsed}/{usage.trainersLimit}
-                  </span>
-                </div>
-              ) : null}
+            <div className="flex gap-2">
+              <OwnerUsageChip
+                label="Classes this month"
+                used={usage.classesUsed ?? 0}
+                limit={usage.classesLimit}
+                icon={<UsageCalendarIcon />}
+              />
+              <OwnerUsageChip
+                label="Trainers"
+                used={usage.trainersUsed ?? 0}
+                limit={usage.trainersLimit}
+                icon={<UsagePeopleIcon />}
+              />
             </div>
           )}
 
@@ -505,7 +534,7 @@ export default function SubscriptionSettingsPage() {
                 className="mt-4 w-full rounded-[12px] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                 style={{ backgroundColor: ownerTheme.accent }}
               >
-                {changeLoading
+                {changeLoading || checkoutLoading === 'enterprise'
                   ? t('owner.subscription.switching') || 'Switching...'
                   : t('owner.subscription.upgradeToEnterpriseBtn') ||
                     'Upgrade to Enterprise'}
@@ -513,7 +542,7 @@ export default function SubscriptionSettingsPage() {
             </div>
           ) : null}
 
-          {isStripe ? (
+          {showManageBilling ? (
             <button
               type="button"
               onClick={() => void handlePortal()}

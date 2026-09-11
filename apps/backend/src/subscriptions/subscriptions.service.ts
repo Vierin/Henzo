@@ -284,8 +284,9 @@ export class SubscriptionsService {
     });
     if (
       !sub ||
-      sub.billingProvider !== SubscriptionBillingProvider.STRIPE ||
-      !sub.stripeCustomerId
+      !sub.stripeCustomerId ||
+      (sub.billingProvider !== SubscriptionBillingProvider.STRIPE &&
+        sub.billingProvider !== SubscriptionBillingProvider.NONE)
     ) {
       throw new BadRequestException({
         code: 'NO_STRIPE_CUSTOMER',
