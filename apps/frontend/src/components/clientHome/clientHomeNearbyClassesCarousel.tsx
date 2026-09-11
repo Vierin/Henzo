@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, ChevronRight } from 'lucide-react';
-import { playStoreUrl } from '@/constants/appStores';
+import Link from 'next/link';
+import { Calendar } from 'lucide-react';
 import { useClientLocation } from '@/contexts/ClientLocationContext';
 import { fetchNearbyClassGroupsClient } from '@/lib/client/fetch-nearby-classes';
 import type { NearbyClassesDayGroup } from '@/lib/client/nearby-class-session';
 import { NearbyClassCard } from '@/components/clientHome/nearbyClassCard';
-import type { Locale } from '@/i18n/routing';
+import { withLocale, type Locale } from '@/i18n/routing';
 
 type Copy = {
   titleLead: string;
@@ -123,15 +123,12 @@ export function ClientHomeNearbyClassesCarousel({
                     <Calendar className="h-4 w-4 text-[#878787]" aria-hidden />
                     {group.label}
                   </div>
-                  <a
-                    href={playStoreUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-[#878787] transition hover:text-[#E86D4F]"
+                  <Link
+                    href={withLocale('/studios', locale)}
+                    className="text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F]"
                   >
                     {copy.seeAll}
-                    <ChevronRight className="h-4 w-4" aria-hidden />
-                  </a>
+                  </Link>
                 </div>
 
                 <div className="flex min-w-0 gap-4 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">

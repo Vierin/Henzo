@@ -225,7 +225,7 @@ export default function ClientProfilePage() {
               {favorites.length > 0 ? (
                 <Link
                   href={withLocale('/favorites', locale)}
-                  className="text-sm font-semibold text-[#F15942] hover:underline"
+                  className="text-sm font-medium text-[#3F3F3F] transition hover:text-[#E86D4F]"
                 >
                   See all
                 </Link>

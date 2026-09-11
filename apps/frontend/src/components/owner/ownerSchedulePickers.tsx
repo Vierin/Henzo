@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import type { Locale } from '@/i18n/routing';
-import { normalizeHm } from '@/lib/owner/add-training-date';
+import { normalizeHm, maskHmInput } from '@/lib/owner/add-training-date';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTES = Array.from({ length: 12 }, (_, i) =>
@@ -373,6 +373,7 @@ export function OwnerTimeField({
   const hm = normalizeHm(value);
   const [draftH, setDraftH] = useState(hm.slice(0, 2));
   const [draftM, setDraftM] = useState(snapMinute(hm.slice(3, 5)));
+  const [textDraft, setTextDraft] = useState(hm);
 
   useEffect(() => {
     if (!open) return;
@@ -380,6 +381,16 @@ export function OwnerTimeField({
     setDraftH(next.slice(0, 2));
     setDraftM(snapMinute(next.slice(3, 5)));
   }, [open, value]);
+
+  useEffect(() => {
+    setTextDraft(normalizeHm(value));
+  }, [value]);
+
+  const commitText = (raw: string) => {
+    const next = normalizeHm(raw);
+    setTextDraft(next);
+    onChange(next);
+  };
 
   return (
     <div className="min-w-0">
@@ -391,11 +402,37 @@ export function OwnerTimeField({
           {label}
         </span>
       ) : null}
-      <TriggerButton
-        value={`${hm.slice(0, 2)}:${snapMinute(hm.slice(3, 5))}`}
-        ariaLabel={label || 'Pick time'}
-        onClick={() => setOpen(true)}
+
+      {/* Desktop: type HH:mm (24h) */}
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        spellCheck={false}
+        aria-label={label || 'Time (24h)'}
+        placeholder="09:00"
+        value={textDraft}
+        onChange={(e) => setTextDraft(maskHmInput(e.target.value))}
+        onBlur={() => commitText(textDraft)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commitText(textDraft);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="owner-field hidden w-full rounded-xl border-0 bg-white px-3.5 py-3 text-[15px] tabular-nums outline-none md:block"
+        style={{ color: ownerTheme.text }}
       />
+
+      {/* Mobile: wheel sheet picker */}
+      <div className="md:hidden">
+        <TriggerButton
+          value={`${hm.slice(0, 2)}:${snapMinute(hm.slice(3, 5))}`}
+          ariaLabel={label || 'Pick time'}
+          onClick={() => setOpen(true)}
+        />
+      </div>
       <SheetShell open={open} onClose={() => setOpen(false)}>
         <div className="mb-1 flex items-center justify-between px-1">
           <button

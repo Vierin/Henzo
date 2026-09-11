@@ -10,6 +10,23 @@ export function getMobilePlatform(): MobilePlatform {
   return 'other';
 }
 
+/**
+ * Apple Sign In on web reliably works on Apple devices.
+ * Windows/Linux/Android often fail with appleid.apple.com errors.
+ * iPadOS 13+ may report as Macintosh — still treat as Apple.
+ */
+export function supportsAppleSignIn(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return true;
+  if (/Macintosh|Mac OS X/i.test(ua)) return true;
+  // Some Apple Silicon / Vision UA variants
+  if (/Apple Silicon|Vision/i.test(ua) && !/Windows|Android/i.test(ua)) {
+    return true;
+  }
+  return false;
+}
+
 export function storeUrlForPlatform(platform: MobilePlatform): string {
   return platform === 'ios' ? appStoreUrl : playStoreUrl;
 }

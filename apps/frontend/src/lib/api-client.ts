@@ -167,13 +167,39 @@ export class ApiClient {
         });
       }
 
-      // NestJS returns errors as { msg: string, code: number } or { message: string, statusCode: number }
+      const flattenMessage = (raw: unknown): string | null => {
+        if (typeof raw === 'string' && raw.trim()) return raw.trim();
+        if (Array.isArray(raw)) {
+          const parts = raw
+            .map((item) => {
+              if (typeof item === 'string') return item.trim();
+              if (item && typeof item === 'object') {
+                const constraints = (
+                  item as { constraints?: Record<string, string> }
+                ).constraints;
+                if (constraints) {
+                  const first = Object.values(constraints)[0];
+                  if (typeof first === 'string' && first.trim())
+                    return first.trim();
+                }
+                const msg = (item as { message?: unknown }).message;
+                if (typeof msg === 'string' && msg.trim()) return msg.trim();
+              }
+              return '';
+            })
+            .filter(Boolean);
+          return parts.length > 0 ? parts.join('; ') : null;
+        }
+        return null;
+      };
+
+      // NestJS returns errors as { msg: string, code: number } or { message: string | string[], statusCode: number }
       // But some endpoints might return { error: string }
       // For validation errors, extract specific constraint messages
       let errorMessage =
-        errorData.msg ||
-        errorData.message ||
-        errorData.error ||
+        flattenMessage(errorData.msg) ||
+        flattenMessage(errorData.message) ||
+        flattenMessage(errorData.error) ||
         `HTTP error! status: ${response.status}`;
 
       // If it's a validation error, extract the first constraint message

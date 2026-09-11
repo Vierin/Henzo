@@ -56,6 +56,25 @@ export function distanceFilterToRadiusKm(filter: BrowseDistanceFilter): number {
   }
 }
 
+/** Matches mobile `ClientExploreDerivedLists.activeFilterCount`. */
+export function countActiveBrowseFilters(opts: {
+  selectedCategoryId: number | null;
+  languages: Set<string>;
+  timePeriods: Set<BrowseTimePeriod>;
+  distance: BrowseDistanceFilter;
+  sortBy: BrowseSortBy;
+  /** When true, category is page-scoped and not counted as a user filter. */
+  ignoreCategory?: boolean;
+}): number {
+  let count = 0;
+  if (!opts.ignoreCategory && opts.selectedCategoryId != null) count++;
+  if (opts.languages.size > 0) count++;
+  if (opts.timePeriods.size > 0) count++;
+  if (opts.distance !== 'auto') count++;
+  if (opts.sortBy !== 'recommended') count++;
+  return count;
+}
+
 export function isClassInTimePeriods(
   startsAt: string,
   periods: Set<BrowseTimePeriod>,

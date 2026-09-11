@@ -42,8 +42,12 @@ import {
   parseStudioCurrency,
   type StudioCurrency,
 } from '@/lib/format-money';
+import {
+  STUDIO_DESCRIPTION_MAX,
+  containsEmbeddedLink,
+} from '@/lib/owner/text-content';
 
-const DESCRIPTION_MAX = 250;
+const DESCRIPTION_MAX = STUDIO_DESCRIPTION_MAX;
 
 const CURRENCY_OPTIONS = STUDIO_CURRENCIES.map((code) => ({
   value: code,
@@ -130,10 +134,6 @@ function FieldInput({
       style={style}
     />
   );
-}
-
-function hasEmbeddedLink(text: string): boolean {
-  return /https?:\/\/|www\./i.test(text);
 }
 
 function Sheet({
@@ -354,14 +354,73 @@ export default function StudioProfileSettingsPage() {
       setError('Studio name is required');
       return;
     }
+
+    const currencyChanged = currency !== parseStudioCurrency(studio.currency);
+    const basePhotos = listStudioPhotoAssets(studio);
+    const photosChanged =
+      photos.length !== basePhotos.length ||
+      photos.some((p, i) => p.id !== basePhotos[i]?.id);
+    const baseLocs = listTrainingLocations(studio);
+    const locsChanged =
+      JSON.stringify(extraLocationsToJson(locations)) !==
+        JSON.stringify(extraLocationsToJson(baseLocs)) ||
+      (primary?.name ?? '') !==
+        (baseLocs.find((l) => l.isDefault)?.name ?? '') ||
+      address !== (studio.address ?? '').trim() ||
+      lat !==
+        (Number.isFinite(Number(studio.latitude))
+          ? Number(studio.latitude)
+          : null) ||
+      lon !==
+        (Number.isFinite(Number(studio.longitude))
+          ? Number(studio.longitude)
+          : null);
+    const otherFieldsChanged =
+      (logoUrl || '') !== (studio.logoUrl?.trim() || '') ||
+      photosChanged ||
+      trimmedName !== (studio.name ?? '').trim() ||
+      description.trim() !== (studio.description ?? '').trim() ||
+      locsChanged ||
+      phone.trim() !== (studio.phone ?? '').trim() ||
+      email.trim() !== (studio.email ?? '').trim() ||
+      studioSocialLinksSnapshot(socialLinks) !==
+        studioSocialLinksSnapshot(studioSocialLinksFromStudio(studio));
+
+    // Currency-only save: skip re-validating description/locations that may
+    // already contain legacy domains blocked by the API.
+    if (currencyChanged && !otherFieldsChanged) {
+      setSaving(true);
+      setError(null);
+      try {
+        await patchStudio({ currency }, { currencyOnly: true });
+        setSavedFlash(true);
+        window.setTimeout(() => setSavedFlash(false), 2000);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to save');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const desc = description.trim();
     if (desc.length > DESCRIPTION_MAX) {
       setError(`Description must be ${DESCRIPTION_MAX} characters or less`);
       return;
     }
-    if (hasEmbeddedLink(desc)) {
-      setError('Links are not allowed in the description');
+    if (containsEmbeddedLink(desc)) {
+      setError('Links, domains, and emails are not allowed in the description');
       return;
+    }
+    if (containsEmbeddedLink(locationName)) {
+      setError('Links are not allowed in the location name');
+      return;
+    }
+    for (const loc of locations) {
+      if (containsEmbeddedLink(loc.name)) {
+        setError('Links are not allowed in location names');
+        return;
+      }
     }
 
     setSaving(true);

@@ -156,7 +156,7 @@ export default function AccountSettingsPage() {
       } catch {
         /* ignore */
       }
-      hardNavigateToLocalePath('/login', locale);
+      hardNavigateToLocalePath('/', locale);
     },
     onError: (err) => {
       setDeleteErr(

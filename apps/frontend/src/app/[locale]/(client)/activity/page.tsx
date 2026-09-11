@@ -154,7 +154,7 @@ function ScheduleCard({
   const language = trainingLanguageLabel(item.training?.language);
   const trainerRaw = item.trainer?.name?.trim() || '';
   const trainer = isPlaceholderTrainerName(trainerRaw) ? '' : trainerRaw;
-  const location = item.locationName?.trim() || item.studio?.name?.trim() || '';
+  const location = item.locationName?.trim() || '';
   const studioHref = studioHrefFor(item, locale);
   const isWaitlisted = item.waitlisted || item.bookingStatus === 'WAITLISTED';
   const isPending = item.bookingStatus === 'PENDING';

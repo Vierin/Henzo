@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { parseStudioCurrency } from '@/lib/format-money';
 import type { OwnerStudio } from './types';
 
 export type UpdateCurrentStudioBody = {
@@ -43,6 +44,7 @@ export function studioUpdatePayload(
 ): UpdateCurrentStudioBody {
   const lat = Number(studio.latitude);
   const lon = Number(studio.longitude);
+  const currency = parseStudioCurrency(patch.currency ?? studio.currency);
   return {
     name: studio.name || '',
     description: studio.description ?? '',
@@ -65,8 +67,19 @@ export function studioUpdatePayload(
       studio.autoConfirmBookings == null
         ? true
         : Boolean(studio.autoConfirmBookings),
-    ...(studio.currency ? { currency: studio.currency } : {}),
     reminderSettings: studio.reminderSettings ?? undefined,
     ...patch,
+    currency,
+  };
+}
+
+/** Minimal PUT — only name + patch fields (avoids re-validating unrelated text). */
+export function studioCurrencyOnlyPayload(
+  studio: OwnerStudio,
+  currency: string,
+): Pick<UpdateCurrentStudioBody, 'name' | 'currency'> {
+  return {
+    name: studio.name || '',
+    currency: parseStudioCurrency(currency),
   };
 }

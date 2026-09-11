@@ -12,6 +12,7 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { NoEmbeddedLinks } from '../../common/validators/no-embedded-links.validator';
 import { STUDIO_DESCRIPTION_MAX } from '../../lib/text-content';
@@ -38,16 +39,23 @@ export class CreateStudioDto {
   timezone?: string;
 
   @IsOptional()
-  @IsIn([...STUDIO_CURRENCIES])
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
+  @IsIn([...STUDIO_CURRENCIES], {
+    message: `currency must be one of: ${STUDIO_CURRENCIES.join(', ')}`,
+  })
   currency?: (typeof STUDIO_CURRENCIES)[number];
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(-90)
   @Max(90)
   latitude?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(-180)
   @Max(180)

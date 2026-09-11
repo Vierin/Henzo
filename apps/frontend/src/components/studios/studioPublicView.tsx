@@ -353,7 +353,7 @@ export function StudioPublicView({
         {/* Header: name, rating, address, Get directions — no hours */}
         <header className="mb-5 sm:mb-6">
           <div className="flex items-start gap-3">
-            <h1 className="min-w-0 flex-1 text-[26px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#1A1A1A] sm:text-[34px]">
+            <h1 className="min-w-0 flex-1 text-[26px] font-medium leading-[1.15] tracking-[-0.02em] text-[#1A1A1A] sm:text-[34px]">
               {studio.name}
             </h1>
             <div className="flex shrink-0 items-center gap-2 pt-1">

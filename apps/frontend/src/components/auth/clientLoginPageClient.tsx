@@ -21,6 +21,7 @@ import {
   startClientGoogleOAuth,
 } from '@/utils/oauth';
 import { safeInternalNext } from '@/lib/client/book-session';
+import { supportsAppleSignIn } from '@/lib/appOpenFallback';
 
 export function ClientLoginPageClient() {
   const t = useTranslation();
@@ -38,6 +39,11 @@ export function ClientLoginPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [showAppleSignIn, setShowAppleSignIn] = useState(false);
+
+  useEffect(() => {
+    setShowAppleSignIn(supportsAppleSignIn());
+  }, []);
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
@@ -209,7 +215,42 @@ export function ClientLoginPageClient() {
             : String(t('auth.clientLoginSubtitle'))}
         </p>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <div className="mt-8 space-y-3">
+          <button
+            type="button"
+            disabled={loading || oauthLoading != null}
+            onClick={() => onOAuth('google')}
+            className={authSocialButtonClassName}
+          >
+            <GoogleLogo className="h-5 w-5" />
+            {String(t('auth.continueWithGoogle'))}
+          </button>
+
+          {!isBusinessIntent && showAppleSignIn ? (
+            <button
+              type="button"
+              disabled={loading || oauthLoading != null}
+              onClick={() => onOAuth('apple')}
+              className={authSocialButtonClassName}
+            >
+              <AppleLogo className="h-5 w-5" />
+              {String(t('auth.continueWithApple'))}
+            </button>
+          ) : null}
+        </div>
+
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[#E8E0D8]" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-[#FEFDF9] px-3 text-sm text-[#878787]">
+              {String(t('auth.orDivider'))}
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
           <label className="block">
             <span className="sr-only">{String(t('auth.emailAddress'))}</span>
             <AuthFormField
@@ -323,41 +364,6 @@ export function ClientLoginPageClient() {
             </>
           )}
         </p>
-
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#E8E0D8]" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-[#FEFDF9] px-3 text-sm text-[#878787]">
-              {String(t('auth.orDivider'))}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <button
-            type="button"
-            disabled={loading || oauthLoading != null}
-            onClick={() => onOAuth('google')}
-            className={authSocialButtonClassName}
-          >
-            <GoogleLogo className="h-5 w-5" />
-            {String(t('auth.continueWithGoogle'))}
-          </button>
-
-          {!isBusinessIntent ? (
-            <button
-              type="button"
-              disabled={loading || oauthLoading != null}
-              onClick={() => onOAuth('apple')}
-              className={authSocialButtonClassName}
-            >
-              <AppleLogo className="h-5 w-5" />
-              {String(t('auth.continueWithApple'))}
-            </button>
-          ) : null}
-        </div>
       </div>
     </ClientAuthShell>
   );

@@ -14,6 +14,7 @@ import {
   fetchCurrentStudio,
 } from '@/lib/owner/fetch-current-studio';
 import {
+  studioCurrencyOnlyPayload,
   studioUpdatePayload,
   updateCurrentStudio,
   type UpdateCurrentStudioBody,
@@ -35,6 +36,7 @@ type OwnerStudioContextValue = {
   }) => Promise<OwnerStudio>;
   patchStudio: (
     patch: Partial<UpdateCurrentStudioBody>,
+    options?: { currencyOnly?: boolean },
   ) => Promise<OwnerStudio>;
 };
 
@@ -83,9 +85,16 @@ export function OwnerStudioProvider({ children }: { children: ReactNode }) {
   );
 
   const patchStudio = useCallback(
-    async (patch: Partial<UpdateCurrentStudioBody>) => {
+    async (
+      patch: Partial<UpdateCurrentStudioBody>,
+      options?: { currencyOnly?: boolean },
+    ) => {
       if (!studio) throw new Error('Studio not loaded');
-      await updateCurrentStudio(studioUpdatePayload(studio, patch));
+      const body =
+        options?.currencyOnly && patch.currency != null
+          ? studioCurrencyOnlyPayload(studio, patch.currency)
+          : studioUpdatePayload(studio, patch);
+      await updateCurrentStudio(body);
       const result = await fetchCurrentStudio();
       setStudio(result.studio);
       setNeedsSetup(result.needsSetup);

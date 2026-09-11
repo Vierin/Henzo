@@ -146,6 +146,8 @@ export class StudioClaimService {
     clientEmail?: string;
     startsAt?: string;
     timezone?: string | null;
+    /** true when studio.autoConfirmBookings created an ACTIVE enrollment */
+    autoConfirmed: boolean;
   }): Promise<void> {
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
     const chatId = process.env.TELEGRAM_FEEDBACK_CHAT_ID?.trim();
@@ -160,11 +162,16 @@ export class StudioClaimService {
       ? this.formatSessionInStudioTz(payload.startsAt, payload.timezone)
       : { dateStr: '—', timeStr: '—' };
 
+    const title = payload.autoConfirmed
+      ? '✅ Booking auto-confirmed · studio unclaimed'
+      : '⏳ Pending booking · awaiting confirmation · studio unclaimed';
+
     const studioLines = [
       '🏢 Studio',
       `   ${payload.studioName}`,
       `   ✉️ ${payload.ownerEmail}`,
       ...(payload.instagram ? [`   📷 ${payload.instagram}`] : []),
+      `   ⚙️ Auto-confirm: ${payload.autoConfirmed ? 'ON' : 'OFF'}`,
     ];
 
     const classLines = [
@@ -181,7 +188,7 @@ export class StudioClaimService {
     ];
 
     const text = [
-      '📌 Unclaimed booking',
+      title,
       '',
       ...studioLines,
       '',
@@ -449,6 +456,8 @@ export class StudioClaimService {
       clientName?: string;
       clientEmail?: string;
       startsAt?: Date | string;
+      /** When set, overrides studio.autoConfirmBookings for Telegram labeling */
+      autoConfirmed?: boolean;
     },
   ): Promise<void> {
     const studio = await this.prisma.studio.findUnique({
@@ -461,6 +470,7 @@ export class StudioClaimService {
         email: true,
         instagram: true,
         timezone: true,
+        autoConfirmBookings: true,
       },
     });
     if (!studio || studio.claimedAt) return;
@@ -475,6 +485,8 @@ export class StudioClaimService {
         ? bookingMeta.startsAt.toISOString()
         : bookingMeta.startsAt;
     const timezone = this.resolveStudioTimezone(studio.timezone);
+    const autoConfirmed =
+      bookingMeta.autoConfirmed ?? studio.autoConfirmBookings !== false;
 
     await this.requestClaim(studioId, ownerEmail, {
       sendEmail: true,
@@ -498,6 +510,7 @@ export class StudioClaimService {
       clientEmail: bookingMeta.clientEmail,
       startsAt,
       timezone,
+      autoConfirmed,
     });
   }
 
