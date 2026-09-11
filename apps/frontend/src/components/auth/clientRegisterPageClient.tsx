@@ -11,13 +11,17 @@ import {
   AuthFormField,
   authFieldClassName,
   authPrimaryButtonClassName,
+  authSocialButtonClassName,
 } from '@/components/auth/authFormField';
+import { GoogleLogo } from '@/components/auth/authSocialIcons';
 import {
   requestClientRegistrationCode,
   verifyClientRegistrationCode,
 } from '@/lib/auth/api';
 import { getPublicSupabase } from '@/lib/supabase-public';
+import { isSupabaseConfigured } from '@/lib/public-env';
 import { safeInternalNext } from '@/lib/client/book-session';
+import { startClientGoogleOAuth } from '@/utils/oauth';
 
 type Step = 'form' | 'verify';
 
@@ -38,6 +42,24 @@ export function ClientRegisterPageClient() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  const onGoogle = async () => {
+    if (!isSupabaseConfigured()) {
+      setError('Supabase is not configured.');
+      return;
+    }
+    setOauthLoading(true);
+    setError(null);
+    const { error: oauthError } = await startClientGoogleOAuth({
+      provider: 'google',
+      next: nextPath,
+    });
+    if (oauthError) {
+      setError(String(t('auth.googleSignInFailed')));
+      setOauthLoading(false);
+    }
+  };
 
   const onRequestCode = async (e: FormEvent) => {
     e.preventDefault();
@@ -119,80 +141,107 @@ export function ClientRegisterPageClient() {
         </p>
 
         {step === 'form' ? (
-          <form onSubmit={onRequestCode} className="mt-8 space-y-4">
-            <label className="block">
-              <span className="sr-only">{String(t('auth.fullName'))}</span>
-              <AuthFormField
-                type="text"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={String(t('auth.fullName'))}
-                icon={
-                  <AuthFieldIcon
-                    src="/images/icons/icon-profile.svg"
-                    width={16}
-                    height={16}
-                  />
-                }
-              />
-            </label>
+          <>
+            <div className="mt-8 space-y-3">
+              <button
+                type="button"
+                disabled={loading || oauthLoading}
+                onClick={() => void onGoogle()}
+                className={authSocialButtonClassName}
+              >
+                <GoogleLogo className="h-5 w-5" />
+                {String(t('auth.continueWithGoogle'))}
+              </button>
+            </div>
 
-            <label className="block">
-              <span className="sr-only">{String(t('auth.emailAddress'))}</span>
-              <AuthFormField
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={String(t('auth.loginEmailPlaceholder'))}
-                icon={
-                  <AuthFieldIcon
-                    src="/images/icons/icon-mail.svg"
-                    width={14}
-                    height={14}
-                  />
-                }
-              />
-            </label>
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#E8E0D8]" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-[#FEFDF9] px-3 text-sm text-[#878787]">
+                  {String(t('auth.orDivider'))}
+                </span>
+              </div>
+            </div>
 
-            <label className="block">
-              <span className="sr-only">{String(t('auth.password'))}</span>
-              <AuthFormField
-                type="password"
-                passwordToggle
-                required
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={String(t('auth.loginPasswordPlaceholder'))}
-                icon={
-                  <AuthFieldIcon
-                    src="/images/icons/icon-password.svg"
-                    width={16}
-                    height={16}
-                  />
-                }
-              />
-            </label>
+            <form onSubmit={onRequestCode} className="space-y-4">
+              <label className="block">
+                <span className="sr-only">{String(t('auth.fullName'))}</span>
+                <AuthFormField
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={String(t('auth.fullName'))}
+                  icon={
+                    <AuthFieldIcon
+                      src="/images/icons/icon-profile.svg"
+                      width={16}
+                      height={16}
+                    />
+                  }
+                />
+              </label>
 
-            {error ? (
-              <p className="text-sm text-red-600" role="alert">
-                {error}
-              </p>
-            ) : null}
+              <label className="block">
+                <span className="sr-only">
+                  {String(t('auth.emailAddress'))}
+                </span>
+                <AuthFormField
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={String(t('auth.loginEmailPlaceholder'))}
+                  icon={
+                    <AuthFieldIcon
+                      src="/images/icons/icon-mail.svg"
+                      width={14}
+                      height={14}
+                    />
+                  }
+                />
+              </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={authPrimaryButtonClassName}
-            >
-              {loading
-                ? String(t('auth.sending'))
-                : String(t('auth.createAccount'))}
-            </button>
-          </form>
+              <label className="block">
+                <span className="sr-only">{String(t('auth.password'))}</span>
+                <AuthFormField
+                  type="password"
+                  passwordToggle
+                  required
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={String(t('auth.loginPasswordPlaceholder'))}
+                  icon={
+                    <AuthFieldIcon
+                      src="/images/icons/icon-password.svg"
+                      width={16}
+                      height={16}
+                    />
+                  }
+                />
+              </label>
+
+              {error ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loading || oauthLoading}
+                className={authPrimaryButtonClassName}
+              >
+                {loading
+                  ? String(t('auth.sending'))
+                  : String(t('auth.createAccount'))}
+              </button>
+            </form>
+          </>
         ) : (
           <form onSubmit={onVerify} className="mt-8 space-y-4">
             <p className="text-sm text-[#878787]">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -41,7 +41,7 @@ export function ClientHomeHero({ categories, locale }: Props) {
     <section className="relative flex min-h-[100svh] flex-col overflow-hidden bg-[#F9F4F0] font-wix-madefor-display">
       {/* Mobile / tablet: hero art along the top */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(110vw,580px)] bg-[url('/images/hero-bg.webp')] bg-cover bg-[right_0%] sm:bg-[center_12%] sm:h-[min(78vw,620px)] lg:hidden"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(118vw,640px)] bg-[url('/images/hero-bg.webp')] bg-cover bg-[right_0%] sm:bg-[center_12%] sm:h-[min(78vw,620px)] lg:hidden"
         aria-hidden
       />
       {/* Soft top scrim so logo / header stay readable on the photo */}
@@ -57,7 +57,7 @@ export function ClientHomeHero({ categories, locale }: Props) {
 
       <ClientHomeHeader />
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col justify-end px-4 pb-8 pt-[min(72vw,420px)] sm:px-6 sm:pb-12 sm:pt-[min(58vw,460px)] lg:justify-center lg:pb-20 lg:pt-14">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col justify-end px-4 pb-8 pt-[min(80vw,480px)] sm:px-6 sm:pb-12 sm:pt-[min(58vw,460px)] lg:justify-center lg:pb-20 lg:pt-14">
         <div className="max-w-xl lg:max-w-[52%]">
           <h1 className="text-[2.35rem] font-bold leading-[1.08] tracking-tight text-[#3F3F3F] sm:text-5xl lg:text-[3.4rem]">
             {line1} <span className="text-[#E86D4F]">{line2Highlight}</span>

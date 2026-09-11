@@ -1,4 +1,5 @@
 ﻿import type { PublicStudioPreview } from '@/lib/client/studio-preview';
+import { formatBrowseDistrictCity } from '@/lib/client/format-browse-address';
 import { parseStudioCurrency, type StudioCurrency } from '@/lib/format-money';
 
 export type NearbyClassSession = {
@@ -60,12 +61,18 @@ export function parseNearbyClassSession(
   const bookedCount = Number(map.bookedCount ?? map.enrolledCount ?? 0);
   if (capacity > 0 && bookedCount >= capacity) return null;
 
-  const training = asRecord(map.training);
-  const trainer = asRecord(map.trainer);
-  const studioBlock = asRecord(map.studio);
-  const locationRaw = String(
-    map.locationName ?? studioBlock?.locationName ?? '',
+  const training = asRecord(map.training) ?? asRecord(map.Training);
+  const trainer = asRecord(map.trainer) ?? asRecord(map.Trainer);
+  const studioBlock = asRecord(map.studio) ?? asRecord(map.Studio);
+
+  const sessionLocation = String(
+    map.locationName ?? map.location_name ?? studioBlock?.locationName ?? '',
   ).trim();
+  const studioLocation = String(studio.locationName ?? '').trim();
+  const addressLabel = formatBrowseDistrictCity(studio.address) ?? '';
+  // Prefer session branch name; else studio branch; else district/city.
+  // Never fall back to studio name (duplicates class card title context).
+  const locationName = sessionLocation || studioLocation || addressLabel;
 
   const endsAt = parseIso(map.endsAt);
   let durationMin = Number(training?.duration ?? 60) || 60;
@@ -76,8 +83,7 @@ export function parseNearbyClassSession(
     );
   }
 
-  const trainerName = String(trainer?.name ?? '').trim();
-  const locationName = locationRaw || studio.studioName;
+  const trainerName = String(trainer?.name ?? map.trainerName ?? '').trim();
   const rawPrice = Number(map.price ?? training?.price ?? 0);
   const price =
     Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : undefined;

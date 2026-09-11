@@ -32,25 +32,25 @@ const APP_PILLS: PillConfig[] = [
     key: 'easyBooking',
     icon: Calendar,
     color: 'bg-[#5B8DEF]',
-    className: 'top-[8%] right-[-32%]',
+    className: 'top-[8%] right-[-32%] lg:right-[-48%]',
   },
   {
     key: 'smartReminders',
     icon: Bell,
     color: 'bg-[#3F3287]',
-    className: 'top-[30%] right-[-45%]',
+    className: 'top-[30%] right-[-45%] lg:right-[-58%]',
   },
   {
     key: 'memberships',
     icon: CreditCard,
     color: 'bg-[#E86D4F]',
-    className: 'top-[52%] right-[-43%]',
+    className: 'top-[52%] right-[-43%] lg:right-[-56%]',
   },
   {
     key: 'trackActivity',
     icon: Activity,
     color: 'bg-[#3DBFBD]',
-    className: 'top-[74%] right-[-30%]',
+    className: 'top-[74%] right-[-30%] lg:right-[-46%]',
   },
 ];
 

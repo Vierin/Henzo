@@ -728,6 +728,7 @@ export class StudiosController {
               currentUser.user.name || currentUser.user.email || 'Client',
             clientEmail: currentUser.user.email || undefined,
             startsAt: session.startsAt,
+            autoConfirmed: enrollmentStatus === 'ACTIVE',
           },
         );
       } catch (claimEmailError) {

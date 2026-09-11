@@ -4,9 +4,11 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { ClientHomeHeader } from '@/components/clientHome/clientHomeHeader';
+import { ClientLocationPicker } from '@/components/clientHome/clientLocationPicker';
 import { StudioCard } from '@/components/studios/studioCard';
 import { StudiosBrowseFilters } from '@/components/studios/studiosBrowseFilters';
 import { useClientLocation } from '@/contexts/ClientLocationContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import {
   distanceFilterToRadiusKm,
   filterBrowseStudios,
@@ -56,10 +58,14 @@ export function StudiosListClient({
 }: Props) {
   const router = useRouter();
   const params = useParams();
+  const t = useTranslation();
   const { location, isHydrated } = useClientLocation();
   const localeRaw = params?.locale;
   const locale: Locale =
     typeof localeRaw === 'string' && isLocale(localeRaw) ? localeRaw : 'en';
+  const locationFallback = String(
+    t('homepage.client.header.location') || 'Set location',
+  );
 
   const [rawStudios, setRawStudios] = useState(initialStudios);
   const [categories, setCategories] = useState(initialCategories);
@@ -286,16 +292,21 @@ export function StudiosListClient({
       <ClientHomeHeader />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {title}
-            </h1>
-            <p className="mt-1 text-sm text-[#878787]">
-              {loading
-                ? 'Loading…'
-                : `${studios.length} studio${studios.length === 1 ? '' : 's'}`}
-              {classesLoading ? ' · updating classes' : ''}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {title}
+              </h1>
+              <p className="mt-1 text-sm text-[#878787]">
+                {loading
+                  ? 'Loading…'
+                  : `${studios.length} studio${studios.length === 1 ? '' : 's'}`}
+                {classesLoading ? ' · updating classes' : ''}
+              </p>
+            </div>
+            <div className="shrink-0 sm:hidden">
+              <ClientLocationPicker fallbackLabel={locationFallback} />
+            </div>
           </div>
 
           <form
@@ -333,7 +344,7 @@ export function StudiosListClient({
             onDistanceChange={setDistance}
             sortBy={sortBy}
             onSortByChange={setSortBy}
-            hideTypes={false}
+            hideTypes={Boolean(categorySlug)}
           />
         </div>
 

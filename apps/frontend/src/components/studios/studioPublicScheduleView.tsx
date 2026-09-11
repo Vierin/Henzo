@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CalendarDays } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientHomeHeader } from '@/components/clientHome/clientHomeHeader';
 import { OwnerCalendarDateModal } from '@/components/owner/ownerCalendarDateModal';
 import { OwnerScheduleDateStrip } from '@/components/owner/ownerScheduleDateStrip';
@@ -76,47 +76,79 @@ export function StudioPublicScheduleView({
     setSelected(clampDay(day, today, maxDay));
   };
 
+  const canPrevWeek =
+    clampDay(addDays(selected, -7), today, maxDay).getTime() !==
+    selected.getTime();
+  const canNextWeek =
+    clampDay(addDays(selected, 7), today, maxDay).getTime() !==
+    selected.getTime();
+
+  const shiftWeek = (dir: -1 | 1) => {
+    onSelectDay(addDays(selected, dir * 7));
+  };
+
   return (
     <div className="min-h-screen bg-[#F9F4F0] font-wix-madefor-display text-[#3F3F3F]">
       <ClientHomeHeader />
 
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-5 sm:px-6 sm:pt-7">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <Link
-              href={studioHref}
-              className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[#E86D4F] hover:text-[#d85e42]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {studio.name}
-            </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
-              Schedule
-            </h1>
-            <p className="mt-1 text-sm capitalize text-[#878787]">
-              {selected.toLocaleDateString(locale, {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
-          </div>
+        <div className="relative mb-1 grid grid-cols-[40px_1fr_40px] items-center">
+          <Link
+            href={studioHref}
+            aria-label="Back to studio"
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-[#3F3F3F] shadow-[0_1px_2px_rgba(63,63,63,0.06)] transition hover:bg-white/90"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+          </Link>
+          <h1 className="text-center text-2xl font-medium tracking-tight text-[#1A1A1A]">
+            Schedule
+          </h1>
+          <span aria-hidden />
+        </div>
 
-          <div className="flex items-center gap-2">
+        <p className="mb-4 text-center text-sm capitalize text-[#878787]">
+          {selected.toLocaleDateString(locale, {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </p>
+
+        <div className="mb-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCalendarOpen(true)}
+            className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-white px-3.5 text-sm font-semibold text-[#3F3F3F]"
+          >
+            <CalendarDays className="h-4 w-4 text-[#E86D4F]" />
+            Calendar
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectDay(today)}
+            className="h-10 rounded-[12px] bg-white px-3.5 text-sm font-semibold text-[#3F3F3F]"
+          >
+            Today
+          </button>
+
+          <div className="ml-auto flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setCalendarOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-white px-3.5 text-sm font-semibold text-[#3F3F3F]"
+              aria-label="Previous week"
+              disabled={!canPrevWeek}
+              onClick={() => shiftWeek(-1)}
+              className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white text-[#3F3F3F] transition disabled:opacity-30"
             >
-              <CalendarDays className="h-4 w-4 text-[#E86D4F]" />
-              Calendar
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               type="button"
-              onClick={() => onSelectDay(today)}
-              className="h-10 rounded-[12px] bg-white px-3.5 text-sm font-semibold text-[#3F3F3F]"
+              aria-label="Next week"
+              disabled={!canNextWeek}
+              onClick={() => shiftWeek(1)}
+              className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white text-[#3F3F3F] transition disabled:opacity-30"
             >
-              Today
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         </div>

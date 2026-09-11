@@ -27,6 +27,8 @@ import { getPublicSupabase } from '@/lib/supabase-public';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { resolveStudioPublicSlug } from '@/utils/slug';
 import type { Locale } from '@/i18n/routing';
+import { startClientGoogleOAuth } from '@/utils/oauth';
+import { GoogleLogo } from '@/components/auth/authSocialIcons';
 
 type Translate = (key: string) => string;
 
@@ -58,39 +60,6 @@ function IconClock({ className }: { className?: string }) {
       <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.5" />
       <path
         d="M12 8V12L14.5 13.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconDuration({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden>
-      <path
-        d="M2.5 8a5.5 5.5 0 0 1 9.6-3.7"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M13.5 8a5.5 5.5 0 0 1-9.6 3.7"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M11.2 2.8V5.2H13.6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4.8 13.2V10.8H2.4"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
@@ -136,21 +105,6 @@ function ClassMetaItem({
   );
 }
 
-function studioBannerSubtitle(
-  studio: PublicStudioDetail,
-  locale: Locale,
-): string {
-  const labels = studio.categoryLabels
-    .map((c) => {
-      if (locale === 'ru' && c.nameRu) return c.nameRu;
-      if (locale === 'vi' && c.nameVn) return c.nameVn;
-      return c.nameEn;
-    })
-    .filter(Boolean)
-    .slice(0, 2);
-  if (labels.length > 0) return `${labels.join(' & ')} Studio`;
-  return '';
-}
 function dayWindow(iso: string): { from: Date; to: Date } {
   const d = new Date(iso);
   const from = new Date(d);
@@ -245,8 +199,31 @@ function AuthGateModal({
   onClose: () => void;
   t: Translate;
 }) {
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
   if (!open) return null;
   const next = encodeURIComponent(returnPath);
+
+  const onGoogle = async () => {
+    if (oauthLoading) return;
+    setOauthLoading(true);
+    setOauthError(null);
+    try {
+      const { error } = await startClientGoogleOAuth({
+        provider: 'google',
+        next: returnPath,
+      });
+      if (error) {
+        setOauthError(t('classDetail.googleSignInFailed'));
+        setOauthLoading(false);
+      }
+    } catch {
+      setOauthError(t('classDetail.googleSignInFailed'));
+      setOauthLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center sm:p-4">
       <button
@@ -274,19 +251,42 @@ function AuthGateModal({
             <X className="h-5 w-5" />
           </button>
         </div>
+
         <div className="mt-4 flex flex-col gap-2.5">
+          <button
+            type="button"
+            disabled={oauthLoading}
+            onClick={() => void onGoogle()}
+            className="flex h-12 items-center justify-center gap-2.5 rounded-[12px] border border-[#E8E0DA] bg-white text-[15px] font-semibold text-[#3F3F3F] transition hover:bg-[#FFF8F4] disabled:opacity-60"
+          >
+            <GoogleLogo className="h-5 w-5" />
+            {oauthLoading
+              ? t('classDetail.pleaseWait')
+              : t('classDetail.continueWithGoogle')}
+          </button>
+
           <Link
             href={`/${locale}/login?next=${next}`}
             className="flex h-12 items-center justify-center rounded-[12px] bg-[#E86D4F] text-[15px] font-semibold text-white hover:bg-[#d85e42]"
           >
             {t('classDetail.signIn')}
           </Link>
-          <Link
-            href={`/${locale}/register?next=${next}`}
-            className="flex h-12 items-center justify-center rounded-[12px] border border-[#E8E0DA] bg-white text-[15px] font-semibold text-[#3F3F3F]"
-          >
-            {t('classDetail.createAccount')}
-          </Link>
+
+          {oauthError ? (
+            <p className="text-sm text-red-600" role="alert">
+              {oauthError}
+            </p>
+          ) : null}
+
+          <p className="pt-1 text-center text-sm text-[#878787]">
+            {t('classDetail.noAccountYet')}{' '}
+            <Link
+              href={`/${locale}/register?next=${next}`}
+              className="font-semibold text-[#E86D4F] hover:text-[#d85e42]"
+            >
+              {t('classDetail.createAccount')}
+            </Link>
+          </p>
         </div>
       </div>
     </div>
@@ -313,7 +313,7 @@ function ConfirmationTicket({
   const trainerRaw = session.trainerName?.trim() || '';
   const trainer = isPlaceholderTrainerName(trainerRaw) ? '' : trainerRaw;
   const place =
-    session.locationName?.trim() || studio.locationName || studio.name;
+    session.locationName?.trim() || studio.locationName?.trim() || '';
   const address = studio.address?.trim() || '';
   const classTitle = session.trainingName || t('classDetail.title');
   const price =
@@ -823,7 +823,7 @@ export function PublicClassDetailView({
   const trainerRaw = session?.trainerName?.trim() || '';
   const trainer = isPlaceholderTrainerName(trainerRaw) ? '' : trainerRaw;
   const place = session
-    ? session.locationName?.trim() || studio?.locationName || studio?.name || ''
+    ? session.locationName?.trim() || studio?.locationName?.trim() || ''
     : '';
   const address = studio?.address?.trim() || '';
   const showCapacity = capacity > 0 || enrolled > 0;
@@ -912,7 +912,7 @@ export function PublicClassDetailView({
             </div>
           ) : null}
 
-          <div className="mt-5">
+          <div className="mt-5 hidden lg:block">
             {isBooked ? (
               <div className="space-y-2.5">
                 <p className="text-center text-sm text-[#878787]">
@@ -1035,7 +1035,7 @@ export function PublicClassDetailView({
             <div className="min-w-0 space-y-4">
               <Link
                 href={studioHref}
-                className="relative flex min-h-[120px] items-end overflow-hidden rounded-[18px] px-5 py-4 text-white sm:min-h-[160px] lg:min-h-[200px]"
+                className="relative flex min-h-[180px] items-end overflow-hidden rounded-[18px] px-5 py-4 text-white sm:min-h-[200px] lg:min-h-[240px]"
                 style={{ backgroundColor: accent }}
               >
                 {studio.photoUrl ? (
@@ -1059,37 +1059,21 @@ export function PublicClassDetailView({
                     </div>
                   ) : null}
                   <div className="min-w-0 flex-1 pb-0.5">
-                    <p className="truncate text-xl font-semibold sm:text-2xl">
+                    <p className="truncate text-xl font-medium sm:text-2xl">
                       {studio.name}
                     </p>
-                    {(() => {
-                      const subtitle = studioBannerSubtitle(studio, locale);
-                      if (subtitle) {
-                        return (
-                          <p className="mt-1 truncate text-sm text-white/90">
-                            {subtitle}
-                          </p>
-                        );
-                      }
-                      if (studio.avgRating || studio.reviewCount) {
-                        return (
-                          <p className="mt-1 text-sm text-white/90">
-                            {t('classDetail.reviewsLabel')
-                              .replace(
-                                '{rating}',
-                                studio.avgRating
-                                  ? studio.avgRating.toFixed(1)
-                                  : '—',
-                              )
-                              .replace(
-                                '{count}',
-                                String(studio.reviewCount || 0),
-                              )}
-                          </p>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {studio.avgRating || studio.reviewCount ? (
+                      <p className="mt-1 text-sm text-white/90">
+                        {t('classDetail.reviewsLabel')
+                          .replace(
+                            '{rating}',
+                            studio.avgRating
+                              ? studio.avgRating.toFixed(1)
+                              : '—',
+                          )
+                          .replace('{count}', String(studio.reviewCount || 0))}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </Link>
@@ -1128,22 +1112,13 @@ export function PublicClassDetailView({
                   </span>
                   <ClassMetaItem icon={<IconClock className="h-4 w-4" />}>
                     {formatOwnerTime24h(session.startsAt)}
-                  </ClassMetaItem>
-                  {session.durationMinutes ? (
-                    <>
-                      <span className="text-[#D6D0C8]" aria-hidden>
-                        |
-                      </span>
-                      <ClassMetaItem
-                        icon={<IconDuration className="h-4 w-4" />}
-                      >
-                        {t('classDetail.durationMin').replace(
+                    {session.durationMinutes
+                      ? ` ${t('classDetail.durationMin').replace(
                           '{min}',
                           String(session.durationMinutes),
-                        )}
-                      </ClassMetaItem>
-                    </>
-                  ) : null}
+                        )}`
+                      : null}
+                  </ClassMetaItem>
                   {trainer ? (
                     <>
                       <span className="text-[#D6D0C8]" aria-hidden>

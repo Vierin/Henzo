@@ -152,7 +152,7 @@ export default function ClientProfileEditPage() {
       } catch {
         /* ignore */
       }
-      hardNavigateToLocalePath('/login', locale);
+      hardNavigateToLocalePath('/', locale);
     },
     onError: (err) => {
       setDeleteErr(

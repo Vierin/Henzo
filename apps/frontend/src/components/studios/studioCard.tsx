@@ -143,8 +143,14 @@ export function StudioCard({
     showPopularBadge || (studio.rating >= 4.7 && studio.reviewCount >= 20);
 
   return (
-    <article className="group flex min-h-[207px] overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(63,63,63,0.04)]">
-      <div className="relative w-[160px] shrink-0 self-stretch bg-[#FDF9E7] sm:w-[176px]">
+    <article className="group relative flex min-h-[207px] overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(63,63,63,0.04)] transition hover:shadow-[0_8px_24px_-12px_rgba(63,63,63,0.18)]">
+      <Link
+        href={href}
+        className="absolute inset-0 z-0"
+        aria-label={studio.studioName}
+      />
+
+      <div className="relative z-[1] w-[160px] shrink-0 self-stretch bg-[#FDF9E7] pointer-events-none sm:w-[176px]">
         {studio.photoUrl ? (
           <Image
             src={studio.photoUrl}
@@ -168,13 +174,11 @@ export function StudioCard({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-3.5">
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col p-3 pointer-events-none sm:p-3.5">
         <div className="flex items-start gap-2">
-          <Link href={href} className="min-w-0 flex-1">
-            <h2 className="text-[15px] font-normal leading-[1.2] tracking-[-0.03em] text-[#2B2B2B] line-clamp-2 hover:text-[#E86D4F] sm:text-base">
-              {studio.studioName}
-            </h2>
-          </Link>
+          <h2 className="min-w-0 flex-1 text-[15px] font-normal leading-[1.2] tracking-[-0.03em] text-[#2B2B2B] line-clamp-2 group-hover:text-[#E86D4F] sm:text-base">
+            {studio.studioName}
+          </h2>
 
           <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
             {studio.rating > 0 ? (
@@ -197,7 +201,7 @@ export function StudioCard({
                   e.stopPropagation();
                   onToggleFavorite();
                 }}
-                className="rounded-full p-1 text-[#FF5D7A] hover:bg-[#FFF1ED]"
+                className="pointer-events-auto relative z-[2] rounded-full p-1 text-[#FF5D7A] hover:bg-[#FFF1ED]"
                 aria-label={
                   isFavorite ? 'Remove from favorites' : 'Add to favorites'
                 }
@@ -260,25 +264,22 @@ export function StudioCard({
           </div>
         ) : null}
 
-        {/* Nearest trainings slot — mobile browse parity, no description */}
         <div className="mt-auto pt-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-normal uppercase tracking-[0.04em] text-[#3F3F3F]">
               Classes
             </span>
-            <Link
-              href={href}
-              className="inline-flex items-center text-[11px] font-normal uppercase tracking-wide text-[#E86D4F] hover:underline"
-            >
+            <span className="inline-flex items-center text-[11px] font-medium tracking-wide text-[#3F3F3F]">
               See all
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
+            </span>
           </div>
 
           {firstClass && classHref ? (
             <Link
               href={classHref}
-              className="mt-1.5 flex items-center gap-2 rounded-lg bg-[#F8F3EB] px-2 py-2 transition hover:bg-[#F3EBDF]"
+              onClick={(e) => e.stopPropagation()}
+              className="pointer-events-auto relative z-[2] mt-1.5 flex items-center gap-2 rounded-lg bg-[#F8F3EB] px-2 py-2 transition hover:bg-[#F3EBDF]"
             >
               <span className="shrink-0 text-[12px] font-normal text-[#E86D4F]">
                 {formatBrowseClassTime(firstClass.startsAt, locale)}
@@ -305,13 +306,10 @@ export function StudioCard({
           )}
 
           <div className="mt-2.5 flex justify-end">
-            <Link
-              href={href}
-              className="inline-flex items-center gap-1 rounded-full bg-[#E86D4F] px-3.5 py-1.5 text-[12px] font-normal text-white transition hover:bg-[#d85e42]"
-            >
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#E86D4F] px-3.5 py-1.5 text-[12px] font-normal text-white transition group-hover:bg-[#d85e42]">
               View studio
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
+            </span>
           </div>
         </div>
       </div>

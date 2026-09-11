@@ -42,7 +42,7 @@ export default function ClientSidebar({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      hardNavigateToLocalePath('/login', currentLocale);
+      hardNavigateToLocalePath('/', currentLocale);
     }
   };
 

@@ -2463,6 +2463,9 @@ export class StudiosService {
           select: {
             id: true,
             name: true,
+            User: {
+              select: { name: true },
+            },
           },
         },
       },

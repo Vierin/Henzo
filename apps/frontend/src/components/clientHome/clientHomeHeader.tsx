@@ -116,12 +116,14 @@ function ClientHomeHeaderContent() {
           </Link>
         </div>
 
-        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {showLocation ? (
-            <ClientLocationPicker
-              fallbackLabel={locationFallback}
-              className="min-w-0"
-            />
+            <div className="hidden min-w-0 sm:block">
+              <ClientLocationPicker
+                fallbackLabel={locationFallback}
+                className="min-w-0"
+              />
+            </div>
           ) : null}
 
           <LanguageDropdown

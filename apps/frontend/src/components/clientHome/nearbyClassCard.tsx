@@ -61,16 +61,22 @@ export function NearbyClassCard({ session, locale }: Props) {
               {session.className}
             </h3>
 
-            <div className="mt-2 flex items-center gap-1.5 text-sm text-[#3F3F3F]">
-              <MapPin
-                className="h-3.5 w-3.5 shrink-0 text-[#4D39A8]"
-                aria-hidden
-              />
-              <span className="truncate">{session.locationName}</span>
-            </div>
+            {session.locationName ? (
+              <div className="mt-2 flex items-center gap-1.5 text-sm text-[#3F3F3F]">
+                <MapPin
+                  className="h-3.5 w-3.5 shrink-0 text-[#4D39A8]"
+                  aria-hidden
+                />
+                <span className="truncate">{session.locationName}</span>
+              </div>
+            ) : null}
 
             {session.trainerName ? (
-              <div className="mt-1.5 flex items-center gap-1.5 text-sm text-[#3F3F3F]">
+              <div
+                className={`flex items-center gap-1.5 text-sm text-[#3F3F3F] ${
+                  session.locationName ? 'mt-1.5' : 'mt-2'
+                }`}
+              >
                 <User
                   className="h-3.5 w-3.5 shrink-0 text-[#4D39A8]"
                   aria-hidden
@@ -88,7 +94,7 @@ export function NearbyClassCard({ session, locale }: Props) {
               <div
                 className="h-full rounded-full transition-all"
                 style={{
-                  width: `${Math.max(progress.ratio * 100, session.capacity > 0 ? 8 : 0)}%`,
+                  width: `${Math.round(progress.ratio * 100)}%`,
                   backgroundColor: progress.barColor,
                 }}
               />
@@ -97,7 +103,7 @@ export function NearbyClassCard({ session, locale }: Props) {
 
           <div className="flex shrink-0 flex-col items-center gap-1.5">
             {price ? (
-              <span className="text-[13px] font-medium tabular-nums text-[#3F3F3F]">
+              <span className="text-[15px] font-semibold tabular-nums text-[#3F3F3F] sm:text-base">
                 {price}
               </span>
             ) : null}
