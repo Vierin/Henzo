@@ -7,6 +7,7 @@ export type AdminEventType =
   | 'email_reminder_failed'
   | 'subscription_failed'
   | 'revenuecat_webhook_error'
+  | 'stripe_webhook_error'
   | 'crash_free_rate_snapshot'
   | 'admin_action'
   | 'admin_subscription_changed'
