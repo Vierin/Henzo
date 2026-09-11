@@ -7,11 +7,11 @@ Mobile Pro subscriptions use **RevenueCat** + native IAP. Stripe Checkout in the
 1. Create a project at [revenuecat.com](https://www.revenuecat.com).
 2. Add **iOS** (`com.henzo.vn.Henzo`) and **Android** (`com.henzo.mobile`) apps.
 3. Connect **App Store Connect** (shared secret / App Store Connect API) and **Google Play** (service account JSON).
-4. Create entitlement **`pro`** (or set `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`).
+4. Create entitlement `**pro`** (or set `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`).
 5. Create products in App Store Connect & Play Console, link them in RevenueCat.
 6. Create an **Offering** (e.g. `default`) with packages:
-   - **Monthly** (`$rc_monthly` or custom)
-   - **Annual** (`$rc_annual` or custom)
+  - **Monthly** (`$rc_monthly` or custom)
+  - **Annual** (`$rc_annual` or custom)
 
 ## 2. Mobile env (`assets/.env`)
 
@@ -41,6 +41,28 @@ Header: `Authorization: Bearer <REVENUECAT_WEBHOOK_AUTHORIZATION>` (same value i
 - **Restore purchases** is on the Subscription screen.
 - Do not link to external payment for Pro inside the app.
 
-## 5. Stripe
+## 5. Stripe (web billing)
 
-Keep Stripe for **web** checkout only. Mobile uses `POST /subscriptions/sync-revenuecat` after purchase/restore.
+Keep Stripe for **web** Checkout + Customer Portal (**EUR**). Mobile uses RevenueCat IAP only.
+
+Backend env (in addition to `STRIPE_SECRET_KEY`):
+
+```env
+STRIPE_MONTHLY_PRICE_ID=price_...          # Studio monthly (EUR)
+STRIPE_YEARLY_PRICE_ID=price_...           # Studio annual (EUR)
+STRIPE_ENTERPRISE_MONTHLY_PRICE_ID=price_...
+STRIPE_ENTERPRISE_YEARLY_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+# optional display fallbacks (EUR major units)
+# FALLBACK_PRO_PRICE_MONTHLY_EUR=22.99
+```
+
+Webhook (production):
+
+`POST https://api.henzo.app/webhooks/stripe`
+
+Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
+
+Owner web UI: `/salon-info/subscription` → Checkout for Studio/Enterprise → sync + Stripe webhooks update `Subscription.billingProvider=STRIPE`.
+
+Mobile uses `POST /subscriptions/sync-revenuecat` after purchase/restore (`billingProvider=REVENUECAT`). Active RC blocks web Checkout; active Stripe is not overwritten by RC sync.

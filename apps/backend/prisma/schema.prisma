@@ -177,19 +177,24 @@ model Trainer {
 }
 
 model Subscription {
-  id                String             @id @default(cuid())
-  studioId          String             @unique
-  type              SubscriptionType   @default(SOLO)
-  status           SubscriptionStatus  @default(ACTIVE)
-  startDate         DateTime
-  /// End of the current paid period (from Stripe), when known.
-  currentPeriodEnd  DateTime?
-  manualOverride    Boolean            @default(false)
-  manualOverrideAt  DateTime?
-  manualOverrideBy  String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime
-  Studio            Studio             @relation(fields: [studioId], references: [id])
+  id                   String                 @id @default(cuid())
+  studioId             String                 @unique
+  type                 SubscriptionType       @default(SOLO)
+  status               SubscriptionStatus     @default(ACTIVE)
+  startDate            DateTime
+  /// End of the current paid period (from Stripe/RC), when known.
+  currentPeriodEnd     DateTime?
+  billingProvider      SubscriptionBillingProvider @default(NONE)
+  stripeCustomerId     String?                @unique
+  stripeSubscriptionId String?                @unique
+  stripePriceId        String?
+  cancelAtPeriodEnd    Boolean                @default(false)
+  manualOverride       Boolean                @default(false)
+  manualOverrideAt     DateTime?
+  manualOverrideBy     String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  Studio               Studio                 @relation(fields: [studioId], references: [id])
 }
 
 model TrainingSession {
@@ -356,6 +361,12 @@ enum SubscriptionType {
   SOLO
   STUDIO
   ENTERPRISE
+}
+
+enum SubscriptionBillingProvider {
+  NONE
+  STRIPE
+  REVENUECAT
 }
 
 enum TrainingSessionStatus {

@@ -1,40 +1,57 @@
-/// Ответ GET /subscriptions/pro-prices (цены Pro в VND для экрана подписки).
+/// Response from GET /subscriptions/pro-prices (EUR major units for display).
+/// Mobile paywall uses RevenueCat store prices; this is optional/legacy.
 class SubscriptionProPrices {
   SubscriptionProPrices({
-    required this.monthlyVnd,
-    required this.annualVnd,
-    required this.twelveMonthsCompareVnd,
+    required this.monthly,
+    required this.annual,
+    required this.twelveMonthsCompare,
     required this.annualSavePercent,
+    this.currency = 'EUR',
   });
 
-  final int monthlyVnd;
-  final int annualVnd;
-  /// 12× месячная — для зачёркнутой суммы при годовом тарифе.
-  final int twelveMonthsCompareVnd;
+  final double monthly;
+  final double annual;
+
+  /// 12× monthly — strikethrough compare for annual.
+  final double twelveMonthsCompare;
   final int annualSavePercent;
+  final String currency;
+
+  /// Legacy aliases (older callers).
+  int get monthlyVnd => monthly.round();
+  int get annualVnd => annual.round();
+  int get twelveMonthsCompareVnd => twelveMonthsCompare.round();
 
   factory SubscriptionProPrices.fromJson(Map<String, dynamic> json) {
-    int req(String k) => (json[k] as num).toInt();
+    double numField(String primary, [String? legacy]) {
+      final v = json[primary] ?? (legacy != null ? json[legacy] : null);
+      if (v is num) return v.toDouble();
+      return 0;
+    }
+
     return SubscriptionProPrices(
-      monthlyVnd: req('monthlyVnd'),
-      annualVnd: req('annualVnd'),
-      twelveMonthsCompareVnd: req('twelveMonthsCompareVnd'),
-      annualSavePercent: req('annualSavePercent'),
+      monthly: numField('monthly', 'monthlyVnd'),
+      annual: numField('annual', 'annualVnd'),
+      twelveMonthsCompare: numField(
+        'twelveMonthsCompare',
+        'twelveMonthsCompareVnd',
+      ),
+      annualSavePercent: (json['annualSavePercent'] as num?)?.toInt() ?? 0,
+      currency: (json['currency'] as String?)?.toUpperCase() ?? 'EUR',
     );
   }
 
-  /// Если API недоступен — те же базовые суммы, что раньше были захардкожены.
   factory SubscriptionProPrices.fallbackStatic() {
-    const monthly = 395000;
-    const annual = 3980000;
+    const monthly = 22.99;
+    const annual = 229.9;
     final twelve = monthly * 12;
     final pct = twelve > annual
         ? (((twelve - annual) / twelve) * 100).round()
         : 0;
     return SubscriptionProPrices(
-      monthlyVnd: monthly,
-      annualVnd: annual,
-      twelveMonthsCompareVnd: twelve,
+      monthly: monthly,
+      annual: annual,
+      twelveMonthsCompare: twelve,
       annualSavePercent: pct,
     );
   }

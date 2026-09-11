@@ -89,7 +89,7 @@ export class EnvironmentVariables {
   @IsOptional()
   MAPBOX_ACCESS_TOKEN?: string;
 
-  // Stripe (optional — Pro prices for mobile; fallback VND if unset / API error)
+  // Stripe (optional — web Checkout + Pro prices in EUR)
   @IsString()
   @IsOptional()
   STRIPE_SECRET_KEY?: string;
@@ -102,17 +102,39 @@ export class EnvironmentVariables {
   @IsOptional()
   STRIPE_YEARLY_PRICE_ID?: string;
 
+  /** Enterprise tier (web Stripe Checkout). */
+  @IsString()
+  @IsOptional()
+  STRIPE_ENTERPRISE_MONTHLY_PRICE_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_ENTERPRISE_YEARLY_PRICE_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_WEBHOOK_SECRET?: string;
+
   @IsNumberString()
   @IsOptional()
   STRIPE_PRICES_CACHE_TTL_SEC?: string;
 
-  @IsNumberString()
+  /** Fallback display amounts in EUR major units (e.g. 22.99). */
+  @IsString()
   @IsOptional()
-  FALLBACK_PRO_PRICE_MONTHLY_VND?: string;
+  FALLBACK_PRO_PRICE_MONTHLY_EUR?: string;
 
-  @IsNumberString()
+  @IsString()
   @IsOptional()
-  FALLBACK_PRO_PRICE_ANNUAL_VND?: string;
+  FALLBACK_PRO_PRICE_ANNUAL_EUR?: string;
+
+  @IsString()
+  @IsOptional()
+  FALLBACK_ENTERPRISE_PRICE_MONTHLY_EUR?: string;
+
+  @IsString()
+  @IsOptional()
+  FALLBACK_ENTERPRISE_PRICE_ANNUAL_EUR?: string;
 
   @IsString()
   @IsOptional()

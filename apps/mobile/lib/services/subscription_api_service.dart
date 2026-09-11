@@ -43,7 +43,7 @@ class SubscriptionApiService {
     }
   }
 
-  /// GET /subscriptions/pro-prices — суммы Pro в VND (кеш на бэкенде).
+  /// GET /subscriptions/pro-prices — Studio/Enterprise amounts in EUR.
   static Future<SubscriptionProPrices?> getProPrices(String accessToken) async {
     try {
       final body =

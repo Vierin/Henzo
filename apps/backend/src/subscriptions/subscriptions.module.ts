@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SubscriptionsController } from './subscriptions.controller';
 import { RevenueCatWebhookController } from './revenuecat-webhook.controller';
+import { StripeWebhookController } from './stripe-webhook.controller';
 import { StripePricingService } from './stripe-pricing.service';
 import { StripeCheckoutService } from './stripe-checkout.service';
 import { RevenueCatService } from './revenuecat.service';
@@ -12,7 +13,11 @@ import { AdminEventLogModule } from '../admin/admin-event-log.module';
 
 @Module({
   imports: [AuthModule, PrismaModule, AdminEventLogModule],
-  controllers: [SubscriptionsController, RevenueCatWebhookController],
+  controllers: [
+    SubscriptionsController,
+    RevenueCatWebhookController,
+    StripeWebhookController,
+  ],
   providers: [
     StripePricingService,
     StripeCheckoutService,

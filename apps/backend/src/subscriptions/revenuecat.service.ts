@@ -5,7 +5,11 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SubscriptionType } from '@prisma/client';
+import {
+  SubscriptionBillingProvider,
+  SubscriptionStatus,
+  SubscriptionType,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
@@ -168,6 +172,28 @@ export class RevenueCatService {
     return null;
   }
 
+  private isActiveStripeGuard(sub: {
+    billingProvider: SubscriptionBillingProvider;
+    type: SubscriptionType;
+    status: SubscriptionStatus;
+    currentPeriodEnd: Date | null;
+    cancelAtPeriodEnd: boolean;
+  }): boolean {
+    if (sub.billingProvider !== SubscriptionBillingProvider.STRIPE) {
+      return false;
+    }
+    if (!isPaidSubscriptionType(sub.type)) return false;
+    if (sub.status === SubscriptionStatus.ACTIVE) return true;
+    if (
+      sub.cancelAtPeriodEnd &&
+      sub.currentPeriodEnd != null &&
+      sub.currentPeriodEnd.getTime() > Date.now()
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   async syncOwnerFromRevenueCat(userId: string) {
     const studio = await this.prisma.studio.findFirst({
       where: { ownerId: userId },
@@ -179,26 +205,19 @@ export class RevenueCatService {
 
     const existing = await this.prisma.subscription.findUnique({
       where: { studioId: studio.id },
-      select: { manualOverride: true },
     });
     if (existing?.manualOverride) {
       this.logger.log(
         `RevenueCat sync skipped for user=${userId} (manualOverride)`,
       );
-      const current = await this.prisma.subscription.findUnique({
-        where: { studioId: studio.id },
-      });
-      if (!current) {
-        throw new BadRequestException('Subscription not found');
-      }
-      return {
-        id: current.id,
-        studioId: current.studioId,
-        type: current.type,
-        status: current.status,
-        startDate: current.startDate.toISOString(),
-        currentPeriodEnd: current.currentPeriodEnd?.toISOString() ?? null,
-      };
+      return this.toPayload(existing);
+    }
+
+    if (existing && this.isActiveStripeGuard(existing)) {
+      this.logger.log(
+        `RevenueCat sync skipped for user=${userId} (active Stripe billing)`,
+      );
+      return this.toPayload(existing);
     }
 
     const subscriber = await this.fetchSubscriber(userId);
@@ -209,11 +228,24 @@ export class RevenueCatService {
     );
 
     const now = new Date();
+    const paid = isPaidSubscriptionType(tier);
     const subscriptionData = {
       type: tier,
-      status: 'ACTIVE' as const,
+      status: SubscriptionStatus.ACTIVE,
       updatedAt: now,
       ...(periodEnd ? { currentPeriodEnd: periodEnd } : {}),
+      billingProvider: paid
+        ? SubscriptionBillingProvider.REVENUECAT
+        : existing?.billingProvider === SubscriptionBillingProvider.REVENUECAT
+          ? SubscriptionBillingProvider.NONE
+          : (existing?.billingProvider ?? SubscriptionBillingProvider.NONE),
+      ...(paid
+        ? {}
+        : existing?.billingProvider === SubscriptionBillingProvider.REVENUECAT
+          ? {
+              cancelAtPeriodEnd: false,
+            }
+          : {}),
     };
 
     const updated = await this.prisma.subscription.upsert({
@@ -234,13 +266,29 @@ export class RevenueCatService {
       });
     }
 
+    return this.toPayload(updated);
+  }
+
+  private toPayload(current: {
+    id: string;
+    studioId: string;
+    type: SubscriptionType | string;
+    status: SubscriptionStatus | string;
+    startDate: Date;
+    currentPeriodEnd: Date | null;
+    billingProvider?: SubscriptionBillingProvider | string;
+    cancelAtPeriodEnd?: boolean;
+  }) {
     return {
-      id: updated.id,
-      studioId: updated.studioId,
-      type: updated.type,
-      status: updated.status,
-      startDate: updated.startDate.toISOString(),
-      currentPeriodEnd: updated.currentPeriodEnd?.toISOString() ?? null,
+      id: current.id,
+      studioId: current.studioId,
+      type: current.type,
+      status: current.status,
+      startDate: current.startDate.toISOString(),
+      currentPeriodEnd: current.currentPeriodEnd?.toISOString() ?? null,
+      billingProvider:
+        current.billingProvider ?? SubscriptionBillingProvider.NONE,
+      cancelAtPeriodEnd: Boolean(current.cancelAtPeriodEnd),
     };
   }
 

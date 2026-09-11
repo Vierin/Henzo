@@ -1,6 +1,14 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+
+export type CheckoutPlan = 'studio' | 'enterprise';
+export type CheckoutInterval = 'monthly' | 'annual';
 
 @Injectable()
 export class StripeCheckoutService {
@@ -14,75 +22,128 @@ export class StripeCheckoutService {
     }
   }
 
-  async createSubscriptionCheckoutSession(params: {
-    userId: string;
-    email: string;
-    interval: 'monthly' | 'annual';
-  }): Promise<string> {
+  getStripe(): Stripe {
     if (!this.stripe) {
       throw new BadRequestException(
         'Stripe is not configured (STRIPE_SECRET_KEY)',
       );
     }
-    const monthlyId = this.config.get<string>('STRIPE_MONTHLY_PRICE_ID');
-    const yearlyId = this.config.get<string>('STRIPE_YEARLY_PRICE_ID');
-    const priceId = params.interval === 'annual' ? yearlyId : monthlyId;
-    if (!priceId?.trim()) {
+    return this.stripe;
+  }
+
+  resolvePriceId(plan: CheckoutPlan, interval: CheckoutInterval): string {
+    const key =
+      plan === 'enterprise'
+        ? interval === 'annual'
+          ? 'STRIPE_ENTERPRISE_YEARLY_PRICE_ID'
+          : 'STRIPE_ENTERPRISE_MONTHLY_PRICE_ID'
+        : interval === 'annual'
+          ? 'STRIPE_YEARLY_PRICE_ID'
+          : 'STRIPE_MONTHLY_PRICE_ID';
+    const priceId = this.config.get<string>(key)?.trim();
+    if (!priceId) {
       throw new BadRequestException(
-        `Stripe price ID is not configured for interval "${params.interval}" (${params.interval === 'annual' ? 'STRIPE_YEARLY_PRICE_ID' : 'STRIPE_MONTHLY_PRICE_ID'})`,
+        `Stripe price ID is not configured for ${plan}/${interval} (${key})`,
       );
     }
+    return priceId;
+  }
 
-    const scheme = (
-      this.config.get<string>('MOBILE_DEEP_LINK_SCHEME') || 'henzo'
-    ).trim();
-    const successUrl =
-      this.config.get<string>('STRIPE_CHECKOUT_SUCCESS_URL') ||
-      `${scheme}://subscription-checkout?status=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl =
-      this.config.get<string>('STRIPE_CHECKOUT_CANCEL_URL') ||
-      `${scheme}://subscription-checkout?status=cancelled`;
+  async createSubscriptionCheckoutSession(params: {
+    userId: string;
+    email: string;
+    plan: CheckoutPlan;
+    interval: CheckoutInterval;
+    successUrl: string;
+    cancelUrl: string;
+    stripeCustomerId?: string | null;
+  }): Promise<string> {
+    const stripe = this.getStripe();
+    const priceId = this.resolvePriceId(params.plan, params.interval);
+
+    const successUrl = params.successUrl.includes('{CHECKOUT_SESSION_ID}')
+      ? params.successUrl
+      : `${params.successUrl}${params.successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`;
 
     try {
-      const session = await this.stripe.checkout.sessions.create({
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
         mode: 'subscription',
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: successUrl,
-        cancel_url: cancelUrl,
-        customer_email: params.email,
+        cancel_url: params.cancelUrl,
         client_reference_id: params.userId,
         metadata: {
           userId: params.userId,
+          plan: params.plan,
           interval: params.interval,
         },
         subscription_data: {
           metadata: {
             userId: params.userId,
+            plan: params.plan,
             interval: params.interval,
           },
         },
-      });
+      };
+
+      if (params.stripeCustomerId?.trim()) {
+        sessionParams.customer = params.stripeCustomerId.trim();
+      } else {
+        sessionParams.customer_email = params.email;
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
       if (!session.url) {
         throw new BadRequestException('Stripe did not return a checkout URL');
       }
       return session.url;
     } catch (e: unknown) {
+      if (e instanceof BadRequestException) throw e;
       const msg = e instanceof Error ? e.message : String(e);
       this.logger.warn(`checkout.sessions.create failed: ${msg}`);
       throw new BadRequestException(`Could not start checkout: ${msg}`);
     }
   }
 
-  /** Used after mobile returns from Checkout (deep link with `session_id`). */
-  async retrieveCheckoutSessionExpanded(sessionId: string) {
-    if (!this.stripe) {
-      throw new BadRequestException(
-        'Stripe is not configured (STRIPE_SECRET_KEY)',
-      );
+  async createBillingPortalSession(params: {
+    stripeCustomerId: string;
+    returnUrl: string;
+  }): Promise<string> {
+    const stripe = this.getStripe();
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: params.stripeCustomerId,
+        return_url: params.returnUrl,
+      });
+      if (!session.url) {
+        throw new BadRequestException('Stripe did not return a portal URL');
+      }
+      return session.url;
+    } catch (e: unknown) {
+      if (e instanceof BadRequestException) throw e;
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`billingPortal.sessions.create failed: ${msg}`);
+      throw new BadRequestException(`Could not open billing portal: ${msg}`);
     }
-    return this.stripe.checkout.sessions.retrieve(sessionId, {
+  }
+
+  /** Used after Checkout redirect (web success URL with `session_id`). */
+  async retrieveCheckoutSessionExpanded(sessionId: string) {
+    const stripe = this.getStripe();
+    return stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['subscription'],
     });
+  }
+
+  constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {
+    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET')?.trim();
+    if (!secret) {
+      throw new ServiceUnavailableException(
+        'Stripe webhook is not configured (STRIPE_WEBHOOK_SECRET)',
+      );
+    }
+    const stripe = this.getStripe();
+    return stripe.webhooks.constructEvent(rawBody, signature, secret);
   }
 }

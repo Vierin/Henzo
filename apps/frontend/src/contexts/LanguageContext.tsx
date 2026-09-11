@@ -118,6 +118,8 @@ export function LanguageProvider({
     publicModules.push('shared/auth');
     // Homepage module needed for minutesShort translation
     publicModules.push('public/homepage');
+  } else if (pathNoLocale.startsWith('/salon-info/subscription')) {
+    ownerModule = 'owner/subscription';
   } else if (pathNoLocale.startsWith('/salon-info')) {
     ownerModule = 'owner/salonInfo';
   } else if (pathNoLocale.startsWith('/profile-settings')) {

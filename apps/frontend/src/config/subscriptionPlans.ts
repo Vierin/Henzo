@@ -13,9 +13,11 @@ export interface SubscriptionPlanConfig {
   saveAmountEur?: number;
 }
 
-/** EUR marketing defaults. Monthly ≈ Studio tier, annual = 12× with discount. */
-export const PRICE_MONTHLY_EUR = 20.99;
-export const PRICE_ANNUAL_EUR = 209.9;
+/** EUR marketing defaults. Studio monthly / annual (~10×). */
+export const PRICE_MONTHLY_EUR = 22.99;
+export const PRICE_ANNUAL_EUR = 229.9;
+export const PRICE_ENTERPRISE_MONTHLY_EUR = 69.99;
+export const PRICE_ENTERPRISE_ANNUAL_EUR = 699.9;
 export const PRICE_12_MONTHS_EUR = PRICE_MONTHLY_EUR * 12;
 export const SAVE_ANNUAL_EUR = PRICE_12_MONTHS_EUR - PRICE_ANNUAL_EUR;
 export const SAVE_ANNUAL_PERCENT = Math.round(

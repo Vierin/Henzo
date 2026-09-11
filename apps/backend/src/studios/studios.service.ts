@@ -595,6 +595,9 @@ export class StudiosService {
                 select: {
                   id: true,
                   name: true,
+                  User: {
+                    select: { name: true },
+                  },
                 },
               },
             },
@@ -1993,9 +1996,11 @@ export class StudiosService {
                   }),
                 }
               : null,
-            trainer: hideTrainers
-              ? null
-              : buildPublicTrainerPayload(session.Trainer, studioOwner),
+            trainer: buildPublicTrainerPayload(
+              session.Trainer,
+              // Unclaimed/ops studios: show assigned trainer only — never tech owner.
+              studioOwner,
+            ),
           }),
         ),
       };
@@ -2522,9 +2527,11 @@ export class StudiosService {
                 : null,
             }
           : null,
-        trainer: hideTrainers
-          ? null
-          : buildPublicTrainerPayload(s.Trainer, studioOwner),
+        trainer: buildPublicTrainerPayload(
+          s.Trainer,
+          // Unclaimed/ops studios: show assigned trainer only — never tech owner.
+          hideTrainers ? null : studioOwner,
+        ),
         timezone: studio.timezone,
         studio: { locationCount },
       };

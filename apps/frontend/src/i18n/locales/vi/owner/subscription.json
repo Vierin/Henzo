@@ -92,6 +92,12 @@
 		"analytics": "Nhắc nhở email không giới hạn",
 		"crm": "Cơ sở khách hàng kèm lịch sử ghé thăm",
 		"prioritySupport": "Nhắc nhở qua email — ít khách bỏ lỡ hẹn"
-	}
+	},
+	"manageInAppStore": "Manage in App Store / Google Play (Henzo app).",
+	"checkoutSuccess": "Subscription activated.",
+	"checkoutCancelled": "Checkout cancelled.",
+	"studioTitle": "Studio",
+	"studioTagline": "Up to 4 trainers · 100 classes / month",
+	"enterpriseTitle": "Enterprise",
+	"enterpriseTagline": "Unlimited trainers, classes & locations"
 }
-
