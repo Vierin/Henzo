@@ -19,6 +19,17 @@ export interface PaginatedResponse<T> {
 }
 
 async function resolveAuthSession(): Promise<Session | null> {
+  const onAdminPath =
+    typeof window !== 'undefined' &&
+    /\/admin(?:\/|$)/.test(window.location.pathname);
+
+  // Admin uses cookie PKCE; public owner/client uses localStorage. Prefer the
+  // cookie session on /admin so leftover public JWTs don't 403 /admin/session.
+  if (onAdminPath) {
+    const cookieSession = await supabase.auth.getSession();
+    if (cookieSession.data.session) return cookieSession.data.session;
+  }
+
   try {
     const publicSession = await getPublicSupabase().auth.getSession();
     if (publicSession.data.session) return publicSession.data.session;

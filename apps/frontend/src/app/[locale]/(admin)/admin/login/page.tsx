@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getPublicSupabase } from '@/lib/supabase-public';
 import { isSupabaseConfigured } from '@/lib/public-env';
+import { setAdminOauthMarker } from '@/lib/admin/oauth';
 
 export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -22,23 +24,34 @@ export default function AdminLoginPage() {
         throw new Error('Supabase is not configured');
       }
 
-      // Remove a possible owner/client/password session before starting the
-      // privileged Google OAuth flow.
-      await supabase.auth.signOut({ scope: 'local' });
+      // Clear owner/client localStorage JWT only. Do NOT signOut the admin
+      // cookie client here — it races with PKCE code_verifier cookie write.
+      try {
+        await getPublicSupabase().auth.signOut({ scope: 'local' });
+      } catch {
+        // public client may be misconfigured in some envs
+      }
 
-      // Prefer the current origin so PKCE cookies stay on the same host
-      // (henzo.app vs www.henzo.app). Both must be in Supabase Redirect URLs.
+      // Marker so middleware can route Site-URL /?code= back to admin callback.
+      setAdminOauthMarker();
+
       const redirectTo = `${window.location.origin}/en/admin/auth/callback`;
-      const { error: signError } = await supabase.auth.signInWithOAuth({
+      const { data, error: signError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
+          skipBrowserRedirect: true,
           queryParams: {
             prompt: 'select_account',
           },
         },
       });
       if (signError) throw signError;
+      if (!data.url) throw new Error('Google sign-in URL missing');
+
+      // Let the browser flush the PKCE code_verifier cookie before leaving.
+      await new Promise((r) => setTimeout(r, 50));
+      window.location.assign(data.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
       setLoading(false);

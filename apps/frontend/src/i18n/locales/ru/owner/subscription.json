@@ -94,8 +94,9 @@
 		"prioritySupport": "Маркетинговые инструменты"
 	},
 	"manageInAppStore": "Manage in App Store / Google Play (Henzo app).",
-	"checkoutSuccess": "Subscription activated.",
+	"checkoutSuccess": "Subscription activated. Welcome aboard!",
 	"checkoutCancelled": "Checkout cancelled.",
+	"activating": "Activating subscription…",
 	"studioTitle": "Studio",
 	"studioTagline": "For growing studios",
 	"enterpriseTitle": "Enterprise",

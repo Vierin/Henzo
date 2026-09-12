@@ -68,6 +68,7 @@
 	"manageInAppStore": "This plan is billed via the App Store or Google Play. Manage or cancel it in the Henzo mobile app / store subscriptions.",
 	"checkoutSuccess": "Subscription activated. Welcome aboard!",
 	"checkoutCancelled": "Checkout cancelled. No charges were made.",
+	"activating": "Activating subscription…",
 	"studioTitle": "Studio",
 	"studioTagline": "For growing studios",
 	"enterpriseTitle": "Enterprise",

@@ -16,9 +16,10 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      router.replace(withLocale('/admin/login', locale));
+      const q = error ? `?error=${encodeURIComponent(error)}` : '';
+      router.replace(withLocale(`/admin/login${q}`, locale));
     }
-  }, [loading, isAdmin, router, locale]);
+  }, [loading, isAdmin, error, router, locale]);
 
   if (loading) {
     return (

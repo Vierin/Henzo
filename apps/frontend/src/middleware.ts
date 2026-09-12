@@ -74,9 +74,8 @@ export async function middleware(req: NextRequest) {
   const pathWithoutLocale = stripLocaleFromPath(pathname);
   const activeLocale = (urlLocale ?? defaultLocale) as Locale;
 
-  // Supabase may fall back to Site URL (/en?code=...). Never steal business /
-  // client OAuth into admin — only admin login uses /en/admin/auth/callback
-  // as redirectTo. Forward unknown codes to /auth/callback (client PKCE).
+  // Supabase may fall back to Site URL (/en?code=...). Admin OAuth sets
+  // henzo-admin-oauth; otherwise forward to /auth/callback (client PKCE).
   const oauthCode = req.nextUrl.searchParams.get('code');
   const oauthError = req.nextUrl.searchParams.get('error');
   if (
@@ -84,7 +83,10 @@ export async function middleware(req: NextRequest) {
     (oauthCode || oauthError)
   ) {
     const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/auth/callback';
+    const isAdminOauth = Boolean(req.cookies.get('henzo-admin-oauth')?.value);
+    redirectUrl.pathname = isAdminOauth
+      ? `/${activeLocale}/admin/auth/callback`
+      : '/auth/callback';
     return NextResponse.redirect(redirectUrl);
   }
 
