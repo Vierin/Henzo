@@ -95,7 +95,7 @@ export default function SubscriptionSettingsPage() {
   const queryClient = useQueryClient();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
 
-  const [interval, setInterval] = useState<CheckoutInterval>('monthly');
+  const interval: CheckoutInterval = 'monthly';
   const [checkoutLoading, setCheckoutLoading] = useState<CheckoutPlan | null>(
     null,
   );
@@ -341,8 +341,7 @@ export default function SubscriptionSettingsPage() {
   const priceFor = (tier: CheckoutPlan) => {
     const block = tier === 'enterprise' ? enterprisePrices : studioPrices;
     if (!block) return '—';
-    const amount = interval === 'annual' ? block.annual : block.monthly;
-    return formatMoney(amount, 'EUR');
+    return formatMoney(block.monthly, 'EUR');
   };
 
   const busy = syncingCheckout || checkoutLoading != null || changeLoading;
@@ -372,28 +371,6 @@ export default function SubscriptionSettingsPage() {
           {banner.text}
         </div>
       ) : null}
-
-      {(showCatalog || showStudioUpgrade) && (
-        <div className="flex gap-2 rounded-[14px] bg-white p-1">
-          {(['monthly', 'annual'] as const).map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setInterval(id)}
-              className="flex-1 rounded-[12px] px-3 py-2 text-sm font-semibold transition-colors"
-              style={{
-                backgroundColor:
-                  interval === id ? ownerTheme.accent : 'transparent',
-                color: interval === id ? '#fff' : ownerTheme.text,
-              }}
-            >
-              {id === 'monthly'
-                ? t('owner.subscription.monthly') || 'Monthly'
-                : t('owner.subscription.annual') || 'Annual'}
-            </button>
-          ))}
-        </div>
-      )}
 
       {paidActive ? (
         <>
@@ -520,9 +497,7 @@ export default function SubscriptionSettingsPage() {
                     className="mt-0.5 block text-[11px] font-medium"
                     style={{ color: ownerTheme.textSecondary }}
                   >
-                    {interval === 'annual'
-                      ? t('owner.subscription.perYear') || 'year'
-                      : t('owner.subscription.perMonth') || 'month'}
+                    {t('owner.subscription.perMonth') || 'month'}
                   </span>
                 </p>
               </div>
@@ -632,9 +607,7 @@ export default function SubscriptionSettingsPage() {
                     className="mt-0.5 block text-[11px] font-medium"
                     style={{ color: ownerTheme.textSecondary }}
                   >
-                    {interval === 'annual'
-                      ? t('owner.subscription.perYear') || 'year'
-                      : t('owner.subscription.perMonth') || 'month'}
+                    {t('owner.subscription.perMonth') || 'month'}
                   </span>
                 </p>
               </div>
