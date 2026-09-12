@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import 'settings_form_tokens.dart';
+import 'studio_currency_field.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Studio name + default address row — same as owner [SettingsScreen] main info.
@@ -17,6 +18,8 @@ class StudioNameAddressFields extends StatelessWidget {
     required this.addressText,
     required this.onAddressTap,
     this.nameValidator,
+    this.currency,
+    this.onCurrencyChanged,
   });
 
   final TextEditingController nameController;
@@ -24,6 +27,8 @@ class StudioNameAddressFields extends StatelessWidget {
   final String addressText;
   final VoidCallback onAddressTap;
   final String? Function(String?)? nameValidator;
+  final String? currency;
+  final ValueChanged<String>? onCurrencyChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +45,13 @@ class StudioNameAddressFields extends StatelessWidget {
           textCapitalization: TextCapitalization.words,
           validator: nameValidator,
         ),
+        if (currency != null && onCurrencyChanged != null) ...[
+          const SizedBox(height: 16),
+          StudioCurrencyField(
+            selectedCurrency: currency!,
+            onChanged: onCurrencyChanged!,
+          ),
+        ],
         const SizedBox(height: 16),
         Material(
           color: AppColors.backgroundPrimary,

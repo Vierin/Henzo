@@ -7,7 +7,10 @@ import { ConfigService } from '@nestjs/config';
 import { BookingStatus, SessionEnrollmentStatus } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { AdminEventLogService } from './admin-event-log.service';
+import {
+  AdminEventLogService,
+  ADMIN_PAYMENT_EVENT_TYPES,
+} from './admin-event-log.service';
 import { assertAdmin } from './admin-auth.util';
 import {
   ActivityTier,
@@ -22,6 +25,7 @@ import { StudioAnalyticsService } from '../fitness/studio-analytics.service';
 import { FitnessSessionsService } from '../fitness/fitness-sessions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailService } from '../email/email.service';
+import { StripeCheckoutService } from '../subscriptions/stripe-checkout.service';
 import { renderBroadcastEmail } from '../email/templates/broadcast-email.template';
 import { CreateAdminBroadcastDto } from './dto/create-admin-broadcast.dto';
 import { CreateAdminStudioDto } from './dto/create-admin-studio.dto';
@@ -36,6 +40,36 @@ import { UpdateAdminTrainerDto } from './dto/update-admin-trainer.dto';
 import { supabase } from '../lib/supabase';
 
 const ADMIN_TZ = 'Asia/Ho_Chi_Minh';
+
+/** Where the subscription/payment originated for admin history UI. */
+function resolveBillingChannel(
+  type: string,
+  metadata: unknown,
+): 'web' | 'mobile' | 'admin' | 'unknown' {
+  if (type.startsWith('admin_')) return 'admin';
+  const meta =
+    metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : null;
+  const channel = meta?.channel;
+  if (channel === 'web' || channel === 'mobile' || channel === 'admin') {
+    return channel;
+  }
+  const provider = String(meta?.provider ?? '').toLowerCase();
+  if (
+    provider === 'stripe' ||
+    meta?.stripeInvoiceId ||
+    meta?.stripeCustomerId
+  ) {
+    return 'web';
+  }
+  if (provider === 'revenuecat') return 'mobile';
+  if (type === 'revenuecat_webhook_error') return 'mobile';
+  if (type === 'stripe_webhook_error') return 'web';
+  // Legacy subscription_* logs without metadata → assume web (Stripe MVP)
+  if (type.startsWith('subscription_')) return 'web';
+  return 'unknown';
+}
 
 function startOfTodayInTz(): Date {
   const now = new Date();
@@ -67,6 +101,7 @@ export class AdminService {
     private readonly fitnessSessions: FitnessSessionsService,
     private readonly notifications: NotificationsService,
     private readonly email: EmailService,
+    private readonly stripeCheckout: StripeCheckoutService,
   ) {}
 
   async verifySession(authHeader: string | undefined) {
@@ -230,10 +265,12 @@ export class AdminService {
         slug: true,
         status: true,
         address: true,
+        email: true,
         createdAt: true,
         photos: true,
         intendedOwnerEmail: true,
         claimedAt: true,
+        ownerId: true,
         _count: { select: { Training: true } },
         User: { select: { id: true, email: true, name: true } },
         Subscription: {
@@ -247,6 +284,8 @@ export class AdminService {
         },
       },
     });
+
+    const systemOwnerId = await this.resolveSystemStudioOwnerId();
 
     const metricsMap = await this.ownerActivity.getMetricsForStudios(
       allMatching.map((s) => ({ id: s.id, status: s.status })),
@@ -281,16 +320,19 @@ export class AdminService {
 
     const items = pageItems.map((s) => {
       const m = metricsMap.get(s.id);
+      const isSystemOwned = s.ownerId === systemOwnerId;
       const isUnclaimed = !s.claimedAt && !!s.intendedOwnerEmail;
       return {
         id: s.id,
         name: s.name,
         slug: s.slug,
         status: s.status,
+        email: s.email,
         createdAt: s.createdAt,
         intendedOwnerEmail: s.intendedOwnerEmail,
         claimedAt: s.claimedAt,
         isUnclaimed,
+        isSystemOwned,
         User: s.User,
         Subscription: s.Subscription,
         onboardingGaps: [
@@ -698,10 +740,12 @@ export class AdminService {
     const checklist = await this.studiosService.getStudioOnboardingChecklist(
       studio.id,
     );
+    const systemOwnerId = await this.resolveSystemStudioOwnerId();
 
     return {
       ...studio,
       isUnclaimed: !studio.claimedAt && !!studio.intendedOwnerEmail,
+      isSystemOwned: studio.User.id === systemOwnerId,
       lastActivityAt: activity?.lastActivityAt ?? null,
       activityTier: activity?.activityTier ?? 'draft',
       bookingsLast30d: activity?.bookingsLast30d ?? 0,
@@ -987,6 +1031,8 @@ export class AdminService {
       studioId: updated.studioId,
       metadata: {
         adminEmail: admin.email,
+        channel: 'admin',
+        provider: 'admin',
         subscriptionId,
         changes: { ...dto },
       },
@@ -2046,11 +2092,7 @@ export class AdminService {
       createdAt?: { gte?: Date; lte?: Date };
     } = {
       type: {
-        in: [
-          'subscription_failed',
-          'revenuecat_webhook_error',
-          'stripe_webhook_error',
-        ],
+        in: [...ADMIN_PAYMENT_EVENT_TYPES],
       },
     };
     if (from || to) {
@@ -2117,6 +2159,7 @@ export class AdminService {
         ownerEmail:
           user?.email ??
           (studio && 'User' in studio ? studio.User.email : null),
+        channel: resolveBillingChannel(r.type, r.metadata),
       };
     });
 
@@ -2131,27 +2174,135 @@ export class AdminService {
     await assertAdmin(this.authService, authHeader);
     const studio = await this.prisma.studio.findUnique({
       where: { id: studioId },
-      select: { id: true, ownerId: true },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        User: { select: { email: true } },
+        Subscription: {
+          select: {
+            stripeCustomerId: true,
+            stripeSubscriptionId: true,
+          },
+        },
+      },
     });
     if (!studio) {
       throw new NotFoundException('Studio not found');
     }
 
-    return this.prisma.adminEventLog.findMany({
+    const logs = await this.prisma.adminEventLog.findMany({
       where: {
-        type: {
-          in: [
-            'subscription_failed',
-            'revenuecat_webhook_error',
-            'stripe_webhook_error',
-            'admin_subscription_changed',
-          ],
-        },
+        type: { in: [...ADMIN_PAYMENT_EVENT_TYPES] },
         OR: [{ studioId }, { userId: studio.ownerId }],
       },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: limit * 2,
     });
+
+    const fromLogs = logs.map((r) => ({
+      id: r.id,
+      type: r.type,
+      severity: r.severity,
+      message: r.message,
+      metadata: r.metadata as Record<string, unknown> | null,
+      createdAt: r.createdAt.toISOString(),
+      studioId: studio.id,
+      studioName: studio.name,
+      ownerEmail: studio.User.email,
+      channel: resolveBillingChannel(r.type, r.metadata),
+    }));
+
+    const fromStripe = await this.fetchStripePaymentHistoryForStudio({
+      studioId: studio.id,
+      studioName: studio.name,
+      ownerEmail: studio.User.email,
+      stripeCustomerId: studio.Subscription?.stripeCustomerId ?? null,
+      limit: limit * 2,
+    });
+
+    const seen = new Set<string>();
+    const merged = [...fromLogs, ...fromStripe]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .filter((row) => {
+        // Dedupe Stripe invoice rows that we also logged locally by invoice id
+        const inv =
+          row.metadata && typeof row.metadata.stripeInvoiceId === 'string'
+            ? row.metadata.stripeInvoiceId
+            : null;
+        const key = inv ? `inv:${inv}` : row.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, limit);
+
+    return merged;
+  }
+
+  private async fetchStripePaymentHistoryForStudio(params: {
+    studioId: string;
+    studioName: string;
+    ownerEmail: string;
+    stripeCustomerId: string | null;
+    limit: number;
+  }) {
+    if (!params.stripeCustomerId) return [];
+    try {
+      const stripe = this.stripeCheckout.getStripe();
+      const invoices = await stripe.invoices.list({
+        customer: params.stripeCustomerId,
+        limit: Math.min(params.limit, 24),
+      });
+
+      return invoices.data.map((inv) => {
+        const amount =
+          typeof inv.amount_paid === 'number'
+            ? inv.amount_paid
+            : (inv.amount_due ?? 0);
+        const currency = (inv.currency || 'eur').toUpperCase();
+        const major = amount / 100;
+        const money = `${major.toFixed(2)} ${currency}`;
+        const paid = inv.status === 'paid';
+        const failed =
+          inv.status === 'uncollectible' ||
+          inv.status === 'void' ||
+          (inv.status === 'open' && Boolean(inv.next_payment_attempt));
+        const type = paid
+          ? 'subscription_payment'
+          : failed
+            ? 'subscription_failed'
+            : 'subscription_updated';
+        const reason = inv.billing_reason?.replace(/_/g, ' ') || 'invoice';
+        return {
+          id: `stripe_inv_${inv.id}`,
+          type,
+          severity: paid ? 'info' : failed ? 'error' : 'warn',
+          message: `${money} · ${reason} · ${inv.status ?? 'unknown'}`,
+          metadata: {
+            provider: 'stripe',
+            channel: 'web',
+            stripeInvoiceId: inv.id,
+            stripeCustomerId: params.stripeCustomerId,
+            billingReason: inv.billing_reason,
+            status: inv.status,
+            amountPaid: inv.amount_paid,
+            currency: inv.currency,
+          } as Record<string, unknown>,
+          createdAt: new Date(inv.created * 1000).toISOString(),
+          studioId: params.studioId,
+          studioName: params.studioName,
+          ownerEmail: params.ownerEmail,
+          channel: 'web' as const,
+        };
+      });
+    } catch {
+      // Stripe optional / misconfigured — local logs still returned
+      return [];
+    }
   }
 
   private async resolveBroadcastAudience(dto: CreateAdminBroadcastDto) {

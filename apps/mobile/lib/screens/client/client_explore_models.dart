@@ -60,6 +60,7 @@ class ExploreClassItem {
     this.locationName,
     this.studioLocationCount = 1,
     this.distanceKm,
+    this.currency,
   });
   final String sessionId;
   final String studioId;
@@ -84,4 +85,5 @@ class ExploreClassItem {
   final String? locationName;
   final int studioLocationCount;
   final double? distanceKm;
+  final String? currency;
 }

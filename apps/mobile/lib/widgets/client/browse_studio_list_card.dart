@@ -655,7 +655,7 @@ class _TodayClassRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price = formatCompactVndLabel(item.price);
+    final price = formatCompactMoney(item.price, item.currency);
 
     return Material(
       color: BrowseStudioListCard._classSlotBg,

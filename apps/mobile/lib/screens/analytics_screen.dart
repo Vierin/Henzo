@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
+import '../models/studio.dart';
 import '../services/analytics_repository.dart';
 import '../services/auth_service.dart';
+import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/currency_format.dart';
 import '../utils/load_error_message.dart';
@@ -31,8 +33,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isTrendLoading = false;
   String? _errorText;
   AnalyticsDashboardSnapshot? _snapshot;
+  Studio? _studio;
   DateTime? _studioCreatedAt;
   int _loadGeneration = 0;
+
+  String get _currency => _studio?.currency ?? 'EUR';
 
   @override
   void initState() {
@@ -57,16 +62,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _loadStudioCreatedAt() async {
+    final cached = context.read<StudioCache>().studio;
+    if (cached != null) {
+      _studio = cached;
+      _studioCreatedAt = cached.createdAt;
+    }
+
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
 
     final studio = await DashboardApiService.getCurrentStudio(token);
     if (!mounted) return;
 
-    final disabled = _disabledPeriodDaysForAge(studio?.createdAt);
+    final effectiveStudio = studio ?? cached;
+    final disabled = _disabledPeriodDaysForAge(effectiveStudio?.createdAt);
     final shouldResetPeriod = disabled.contains(_selectedDays);
     setState(() {
-      _studioCreatedAt = studio?.createdAt;
+      _studio = effectiveStudio;
+      _studioCreatedAt = effectiveStudio?.createdAt;
       if (shouldResetPeriod) {
         _selectedDays = 7;
         _snapshot = null;
@@ -346,7 +359,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           AnalyticsMetricCard(
             label: locale.t('analytics.revenue'),
-            value: formatVnd(current.revenueTotal),
+            value: formatMoney(current.revenueTotal, _currency),
             iconAsset: 'assets/icons/icon-trending.svg',
             iconBackground: AppColors.success100,
             iconColor: AppColors.success600,
@@ -362,7 +375,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         AnalyticsMetricCard(
           label: locale.t('analytics.revenue'),
-          value: formatVnd(current.revenueTotal),
+          value: formatMoney(current.revenueTotal, _currency),
           subtitle: formatAnalyticsDeltaWithPeriod(
             current: current.revenueTotal,
             previous: previous?.revenueTotal,
@@ -447,7 +460,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const AnalyticsRevenueTrendCardSkeleton()
         else
           AnalyticsRevenueTrendCard(
-            title: locale.t('analytics.revenueTrend'),
+            title: locale
+                .t('analytics.revenueTrend')
+                .replaceAll('₫', currencySymbol(_currency)),
             points: snapshot.trend,
             localeTag: locale.languageTag,
           ),

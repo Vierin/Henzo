@@ -19,6 +19,7 @@ import '../../utils/studio_share_link.dart';
 import '../../utils/studio_photo_urls.dart';
 import '../../utils/studio_description.dart';
 import '../../utils/studio_public_contacts.dart';
+import '../../utils/currency_format.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/public/cached_salon_network_image.dart';
 import '../../widgets/public/studio_contact_row.dart';
@@ -333,6 +334,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
           studioName: (studio['name'] ?? 'Studio').toString(),
           bookingPeriodDays: _extractBookingPeriodDays(),
           studioLocationCount: (studio['locationCount'] as num?)?.toInt() ?? 1,
+          currency: parseStudioCurrency(studio['currency']),
         ),
       ),
     );
@@ -743,7 +745,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                 locale.languageTag,
                               ),
                               trailingPriceLabel: price != null
-                                  ? '${formatVnd(price)} ₫'
+                                  ? formatMoney(price, studio['currency']?.toString())
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: locale.t('booking.book'),

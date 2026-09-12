@@ -55,6 +55,7 @@ import type {
   StudioAnalyticsData,
   StudioActivityResponse,
 } from '@/lib/admin/types';
+import { adminStudioOwnerEmail } from '@/lib/admin/studioOwnerEmail';
 
 type Tab =
   | 'overview'
@@ -176,9 +177,9 @@ export function StudioHubContent({ studioId }: { studioId: string }) {
         <div>
           <h1 className="text-2xl font-semibold">{studio.name}</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {studio.isUnclaimed && studio.intendedOwnerEmail
-              ? `Unclaimed → ${studio.intendedOwnerEmail}`
-              : studio.User.email}{' '}
+            {studio.isUnclaimed
+              ? `Unclaimed → ${adminStudioOwnerEmail(studio)}`
+              : adminStudioOwnerEmail(studio)}{' '}
             · {studio.status}
             {studio._count.TrainingSession > 0
               ? ` · ${studio._count.TrainingSession} sessions`
@@ -516,14 +517,24 @@ function OverviewTab({
         <dl className="mt-3 space-y-2 text-sm">
           <div>
             <dt className="text-zinc-500">Tech owner</dt>
-            <dd>{studio.User.email}</dd>
+            <dd>
+              {studio.isSystemOwned
+                ? `${studio.User.email} (system)`
+                : studio.User.email}
+            </dd>
           </div>
-          {studio.intendedOwnerEmail ? (
-            <div>
-              <dt className="text-zinc-500">Intended owner</dt>
-              <dd className="text-amber-700">{studio.intendedOwnerEmail}</dd>
-            </div>
-          ) : null}
+          <div>
+            <dt className="text-zinc-500">Owner email</dt>
+            <dd
+              className={
+                studio.isUnclaimed || studio.isSystemOwned
+                  ? 'text-amber-700'
+                  : undefined
+              }
+            >
+              {adminStudioOwnerEmail(studio)}
+            </dd>
+          </div>
           <div>
             <dt className="text-zinc-500">Claim</dt>
             <dd>
@@ -1954,24 +1965,40 @@ function SubscriptionTab({
 function StudioPaymentEvents({ studioId }: { studioId: string }) {
   const [events, setEvents] = useState<AdminPaymentEventRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAdminStudioPaymentEvents(studioId, 10)
-      .then(setEvents)
-      .catch((e) =>
-        setError(
-          e instanceof Error ? e.message : 'Failed to load payment events',
-        ),
-      );
+    let cancelled = false;
+    setLoading(true);
+    fetchAdminStudioPaymentEvents(studioId, 20)
+      .then((rows) => {
+        if (!cancelled) setEvents(rows);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(
+            e instanceof Error ? e.message : 'Failed to load payment events',
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [studioId]);
 
   return (
     <div className="mt-8">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Payment history (last 10 events)
+        Payment history
       </h3>
+      {loading ? (
+        <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
+      ) : null}
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
-      {!error && events.length === 0 ? (
+      {!loading && !error && events.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
           No payment events recorded.
         </p>
@@ -1991,9 +2018,13 @@ function StudioPaymentEvents({ studioId }: { studioId: string }) {
                       : 'font-medium text-foreground'
                   }
                 >
-                  {e.type}
+                  {formatPaymentEventType(e.type)}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <PaymentChannelBadge
+                    channel={e.channel}
+                    metadata={e.metadata}
+                  />
                   {formatAdminDateTime24h(e.createdAt)}
                 </span>
               </div>
@@ -2006,6 +2037,83 @@ function StudioPaymentEvents({ studioId }: { studioId: string }) {
       ) : null}
     </div>
   );
+}
+
+function resolvePaymentChannel(
+  channel?: string | null,
+  metadata?: Record<string, unknown> | null,
+): 'web' | 'mobile' | 'admin' | 'unknown' {
+  if (channel === 'web' || channel === 'mobile' || channel === 'admin') {
+    return channel;
+  }
+  const provider = String(metadata?.provider ?? '').toLowerCase();
+  if (provider === 'stripe' || metadata?.stripeInvoiceId) return 'web';
+  if (provider === 'revenuecat') return 'mobile';
+  return 'unknown';
+}
+
+function PaymentChannelBadge({
+  channel,
+  metadata,
+}: {
+  channel?: string | null;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const resolved = resolvePaymentChannel(channel, metadata);
+  const label =
+    resolved === 'web'
+      ? 'Web'
+      : resolved === 'mobile'
+        ? 'Mobile'
+        : resolved === 'admin'
+          ? 'Admin'
+          : null;
+  if (!label) return null;
+  const title =
+    resolved === 'web'
+      ? 'Paid via web (Stripe)'
+      : resolved === 'mobile'
+        ? 'Paid via mobile app (App Store / Google Play)'
+        : 'Changed by admin';
+  return (
+    <span
+      title={title}
+      className={`rounded px-1.5 py-0.5 font-medium ${
+        resolved === 'web'
+          ? 'bg-sky-50 text-sky-800'
+          : resolved === 'mobile'
+            ? 'bg-violet-50 text-violet-800'
+            : 'bg-zinc-100 text-zinc-700'
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function formatPaymentEventType(type: string): string {
+  switch (type) {
+    case 'subscription_started':
+      return 'Subscription started';
+    case 'subscription_updated':
+      return 'Subscription updated';
+    case 'subscription_cancelled':
+      return 'Subscription cancelled';
+    case 'subscription_payment':
+      return 'Payment';
+    case 'subscription_failed':
+      return 'Payment failed';
+    case 'admin_subscription_changed':
+      return 'Admin change';
+    case 'admin_founder_program_activated':
+      return 'Founder program';
+    case 'stripe_webhook_error':
+      return 'Stripe webhook error';
+    case 'revenuecat_webhook_error':
+      return 'RevenueCat webhook error';
+    default:
+      return type.replace(/_/g, ' ');
+  }
 }
 
 function ClientsTab({ studioId }: { studioId: string }) {

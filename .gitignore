@@ -59,6 +59,7 @@ turbo-*.log
 .cursorrules
 # Local notes
 apps/frontend/TODO.txt
+.playwright-mcp/
 # Legacy / additional local patterns
 /.pnp
 .pnp.js

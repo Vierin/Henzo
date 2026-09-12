@@ -31,6 +31,8 @@ import '../../widgets/settings/settings_typography.dart';
 import '../../widgets/settings/studio_photo_crop_sheet.dart';
 import '../../widgets/settings/studio_profile_skeleton.dart';
 import '../../widgets/settings/studio_social_link.dart';
+import '../../widgets/settings/studio_currency_field.dart';
+import '../../utils/currency_format.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'public_studio_detail_screen.dart';
 
@@ -74,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _logoUrl;
   double? _salonLat;
   double? _salonLon;
+  String _salonCurrency = 'EUR';
   List<StudioPhotoAsset> _studioPhotoAssets = <StudioPhotoAsset>[];
   List<StudioSocialLink> _socialLinks = <StudioSocialLink>[];
   List<TrainingLocationItem> _locations = [];
@@ -183,6 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonEmailController.text = s.email ?? '';
     _salonLat = s.latitude;
     _salonLon = s.longitude;
+    _salonCurrency = parseStudioCurrency(s.currency);
     _studioPhotoAssets = List<StudioPhotoAsset>.from(
       s.photoGallery ??
           (s.photos ?? <String>[])
@@ -246,6 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _salonEmailController.text.trim(),
       _salonLat?.toStringAsFixed(6) ?? '',
       _salonLon?.toStringAsFixed(6) ?? '',
+      _salonCurrency,
       _logoUrl ?? '',
       photos,
       studioSocialLinksSnapshot(_socialLinks),
@@ -480,6 +485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (email.isNotEmpty) 'email': email,
         'website': socialPayload.website ?? '',
         'instagram': socialPayload.instagram ?? '',
+        'currency': _salonCurrency,
         'photos': _studioPhotoAssets.map((asset) => asset.heroUrl).toList(),
         'photoGallery':
             _studioPhotoAssets.map((asset) => asset.toJson()).toList(),
@@ -1134,6 +1140,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           );
                                         }
                                         return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                    StudioCurrencyField(
+                                      selectedCurrency: _salonCurrency,
+                                      onChanged: (c) {
+                                        setState(() => _salonCurrency = c);
                                       },
                                     ),
                                     const SizedBox(height: 16),

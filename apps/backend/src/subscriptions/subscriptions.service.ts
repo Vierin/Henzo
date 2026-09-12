@@ -537,6 +537,70 @@ export class SubscriptionsService {
       update: data,
     });
 
+    const prevType = existing?.type ?? SubscriptionType.SOLO;
+    const prevCancel = Boolean(existing?.cancelAtPeriodEnd);
+    const prevPaid =
+      !!existing &&
+      isPaidSubscriptionType(existing.type) &&
+      (existing.status === SubscriptionStatus.ACTIVE ||
+        (existing.cancelAtPeriodEnd &&
+          existing.currentPeriodEnd != null &&
+          existing.currentPeriodEnd.getTime() > Date.now()));
+
+    let eventType:
+      | 'subscription_started'
+      | 'subscription_updated'
+      | 'subscription_cancelled'
+      | null = null;
+    let eventMessage = '';
+
+    if (!prevPaid && stillPaid) {
+      eventType = 'subscription_started';
+      eventMessage = `Web (Stripe): ${tier} activated${
+        cancelAtPeriodEnd ? ' (cancels at period end)' : ''
+      }`;
+    } else if (prevPaid && !stillPaid) {
+      eventType = 'subscription_cancelled';
+      eventMessage = `Web (Stripe): subscription ended (was ${prevType})`;
+    } else if (stillPaid) {
+      const changed =
+        prevType !== updated.type ||
+        prevCancel !== cancelAtPeriodEnd ||
+        existing?.stripeSubscriptionId !== stripeSub.id;
+      if (changed) {
+        eventType = 'subscription_updated';
+        if (!prevCancel && cancelAtPeriodEnd) {
+          eventMessage = `Web (Stripe): cancel scheduled at period end (${tier})`;
+        } else if (prevCancel && !cancelAtPeriodEnd) {
+          eventMessage = `Web (Stripe): cancellation reversed (${tier})`;
+        } else if (prevType !== updated.type) {
+          eventMessage = `Web (Stripe): plan ${prevType} → ${updated.type}`;
+        } else {
+          eventMessage = `Web (Stripe): subscription updated (${tier})`;
+        }
+      }
+    }
+
+    if (eventType) {
+      await this.adminEventLog.log({
+        type: eventType,
+        severity: eventType === 'subscription_cancelled' ? 'warn' : 'info',
+        message: eventMessage,
+        studioId,
+        userId: params.userId ?? undefined,
+        metadata: {
+          provider: 'stripe',
+          channel: 'web',
+          tier: updated.type,
+          status: updated.status,
+          cancelAtPeriodEnd,
+          stripeSubscriptionId: stripeSub.id,
+          stripePriceId: priceId,
+          checkoutSessionId: params.checkoutSessionId ?? null,
+        },
+      });
+    }
+
     if (params.userId && isPaidSubscriptionType(updated.type)) {
       const amount = unitAmountToMajorUnits(
         price?.unit_amount ?? null,

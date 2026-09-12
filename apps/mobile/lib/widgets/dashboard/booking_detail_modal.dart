@@ -6,6 +6,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/booking.dart';
+import '../../services/cache/studio_cache.dart';
 import '../../utils/currency_format.dart';
 import '../common/henzo_modal.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -165,7 +166,10 @@ class _BookingDetailContent extends StatelessWidget {
                               if (booking.service?.price != null)
                                 tr('booking.price').replaceAll(
                                   '{amount}',
-                                  formatVnd(booking.service!.price!),
+                                  formatMoney(
+                                    booking.service!.price!,
+                                    context.read<StudioCache>().studio?.currency,
+                                  ),
                                 ),
                             ],
                           ),

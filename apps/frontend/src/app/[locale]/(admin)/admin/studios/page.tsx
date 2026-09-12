@@ -17,6 +17,7 @@ import {
   type AdminAddressSuggestion,
 } from '@/lib/admin/api';
 import type { AdminStudioRow } from '@/lib/admin/types';
+import { adminStudioOwnerEmail } from '@/lib/admin/studioOwnerEmail';
 
 const AdminAddressMapPicker = dynamic(
   () =>
@@ -468,14 +469,13 @@ export default function StudiosContent() {
             {
               key: 'owner',
               header: 'Owner',
-              render: (r) =>
-                r.isUnclaimed && r.intendedOwnerEmail ? (
-                  <span className="text-amber-700">
-                    → {r.intendedOwnerEmail}
-                  </span>
-                ) : (
-                  r.User.email
-                ),
+              render: (r) => {
+                const email = adminStudioOwnerEmail(r);
+                if (r.isUnclaimed && email !== '—') {
+                  return <span className="text-amber-700">→ {email}</span>;
+                }
+                return email;
+              },
             },
             {
               key: 'clients',

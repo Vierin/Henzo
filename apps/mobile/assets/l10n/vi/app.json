@@ -1033,6 +1033,8 @@
     "mainInfo": "Thông tin chính",
     "salonName": "Tên salon",
     "enterSalonName": "Nhập tên studio",
+    "currency": "Tiền tệ",
+    "chooseCurrency": "Chọn tiền tệ",
     "description": "Mô tả",
     "enterDescription": "Mô tả salon của bạn",
     "address": "Địa chỉ",

@@ -576,7 +576,7 @@ class AnalyticsRevenueTrendCard extends StatelessWidget {
       if (tick == 1) return '1';
       return tick.toStringAsFixed(1);
     }
-    return formatVndAmount(tick);
+    return formatCompactAmount(tick);
   }
 
   List<Widget> _axisLabels(List<AnalyticsTrendPoint> points, String localeTag) {

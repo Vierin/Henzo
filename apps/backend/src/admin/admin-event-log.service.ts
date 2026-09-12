@@ -6,6 +6,10 @@ export type AdminEventType =
   | 'push_failed'
   | 'email_reminder_failed'
   | 'subscription_failed'
+  | 'subscription_started'
+  | 'subscription_updated'
+  | 'subscription_cancelled'
+  | 'subscription_payment'
   | 'revenuecat_webhook_error'
   | 'stripe_webhook_error'
   | 'crash_free_rate_snapshot'
@@ -14,6 +18,19 @@ export type AdminEventType =
   | 'admin_founder_program_activated'
   | 'admin_studio_edited'
   | 'admin_broadcast';
+
+/** Types shown in admin Payments / studio subscription history. */
+export const ADMIN_PAYMENT_EVENT_TYPES: AdminEventType[] = [
+  'subscription_failed',
+  'subscription_started',
+  'subscription_updated',
+  'subscription_cancelled',
+  'subscription_payment',
+  'revenuecat_webhook_error',
+  'stripe_webhook_error',
+  'admin_subscription_changed',
+  'admin_founder_program_activated',
+];
 
 @Injectable()
 export class AdminEventLogService {

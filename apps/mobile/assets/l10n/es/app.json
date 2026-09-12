@@ -1033,6 +1033,8 @@
     "mainInfo": "Información principal",
     "salonName": "Nombre del salón",
     "enterSalonName": "Introduce el nombre del estudio",
+    "currency": "Moneda",
+    "chooseCurrency": "Seleccionar moneda",
     "description": "Descripción",
     "enterDescription": "Describe tu salón",
     "address": "Dirección",

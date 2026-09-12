@@ -169,6 +169,7 @@ class ClientExploreRepository {
             locationName: locationName,
             studioLocationCount: studioLocationCount,
             distanceKm: studio.distanceKm,
+            currency: (studioBlock['currency'] ?? map['currency'])?.toString() ?? 'EUR',
           ),
         );
       }

@@ -23,6 +23,7 @@ class Studio {
   final double? longitude;
   final double? rating;
   final DateTime? createdAt;
+  final String currency;
 
   Studio({
     required this.id,
@@ -45,6 +46,7 @@ class Studio {
     this.longitude,
     this.rating,
     this.createdAt,
+    this.currency = 'EUR',
   });
 
   factory Studio.fromJson(Map<String, dynamic> json) {
@@ -117,6 +119,7 @@ class Studio {
       longitude: lon,
       rating: rating,
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
+      currency: (json['currency'] as String?)?.trim().toUpperCase() ?? 'EUR',
     );
   }
 
@@ -142,6 +145,7 @@ class Studio {
       'latitude': latitude,
       'longitude': longitude,
       'rating': rating,
+      'currency': currency,
     };
   }
 
@@ -164,6 +168,7 @@ class Studio {
       if (reminderSettings != null) 'reminderSettings': reminderSettings,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      'currency': currency,
     };
   }
 }

@@ -258,6 +258,55 @@ export class RevenueCatService {
       update: subscriptionData,
     });
 
+    const prevPaid =
+      !!existing &&
+      isPaidSubscriptionType(existing.type) &&
+      existing.status === SubscriptionStatus.ACTIVE;
+    const nowPaid = isPaidSubscriptionType(updated.type);
+
+    let eventType:
+      | 'subscription_started'
+      | 'subscription_updated'
+      | 'subscription_cancelled'
+      | null = null;
+    let eventMessage = '';
+
+    if (!prevPaid && nowPaid) {
+      eventType = 'subscription_started';
+      eventMessage = `Mobile (App Store / Play): ${updated.type} activated`;
+    } else if (prevPaid && !nowPaid) {
+      eventType = 'subscription_cancelled';
+      eventMessage = `Mobile (App Store / Play): subscription ended (was ${existing?.type})`;
+    } else if (
+      nowPaid &&
+      existing &&
+      (existing.type !== updated.type ||
+        existing.currentPeriodEnd?.getTime() !==
+          updated.currentPeriodEnd?.getTime())
+    ) {
+      eventType = 'subscription_updated';
+      eventMessage =
+        existing.type !== updated.type
+          ? `Mobile (App Store / Play): plan ${existing.type} → ${updated.type}`
+          : `Mobile (App Store / Play): subscription updated (${updated.type})`;
+    }
+
+    if (eventType) {
+      await this.adminEventLog.log({
+        type: eventType,
+        severity: eventType === 'subscription_cancelled' ? 'warn' : 'info',
+        message: eventMessage,
+        studioId: studio.id,
+        userId,
+        metadata: {
+          provider: 'revenuecat',
+          channel: 'mobile',
+          tier: updated.type,
+          status: updated.status,
+        },
+      });
+    }
+
     if (isPaidSubscriptionType(updated.type)) {
       this.analytics.track(userId, 'subscription_started', {
         studio_id: studio.id,

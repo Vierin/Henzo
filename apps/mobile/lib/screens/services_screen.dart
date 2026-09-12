@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/common/henzo_modal.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
@@ -650,7 +649,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             child: OwnerTrainingCatalogCard(
                               item: item,
                               durationLabel: _formatDuration(item.duration),
-                              priceLabel: formatVnd(item.price),
+                              priceLabel: formatMoney(item.price, _studio?.currency),
                               addressLabel: _locationLabelForCatalog(),
                               trainerLabel: _trainerLabelForItem(item, locale),
                               onTap: _isActionLoading
@@ -664,37 +663,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 ],
               ),
             ),
-    );
-  }
-}
-
-String _editServiceThousandsFormat(int value) {
-  final raw = value.abs().toString();
-  final chars = raw.split('').reversed.toList();
-  final parts = <String>[];
-  for (var i = 0; i < chars.length; i++) {
-    parts.add(chars[i]);
-    if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
-      parts.add('.');
-    }
-  }
-  return parts.reversed.join();
-}
-
-class _EditTemplateVndThousandsFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) return const TextEditingValue(text: '');
-    final number = int.tryParse(digits);
-    if (number == null) return oldValue;
-    final formatted = _editServiceThousandsFormat(number);
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
@@ -754,10 +722,6 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   String? _initialLocationId;
   final Set<int> _recurringDays = <int>{1, 3, 5};
   final Map<int, TimeOfDay> _recurringDayTimes = <int, TimeOfDay>{};
-
-  String _formatThousandsDots(int value) {
-    return _editServiceThousandsFormat(value);
-  }
 
   InputDecoration _editRegInputDecoration({
     bool invalid = false,
@@ -1218,7 +1182,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       text: (widget.item.duration ?? 30).toString(),
     );
     _priceController = TextEditingController(
-      text: _formatThousandsDots((widget.item.price ?? 0).round()),
+      text: formatPriceInput(widget.item.price, _studio?.currency),
     );
     _capacityController = TextEditingController(text: '10');
     _descriptionController = TextEditingController(
@@ -1268,11 +1232,7 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
       );
       return;
     }
-    final price =
-        double.tryParse(
-          _priceController.text.trim().replaceAll('.', '').replaceAll(',', '.'),
-        ) ??
-        0.0;
+    final price = parsePriceInput(_priceController.text, _studio?.currency);
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     if (price <= 0 || duration <= 0 || capacity <= 0) {
@@ -1614,15 +1574,17 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _editFormLabel(locale.t('addTraining.price')),
+                      _editFormLabel(
+                        '${locale.t('addTraining.price')} (${currencySymbol(_studio?.currency)})',
+                      ),
                       TextField(
                         controller: _priceController,
                         style: _kFieldInputStyle,
-                        keyboardType: TextInputType.number,
+                        keyboardType: currencyKeyboardType(_studio?.currency),
                         textInputAction: TextInputAction.next,
-                        inputFormatters: [_EditTemplateVndThousandsFormatter()],
+                        inputFormatters: [currencyInputFormatter(_studio?.currency)],
                         decoration: _editRegInputDecoration(
-                          hintText: locale.t('addTraining.enterPrice'),
+                          hintText: currencyInputPlaceholder(_studio?.currency),
                         ),
                       ),
                     ],

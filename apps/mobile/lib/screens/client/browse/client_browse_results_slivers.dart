@@ -6,6 +6,7 @@ import '../../../models/training_category_option.dart';
 import '../../../services/client_favorites_store.dart';
 import '../../../services/client_location_store.dart';
 import '../../../utils/formatters.dart';
+import '../../../utils/currency_format.dart';
 import '../../../widgets/client/browse_results_skeleton.dart';
 import '../../../widgets/client/browse_studio_list_card.dart';
 import '../../../widgets/client/client_panel_empty_state.dart';
@@ -127,7 +128,8 @@ List<Widget> buildBrowseResultsSlivers({
               useLargeTrainerIcon: true,
               showSubtitleLeadingIcon: subtitle.isNotEmpty,
               dimPastSessions: false,
-              trailingPriceLabel: c.price != null ? formatVnd(c.price!) : null,
+              trailingPriceLabel:
+                  c.price != null ? formatMoney(c.price!, c.currency) : null,
               trailingPriceColor: AppColors.textPrimary,
               bookActionLabel: locale.t('booking.book'),
               onBookAgain: () => onOpenClassDetail(c),

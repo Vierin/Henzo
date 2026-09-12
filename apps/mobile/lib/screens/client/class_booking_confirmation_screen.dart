@@ -16,6 +16,7 @@ import '../../utils/google_maps_link.dart';
 import '../../utils/share_utils.dart';
 import '../../utils/color_hex.dart';
 import '../../utils/formatters.dart';
+import '../../utils/currency_format.dart';
 import '../../widgets/auth/auth_form_styles.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -56,6 +57,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       endsAt: endsAt,
       durationMin: durationMin,
       price: (training['price'] as num?)?.toDouble(),
+      currency: (studio?['currency'] ?? 'EUR').toString(),
       accent: accent,
       accentIcon: accentIcon,
       latitude: (studio?['latitude'] as num?)?.toDouble(),
@@ -77,6 +79,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     required this.accentIcon,
     this.studioAddress,
     this.price,
+    this.currency = 'EUR',
     this.latitude,
     this.longitude,
     this.studioId,
@@ -93,6 +96,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   final Color accent;
   final Color accentIcon;
   final double? price;
+  final String currency;
   final double? latitude;
   final double? longitude;
   final String? studioId;
@@ -136,11 +140,20 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   }
 
   String _costPrimary(LocaleProvider locale) {
-    if (price != null && price! > 0) return formatVnd(price!);
+    if (price != null && price! > 0) {
+      final parts = formatMoneyParts(price!, currency);
+      return parts.$1;
+    }
     return locale.t('common.free');
   }
 
-  String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
+  String? get _costMuted {
+    if (price != null && price! > 0) {
+      final parts = formatMoneyParts(price!, currency);
+      return parts.$2;
+    }
+    return null;
+  }
 
   String _shareMessage(LocaleProvider locale) {
     final sid = studioId;

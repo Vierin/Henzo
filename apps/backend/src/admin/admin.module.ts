@@ -7,6 +7,7 @@ import { TrainersModule } from '../trainers/trainers.module';
 import { FitnessModule } from '../fitness/fitness.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EmailModule } from '../email/email.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { AdminController } from './admin.controller';
 import { AdminEventLogModule } from './admin-event-log.module';
 import { AdminOwnerActivityService } from './admin-owner-activity.service';
@@ -23,6 +24,7 @@ import { AdminService } from './admin.service';
     NotificationsModule,
     EmailModule,
     AdminEventLogModule,
+    SubscriptionsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AdminOwnerActivityService],

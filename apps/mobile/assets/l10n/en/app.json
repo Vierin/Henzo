@@ -1033,6 +1033,8 @@
     "mainInfo": "Main info",
     "salonName": "Salon name",
     "enterSalonName": "Enter studio name",
+    "currency": "Currency",
+    "chooseCurrency": "Choose currency",
     "description": "Description",
     "enterDescription": "Describe your salon",
     "address": "Address",

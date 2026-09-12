@@ -29,6 +29,7 @@ export type AdminStudioRow = {
   name: string;
   slug: string | null;
   status: string;
+  email?: string | null;
   createdAt: string;
   lastActivityAt: string | null;
   activityTier: ActivityTier;
@@ -39,6 +40,8 @@ export type AdminStudioRow = {
   intendedOwnerEmail?: string | null;
   claimedAt?: string | null;
   isUnclaimed?: boolean;
+  /** Owned by SYSTEM_STUDIO_OWNER (ops placeholder), not a real owner. */
+  isSystemOwned?: boolean;
   User: { id: string; email: string; name: string | null };
   Subscription: {
     id?: string;
@@ -77,6 +80,7 @@ export type AdminStudioDetail = {
   intendedOwnerEmail?: string | null;
   claimedAt?: string | null;
   isUnclaimed?: boolean;
+  isSystemOwned?: boolean;
   createdAt: string;
   lastActivityAt: string | null;
   activityTier: ActivityTier;
@@ -243,6 +247,8 @@ export type AdminPaymentEventRow = {
   studioId: string | null;
   studioName: string | null;
   ownerEmail: string | null;
+  /** web = Stripe checkout; mobile = App Store / Play via RevenueCat; admin = manual */
+  channel?: 'web' | 'mobile' | 'admin' | 'unknown' | string;
 };
 
 export type AdminBroadcastPayload = {

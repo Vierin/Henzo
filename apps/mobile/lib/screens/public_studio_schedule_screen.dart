@@ -13,6 +13,7 @@ import '../services/client_schedule_store.dart';
 import '../services/dashboard_api_service.dart';
 
 import '../utils/formatters.dart';
+import '../utils/currency_format.dart';
 import '../utils/load_error_message.dart';
 
 import '../widgets/common/henzo_header_back_button.dart';
@@ -28,23 +29,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class PublicStudioScheduleScreen extends StatefulWidget {
   const PublicStudioScheduleScreen({
     super.key,
-
     required this.studioId,
-
     required this.studioName,
-
     this.bookingPeriodDays,
-
     this.studioLocationCount = 1,
+    this.currency = 'EUR',
   });
 
   final String studioId;
-
   final String studioName;
-
   final int? bookingPeriodDays;
-
   final int studioLocationCount;
+  final String currency;
 
   @override
   State<PublicStudioScheduleScreen> createState() =>
@@ -898,7 +894,7 @@ class _PublicStudioScheduleScreenState
                                   subtitle.isNotEmpty,
                               dimPastSessions: false,
                               trailingPriceLabel: price != null
-                                  ? formatVnd(price)
+                                  ? formatMoney(price, widget.currency)
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: locale.t('booking.book'),

@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'currency_format.dart';
+
 /// Shared formatting helpers for client UI (VND, time).
 
 /// API timestamps are UTC ISO strings; convert once for display and filters.
@@ -116,18 +118,29 @@ String formatBrowseStudioDistanceLabel(
   return kmTemplate.replaceAll('{value}', text);
 }
 
-String formatCompactVndLabel(double? price) {
+String formatCompactMoney(num? price, [String? currency]) {
   if (price == null || price <= 0) return '';
-  final r = price.round();
-  if (r >= 1000) {
-    final k = r / 1000;
-    if (r % 1000 == 0) {
-      return '${k.round()}K VND';
+  final c = parseStudioCurrency(currency);
+  if (c == 'VND') {
+    final r = price.round();
+    if (r >= 1000) {
+      final k = r / 1000;
+      if (r % 1000 == 0) {
+        return '${k.round()}K VND';
+      }
+      return '${k.toStringAsFixed(1).replaceAll('.', ',')}K VND';
     }
-    return '${k.toStringAsFixed(1).replaceAll('.', ',')}K VND';
+    return '${formatVnd(r)} VND';
   }
-  return '${formatVnd(r)} VND';
+  final isWhole = price % 1 == 0;
+  final valStr =
+      isWhole ? price.toInt().toString() : price.toStringAsFixed(2);
+  final sym = currencySymbol(c);
+  if (c == 'USD') return '\$$valStr';
+  return '$valStr $sym';
 }
+
+String formatCompactVndLabel(double? price) => formatCompactMoney(price, 'VND');
 
 /// Booking cards: `12.06.26`
 String formatBookingCardDate(DateTime dt) {

@@ -115,6 +115,17 @@ export default function PaymentsContent() {
                 ),
               },
               {
+                key: 'channel',
+                header: 'Channel',
+                render: (r) => {
+                  const ch = r.channel;
+                  if (ch === 'web') return 'Web';
+                  if (ch === 'mobile') return 'Mobile';
+                  if (ch === 'admin') return 'Admin';
+                  return '—';
+                },
+              },
+              {
                 key: 'studio',
                 header: 'Studio',
                 render: (r) =>

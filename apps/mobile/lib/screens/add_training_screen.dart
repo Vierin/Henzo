@@ -20,6 +20,7 @@ import '../services/cache/studio_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../services/trainers_api_service.dart';
+import '../utils/currency_format.dart';
 import '../utils/owner_paid_plan.dart';
 import '../utils/plan_limit_dialogs.dart';
 import '../utils/recurring_session_occurrences.dart';
@@ -51,19 +52,6 @@ TextStyle _regHintTextStyle() => TextStyle(
   fontWeight: FontWeight.w500,
   letterSpacing: -0.3,
 );
-
-String _formatThousandsDots(int value) {
-  final raw = value.abs().toString();
-  final chars = raw.split('').reversed.toList();
-  final parts = <String>[];
-  for (var i = 0; i < chars.length; i++) {
-    parts.add(chars[i]);
-    if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
-      parts.add('.');
-    }
-  }
-  return parts.reversed.join();
-}
 
 class AddTrainingScreen extends StatefulWidget {
   const AddTrainingScreen({super.key});
@@ -251,14 +239,15 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return '$hh:$mm';
   }
 
+  String get _currency => _studio?.currency ?? 'EUR';
+
   int _weekdayFromDate(DateTime date) {
     final wd = date.weekday;
     return wd == 0 ? 7 : wd;
   }
 
-  int _parsePriceDigits() {
-    final raw = _priceController.text.trim().replaceAll('.', '');
-    return int.tryParse(raw) ?? 0;
+  double _parsePriceValue() {
+    return parsePriceInput(_priceController.text, _currency);
   }
 
   /// Same geometry and typography as [BusinessRegistrationScreen] fields.
@@ -457,7 +446,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final durationOk = duration > 0 && duration <= _kMaxDurationMinutes;
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     final capacityOk = capacity > 0 && capacity <= 30;
-    final priceOk = _parsePriceDigits() > 0;
+    final priceOk = _parsePriceValue() > 0;
     final categoryOk = _categories.isEmpty || _selectedCategoryId != null;
 
     setState(() {
@@ -493,7 +482,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       }
       final p = found.price;
       if (p != null && p > 0) {
-        _priceController.text = _formatThousandsDots(p.round());
+        _priceController.text = formatPriceInput(p, _currency);
         _step1PriceError = false;
       }
       final cid = found.trainingCategoryId;
@@ -514,7 +503,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (d != null && d > 0) parts.add('$d min');
     final p = e.price;
     if (p != null && p > 0) {
-      parts.add('${_formatThousandsDots(p.round())} ₫');
+      parts.add(formatMoney(p, _currency));
     }
     return parts.isEmpty ? '—' : parts.join(' · ');
   }
@@ -1445,8 +1434,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final studioId = _studio?.id;
     final name = _nameController.text.trim();
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
-    final priceInt = _parsePriceDigits();
-    final price = priceInt.toDouble();
+    final price = _parsePriceValue();
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     if (token == null || token.isEmpty || studioId == null) {
       if (!mounted) return;
@@ -2008,21 +1996,23 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _stepFormLabel(loc.t('addTraining.price')),
+                                  _stepFormLabel(
+                                    '${loc.t('addTraining.price')} (${currencySymbol(_currency)}) *',
+                                  ),
                                   TextField(
                                     controller: _priceController,
                                     style: _stepFieldInputStyle,
-                                    keyboardType: TextInputType.number,
+                                    keyboardType: currencyKeyboardType(_currency),
                                     textInputAction: TextInputAction.next,
-                                    inputFormatters: [_VndThousandsFormatter()],
+                                    inputFormatters: [
+                                      currencyInputFormatter(_currency),
+                                    ],
                                     onChanged: (_) => setState(
                                       () => _step1PriceError = false,
                                     ),
                                     decoration: _regInputDecoration(
                                       invalid: _step1PriceError,
-                                      hintText: context
-                                          .read<LocaleProvider>()
-                                          .t('addTraining.enterPrice'),
+                                      hintText: currencyInputPlaceholder(_currency),
                                     ),
                                   ),
                                 ],
@@ -2129,38 +2119,5 @@ class _MaxIntValueFormatter extends TextInputFormatter {
       );
     }
     return newValue;
-  }
-}
-
-class _VndThousandsFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) return const TextEditingValue(text: '');
-
-    final number = int.tryParse(digits);
-    if (number == null) return oldValue;
-    final formatted = _formatWithDots(number);
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-
-  String _formatWithDots(int value) {
-    final raw = value.toString();
-    final chars = raw.split('').reversed.toList();
-    final parts = <String>[];
-    for (var i = 0; i < chars.length; i++) {
-      parts.add(chars[i]);
-      if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
-        parts.add('.');
-      }
-    }
-    return parts.reversed.join();
   }
 }

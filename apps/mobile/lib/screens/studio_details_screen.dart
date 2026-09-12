@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/cache/studio_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/form_validators.dart';
+import '../utils/currency_format.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/address_picker_modal.dart';
 import '../widgets/common/henzo_header_back_button.dart';
@@ -38,6 +39,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
   String _addressText = '';
   double? _lat;
   double? _lon;
+  String _currency = 'EUR';
   String _initialSnapshot = '';
 
   @override
@@ -59,7 +61,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
   }
 
   String _snapshot() =>
-      '${_nameController.text.trim()}::$_locationName::$_addressText::$_lat::$_lon';
+      '${_nameController.text.trim()}::$_locationName::$_addressText::$_lat::$_lon::$_currency';
 
   bool get _hasChanges => _snapshot() != _initialSnapshot;
 
@@ -90,6 +92,10 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
         _addressText = studio.address?.trim() ?? '';
         _lat = studio.latitude;
         _lon = studio.longitude;
+        _currency = parseStudioCurrency(studio.currency);
+      } else {
+        final locale = context.read<LocaleProvider>();
+        _currency = defaultCurrencyForLocale(locale.localeCode);
       }
       _initialSnapshot = _snapshot();
       setState(() => _loading = false);
@@ -154,6 +160,7 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
         if (_lat != null) 'latitude': _lat,
         if (_lon != null) 'longitude': _lon,
         'reminderSettings': reminderSettings,
+        'currency': _currency,
       };
 
       if (_studio == null) {
@@ -260,6 +267,10 @@ class _StudioDetailsScreenState extends State<StudioDetailsScreen> {
                           locationDisplayName: _locationName,
                           addressText: _addressText,
                           onAddressTap: _openAddressPicker,
+                          currency: _currency,
+                          onCurrencyChanged: (c) {
+                            setState(() => _currency = c);
+                          },
                           nameValidator: (v) => validateRequiredNullable(
                             locale.t,
                             v,

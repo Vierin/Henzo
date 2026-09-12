@@ -1033,6 +1033,8 @@
     "mainInfo": "Основная информация",
     "salonName": "Название салона",
     "enterSalonName": "Введите название студии",
+    "currency": "Валюта",
+    "chooseCurrency": "Выберите валюту",
     "description": "Описание",
     "enterDescription": "Опишите ваш салон",
     "address": "Адрес",
