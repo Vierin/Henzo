@@ -94,6 +94,11 @@ abstract final class AppConfig {
               'premium_enterprise')
           .trim();
 
+  static String get revenueCatSoloEntitlementId =>
+      (dotenv.env['EXPO_PUBLIC_REVENUECAT_SOLO_ENTITLEMENT_ID'] ??
+              'premium_solo')
+          .trim();
+
   static bool get isRevenueCatEnabled => revenueCatApiKey.isNotEmpty;
 
   /// Логирование только в development (например детали ошибок входа).

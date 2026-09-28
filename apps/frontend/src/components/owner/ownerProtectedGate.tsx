@@ -2,19 +2,13 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  extractLocaleFromPath,
-  stripLocaleFromPath,
-  withLocale,
-  type Locale,
-} from '@/i18n/routing';
+import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { fetchCurrentUserRole } from '@/lib/auth/api';
 import {
   clearOwnerAuthCookie,
   setOwnerAuthCookie,
 } from '@/lib/owner/auth-session-cookie';
-import { fetchCurrentStudio } from '@/lib/owner/fetch-current-studio';
 import LoadingFallback from '@/components/LoadingFallback';
 
 export default function OwnerProtectedGate({
@@ -33,8 +27,6 @@ export default function OwnerProtectedGate({
 
     const run = async () => {
       const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
-      const pathNoLocale = stripLocaleFromPath(pathname);
-      const isSetup = pathNoLocale.startsWith('/business/complete-setup');
 
       try {
         if (!authedRef.current) {
@@ -46,7 +38,7 @@ export default function OwnerProtectedGate({
         if (!session) {
           clearOwnerAuthCookie();
           authedRef.current = false;
-          router.replace(withLocale('/login?intent=business', locale));
+          router.replace(withLocale('/login', locale));
           return;
         }
 
@@ -59,7 +51,7 @@ export default function OwnerProtectedGate({
           await getPublicSupabase().auth.signOut({ scope: 'local' });
           router.replace(
             withLocale(
-              `/login?intent=business&error=${encodeURIComponent('Owner account required')}`,
+              `/login?error=${encodeURIComponent('Owner account required')}`,
               locale,
             ),
           );
@@ -68,19 +60,6 @@ export default function OwnerProtectedGate({
 
         setOwnerAuthCookie();
         authedRef.current = true;
-
-        const { needsSetup } = await fetchCurrentStudio();
-        if (!alive) return;
-
-        if (needsSetup && !isSetup) {
-          router.replace(withLocale('/business/complete-setup', locale));
-          return;
-        }
-        if (!needsSetup && isSetup) {
-          router.replace(withLocale('/owner-dashboard', locale));
-          return;
-        }
-
         setError(null);
         setReady(true);
       } catch (err) {
@@ -88,7 +67,7 @@ export default function OwnerProtectedGate({
         setError(err instanceof Error ? err.message : 'Auth failed');
         clearOwnerAuthCookie();
         authedRef.current = false;
-        router.replace(withLocale('/login?intent=business', locale));
+        router.replace(withLocale('/login', locale));
       }
     };
 

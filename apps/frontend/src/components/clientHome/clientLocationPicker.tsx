@@ -130,7 +130,7 @@ export function ClientLocationPicker({
         onClick={() => setOpen((v) => !v)}
         className={
           variant === 'hero'
-            ? 'flex max-w-full items-center gap-1.5 rounded-xl px-1 py-1 text-left text-sm font-semibold text-[#3F3F3F] transition hover:bg-[#F9F4F0]'
+            ? 'flex w-full max-w-full items-center gap-1.5 rounded-xl px-1 py-1 text-left text-sm font-semibold text-[#3F3F3F] transition hover:bg-[#F9F4F0] sm:w-auto'
             : 'flex h-10 max-w-full items-center gap-1.5 rounded-full border border-[#E8E0D8] bg-white/80 px-2.5 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/30 sm:px-3'
         }
         aria-expanded={open}
@@ -141,7 +141,7 @@ export function ClientLocationPicker({
         <span
           className={
             variant === 'hero'
-              ? 'max-w-[8rem] truncate sm:max-w-[11rem]'
+              ? 'min-w-0 flex-1 truncate sm:max-w-[11rem] sm:flex-none'
               : 'max-w-[7.5rem] truncate sm:max-w-[10rem]'
           }
         >

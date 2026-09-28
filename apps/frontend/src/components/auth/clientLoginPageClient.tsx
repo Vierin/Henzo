@@ -16,10 +16,7 @@ import { AppleLogo, GoogleLogo } from '@/components/auth/authSocialIcons';
 import { fetchCurrentUserRole } from '@/lib/auth/api';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { isSupabaseConfigured } from '@/lib/public-env';
-import {
-  startBusinessGoogleOAuth,
-  startClientGoogleOAuth,
-} from '@/utils/oauth';
+import { startClientGoogleOAuth } from '@/utils/oauth';
 import { safeInternalNext } from '@/lib/client/book-session';
 import { supportsAppleSignIn } from '@/lib/appOpenFallback';
 
@@ -29,7 +26,6 @@ export function ClientLoginPageClient() {
   const searchParams = useSearchParams();
   const params = useParams();
   const locale = (params?.locale as string) ?? 'en';
-  const isBusinessIntent = searchParams.get('intent') === 'business';
   const nextPath =
     safeInternalNext(searchParams.get('next')) ??
     withLocale('/activity', locale as 'en' | 'ru' | 'vi');
@@ -71,10 +67,9 @@ export function ClientLoginPageClient() {
           }
         }
         setError(String(t('auth.ownerUseStudioLogin')));
-        router.replace(
-          withLocale('/login?intent=business', locale as 'en' | 'ru' | 'vi'),
-          { scroll: false },
-        );
+        router.replace(withLocale('/login', locale as 'en' | 'ru' | 'vi'), {
+          scroll: false,
+        });
       })();
       return;
     }
@@ -92,11 +87,9 @@ export function ClientLoginPageClient() {
       );
     }
 
-    const clean = isBusinessIntent
-      ? withLocale('/login?intent=business', locale as 'en' | 'ru' | 'vi')
-      : withLocale('/login', locale as 'en' | 'ru' | 'vi');
+    const clean = withLocale('/login', locale as 'en' | 'ru' | 'vi');
     router.replace(clean, { scroll: false });
-  }, [isBusinessIntent, locale, router, searchParams, t]);
+  }, [locale, router, searchParams, t]);
 
   const redirectClientPanel = async () => {
     const { setClientAuthCookie } = await import(
@@ -172,17 +165,6 @@ export function ClientLoginPageClient() {
     setOauthLoading(provider);
     setError(null);
 
-    if (isBusinessIntent && provider === 'google') {
-      const { error: oauthError } = await startBusinessGoogleOAuth({
-        source: 'business_login',
-      });
-      if (oauthError) {
-        setError(String(t('auth.googleSignInFailed')));
-        setOauthLoading(null);
-      }
-      return;
-    }
-
     const { error: oauthError } = await startClientGoogleOAuth({
       provider,
       next: nextPath,
@@ -202,17 +184,10 @@ export function ClientLoginPageClient() {
     <ClientAuthShell>
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[#3F3287]">
-          {isBusinessIntent
-            ? String(t('auth.businessLoginTitle') || 'Business sign in')
-            : String(t('auth.clientLoginTitle'))}
+          {String(t('auth.clientLoginTitle'))}
         </h1>
         <p className="mt-2 text-sm text-[#878787] sm:text-base">
-          {isBusinessIntent
-            ? String(
-                t('auth.businessLoginSubtitle') ||
-                  'Sign in to manage your studio on the web.',
-              )
-            : String(t('auth.clientLoginSubtitle'))}
+          {String(t('auth.clientLoginSubtitle'))}
         </p>
 
         <div className="mt-8 space-y-3">
@@ -226,7 +201,7 @@ export function ClientLoginPageClient() {
             {String(t('auth.continueWithGoogle'))}
           </button>
 
-          {!isBusinessIntent && showAppleSignIn ? (
+          {showAppleSignIn ? (
             <button
               type="button"
               disabled={loading || oauthLoading != null}
@@ -317,52 +292,34 @@ export function ClientLoginPageClient() {
           </button>
         </form>
 
-        {!isBusinessIntent ? (
-          <p className="mt-6 text-center text-sm text-[#878787]">
-            {String(t('auth.noAccountRegister'))}{' '}
-            <Link
-              href={
-                searchParams.get('next')
-                  ? withLocale(
-                      `/register?next=${encodeURIComponent(searchParams.get('next')!)}`,
-                      locale as 'en' | 'ru' | 'vi',
-                    )
-                  : withLocale('/register', locale as 'en' | 'ru' | 'vi')
-              }
-              className="font-semibold text-[#E86D4F] transition hover:text-[#d85e42]"
-            >
-              {String(t('auth.registerLink'))}
-            </Link>
-          </p>
-        ) : null}
+        <p className="mt-6 text-center text-sm text-[#878787]">
+          {String(t('auth.noAccountRegister'))}{' '}
+          <Link
+            href={
+              searchParams.get('next')
+                ? withLocale(
+                    `/register?next=${encodeURIComponent(searchParams.get('next')!)}`,
+                    locale as 'en' | 'ru' | 'vi',
+                  )
+                : withLocale('/register', locale as 'en' | 'ru' | 'vi')
+            }
+            className="font-semibold text-[#E86D4F] transition hover:text-[#d85e42]"
+          >
+            {String(t('auth.registerLink'))}
+          </Link>
+        </p>
 
         <p className="mt-3 text-center text-sm text-[#878787]">
-          {isBusinessIntent ? (
-            <>
-              {String(
-                t('auth.lookingForClientLogin') || 'Looking for client login?',
-              )}{' '}
-              <Link
-                href={withLocale('/login', locale as 'en' | 'ru' | 'vi')}
-                className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
-              >
-                {String(t('auth.clientLoginLink') || 'Client sign in →')}
-              </Link>
-            </>
-          ) : (
-            <>
-              {String(t('auth.areYouSalonOwner'))}{' '}
-              <Link
-                href={withLocale(
-                  '/login?intent=business',
-                  locale as 'en' | 'ru' | 'vi',
-                )}
-                className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
-              >
-                {String(t('auth.registerBusinessAccount'))}
-              </Link>
-            </>
-          )}
+          {String(t('auth.areYouSalonOwner'))}{' '}
+          <Link
+            href={withLocale(
+              '/business/register',
+              locale as 'en' | 'ru' | 'vi',
+            )}
+            className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
+          >
+            {String(t('auth.createBusinessAccount'))}
+          </Link>
         </p>
       </div>
     </ClientAuthShell>

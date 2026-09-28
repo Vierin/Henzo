@@ -173,10 +173,10 @@
         {
           "name": "Solo",
           "subtitle": "Idealny dla niezależnych trenerów",
-          "price": "0",
+          "price": "39,99",
           "priceSub": "/ za 1 miesiąc",
           "features": [
-            "12 zajęć miesięcznie",
+            "50 zajęć miesięcznie",
             "1 trener",
             "Nieograniczona liczba klientów",
             "Rezerwacje online",
@@ -190,8 +190,8 @@
           "price": "99",
           "priceSub": "/ za 1 miesiąc",
           "features": [
-            "100 zajęć miesięcznie",
-            "Do 4 trenerów",
+            "180 zajęć miesięcznie",
+            "Do 5 trenerów",
             "Lista oczekujących",
             "Automatyczne przypomnienia (Email & Push)",
             "Podstawowa analityka (90 dni)"

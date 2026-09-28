@@ -643,35 +643,46 @@ export default function SubscriptionSettingsPage() {
       {showCatalog ? (
         <div className="space-y-3">
           <div className="rounded-[14px] bg-white px-4 py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p
-                  className="text-base font-bold"
-                  style={{ color: ownerTheme.text }}
-                >
-                  {t('owner.subscription.soloTitle') || 'Solo'}
-                </p>
-                <p
-                  className="mt-1 text-sm"
-                  style={{ color: ownerTheme.textSecondary }}
-                >
-                  {t('owner.subscription.soloTagline') || 'Get started free'}
-                </p>
-              </div>
-              <span
-                className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
-                style={{ backgroundColor: '#E8F5E9', color: '#2E7D32' }}
+            <div>
+              <p
+                className="text-base font-bold"
+                style={{ color: ownerTheme.text }}
               >
-                {t('owner.subscription.activeBadge') || 'ACTIVE'}
-              </span>
+                {t('owner.subscription.soloTitle') || 'Solo'}
+              </p>
+              <p
+                className="mt-1 text-sm"
+                style={{ color: ownerTheme.textSecondary }}
+              >
+                {t('owner.subscription.soloTagline') ||
+                  'For independent trainers'}
+              </p>
             </div>
             <p
               className="mt-3 text-xl font-extrabold"
               style={{ color: ownerTheme.accent }}
             >
-              {t('owner.subscription.soloFreePrice') || 'Free'}
+              {t('owner.subscription.soloFreePrice') || '$8'}
+              <span
+                className="ml-1 text-sm font-medium"
+                style={{ color: ownerTheme.textSecondary }}
+              >
+                / {t('owner.subscription.perMonth') || 'month'}
+              </span>
             </p>
             <PlanFeatureList tier="solo" t={t} />
+            <button
+              type="button"
+              disabled={busy || !origin}
+              onClick={() => void startCheckout('solo')}
+              className="mt-4 w-full rounded-[12px] px-2 py-2.5 text-xs font-semibold text-white disabled:opacity-60 sm:px-4 sm:py-3 sm:text-sm"
+              style={{ backgroundColor: ownerTheme.accent }}
+            >
+              {checkoutLoading === 'solo'
+                ? t('owner.subscription.switching') || 'Redirecting…'
+                : t('owner.subscription.subscribeToSoloBtn') ||
+                  'Subscribe to Solo'}
+            </button>
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3">

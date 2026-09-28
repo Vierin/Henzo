@@ -89,20 +89,26 @@ export function ClientHomeCategoryLinks({
     return (
       <div className={className ?? 'mt-6 sm:mt-8'}>
         <p className="mb-2.5 text-sm text-[#878787]">{popularLabel}</p>
-        <div className="-mx-1 flex flex-wrap gap-2 px-1 sm:gap-2.5">
+        <div className="-mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-1 sm:gap-2.5">
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <CategorySkeleton key={`cat-skel-${i}`} outline />
               ))
-            : visible.map((category) => {
+            : categories.map((category) => {
                 const label = trainingCategoryLabel(category, locale);
                 const href = trainingCategoryHref(category, locale);
+                const hiddenOnMobile =
+                  variant === 'popular' &&
+                  !expanded &&
+                  categories.indexOf(category) >= POPULAR_LIMIT;
 
                 return (
                   <Link
                     key={category.id}
                     href={href}
-                    className="inline-flex h-9 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition hover:brightness-[0.97] sm:h-10 sm:px-5"
+                    className={`inline-flex h-9 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition hover:brightness-[0.97] sm:h-10 sm:px-5 ${
+                      hiddenOnMobile ? 'sm:hidden' : ''
+                    }`}
                     style={{
                       backgroundColor: category.chipBgHex,
                       color: category.chipFgHex ?? '#171717',
@@ -116,7 +122,7 @@ export function ClientHomeCategoryLinks({
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border border-[#E8E0D8] bg-white px-4 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/35 sm:h-10 sm:px-5"
+              className="hidden h-9 shrink-0 items-center gap-1 rounded-full border border-[#E8E0D8] bg-white px-4 text-sm font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/35 sm:inline-flex sm:h-10 sm:px-5"
             >
               {moreLabel}
               <ChevronDown className="h-4 w-4 text-[#878787]" aria-hidden />

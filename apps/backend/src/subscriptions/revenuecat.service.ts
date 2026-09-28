@@ -13,7 +13,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
-import { isPaidSubscriptionType } from './subscription-tier.util';
+import { isActiveStudioTrial } from './subscription-access.util';
+import { hasSubscriptionAccess } from './subscription-access.util';
 
 type RcEntitlement = {
   expires_date: string | null;
@@ -44,6 +45,13 @@ export class RevenueCatService {
 
   private get secretKey(): string | undefined {
     return this.config.get<string>('REVENUECAT_SECRET_API_KEY')?.trim();
+  }
+
+  private get soloEntitlementId(): string {
+    return (
+      this.config.get<string>('REVENUECAT_SOLO_ENTITLEMENT_ID')?.trim() ||
+      'premium_solo'
+    );
   }
 
   private get studioEntitlementId(): string {
@@ -137,15 +145,32 @@ export class RevenueCatService {
     if (this.isEntitlementIdActive(subscriber, this.studioEntitlementId)) {
       return SubscriptionType.STUDIO;
     }
+    if (this.isEntitlementIdActive(subscriber, this.soloEntitlementId)) {
+      return SubscriptionType.SOLO;
+    }
     if (this.hasActiveStoreSubscription(subscriber)) {
       return SubscriptionType.STUDIO;
     }
     return SubscriptionType.SOLO;
   }
 
+  /** Store purchase is active (Solo, Studio, or Enterprise). */
+  private hasActiveStoreEntitlement(subscriber: RcSubscriberResponse): boolean {
+    return (
+      this.isEntitlementIdActive(subscriber, this.enterpriseEntitlementId) ||
+      this.isEntitlementIdActive(subscriber, this.studioEntitlementId) ||
+      this.isEntitlementIdActive(subscriber, this.soloEntitlementId) ||
+      this.hasActiveStoreSubscription(subscriber)
+    );
+  }
+
   private resolvePeriodEnd(subscriber: RcSubscriberResponse): Date | null {
     const entitlements = subscriber.subscriber?.entitlements ?? {};
-    const ids = [this.enterpriseEntitlementId, this.studioEntitlementId];
+    const ids = [
+      this.enterpriseEntitlementId,
+      this.studioEntitlementId,
+      this.soloEntitlementId,
+    ];
     for (const id of ids) {
       const ent = entitlements[id];
       if (ent?.expires_date) {
@@ -182,7 +207,6 @@ export class RevenueCatService {
     if (sub.billingProvider !== SubscriptionBillingProvider.STRIPE) {
       return false;
     }
-    if (!isPaidSubscriptionType(sub.type)) return false;
     if (sub.status === SubscriptionStatus.ACTIVE) return true;
     if (
       sub.cancelAtPeriodEnd &&
@@ -223,12 +247,18 @@ export class RevenueCatService {
     const subscriber = await this.fetchSubscriber(userId);
     const tier = this.resolveSubscriptionType(subscriber);
     const periodEnd = this.resolvePeriodEnd(subscriber);
+    const paid = this.hasActiveStoreEntitlement(subscriber);
+    if (!paid && existing && isActiveStudioTrial(existing)) {
+      this.logger.log(
+        `RevenueCat sync skipped for user=${userId} (active Studio trial)`,
+      );
+      return this.toPayload(existing);
+    }
     this.logger.log(
       `RevenueCat sync user=${userId} tier=${tier} entitlements=${Object.keys(subscriber.subscriber?.entitlements ?? {}).join(',')}`,
     );
 
     const now = new Date();
-    const paid = isPaidSubscriptionType(tier);
     const subscriptionData = {
       type: tier,
       status: SubscriptionStatus.ACTIVE,
@@ -260,9 +290,9 @@ export class RevenueCatService {
 
     const prevPaid =
       !!existing &&
-      isPaidSubscriptionType(existing.type) &&
+      existing.billingProvider === SubscriptionBillingProvider.REVENUECAT &&
       existing.status === SubscriptionStatus.ACTIVE;
-    const nowPaid = isPaidSubscriptionType(updated.type);
+    const nowPaid = paid;
 
     let eventType:
       | 'subscription_started'
@@ -307,7 +337,7 @@ export class RevenueCatService {
       });
     }
 
-    if (isPaidSubscriptionType(updated.type)) {
+    if (paid) {
       this.analytics.track(userId, 'subscription_started', {
         studio_id: studio.id,
         provider: 'revenuecat',
@@ -338,6 +368,8 @@ export class RevenueCatService {
       billingProvider:
         current.billingProvider ?? SubscriptionBillingProvider.NONE,
       cancelAtPeriodEnd: Boolean(current.cancelAtPeriodEnd),
+      isTrial: isActiveStudioTrial(current),
+      hasAccess: hasSubscriptionAccess(current),
     };
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Building2, CalendarPlus, ImagePlus } from 'lucide-react';
+import { Building2, CalendarPlus, ChevronRight, ImagePlus } from 'lucide-react';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 
 type Props = {
@@ -16,6 +16,16 @@ type Props = {
   photoHref: string;
   previewHref?: string | null;
   onPublish: () => void;
+};
+
+type StepCard = {
+  key: string;
+  index: number;
+  done: boolean;
+  href: string;
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
 };
 
 export function OwnerOnboardingCard({
@@ -38,9 +48,39 @@ export function OwnerOnboardingCard({
   const showPreview = Boolean(previewHref);
   const showActivate = canPublish;
 
+  const steps: StepCard[] = [
+    {
+      key: 'details',
+      index: 1,
+      done: studioDetailsCompleted,
+      href: detailsHref,
+      title: 'Create your studio profile',
+      subtitle: 'Add your studio name, location and a short description.',
+      icon: <Building2 className="h-5 w-5" />,
+    },
+    {
+      key: 'class',
+      index: 2,
+      done: hasTraining,
+      href: trainingHref,
+      title: 'Add your first class',
+      subtitle: 'Create a class, set the duration, capacity and price.',
+      icon: <CalendarPlus className="h-5 w-5" />,
+    },
+    {
+      key: 'photo',
+      index: 3,
+      done: hasPhoto,
+      href: photoHref,
+      title: 'Add at least 1 photo',
+      subtitle: 'Show clients what your studio looks like.',
+      icon: <ImagePlus className="h-5 w-5" />,
+    },
+  ];
+
   return (
     <section
-      className="rounded-[18px] p-4 sm:p-[13px] sm:py-4"
+      className="rounded-[18px] p-4 sm:p-5"
       style={{ backgroundColor: 'rgba(194, 246, 0, 0.4)' }}
     >
       <div className="flex items-start gap-3">
@@ -52,30 +92,20 @@ export function OwnerOnboardingCard({
             ✧ LET&apos;S GET YOUR STUDIO LIVE!
           </p>
           <p
-            className="mt-2 text-2xl leading-tight"
+            className="mt-2 text-[1.75rem] leading-tight sm:text-3xl"
             style={{ color: ownerTheme.text }}
           >
             Your studio is
           </p>
           <p
-            className="text-2xl leading-tight"
+            className="text-[1.75rem] leading-tight sm:text-3xl"
             style={{ color: ownerTheme.text }}
           >
             <span className="font-semibold">{percent}%</span> ready
           </p>
-          <p
-            className="mt-1.5 text-xs"
-            style={{ color: ownerTheme.textSecondary }}
-          >
-            {stepsLeft === 1
-              ? '1 step left'
-              : stepsLeft === 0
-                ? 'Ready to activate'
-                : `${stepsLeft} steps left`}
-          </p>
         </div>
 
-        <div className="relative h-[88px] w-[88px] shrink-0 sm:h-[106px] sm:w-[106px]">
+        <div className="relative h-[104px] w-[104px] shrink-0 sm:h-[124px] sm:w-[124px]">
           <svg viewBox="0 0 106 106" className="h-full w-full -rotate-90">
             <circle
               cx="53"
@@ -99,7 +129,7 @@ export function OwnerOnboardingCard({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span
-              className="text-lg font-semibold sm:text-xl"
+              className="text-xl font-semibold sm:text-2xl"
               style={{ color: ownerTheme.text }}
             >
               {percent}%
@@ -145,76 +175,38 @@ export function OwnerOnboardingCard({
       )}
 
       {stepsLeft > 0 ? (
-        <ul className="mt-5 space-y-2.5">
-          {!studioDetailsCompleted ? (
-            <TaskRow
-              href={detailsHref}
-              icon={<Building2 className="h-4 w-4 text-white" />}
-              title="Add studio details"
-              subtitle="Add your studio name and address"
-            />
-          ) : null}
-          {!hasTraining ? (
-            <TaskRow
-              href={trainingHref}
-              icon={<CalendarPlus className="h-4 w-4 text-white" />}
-              title="Create your first class"
-              subtitle="Add a class clients can book"
-            />
-          ) : null}
-          {!hasPhoto ? (
-            <TaskRow
-              href={photoHref}
-              icon={<ImagePlus className="h-4 w-4 text-white" />}
-              title="Add at least 1 photo"
-              subtitle="Show clients what your studio looks like"
-            />
-          ) : null}
+        <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          {steps
+            .filter((step) => !step.done)
+            .map((step) => (
+              <li key={step.key} className="min-w-0">
+                <Link
+                  href={step.href}
+                  className="flex h-full items-center gap-3 rounded-2xl bg-white p-4"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFF1EE] text-[#F15942]">
+                    {step.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className="block text-base font-semibold leading-snug"
+                      style={{ color: ownerTheme.text }}
+                    >
+                      {step.title}
+                    </span>
+                    <span className="mt-1 block text-sm leading-snug text-[#878787]">
+                      {step.subtitle}
+                    </span>
+                  </span>
+                  <ChevronRight
+                    className="h-6 w-6 shrink-0 text-[#B0B0B0]"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            ))}
         </ul>
       ) : null}
     </section>
-  );
-}
-
-function TaskRow({
-  href,
-  icon,
-  title,
-  subtitle,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="flex items-center gap-3 rounded-[14px] bg-white px-3 py-3"
-      >
-        <span
-          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: ownerTheme.accent }}
-        >
-          {icon}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span
-            className="block text-sm font-semibold"
-            style={{ color: ownerTheme.text }}
-          >
-            {title}
-          </span>
-          <span
-            className="block text-xs"
-            style={{ color: ownerTheme.textSecondary }}
-          >
-            {subtitle}
-          </span>
-        </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-[#3B5BDB]" />
-      </Link>
-    </li>
   );
 }

@@ -78,23 +78,39 @@ class RevenueCatService {
         _findPackage(offering, const ['monthly', 'month']);
   }
 
-  /// Returns the monthly package for a specific plan tier ('studio' | 'enterprise').
-  /// Looks in a tier-specific offering first, then falls back to default offering
-  /// searching by product ID keywords.
-  static Package? packageForTier(Offerings? offerings, String tier) {
+  /// Returns the monthly package for a plan tier ('solo' | 'studio' | 'enterprise').
+  /// [exact] skips the default-offering first-package fallback so Solo cannot
+  /// purchase a Studio product by mistake.
+  static Package? packageForTier(
+    Offerings? offerings,
+    String tier, {
+    bool exact = false,
+  }) {
     if (offerings == null) return null;
 
-    // Try dedicated offering (e.g. offering id = 'studio' or 'enterprise')
     final tierOffering = offerings.getOffering(tier);
     if (tierOffering != null) {
       return tierOffering.monthly ??
           tierOffering.availablePackages.firstOrNull;
     }
 
-    // Fall back to default offering — find package whose id/productId contains tier name
     final def = offerings.current;
     if (def == null) return null;
+    if (exact) return _findPackageExact(def, [tier]);
     return _findPackage(def, [tier]);
+  }
+
+  static Package? _findPackageExact(Offering offering, List<String> hints) {
+    for (final pkg in offering.availablePackages) {
+      final id = pkg.identifier.toLowerCase();
+      final productId = pkg.storeProduct.identifier.toLowerCase();
+      for (final hint in hints) {
+        if (id.contains(hint) || productId.contains(hint)) {
+          return pkg;
+        }
+      }
+    }
+    return null;
   }
 
   static Package? _findPackage(Offering offering, List<String> hints) {

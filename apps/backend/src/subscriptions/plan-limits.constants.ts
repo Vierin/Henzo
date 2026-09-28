@@ -1,10 +1,10 @@
 import type { SubscriptionTier } from './subscription-tier.util';
 
 export const SOLO_TRAINER_LIMIT = 1;
-export const SOLO_SESSIONS_PER_MONTH = 12;
+export const SOLO_SESSIONS_PER_MONTH = 50;
 
-export const STUDIO_TRAINER_LIMIT = 4;
-export const STUDIO_SESSIONS_PER_MONTH = 100;
+export const STUDIO_TRAINER_LIMIT = 5;
+export const STUDIO_SESSIONS_PER_MONTH = 180;
 
 export type PlanQuota = {
   trainerLimit: number;

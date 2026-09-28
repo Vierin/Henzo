@@ -84,7 +84,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      if (isTrainerPlanLimitError(e)) {
+      if (isSubscriptionRequiredError(e)) {
+        await showSubscriptionRequiredDialog(context);
+      } else if (isTrainerPlanLimitError(e)) {
         await showTrainerPlanLimitDialog(
           context,
           error: e,
@@ -142,7 +144,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      if (isTrainerPlanLimitError(e)) {
+      if (isSubscriptionRequiredError(e)) {
+        await showSubscriptionRequiredDialog(context);
+      } else if (isTrainerPlanLimitError(e)) {
         await showTrainerPlanLimitDialog(
           context,
           error: e,

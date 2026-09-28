@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
-export type CheckoutPlan = 'studio' | 'enterprise';
+export type CheckoutPlan = 'solo' | 'studio' | 'enterprise';
 export type CheckoutInterval = 'monthly' | 'annual';
 
 @Injectable()
@@ -32,14 +32,19 @@ export class StripeCheckoutService {
   }
 
   resolvePriceId(plan: CheckoutPlan, interval: CheckoutInterval): string {
+    if (plan === 'solo' && interval === 'annual') {
+      throw new BadRequestException('Solo is billed monthly only');
+    }
     const key =
-      plan === 'enterprise'
-        ? interval === 'annual'
-          ? 'STRIPE_ENTERPRISE_YEARLY_PRICE_ID'
-          : 'STRIPE_ENTERPRISE_MONTHLY_PRICE_ID'
-        : interval === 'annual'
-          ? 'STRIPE_YEARLY_PRICE_ID'
-          : 'STRIPE_MONTHLY_PRICE_ID';
+      plan === 'solo'
+        ? 'STRIPE_SOLO_MONTHLY_PRICE_ID'
+        : plan === 'enterprise'
+          ? interval === 'annual'
+            ? 'STRIPE_ENTERPRISE_YEARLY_PRICE_ID'
+            : 'STRIPE_ENTERPRISE_MONTHLY_PRICE_ID'
+          : interval === 'annual'
+            ? 'STRIPE_YEARLY_PRICE_ID'
+            : 'STRIPE_MONTHLY_PRICE_ID';
     const priceId = this.config.get<string>(key)?.trim();
     if (!priceId) {
       throw new BadRequestException(

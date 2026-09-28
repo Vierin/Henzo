@@ -9,10 +9,11 @@ export type OwnerAddressSuggestion = {
 
 export async function fetchOwnerAddressSuggestions(
   query: string,
+  options?: { country?: string },
 ): Promise<OwnerAddressSuggestion[]> {
   const q = new URLSearchParams({
     q: query,
-    country: 'VN',
+    country: options?.country ?? 'VN',
     limit: '5',
     types: 'address,poi',
   });

@@ -16,7 +16,6 @@ import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
 import '../utils/subscription_purchase_feedback.dart';
 import '../utils/subscription_plan_features.dart';
-import '../utils/subscription_tier.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/subscription_legal_disclosure.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
@@ -43,6 +42,7 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Subscription? _subscription;
+  Package? _soloPackage;
   Package? _studioPackage;
   Package? _enterprisePackage;
   bool _statusLoading = true;
@@ -96,11 +96,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         });
       }
 
+      Package? soloPkg;
       Package? studioPkg;
       Package? enterprisePkg;
 
       if (RevenueCatService.isConfigured) {
         final offerings = await RevenueCatService.fetchOfferings();
+        soloPkg = RevenueCatService.packageForTier(
+          offerings,
+          'solo',
+          exact: true,
+        );
         studioPkg = RevenueCatService.packageForTier(offerings, 'studio');
         enterprisePkg = RevenueCatService.packageForTier(
           offerings,
@@ -110,6 +116,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
       if (mounted) {
         setState(() {
+          _soloPackage = soloPkg;
           _studioPackage = studioPkg;
           _enterprisePackage = enterprisePkg;
           _pricesLoading = false;
@@ -127,10 +134,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   bool get _hasPaidPlan {
     if (_statusLoading) return false;
-    return subscriptionIsActivePaid(
-      type: _subscription?.type,
-      status: _subscription?.status,
-    );
+    final provider = (_subscription?.billingProvider ?? '').toUpperCase();
+    if (provider != 'STRIPE' && provider != 'REVENUECAT') return false;
+    if ((_subscription?.status ?? '').toUpperCase() != 'ACTIVE') return false;
+    final type = (_subscription?.type ?? '').toUpperCase();
+    return type == 'SOLO' ||
+        type == 'STUDIO' ||
+        type == 'ENTERPRISE' ||
+        type == 'PRO';
   }
 
   SubscriptionPlanTier get _activePlanTier {
@@ -171,8 +182,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
-  Package? _packageForTier(String tier) =>
-      tier == 'enterprise' ? _enterprisePackage : _studioPackage;
+  Package? _packageForTier(String tier) {
+    switch (tier) {
+      case 'enterprise':
+        return _enterprisePackage;
+      case 'solo':
+        return _soloPackage;
+      default:
+        return _studioPackage;
+    }
+  }
 
   Future<void> _handleSelectPlan(String tier) async {
     if (!RevenueCatService.isConfigured) {
@@ -268,7 +287,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       SubscriptionPlanTier.studio => _studioPackage?.storeProduct.priceString,
       SubscriptionPlanTier.enterprise =>
         _enterprisePackage?.storeProduct.priceString,
-      SubscriptionPlanTier.solo => null,
+      SubscriptionPlanTier.solo => _soloPackage?.storeProduct.priceString,
     };
     if (priceString != null && priceString.isNotEmpty) return priceString;
     return '—';
@@ -320,14 +339,22 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       tagline: locale.t(
                         subscriptionPlanTaglineKey(SubscriptionPlanTier.solo),
                       ),
-                      priceLabel: locale.t('subscription.soloFreePrice'),
-                      showPricePeriod: false,
+                      priceLabel:
+                          _soloPackage?.storeProduct.priceString ??
+                          locale.t('subscription.soloFreePrice'),
+                      isPriceLoading: _pricesLoading,
                       features: subscriptionPlanFeatureLabels(
                         locale,
                         SubscriptionPlanTier.solo,
                       ),
                       highlighted: false,
-                      showActiveBadge: true,
+                      subscribeLabel: locale.t(
+                        'subscription.subscribeToSoloBtn',
+                      ),
+                      isLoading: _checkoutLoading == 'solo',
+                      onSubscribe: _pricesLoading
+                          ? null
+                          : () => _handleSelectPlan('solo'),
                     ),
                     const SizedBox(height: 20),
                     _PlanCard(

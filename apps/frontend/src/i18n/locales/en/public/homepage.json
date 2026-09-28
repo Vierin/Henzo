@@ -174,10 +174,10 @@
         {
           "name": "Solo",
           "subtitle": "Perfect for independent trainers",
-          "price": "0",
+          "price": "8",
           "priceSub": "/ per 1 month",
           "features": [
-            "12 classes per month",
+            "50 classes per month",
             "1 trainer",
             "Unlimited clients",
             "Online bookings",
@@ -191,8 +191,8 @@
           "price": "22.99",
           "priceSub": "/ per 1 month",
           "features": [
-            "100 classes/month",
-            "Up to 4 trainers",
+            "180 classes/month",
+            "Up to 5 trainers",
             "Waitlist",
             "Automated reminders (Email & Push)",
             "Basic Analytics (90 days)"
@@ -217,10 +217,10 @@
         {
           "name": "Solo",
           "subtitle": "Perfect for independent trainers",
-          "price": "0",
+          "price": "7.99",
           "priceSub": "/ per 1 month",
           "features": [
-            "12 classes per month",
+            "50 classes per month",
             "1 trainer",
             "Unlimited clients",
             "Online bookings",
@@ -234,8 +234,8 @@
           "price": "22.99",
           "priceSub": "/ per 1 month",
           "features": [
-            "100 classes/month",
-            "Up to 4 trainers",
+            "180 classes/month",
+            "Up to 5 trainers",
             "Waitlist",
             "Automated reminders (Email & Push)",
             "Basic Analytics (90 days)"

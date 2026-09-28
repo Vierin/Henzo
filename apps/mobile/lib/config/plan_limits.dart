@@ -3,9 +3,9 @@ class PlanLimits {
   PlanLimits._();
 
   static const int soloTrainers = 1;
-  static const int soloSessionsPerMonth = 12;
-  static const int studioTrainers = 4;
-  static const int studioSessionsPerMonth = 100;
+  static const int soloSessionsPerMonth = 50;
+  static const int studioTrainers = 5;
+  static const int studioSessionsPerMonth = 180;
 
   static ({int trainers, int sessions})? quotaForType(String? type) {
     final t = (type ?? 'SOLO').toUpperCase();

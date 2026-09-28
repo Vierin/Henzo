@@ -299,6 +299,18 @@ export function ClientRegisterPageClient() {
             {String(t('auth.signIn'))}
           </Link>
         </p>
+        <p className="mt-3 text-center text-sm text-[#878787]">
+          {String(t('auth.areYouSalonOwner'))}{' '}
+          <Link
+            href={withLocale(
+              '/business/register',
+              locale as 'en' | 'ru' | 'vi',
+            )}
+            className="font-semibold text-[#3F3287] transition hover:text-[#E86D4F]"
+          >
+            {String(t('auth.createBusinessAccount'))}
+          </Link>
+        </p>
       </div>
     </ClientAuthShell>
   );

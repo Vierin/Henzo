@@ -174,9 +174,7 @@ export default function OwnerDashboardPage() {
 
   const isActive = String(studio?.status || '').toUpperCase() === 'ACTIVE';
   const showOnboarding =
-    Boolean(studio) &&
-    !isActive &&
-    (stepsLeft > 0 || Boolean(checklist?.canPublish));
+    !studio || (!isActive && (stepsLeft > 0 || Boolean(checklist?.canPublish)));
 
   const previewHref = studio
     ? withLocale(
@@ -310,9 +308,15 @@ export default function OwnerDashboardPage() {
           hasPhoto={hasPhoto}
           canPublish={Boolean(checklist?.canPublish)}
           isPublishing={publishing}
-          detailsHref={path('/salon-info/studio')}
-          trainingHref={path('/trainings/new')}
-          photoHref={path('/salon-info/studio')}
+          detailsHref={path('/business/complete-setup')}
+          trainingHref={
+            studio ? path('/trainings/new') : path('/business/complete-setup')
+          }
+          photoHref={
+            studio
+              ? path('/salon-info/studio')
+              : path('/business/complete-setup')
+          }
           previewHref={previewHref}
           onPublish={() => void onPublish()}
         />
@@ -339,7 +343,7 @@ export default function OwnerDashboardPage() {
             localePath={path}
             bookingLink={bookingLink}
           />
-          {previewHref && studio ? (
+          {!showOnboarding && previewHref && studio ? (
             <OwnerDashboardStudioBanner
               href={previewHref}
               name={studio.name}

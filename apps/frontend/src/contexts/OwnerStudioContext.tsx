@@ -33,6 +33,8 @@ type OwnerStudioContextValue = {
     phone?: string;
     email?: string;
     currency?: string;
+    latitude?: number;
+    longitude?: number;
   }) => Promise<OwnerStudio>;
   patchStudio: (
     patch: Partial<UpdateCurrentStudioBody>,
@@ -75,6 +77,8 @@ export function OwnerStudioProvider({ children }: { children: ReactNode }) {
       phone?: string;
       email?: string;
       currency?: string;
+      latitude?: number;
+      longitude?: number;
     }) => {
       const created = await createCurrentStudio(body);
       setStudio(created);

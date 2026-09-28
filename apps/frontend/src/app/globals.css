@@ -94,6 +94,20 @@ main {
 	--tw-ring-shadow: 0 0 #0000 !important;
 }
 
+.owner-panel input.studio-setup-field:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']),
+.owner-panel input.studio-setup-field:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']):focus,
+.owner-panel button.studio-setup-field {
+	border-width: 1px !important;
+	border-style: solid !important;
+	border-color: #d1d5db !important;
+	box-shadow: none !important;
+}
+
+.owner-panel input.studio-setup-field:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']):focus,
+.owner-panel button.studio-setup-field:focus {
+	border-color: #f15942 !important;
+}
+
 /* Custom styles for rsuite TimePicker to reduce width */
 .rs-picker-input-group {
 	width: 120px !important;

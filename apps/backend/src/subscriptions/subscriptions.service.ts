@@ -24,7 +24,10 @@ import { RevenueCatService } from './revenuecat.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { PlanLimitsService } from './plan-limits.service';
-import { isPaidSubscriptionType } from './subscription-tier.util';
+import {
+  hasSubscriptionAccess,
+  isActiveStudioTrial,
+} from './subscription-access.util';
 
 /** ISO 4217 zero-decimal currencies (Stripe `unit_amount` is whole major units). */
 const ZERO_DECIMAL_CURRENCIES = new Set([
@@ -57,9 +60,9 @@ function unitAmountToMajorUnits(
 }
 
 function planToSubscriptionType(plan: CheckoutPlan): SubscriptionType {
-  return plan === 'enterprise'
-    ? SubscriptionType.ENTERPRISE
-    : SubscriptionType.STUDIO;
+  if (plan === 'enterprise') return SubscriptionType.ENTERPRISE;
+  if (plan === 'solo') return SubscriptionType.SOLO;
+  return SubscriptionType.STUDIO;
 }
 
 function subscriptionTypeFromStripeMeta(
@@ -70,6 +73,7 @@ function subscriptionTypeFromStripeMeta(
     .trim()
     .toLowerCase();
   if (plan === 'enterprise') return SubscriptionType.ENTERPRISE;
+  if (plan === 'solo') return SubscriptionType.SOLO;
   if (plan === 'studio') return SubscriptionType.STUDIO;
   // Fallback: infer from known enterprise price env is done by caller via priceId tag
   if (priceId && /enterprise/i.test(priceId)) {
@@ -168,7 +172,6 @@ export class SubscriptionsService {
     if (sub.billingProvider !== SubscriptionBillingProvider.REVENUECAT) {
       return false;
     }
-    if (!isPaidSubscriptionType(sub.type)) return false;
     if (sub.status !== SubscriptionStatus.ACTIVE) return false;
     if (sub.currentPeriodEnd && sub.currentPeriodEnd.getTime() < Date.now()) {
       return false;
@@ -186,7 +189,6 @@ export class SubscriptionsService {
     if (sub.billingProvider !== SubscriptionBillingProvider.STRIPE) {
       return false;
     }
-    if (!isPaidSubscriptionType(sub.type)) return false;
     if (
       sub.status === SubscriptionStatus.ACTIVE ||
       (sub.cancelAtPeriodEnd &&
@@ -345,10 +347,7 @@ export class SubscriptionsService {
       });
     }
 
-    const targetType =
-      params.plan === 'enterprise'
-        ? SubscriptionType.ENTERPRISE
-        : SubscriptionType.STUDIO;
+    const targetType = planToSubscriptionType(params.plan);
     if (existing.type === targetType) {
       return this.toCurrentPayload(existing);
     }
@@ -447,10 +446,11 @@ export class SubscriptionsService {
     const planMeta = String(
       session.metadata?.plan ?? stripeSub.metadata?.plan ?? 'studio',
     ).toLowerCase() as CheckoutPlan;
-    const tier =
-      planMeta === 'enterprise'
-        ? SubscriptionType.ENTERPRISE
-        : SubscriptionType.STUDIO;
+    const tier = planToSubscriptionType(
+      planMeta === 'solo' || planMeta === 'enterprise' || planMeta === 'studio'
+        ? planMeta
+        : 'studio',
+    );
 
     const updated = await this.applyStripeSubscription({
       studioId: studio.id,
@@ -541,7 +541,8 @@ export class SubscriptionsService {
     const prevCancel = Boolean(existing?.cancelAtPeriodEnd);
     const prevPaid =
       !!existing &&
-      isPaidSubscriptionType(existing.type) &&
+      (existing.billingProvider === SubscriptionBillingProvider.STRIPE ||
+        existing.billingProvider === SubscriptionBillingProvider.REVENUECAT) &&
       (existing.status === SubscriptionStatus.ACTIVE ||
         (existing.cancelAtPeriodEnd &&
           existing.currentPeriodEnd != null &&
@@ -601,7 +602,7 @@ export class SubscriptionsService {
       });
     }
 
-    if (params.userId && isPaidSubscriptionType(updated.type)) {
+    if (params.userId && stillPaid) {
       const amount = unitAmountToMajorUnits(
         price?.unit_amount ?? null,
         price?.currency ?? null,
@@ -700,7 +701,9 @@ export class SubscriptionsService {
     const stripeSub = await stripe.subscriptions.retrieve(subId);
     const plan = String(session.metadata?.plan ?? 'studio').toLowerCase();
     const tier = planToSubscriptionType(
-      plan === 'enterprise' ? 'enterprise' : 'studio',
+      plan === 'enterprise' || plan === 'solo' || plan === 'studio'
+        ? plan
+        : 'studio',
     );
 
     const studio = await this.prisma.studio.findFirst({
@@ -742,6 +745,8 @@ export class SubscriptionsService {
       billingProvider: sub.billingProvider ?? SubscriptionBillingProvider.NONE,
       cancelAtPeriodEnd: Boolean(sub.cancelAtPeriodEnd),
       hasStripeCustomer: Boolean(sub.stripeCustomerId),
+      isTrial: isActiveStudioTrial(sub),
+      hasAccess: hasSubscriptionAccess(sub),
     };
   }
 }

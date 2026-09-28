@@ -28,6 +28,8 @@ export async function createCurrentStudio(body: {
   email?: string;
   timezone?: string;
   currency?: string;
+  latitude?: number;
+  longitude?: number;
 }): Promise<OwnerStudio> {
   return apiClient.post<OwnerStudio>('/studios/current', body);
 }

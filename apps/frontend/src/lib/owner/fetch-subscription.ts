@@ -12,6 +12,8 @@ export type OwnerSubscription = {
   billingProvider?: BillingProvider | null;
   cancelAtPeriodEnd?: boolean;
   hasStripeCustomer?: boolean;
+  isTrial?: boolean;
+  hasAccess?: boolean;
 };
 
 export type OwnerUsage = {
@@ -35,9 +37,10 @@ export type ProPrices = TierPrices & {
   source?: string;
   studio: TierPrices;
   enterprise: TierPrices;
+  solo?: { monthly: number; currency: string };
 };
 
-export type CheckoutPlan = 'studio' | 'enterprise';
+export type CheckoutPlan = 'solo' | 'studio' | 'enterprise';
 export type CheckoutInterval = 'monthly' | 'annual';
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -100,6 +103,13 @@ export async function fetchOwnerSubscription(): Promise<OwnerSubscription | null
         : null,
       cancelAtPeriodEnd: Boolean(data.cancelAtPeriodEnd),
       hasStripeCustomer: Boolean(data.hasStripeCustomer),
+      isTrial: data.isTrial === true,
+      hasAccess:
+        data.hasAccess === false
+          ? false
+          : data.hasAccess === true
+            ? true
+            : undefined,
     };
   } catch {
     return null;
@@ -152,6 +162,8 @@ export async function fetchProPrices(): Promise<ProPrices | null> {
     const annual = asNum(data.annual) ?? 229.9;
     const studio = asTierPrices(data.studio, monthly, annual);
     const enterprise = asTierPrices(data.enterprise, 69.99, 699.9);
+    const soloRaw = asRecord(data.solo);
+    const soloMonthly = asNum(soloRaw?.monthly) ?? 8;
     return {
       currency: data.currency ? String(data.currency).toUpperCase() : 'EUR',
       monthly: studio.monthly,
@@ -161,6 +173,12 @@ export async function fetchProPrices(): Promise<ProPrices | null> {
       source: data.source ? String(data.source) : undefined,
       studio,
       enterprise,
+      solo: {
+        monthly: soloMonthly,
+        currency: soloRaw?.currency
+          ? String(soloRaw.currency).toUpperCase()
+          : 'USD',
+      },
     };
   } catch {
     return null;
@@ -270,8 +288,12 @@ export function isPaidActiveSubscription(
   sub: OwnerSubscription | null,
 ): boolean {
   if (!sub) return false;
+  const provider = (sub.billingProvider || '').toUpperCase();
+  if (provider !== 'STRIPE' && provider !== 'REVENUECAT') return false;
   const type = (sub.type || sub.tier || sub.plan || '').toUpperCase();
-  if (type !== 'STUDIO' && type !== 'ENTERPRISE') return false;
+  if (type !== 'SOLO' && type !== 'STUDIO' && type !== 'ENTERPRISE') {
+    return false;
+  }
   const status = (sub.status || '').toUpperCase();
   return status === 'ACTIVE' || Boolean(sub.cancelAtPeriodEnd);
 }

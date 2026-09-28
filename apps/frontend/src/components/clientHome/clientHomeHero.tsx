@@ -60,7 +60,10 @@ export function ClientHomeHero({ categories, locale }: Props) {
       <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col justify-end px-4 pb-8 pt-[min(80vw,480px)] sm:px-6 sm:pb-12 sm:pt-[min(58vw,460px)] lg:justify-center lg:pb-20 lg:pt-14">
         <div className="max-w-xl lg:max-w-[52%]">
           <h1 className="text-[2.35rem] font-bold leading-[1.08] tracking-tight text-[#3F3F3F] sm:text-5xl lg:text-[3.4rem]">
-            {line1} <span className="text-[#E86D4F]">{line2Highlight}</span>
+            {line1}{' '}
+            <span className="whitespace-nowrap text-[#E86D4F]">
+              {line2Highlight}
+            </span>
           </h1>
 
           <p className="mt-4 hidden max-w-lg text-base leading-relaxed text-[#878787] sm:mt-5 sm:block sm:text-lg">
@@ -99,11 +102,11 @@ export function ClientHomeHero({ categories, locale }: Props) {
                 aria-hidden
               />
 
-              <div className="flex items-center justify-between gap-2 px-2 pb-1 sm:justify-end sm:px-1 sm:pb-0 sm:pr-1">
+              <div className="flex items-center gap-2 px-2 pb-1 sm:px-1 sm:pb-0 sm:pr-1">
                 <ClientLocationPicker
                   variant="hero"
                   fallbackLabel={locationFallback}
-                  className="min-w-0"
+                  className="min-w-0 flex-1 sm:flex-none"
                 />
                 <button
                   type="submit"

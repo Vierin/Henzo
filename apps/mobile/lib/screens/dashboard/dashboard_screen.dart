@@ -18,7 +18,9 @@ import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/studio_cache.dart';
-import '../../services/dashboard_api_service.dart';
+import '../../services/subscription_api_service.dart';
+import '../../utils/plan_limit_dialogs.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/notifications_store.dart';
 import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
@@ -63,6 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isPublishing = false;
   bool _dataLoaded = false;
   bool _loadingData = false;
+  bool _subscriptionPrompted = false;
   SubscriptionRefreshNotifier? _subRefresh;
   StudioCache? _studioCache;
 
@@ -95,6 +98,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _subRefresh?.removeListener(_onSubscriptionRefresh);
     _studioCache?.removeListener(_onStudioCacheChanged);
     super.dispose();
+  }
+
+  Future<void> _maybePromptSubscription(String token) async {
+    if (!mounted || widget.trainerMode || _subscriptionPrompted) return;
+    final sub = await SubscriptionApiService.getCurrent(token);
+    if (!mounted || sub == null || _subscriptionPrompted) return;
+    if (!sub.hasAccess) {
+      _subscriptionPrompted = true;
+      await showSubscriptionRequiredDialog(context);
+      return;
+    }
+    if (!sub.isTrial) return;
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'studio_trial_notice_${sub.studioId}';
+    if (prefs.getBool(key) == true) return;
+    await prefs.setBool(key, true);
+    if (!mounted) return;
+    _subscriptionPrompted = true;
+    await showStudioTrialDialog(context);
   }
 
   Future<void> _loadData() async {
@@ -236,6 +258,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _sessionsLoadError = sessionsLoadError;
           _dataLoaded = true;
         });
+        if (!widget.trainerMode) {
+          unawaited(_maybePromptSubscription(token));
+        }
       }
     } catch (e) {
       if (mounted) {

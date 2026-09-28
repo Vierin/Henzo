@@ -111,6 +111,11 @@ export class EnvironmentVariables {
   @IsOptional()
   STRIPE_ENTERPRISE_YEARLY_PRICE_ID?: string;
 
+  /** Solo monthly price in USD (`price_...`). */
+  @IsString()
+  @IsOptional()
+  STRIPE_SOLO_MONTHLY_PRICE_ID?: string;
+
   @IsString()
   @IsOptional()
   STRIPE_WEBHOOK_SECRET?: string;
@@ -151,6 +156,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REVENUECAT_ENTERPRISE_ENTITLEMENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_SOLO_ENTITLEMENT_ID?: string;
 
   @IsString()
   @IsOptional()

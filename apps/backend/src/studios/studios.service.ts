@@ -27,6 +27,11 @@ import {
   assertValidStudioDescription,
 } from '../lib/text-content';
 import { resolveCreateStudioCurrency } from './studio-currency';
+import { trialGrantedNotice } from '../subscriptions/trial-notices';
+import {
+  hasSubscriptionAccess,
+  listedSubscriptionWhere,
+} from '../subscriptions/subscription-access.util';
 
 @Injectable()
 export class StudiosService {
@@ -486,7 +491,8 @@ export class StudiosService {
     const term = search.trim();
     return this.prisma.studio.findMany({
       where: {
-        status: 'ACTIVE', // Only suggest active Studios
+        status: 'ACTIVE',
+        Subscription: listedSubscriptionWhere(),
         OR: [
           { name: { contains: term, mode: 'insensitive' } },
           { address: { contains: term, mode: 'insensitive' } },
@@ -506,7 +512,8 @@ export class StudiosService {
     try {
       const studios = await this.prisma.studio.findMany({
         where: {
-          status: 'ACTIVE', // Only show active Studios in public listings
+          status: 'ACTIVE',
+          Subscription: listedSubscriptionWhere(),
         },
         select: {
           id: true,
@@ -756,7 +763,8 @@ export class StudiosService {
 
     // Build where clause
     const where: any = {
-      status: 'ACTIVE', // Only show active Studios in public search
+      status: 'ACTIVE',
+      Subscription: listedSubscriptionWhere(),
     };
 
     // Build category service filter first (needed for combining with search)
@@ -1448,8 +1456,10 @@ export class StudiosService {
         });
 
         const now = new Date();
+        const trialEnds = new Date(now);
+        trialEnds.setMonth(trialEnds.getMonth() + 3);
 
-        const initialSubscriptionType = intendedOwnerEmail ? 'STUDIO' : 'SOLO';
+        const initialSubscriptionType = 'STUDIO';
         await tx.subscription.create({
           data: {
             studioId: studio.id,
@@ -1457,6 +1467,8 @@ export class StudiosService {
             status: 'ACTIVE',
             startDate: now,
             updatedAt: now,
+            // Owner sign-up: 3-month Studio trial. Ops-claim studios stay open-ended.
+            ...(intendedOwnerEmail ? {} : { currentPeriodEnd: trialEnds }),
           },
         });
 
@@ -1527,8 +1539,8 @@ export class StudiosService {
       (result as any).services = services;
 
       console.log(
-        `✅ Created Studio "${result.name}" with default ${
-          intendedOwnerEmail ? 'STUDIO' : 'SOLO'
+        `✅ Created Studio "${result.name}" with ${
+          intendedOwnerEmail ? 'open STUDIO' : '3-month STUDIO trial'
         } subscription`,
       );
       const createdDescription = createStudioDto.description?.trim();
@@ -1541,10 +1553,35 @@ export class StudiosService {
       this.analytics.track(ownerId, 'studio_created', {
         studio_id: (result as any).id,
       });
+      if (!intendedOwnerEmail) {
+        void this.notifyStudioTrialGranted(ownerId);
+      }
       return result;
     } catch (error) {
       console.error('❌ Database error creating Studio:', error.message);
       throw error;
+    }
+  }
+
+  private async notifyStudioTrialGranted(ownerId: string): Promise<void> {
+    try {
+      const tokens = await this.notifications.getPushTokensByUserId(ownerId);
+      const notice = trialGrantedNotice(tokens[0]?.language ?? 'en');
+      await this.notifications.createInAppNotification({
+        userId: ownerId,
+        type: 'studio_trial_granted',
+        title: notice.title,
+        body: notice.body,
+        data: { type: 'studio_trial_granted' },
+      });
+      await this.notifications.sendPushNotification(
+        tokens,
+        notice.title,
+        notice.body,
+        { type: 'studio_trial_granted' },
+      );
+    } catch (e) {
+      console.warn('Studio trial notice failed', e);
     }
   }
 
@@ -2298,6 +2335,7 @@ export class StudiosService {
       where: {
         status: 'ACTIVE',
         slug: { not: null },
+        Subscription: listedSubscriptionWhere(),
       },
       select: {
         slug: true,
@@ -2319,6 +2357,13 @@ export class StudiosService {
   async findPublicBySlug(slug: string) {
     const full = await this.findBySlug(slug);
     if (!full) return null;
+    const studioId = (full as { id?: string }).id;
+    if (studioId) {
+      const sub = await this.prisma.subscription.findUnique({
+        where: { studioId },
+      });
+      if (!hasSubscriptionAccess(sub)) return null;
+    }
     const studio = full as Record<string, unknown>;
     delete studio.ownerId;
     const publicReminderSettings = this.pickPublicReminderSettings(
@@ -2390,6 +2435,12 @@ export class StudiosService {
       },
     });
     if (!studio || studio.status !== 'ACTIVE') {
+      return [];
+    }
+    const sub = await this.prisma.subscription.findUnique({
+      where: { studioId: studio.id },
+    });
+    if (!hasSubscriptionAccess(sub)) {
       return [];
     }
 
@@ -2697,7 +2748,8 @@ export class StudiosService {
     // Get Studios with minimal data
     const Studios = await this.prisma.Studio.findMany({
       where: {
-        status: 'ACTIVE', // Only show active Studios in featured listings
+        status: 'ACTIVE',
+        Subscription: listedSubscriptionWhere(),
       },
       select: {
         id: true,
@@ -2899,6 +2951,7 @@ export class StudiosService {
     const studios = await this.prisma.studio.findMany({
       where: {
         status: 'ACTIVE',
+        Subscription: listedSubscriptionWhere(),
         latitude: { gte: bbox.south, lte: bbox.north },
         longitude: { gte: bbox.west, lte: bbox.east },
       },

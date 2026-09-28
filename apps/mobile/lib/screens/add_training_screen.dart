@@ -1574,7 +1574,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      if (isSessionPlanLimitError(e)) {
+      if (isSubscriptionRequiredError(e)) {
+        await showSubscriptionRequiredDialog(context);
+      } else if (isSessionPlanLimitError(e)) {
         await showSessionPlanLimitDialog(context, error: e, offerUpgrade: true);
       } else {
         showApiError(context, e);

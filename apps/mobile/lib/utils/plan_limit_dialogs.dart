@@ -8,6 +8,57 @@ import '../widgets/common/henzo_modal.dart';
 import '../screens/subscription_screen.dart';
 import '../services/api_client.dart';
 
+bool isSubscriptionRequiredError(Object e) {
+  if (e is! ApiException) return false;
+  return e.errorCode == 'SUBSCRIPTION_REQUIRED' ||
+      (e.statusCode == 403 && e.message.contains('SUBSCRIPTION_REQUIRED'));
+}
+
+Future<void> showSubscriptionRequiredDialog(BuildContext context) async {
+  final locale = context.read<LocaleProvider>();
+  await showHenzoDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(locale.t('subscription.paywallTitle')),
+      content: Text(locale.t('subscription.paywallBody')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(locale.t('common.cancel')),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+            );
+          },
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary500),
+          child: Text(locale.t('subscription.paywallCta')),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> showStudioTrialDialog(BuildContext context) async {
+  final locale = context.read<LocaleProvider>();
+  await showHenzoDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(locale.t('subscription.trialBannerTitle')),
+      content: Text(locale.t('subscription.trialBannerBody')),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary500),
+          child: Text(locale.t('common.ok')),
+        ),
+      ],
+    ),
+  );
+}
+
 bool isTrainerPlanLimitError(Object e) {
   if (e is! ApiException) return false;
   return e.errorCode == 'SOLO_TRAINER_LIMIT_EXCEEDED' ||

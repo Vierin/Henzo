@@ -1,13 +1,13 @@
-import { redirect } from 'next/navigation';
-import { isLocale, type Locale } from '@/i18n/routing';
+import type { Metadata } from 'next';
+import { BusinessRegisterPageClient } from '@/components/auth/businessRegisterPageClient';
 
-/** Legacy URL — owners use the shared `/login` page. */
-export default async function BusinessRegisterRedirect({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale: raw } = await params;
-  const locale = (isLocale(raw) ? raw : 'en') as Locale;
-  redirect(`/${locale}/login?intent=business`);
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Business sign up — Henzo',
+    robots: { index: false, follow: false },
+  };
+}
+
+export default function BusinessRegisterPage() {
+  return <BusinessRegisterPageClient />;
 }

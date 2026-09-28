@@ -130,7 +130,7 @@ export async function middleware(req: NextRequest) {
     if (!hasOwnerSession) {
       const redirectUrl = req.nextUrl.clone();
       redirectUrl.pathname = `/${activeLocale}/login`;
-      redirectUrl.search = '?intent=business';
+      redirectUrl.search = '';
       return NextResponse.redirect(redirectUrl);
     }
     return withLocaleHeader(res, activeLocale);

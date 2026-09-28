@@ -54,7 +54,7 @@ function AuthCallbackInner() {
       if (!alive) return;
       router.replace(
         withLocale(
-          `/login?intent=business&error=${encodeURIComponent(error)}`,
+          `/business/register?error=${encodeURIComponent(error)}`,
           locale,
         ),
       );

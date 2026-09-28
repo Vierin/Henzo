@@ -94,10 +94,10 @@ export function ClientHomeAppPromoSection() {
   const storeGooglePlay = String(t(`${APP_BASE}.storeGooglePlay`));
 
   return (
-    <section className="bg-[#F9F4F0] px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6">
+    <section className="bg-[#F9F4F0] px-4 pb-4 pt-1 sm:px-6 sm:pb-14 sm:pt-6">
       <div className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-[2rem] bg-[#FDF5F0] px-5 py-8 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-          <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+        <div className="overflow-hidden rounded-[2rem] bg-[#FDF5F0] px-4 py-4 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <div className="flex flex-col items-stretch gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
             <div className="w-full max-w-md lg:basis-1/3">
               <h2 className="text-[2rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-5xl lg:text-6xl">
                 {title}
@@ -106,7 +106,7 @@ export function ClientHomeAppPromoSection() {
                 {subtitle}
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
+              <div className="mt-4 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
                 <StoreBadgeLinks
                   appStoreLabel={storeAppStore}
                   googlePlayLabel={storeGooglePlay}
@@ -116,8 +116,8 @@ export function ClientHomeAppPromoSection() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[250px] sm:max-w-[270px] lg:basis-1/3 lg:max-w-[290px]">
-              <StudioPhoneFrame className="max-w-full" />
+            <div className="relative mx-auto w-full sm:max-w-[270px] lg:basis-1/3 lg:max-w-[290px]">
+              <StudioPhoneFrame className="w-full max-w-full" />
 
               {APP_PILLS.map(({ key, icon, color, className }) => (
                 <FeaturePill
@@ -189,7 +189,7 @@ export function ClientHomeBusinessPromoSection() {
       <div className="mx-auto max-w-7xl">
         <div className="overflow-hidden rounded-[1.75rem] bg-[#E4E3F3] sm:rounded-[2.5rem]">
           <div className="grid items-stretch gap-0 lg:grid-cols-2 lg:gap-10 xl:gap-14">
-            <div className="max-w-xl px-5 pb-5 pt-6 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+            <div className="max-w-xl px-5 pb-0 pt-6 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
               <h2 className="text-[1.55rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-4xl lg:text-[2.6rem]">
                 {titleLead} <span className="text-[#5B45C6]">{titleBrand}</span>
               </h2>
@@ -231,13 +231,13 @@ export function ClientHomeBusinessPromoSection() {
               </div>
             </div>
 
-            <div className="relative flex max-h-[14rem] items-end justify-center overflow-hidden sm:max-h-none sm:min-h-[24rem] lg:min-h-full">
+            <div className="relative flex items-end justify-center sm:min-h-[24rem] lg:min-h-full">
               <Image
                 src="/images/business-coach.png"
                 alt=""
                 width={900}
                 height={700}
-                className="relative z-0 h-full max-h-[14rem] w-[100%] max-w-none object-cover object-[center_20%] sm:h-auto sm:max-h-none sm:w-[112%] sm:translate-y-1 sm:object-contain sm:object-bottom lg:w-[118%] lg:max-h-[28rem]"
+                className="relative z-0 h-auto w-full max-w-none object-contain object-bottom sm:w-[112%] sm:translate-y-1 lg:w-[118%] lg:max-h-[28rem]"
                 sizes="(max-width: 1024px) 95vw, 50vw"
                 priority={false}
               />

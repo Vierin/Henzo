@@ -2,8 +2,8 @@ import { IsIn, IsString, MaxLength } from 'class-validator';
 
 export class CreateCheckoutSessionDto {
   @IsString()
-  @IsIn(['studio', 'enterprise'])
-  plan: 'studio' | 'enterprise';
+  @IsIn(['solo', 'studio', 'enterprise'])
+  plan: 'solo' | 'studio' | 'enterprise';
 
   @IsString()
   @IsIn(['monthly', 'annual'])
@@ -28,8 +28,8 @@ export class CreateBillingPortalDto {
 /** Upgrade/downgrade an existing Stripe subscription (same customer). */
 export class ChangePlanDto {
   @IsString()
-  @IsIn(['studio', 'enterprise'])
-  plan: 'studio' | 'enterprise';
+  @IsIn(['solo', 'studio', 'enterprise'])
+  plan: 'solo' | 'studio' | 'enterprise';
 
   @IsString()
   @IsIn(['monthly', 'annual'])

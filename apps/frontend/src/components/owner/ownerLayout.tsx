@@ -7,6 +7,7 @@ import { stripLocaleFromPath } from '@/i18n/routing';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import OwnerHeader from './ownerHeader';
 import OwnerSidebar from './ownerSidebar';
+import { SubscriptionAccessPrompt } from './subscriptionAccessPrompt';
 
 export default function OwnerLayoutShell({
   children,
@@ -82,6 +83,7 @@ export default function OwnerLayoutShell({
             <div className="mx-auto mb-5 w-full max-w-7xl flex-1 px-3 sm:mb-0 md:px-6 lg:px-8">
               {children}
             </div>
+            <SubscriptionAccessPrompt />
           </main>
         </div>
       </div>

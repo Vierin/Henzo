@@ -12,6 +12,12 @@ export interface TierPrices {
   annualSavePercent: number;
 }
 
+export interface SoloPrice {
+  /** Major units, USD (e.g. 8). */
+  monthly: number;
+  currency: 'USD';
+}
+
 export interface ProPricesPayload {
   currency: 'EUR';
   source: SubscriptionPriceSource;
@@ -22,6 +28,7 @@ export interface ProPricesPayload {
   annualSavePercent: number;
   studio: TierPrices;
   enterprise: TierPrices;
+  solo: SoloPrice;
 }
 
 @Injectable()
@@ -93,6 +100,7 @@ export class StripePricingService {
       annualSavePercent: studio.annualSavePercent,
       studio,
       enterprise,
+      solo: { monthly: 8, currency: 'USD' },
     };
   }
 
@@ -104,6 +112,27 @@ export class StripePricingService {
     }
     // zero-decimal (legacy VND etc.)
     return unitAmount;
+  }
+
+  /** Solo price is USD. Returns null when the Stripe price is missing or not USD. */
+  private async retrieveUsdAmount(
+    priceId: string | undefined,
+  ): Promise<number | null> {
+    if (!this.stripe || !priceId?.trim()) return null;
+    try {
+      const price = await this.stripe.prices.retrieve(priceId.trim());
+      if (price.unit_amount == null) return null;
+      if (price.currency !== 'usd') {
+        this.logger.warn(
+          `Expected USD Stripe price for Solo, got ${price.currency} for ${priceId}`,
+        );
+        return null;
+      }
+      return this.unitAmountToMajor(price.unit_amount, price.currency);
+    } catch (e) {
+      this.logger.warn(`Stripe prices retrieve failed for ${priceId}: ${e}`);
+      return null;
+    }
   }
 
   private async retrieveMajorAmount(
@@ -134,12 +163,16 @@ export class StripePricingService {
     const enterpriseAnnualId = this.config.get<string>(
       'STRIPE_ENTERPRISE_YEARLY_PRICE_ID',
     );
+    const soloMonthlyId = this.config.get<string>(
+      'STRIPE_SOLO_MONTHLY_PRICE_ID',
+    );
 
-    const [sm, sa, em, ea] = await Promise.all([
+    const [sm, sa, em, ea, soloAmount] = await Promise.all([
       this.retrieveMajorAmount(studioMonthlyId),
       this.retrieveMajorAmount(studioAnnualId),
       this.retrieveMajorAmount(enterpriseMonthlyId),
       this.retrieveMajorAmount(enterpriseAnnualId),
+      this.retrieveUsdAmount(soloMonthlyId),
     ]);
 
     if (sm == null || sa == null) {
@@ -162,6 +195,7 @@ export class StripePricingService {
       annualSavePercent: studio.annualSavePercent,
       studio,
       enterprise,
+      solo: { monthly: soloAmount ?? 8, currency: 'USD' },
     };
   }
 

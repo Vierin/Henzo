@@ -3,6 +3,7 @@ import { SubscriptionType } from '@prisma/client';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { PrismaService } from '../prisma/prisma.service';
 import { planQuotaForType } from './plan-limits.constants';
+import { hasSubscriptionAccess } from './subscription-access.util';
 
 export {
   SOLO_SESSIONS_PER_MONTH,
@@ -19,15 +20,29 @@ type MonthKey = string; // YYYY-MM in studio timezone
 export class PlanLimitsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async subscriptionRow(studioId: string) {
+    return this.prisma.subscription.findUnique({
+      where: { studioId },
+    });
+  }
+
+  private throwSubscriptionRequired(): never {
+    throw new HttpException(
+      {
+        statusCode: HttpStatus.FORBIDDEN,
+        error: 'SUBSCRIPTION_REQUIRED',
+        message: 'Subscribe to add classes and trainers.',
+      },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+
   private async subscriptionTypeForStudio(
     studioId: string,
   ): Promise<SubscriptionType> {
-    const sub = await this.prisma.subscription.findUnique({
-      where: { studioId },
-      select: { type: true, status: true },
-    });
-    if (!sub || sub.status !== 'ACTIVE') {
-      return SubscriptionType.SOLO;
+    const sub = await this.subscriptionRow(studioId);
+    if (!sub || !hasSubscriptionAccess(sub)) {
+      this.throwSubscriptionRequired();
     }
     return sub.type;
   }
@@ -146,7 +161,7 @@ export class PlanLimitsService {
 
   /**
    * Current usage vs. plan caps for a studio, regardless of tier. Powers the
-   * settings usage counter and the "12/12" limit dialog. A `null` limit means
+   * settings usage counter and the limit dialog. A `null` limit means
    * the tier is uncapped (Enterprise).
    */
   async getStudioUsage(studioId: string): Promise<{
@@ -155,8 +170,11 @@ export class PlanLimitsService {
     sessionsLimit: number | null;
     trainersUsed: number;
     trainersLimit: number | null;
+    hasAccess: boolean;
   }> {
-    const tier = await this.subscriptionTypeForStudio(studioId);
+    const sub = await this.subscriptionRow(studioId);
+    const allowed = hasSubscriptionAccess(sub);
+    const tier = allowed && sub ? sub.type : SubscriptionType.SOLO;
     const quota = planQuotaForType(tier);
     const timezone = await this.studioTimezone(studioId);
     const nowKey = this.monthKeyForDate(new Date(), timezone);
@@ -170,6 +188,7 @@ export class PlanLimitsService {
       sessionsLimit: quota ? quota.sessionsPerMonth : null,
       trainersUsed,
       trainersLimit: quota ? quota.trainerLimit : null,
+      hasAccess: allowed,
     };
   }
 

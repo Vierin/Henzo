@@ -32,3 +32,21 @@ export async function verifyClientRegistrationCode(body: {
 }> {
   return apiClient.post('/auth/register-client/verify-code', body);
 }
+
+export async function requestOwnerRegistrationCode(body: {
+  email: string;
+  password: string;
+  name?: string;
+}): Promise<void> {
+  await apiClient.post('/auth/register-owner/request-code', body);
+}
+
+export async function verifyOwnerRegistrationCode(body: {
+  email: string;
+  code: string;
+}): Promise<{
+  user: { id: string; email: string; role: string };
+  session: { access_token?: string; refresh_token?: string } | null;
+}> {
+  return apiClient.post('/auth/register-owner/verify-code', body);
+}

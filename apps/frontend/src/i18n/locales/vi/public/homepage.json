@@ -173,10 +173,10 @@
         {
           "name": "Solo",
           "subtitle": "Dành cho huấn luyện viên độc lập",
-          "price": "0",
+          "price": "249.000",
           "priceSub": "/ mỗi tháng",
           "features": [
-            "12 lớp mỗi tháng",
+            "50 lớp mỗi tháng",
             "1 huấn luyện viên",
             "Không giới hạn khách hàng",
             "Đặt lịch trực tuyến",
@@ -190,8 +190,8 @@
           "price": "599.000",
           "priceSub": "/ mỗi tháng",
           "features": [
-            "100 lớp/tháng",
-            "Tối đa 4 huấn luyện viên",
+            "180 lớp/tháng",
+            "Tối đa 5 huấn luyện viên",
             "Danh sách chờ",
             "Nhắc nhở tự động (Email & Push)",
             "Phân tích cơ bản (90 ngày)"

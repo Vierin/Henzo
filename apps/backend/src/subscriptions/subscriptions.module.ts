@@ -10,9 +10,18 @@ import { PlanLimitsService } from './plan-limits.service';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AdminEventLogModule } from '../admin/admin-event-log.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SubscriptionTrialScheduler } from './subscription-trial.scheduler';
 
 @Module({
-  imports: [AuthModule, PrismaModule, AdminEventLogModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    AdminEventLogModule,
+    NotificationsModule,
+    ScheduleModule,
+  ],
   controllers: [
     SubscriptionsController,
     RevenueCatWebhookController,
@@ -24,6 +33,7 @@ import { AdminEventLogModule } from '../admin/admin-event-log.module';
     RevenueCatService,
     SubscriptionsService,
     PlanLimitsService,
+    SubscriptionTrialScheduler,
   ],
   exports: [
     StripePricingService,
