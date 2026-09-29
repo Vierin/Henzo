@@ -273,12 +273,40 @@ export default function SubscriptionSettingsPage() {
     if (checkout === 'cancelled') {
       toast(
         translate('owner.subscription.checkoutCancelled') ||
-          'Checkout cancelled.',
+          'Checkout cancelled. No charges were made.',
         {
           id: toastId,
-          icon: 'ⓘ',
           duration: 4000,
-          style: toastStyle,
+          icon: (
+            <span
+              aria-hidden
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 999,
+                background: ownerTheme.accent,
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              i
+            </span>
+          ),
+          style: {
+            borderRadius: '14px',
+            border: `1px solid ${ownerTheme.accent}`,
+            background: ownerTheme.card,
+            padding: '14px 18px',
+            color: ownerTheme.text,
+            fontWeight: 600,
+            maxWidth: 420,
+            boxShadow: '0 8px 24px rgba(241, 89, 66, 0.12)',
+          },
         },
       );
       clearParams();
