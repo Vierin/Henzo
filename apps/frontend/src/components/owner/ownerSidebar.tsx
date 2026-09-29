@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   stripLocaleFromPath,
@@ -18,12 +18,15 @@ import {
   Settings,
   LogOut,
   UserCheck,
+  LineChart,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { getPublicSupabase } from '@/lib/supabase-public';
 import { clearOwnerAuthCookie } from '@/lib/owner/auth-session-cookie';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import { fetchOwnerSubscription } from '@/lib/owner/fetch-subscription';
+import { ownerPlanHasAnalytics } from '@/lib/owner/fetch-analytics';
 
 interface OwnerSidebarProps {
   isMobileMenuOpen?: boolean;
@@ -37,7 +40,22 @@ export default function OwnerSidebar({
   const router = useRouter();
   const t = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchOwnerSubscription()
+      .then((sub) => {
+        if (!cancelled) setShowAnalytics(ownerPlanHasAnalytics(sub));
+      })
+      .catch(() => {
+        if (!cancelled) setShowAnalytics(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const currentLocale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
   const pathNoLocale = stripLocaleFromPath(pathname);
@@ -150,6 +168,14 @@ export default function OwnerSidebar({
           t('owner.dashboard.clients') || 'Clients',
           pathNoLocale.startsWith('/clients'),
         )}
+        {showAnalytics
+          ? renderNavItem(
+              '/analytics',
+              <LineChart className="h-5 w-5" />,
+              t('owner.dashboard.analyticsNav') || 'Analytics',
+              pathNoLocale.startsWith('/analytics'),
+            )
+          : null}
 
         <p
           className="mb-1 mt-6 px-3 text-[11px] font-semibold uppercase tracking-[0.06em]"

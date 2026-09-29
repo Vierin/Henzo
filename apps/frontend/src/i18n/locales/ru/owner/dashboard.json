@@ -93,5 +93,27 @@
 	"trialPromoCheckoutError": "Не удалось начать оплату",
 	"subscriptionLockedTitle": "Нужна подписка",
 	"subscriptionLockedBody": "Пробный период закончился. Оформите подписку, чтобы добавлять услуги, сотрудников и блоки в календаре. Существующие записи по-прежнему можно вести.",
-	"subscriptionLockedCta": "Тарифы"
+	"subscriptionLockedCta": "Тарифы",
+	"analyticsNav": "Аналитика",
+	"analytics": {
+		"title": "Аналитика",
+		"last7Days": "7 дней",
+		"last30Days": "30 дней",
+		"last90Days": "90 дней",
+		"revenue": "Выручка с записей",
+		"activeClients": "Активные клиенты",
+		"avgOccupancy": "Средняя загрузка",
+		"noShow": "Неявки",
+		"waitlistRequests": "Лист ожидания",
+		"revenueTrend": "Динамика выручки ({currency})",
+		"fromPreviousDays": "к предыдущим {days} дням",
+		"ofBookings": "{pct}% записей",
+		"notEnoughDataYet": "Пока недостаточно данных",
+		"noData": "Нет данных за выбранный период",
+		"failedLoad": "Не удалось загрузить аналитику",
+		"retry": "Повторить",
+		"proLockedTitle": "Аналитика доступна на Studio и Enterprise",
+		"proLockedDescription": "Перейдите на Studio или Enterprise, чтобы видеть загрузку, неявки, лист ожидания и динамику выручки.",
+		"upgrade": "Тарифы"
+	}
 }

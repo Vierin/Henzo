@@ -93,5 +93,27 @@
 	"trialPromoCheckoutError": "Không thể bắt đầu thanh toán",
 	"subscriptionLockedTitle": "Cần đăng ký",
 	"subscriptionLockedBody": "Hết thời gian dùng thử. Đăng ký để thêm dịch vụ, nhân viên hoặc khối lịch. Bạn vẫn có thể quản lý đặt chỗ hiện có.",
-	"subscriptionLockedCta": "Xem gói"
+	"subscriptionLockedCta": "Xem gói",
+	"analyticsNav": "Phân tích",
+	"analytics": {
+		"title": "Phân tích",
+		"last7Days": "7 ngày",
+		"last30Days": "30 ngày",
+		"last90Days": "90 ngày",
+		"revenue": "Doanh thu đặt chỗ",
+		"activeClients": "Khách đang hoạt động",
+		"avgOccupancy": "Tỷ lệ lấp đầy",
+		"noShow": "Vắng mặt",
+		"waitlistRequests": "Danh sách chờ",
+		"revenueTrend": "Xu hướng doanh thu ({currency})",
+		"fromPreviousDays": "so với {days} ngày trước",
+		"ofBookings": "{pct}% lượt đặt",
+		"notEnoughDataYet": "Chưa đủ dữ liệu",
+		"noData": "Không có dữ liệu cho khoảng thời gian này",
+		"failedLoad": "Không tải được phân tích",
+		"retry": "Thử lại",
+		"proLockedTitle": "Phân tích có trên Studio và Enterprise",
+		"proLockedDescription": "Nâng lên Studio hoặc Enterprise để xem tỷ lệ lấp đầy, vắng mặt, danh sách chờ và xu hướng doanh thu.",
+		"upgrade": "Xem gói"
+	}
 }

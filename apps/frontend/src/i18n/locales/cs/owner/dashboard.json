@@ -93,5 +93,27 @@
 	"trialPromoCheckoutError": "Could not start checkout",
 	"subscriptionLockedTitle": "Subscription required",
 	"subscriptionLockedBody": "Your trial has ended. Subscribe to add services, staff, or calendar blocks. You can still manage existing bookings.",
-	"subscriptionLockedCta": "View plans"
+	"subscriptionLockedCta": "View plans",
+	"analyticsNav": "Analytika",
+	"analytics": {
+		"title": "Analytika",
+		"last7Days": "7 dní",
+		"last30Days": "30 dní",
+		"last90Days": "90 dní",
+		"revenue": "Tržby z rezervací",
+		"activeClients": "Aktivní klienti",
+		"avgOccupancy": "Průměrná obsazenost",
+		"noShow": "Nedostavení",
+		"waitlistRequests": "Čekací listina",
+		"revenueTrend": "Trend tržeb ({currency})",
+		"fromPreviousDays": "oproti předchozím {days} dnům",
+		"ofBookings": "{pct}% rezervací",
+		"notEnoughDataYet": "Zatím málo dat",
+		"noData": "Pro zvolené období nejsou data",
+		"failedLoad": "Analytiku se nepodařilo načíst",
+		"retry": "Zkusit znovu",
+		"proLockedTitle": "Analytika je v plánech Studio a Enterprise",
+		"proLockedDescription": "Přejděte na Studio nebo Enterprise a uvidíte obsazenost, absence, čekací listinu a trend tržeb.",
+		"upgrade": "Tarify"
+	}
 }

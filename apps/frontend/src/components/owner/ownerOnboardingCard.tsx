@@ -108,7 +108,7 @@ export function OwnerOnboardingCard({
           </p>
         </div>
 
-        <div className="relative h-[104px] w-[104px] shrink-0 sm:h-[124px] sm:w-[124px]">
+        <div className="relative h-[104px] w-[104px] shrink-0 overflow-visible sm:h-[124px] sm:w-[124px]">
           <svg viewBox="0 0 106 106" className="h-full w-full -rotate-90">
             <circle
               cx="53"
@@ -144,6 +144,11 @@ export function OwnerOnboardingCard({
               done
             </span>
           </div>
+          <img
+            src="/images/icon-rocket.png"
+            alt=""
+            className="pointer-events-none absolute -bottom-1.5 -right-1 h-[34px] w-[34px]"
+          />
         </div>
       </div>
 
@@ -154,10 +159,11 @@ export function OwnerOnboardingCard({
               href={previewHref}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold text-white"
+              className="inline-flex items-center gap-1 rounded-full px-3 py-2.5 text-sm font-semibold text-white"
               style={{ backgroundColor: ownerTheme.accent }}
             >
               {t('owner.dashboard.preview')}
+              <ChevronRight className="h-[18px] w-[18px]" aria-hidden />
             </Link>
           ) : null}
           {showActivate ? (

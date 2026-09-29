@@ -94,6 +94,7 @@ export function LanguageProvider({
     pathNoLocale.startsWith('/profile-settings') ||
     pathNoLocale.startsWith('/subscription') ||
     pathNoLocale.startsWith('/clients') ||
+    pathNoLocale.startsWith('/analytics') ||
     pathNoLocale.startsWith('/owner-help') ||
     pathNoLocale.startsWith('/notifications') ||
     pathNoLocale.startsWith('/business/complete-setup');

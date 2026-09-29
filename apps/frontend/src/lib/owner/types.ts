@@ -15,6 +15,7 @@ export type OwnerStudio = {
   photoGallery?: unknown;
   workingHours?: unknown;
   status?: string | null;
+  createdAt?: string | null;
   timezone?: string | null;
   currency?: string | null;
   autoConfirmBookings?: boolean | null;

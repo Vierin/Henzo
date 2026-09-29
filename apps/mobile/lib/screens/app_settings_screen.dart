@@ -56,6 +56,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   Studio? _studio;
   Subscription? _subscription;
   bool _subscriptionLoading = true;
+  bool? _autoConfirmOverride;
+  int _autoConfirmReq = 0;
   @override
   void initState() {
     super.initState();
@@ -159,14 +161,23 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     if (changed == true && mounted) await _loadData();
   }
 
-  Future<void> _openAutoConfirmSheet() async {
+  bool get _autoConfirmOn =>
+      _autoConfirmOverride ?? (_studio?.autoConfirmBookings ?? true);
+
+  Future<void> _toggleAutoConfirm(bool next) async {
     final studio = _studio;
     if (studio == null) return;
-    final changed = await showOwnerAutoConfirmSheet(
-      context,
-      studio: studio,
-    );
-    if (changed == true && mounted) await _loadData();
+    final req = ++_autoConfirmReq;
+    setState(() => _autoConfirmOverride = next);
+    final ok = await saveAutoConfirmBookings(context, studio, next);
+    if (!mounted || req != _autoConfirmReq) return;
+    if (!ok) {
+      setState(() => _autoConfirmOverride = null);
+      return;
+    }
+    await _loadData();
+    if (!mounted || req != _autoConfirmReq) return;
+    setState(() => _autoConfirmOverride = null);
   }
 
   Future<void> _openClientRemindersSheet() async {
@@ -343,9 +354,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-calendar-check.svg',
                         title: locale.t('settings.owner.autoConfirmBookings'),
-                        trailingText:
-                            autoConfirmBookingsSummary(_studio, locale),
-                        onTap: _openAutoConfirmSheet,
+                        trailingWidget: Switch.adaptive(
+                          value: _autoConfirmOn,
+                          activeTrackColor: AppColors.primary500,
+                          onChanged: _studio == null
+                              ? null
+                              : _toggleAutoConfirm,
+                        ),
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-bell.svg',

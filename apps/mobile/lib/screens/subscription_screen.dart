@@ -5,12 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:flutter_svg/flutter_svg.dart';
+
 import '../config/app_config.dart';
+import '../config/plan_limits.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/subscription.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
+import '../services/dashboard_api_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
@@ -47,6 +51,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Package? _enterprisePackage;
   bool _statusLoading = true;
   bool _pricesLoading = true;
+  int _sessionsUsed = 0;
+  int _trainersUsed = 0;
   String? _checkoutLoading; // 'studio' | 'enterprise'
   bool _restoreLoading = false;
   SubscriptionRefreshNotifier? _subRefresh;
@@ -88,10 +94,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     });
     try {
       final sub = await SubscriptionApiService.getCurrent(token);
+      final usage = await DashboardApiService.getSubscriptionUsage(token);
 
       if (mounted) {
         setState(() {
           _subscription = sub;
+          _sessionsUsed = usage?.sessionsUsed ?? 0;
+          _trainersUsed = usage?.trainersUsed ?? 0;
           _statusLoading = false;
         });
       }
@@ -130,6 +139,27 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         });
       }
     }
+  }
+
+  bool get _isStudioTrial {
+    final sub = _subscription;
+    if (sub == null || _statusLoading) return false;
+    if (sub.isTrial) return true;
+    final provider = sub.billingProvider.toUpperCase();
+    if (provider.isNotEmpty && provider != 'NONE') return false;
+    if (!sub.type.toUpperCase().contains('STUDIO')) return false;
+    if (sub.status.toUpperCase() != 'ACTIVE') return false;
+    final end = DateTime.tryParse(sub.currentPeriodEnd ?? '');
+    return end != null && end.isAfter(DateTime.now());
+  }
+
+  int? get _trialDaysLeft {
+    final end = DateTime.tryParse(_subscription?.currentPeriodEnd ?? '');
+    if (end == null) return null;
+    final left = end.difference(DateTime.now());
+    if (left.isNegative) return null;
+    final days = (left.inMinutes / (60 * 24)).ceil();
+    return days < 1 ? 1 : days;
   }
 
   bool get _hasPaidPlan {
@@ -331,7 +361,108 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 8),
-                  if (!_hasPaidPlan) ...[
+                  if (_isStudioTrial) ...[
+                    _ProStatusCard(
+                      priceLabel: locale.t('subscription.trialPrice'),
+                      periodLabel: _trialDaysLeft == null
+                          ? locale.t('subscription.trialActive')
+                          : locale
+                                .t('subscription.trialDaysLeft')
+                                .replaceAll('{days}', '$_trialDaysLeft'),
+                      nextPaymentDate: _nextPaymentDateLabel(context) ?? '—',
+                      activeLabel: locale.t('subscription.trialBadge'),
+                      planTitle: locale.t(
+                        subscriptionPlanTitleKey(SubscriptionPlanTier.studio),
+                      ),
+                      tagline: locale.t('subscription.trialActive'),
+                      nextPaymentLabel: locale.t('subscription.trialEnds'),
+                      renewLabel: locale.t('subscription.trialRenewBtn'),
+                      renewLoading: _checkoutLoading == 'studio',
+                      onRenew: _pricesLoading
+                          ? null
+                          : () => _handleSelectPlan('studio'),
+                    ),
+                    const SizedBox(height: 12),
+                    _UsageLimitsRow(
+                      classesLabel: locale.t('settings.usage.classesThisMonth'),
+                      trainersLabel: locale.t('settings.usage.trainers'),
+                      sessionsUsed: _sessionsUsed,
+                      sessionsLimit: PlanLimits.studioSessionsPerMonth,
+                      trainersUsed: _trainersUsed,
+                      trainersLimit: PlanLimits.studioTrainers,
+                    ),
+                    const SizedBox(height: 12),
+                    _ProWhatsIncludedCard(
+                      title: locale.t('subscription.whatsIncluded'),
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        SubscriptionPlanTier.studio,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _PlanCard(
+                      title: locale.t(
+                        subscriptionPlanTitleKey(SubscriptionPlanTier.solo),
+                      ),
+                      tagline: locale.t(
+                        subscriptionPlanTaglineKey(SubscriptionPlanTier.solo),
+                      ),
+                      priceLabel:
+                          _soloPackage?.storeProduct.priceString ??
+                          locale.t('subscription.soloFreePrice'),
+                      isPriceLoading: _pricesLoading,
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        SubscriptionPlanTier.solo,
+                      ),
+                      highlighted: false,
+                      subscribeLabel: locale.t(
+                        'subscription.subscribeToSoloBtn',
+                      ),
+                      isLoading: _checkoutLoading == 'solo',
+                      onSubscribe: _pricesLoading
+                          ? null
+                          : () => _handleSelectPlan('solo'),
+                    ),
+                    const SizedBox(height: 20),
+                    _PlanCard(
+                      title: locale.t(
+                        subscriptionPlanTitleKey(
+                          SubscriptionPlanTier.enterprise,
+                        ),
+                      ),
+                      tagline: locale.t(
+                        subscriptionPlanTaglineKey(
+                          SubscriptionPlanTier.enterprise,
+                        ),
+                      ),
+                      priceLabel:
+                          _enterprisePackage?.storeProduct.priceString ??
+                          locale.t('subscription.enterpriseFallbackPrice'),
+                      isPriceLoading: _pricesLoading,
+                      features: subscriptionPlanFeatureLabels(
+                        locale,
+                        SubscriptionPlanTier.enterprise,
+                      ),
+                      subscribeLabel: locale.t(
+                        'subscription.subscribeToEnterpriseBtn',
+                      ),
+                      isLoading: _checkoutLoading == 'enterprise',
+                      onSubscribe: _pricesLoading
+                          ? null
+                          : () => _handleSelectPlan('enterprise'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _restoreLoading ? null : _restorePurchases,
+                      child: Text(
+                        _restoreLoading
+                            ? locale.t('common.loading')
+                            : locale.t('subscription.restorePurchases'),
+                        style: _subscriptionButtonTextStyle(),
+                      ),
+                    ),
+                  ] else if (!_hasPaidPlan) ...[
                     _PlanCard(
                       title: locale.t(
                         subscriptionPlanTitleKey(SubscriptionPlanTier.solo),
@@ -527,6 +658,125 @@ class _PriceSkeletonState extends State<_PriceSkeleton>
   }
 }
 
+class _UsageLimitsRow extends StatelessWidget {
+  const _UsageLimitsRow({
+    required this.classesLabel,
+    required this.trainersLabel,
+    required this.sessionsUsed,
+    required this.sessionsLimit,
+    required this.trainersUsed,
+    required this.trainersLimit,
+  });
+
+  final String classesLabel;
+  final String trainersLabel;
+  final int sessionsUsed;
+  final int sessionsLimit;
+  final int trainersUsed;
+  final int trainersLimit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _UsageLimitChip(
+            svgAsset: 'assets/icons/icon-calendar.svg',
+            label: classesLabel,
+            used: sessionsUsed,
+            limit: sessionsLimit,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _UsageLimitChip(
+            svgAsset: 'assets/icons/icon-people.svg',
+            label: trainersLabel,
+            used: trainersUsed,
+            limit: trainersLimit,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UsageLimitChip extends StatelessWidget {
+  const _UsageLimitChip({
+    required this.svgAsset,
+    required this.label,
+    required this.used,
+    required this.limit,
+  });
+
+  final String svgAsset;
+  final String label;
+  final int used;
+  final int limit;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = limit > 0 ? (used / limit).clamp(0.0, 1.0) : 0.0;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.primary500,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Row(
+          children: [
+            SvgPicture.asset(
+              svgAsset,
+              width: 14,
+              height: 14,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
+            ),
+            Text(
+              '$used/$limit',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 36,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProStatusCard extends StatelessWidget {
   final String planTitle;
   final String tagline;
@@ -536,6 +786,9 @@ class _ProStatusCard extends StatelessWidget {
   final String periodLabel;
   final String nextPaymentLabel;
   final String nextPaymentDate;
+  final String? renewLabel;
+  final VoidCallback? onRenew;
+  final bool renewLoading;
 
   const _ProStatusCard({
     required this.planTitle,
@@ -546,6 +799,9 @@ class _ProStatusCard extends StatelessWidget {
     required this.periodLabel,
     required this.nextPaymentLabel,
     required this.nextPaymentDate,
+    this.renewLabel,
+    this.onRenew,
+    this.renewLoading = false,
   });
 
   @override
@@ -589,23 +845,53 @@ class _ProStatusCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _activeBadgeBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  activeLabel,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: _activeBadgeFg,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _activeBadgeBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      activeLabel,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: _activeBadgeFg,
+                      ),
+                    ),
                   ),
-                ),
+                  if (renewLabel != null) ...[
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      onPressed: renewLoading ? null : onRenew,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary500,
+                        minimumSize: const Size(112, 40),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        renewLoading ? '…' : renewLabel!,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),

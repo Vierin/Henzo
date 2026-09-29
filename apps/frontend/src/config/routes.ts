@@ -75,6 +75,8 @@ export const ownerRoutes = [
 
   '/clients',
 
+  '/analytics',
+
   '/salon-info',
 
   '/business/complete-setup',

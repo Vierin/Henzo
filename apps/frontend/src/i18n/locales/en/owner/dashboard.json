@@ -129,7 +129,7 @@
 	"onboardingTagline": "LET'S GET YOUR STUDIO LIVE!",
 	"studioIs": "Your studio is",
 	"readyWord": "ready",
-	"preview": "Preview",
+	"preview": "Preview public page",
 	"activating": "Activating…",
 	"activateStudio": "Activate studio",
 	"stepProfileTitle": "Create your studio profile",
@@ -137,5 +137,27 @@
 	"stepClassTitle": "Add your first class",
 	"stepClassBody": "Create a class, set the duration, capacity and price.",
 	"stepPhotoTitle": "Add at least 1 photo",
-	"stepPhotoBody": "Show clients what your studio looks like."
+	"stepPhotoBody": "Show clients what your studio looks like.",
+	"analyticsNav": "Analytics",
+	"analytics": {
+		"title": "Analytics",
+		"last7Days": "7 Days",
+		"last30Days": "30 Days",
+		"last90Days": "90 Days",
+		"revenue": "Booking revenue",
+		"activeClients": "Active clients",
+		"avgOccupancy": "Avg. occupancy",
+		"noShow": "No-shows",
+		"waitlistRequests": "Waitlist requests",
+		"revenueTrend": "Revenue trend ({currency})",
+		"fromPreviousDays": "from previous {days} days",
+		"ofBookings": "{pct}% of bookings",
+		"notEnoughDataYet": "Not enough data for analysis yet",
+		"noData": "No data for selected period",
+		"failedLoad": "Failed to load analytics",
+		"retry": "Retry",
+		"proLockedTitle": "Analytics is available on Studio and Enterprise",
+		"proLockedDescription": "Upgrade to Studio or Enterprise to unlock occupancy, no-shows, waitlist and the revenue trend.",
+		"upgrade": "View plans"
+	}
 }

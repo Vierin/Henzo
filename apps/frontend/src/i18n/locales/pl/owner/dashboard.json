@@ -93,5 +93,27 @@
 	"trialPromoCheckoutError": "Could not start checkout",
 	"subscriptionLockedTitle": "Subscription required",
 	"subscriptionLockedBody": "Your trial has ended. Subscribe to add services, staff, or calendar blocks. You can still manage existing bookings.",
-	"subscriptionLockedCta": "View plans"
+	"subscriptionLockedCta": "View plans",
+	"analyticsNav": "Analityka",
+	"analytics": {
+		"title": "Analityka",
+		"last7Days": "7 dni",
+		"last30Days": "30 dni",
+		"last90Days": "90 dni",
+		"revenue": "Przychód z rezerwacji",
+		"activeClients": "Aktywni klienci",
+		"avgOccupancy": "Średnie obłożenie",
+		"noShow": "Nieobecności",
+		"waitlistRequests": "Lista oczekujących",
+		"revenueTrend": "Trend przychodu ({currency})",
+		"fromPreviousDays": "względem poprzednich {days} dni",
+		"ofBookings": "{pct}% rezerwacji",
+		"notEnoughDataYet": "Za mało danych",
+		"noData": "Brak danych dla wybranego okresu",
+		"failedLoad": "Nie udało się wczytać analityki",
+		"retry": "Ponów",
+		"proLockedTitle": "Analityka jest w planach Studio i Enterprise",
+		"proLockedDescription": "Przejdź na Studio lub Enterprise, żeby zobaczyć obłożenie, nieobecności, listę oczekujących i trend przychodu.",
+		"upgrade": "Plany"
+	}
 }

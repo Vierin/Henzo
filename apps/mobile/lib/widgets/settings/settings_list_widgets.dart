@@ -115,12 +115,12 @@ class SettingsListTile extends StatelessWidget {
     this.icon,
     this.svgAsset,
     required this.title,
-    required this.onTap,
     this.subtitle,
     this.trailingText = '',
     this.trailingWidget,
     this.svgIconSize = _settingsSvgIconSize,
     this.materialIconSize = _settingsMaterialIconSize,
+    this.onTap,
   }) : assert(icon != null || svgAsset != null, 'Provide icon or svgAsset');
 
   final IconData? icon;
@@ -129,7 +129,7 @@ class SettingsListTile extends StatelessWidget {
   final String? subtitle;
   final String trailingText;
   final Widget? trailingWidget;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final double svgIconSize;
   final double materialIconSize;
 

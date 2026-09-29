@@ -129,7 +129,7 @@
 	"onboardingTagline": "¡VAMOS A PUBLICAR TU ESTUDIO!",
 	"studioIs": "Tu estudio está",
 	"readyWord": "listo",
-	"preview": "Vista previa",
+	"preview": "Ver página pública",
 	"activating": "Activando…",
 	"activateStudio": "Activar estudio",
 	"stepProfileTitle": "Crea el perfil de tu estudio",
@@ -137,5 +137,27 @@
 	"stepClassTitle": "Añade tu primera clase",
 	"stepClassBody": "Crea una clase y define duración, aforo y precio.",
 	"stepPhotoTitle": "Añade al menos 1 foto",
-	"stepPhotoBody": "Muestra a los clientes cómo es tu estudio."
+	"stepPhotoBody": "Muestra a los clientes cómo es tu estudio.",
+	"analyticsNav": "Analítica",
+	"analytics": {
+		"title": "Analítica",
+		"last7Days": "7 días",
+		"last30Days": "30 días",
+		"last90Days": "90 días",
+		"revenue": "Ingresos de reservas",
+		"activeClients": "Clientes activos",
+		"avgOccupancy": "Ocupación media",
+		"noShow": "No presentados",
+		"waitlistRequests": "Lista de espera",
+		"revenueTrend": "Tendencia de ingresos ({currency})",
+		"fromPreviousDays": "respecto a los {days} días anteriores",
+		"ofBookings": "{pct}% de las reservas",
+		"notEnoughDataYet": "Aún no hay datos suficientes",
+		"noData": "No hay datos para el periodo",
+		"failedLoad": "No se pudo cargar la analítica",
+		"retry": "Reintentar",
+		"proLockedTitle": "La analítica está en Studio y Enterprise",
+		"proLockedDescription": "Pasa a Studio o Enterprise para ver ocupación, ausencias, lista de espera y la tendencia de ingresos.",
+		"upgrade": "Ver planes"
+	}
 }

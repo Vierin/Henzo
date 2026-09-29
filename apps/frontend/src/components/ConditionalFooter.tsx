@@ -72,6 +72,7 @@ export default function ConditionalFooter() {
     pathname.includes('/trainings') ||
     pathname.includes('/staff') ||
     pathname.includes('/clients') ||
+    pathname.includes('/analytics') ||
     pathname.includes('/subscription') ||
     pathname.includes('/salon-info') ||
     pathname.includes('/profile-settings') ||
