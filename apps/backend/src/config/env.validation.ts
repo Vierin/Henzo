@@ -96,25 +96,25 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  STRIPE_MONTHLY_PRICE_ID?: string;
+  STRIPE_STUDIO_PRICE_MONTHLY_ID?: string;
 
   @IsString()
   @IsOptional()
-  STRIPE_YEARLY_PRICE_ID?: string;
+  STRIPE_STUDIO_PRICE_YEARLY_ID?: string;
 
   /** Enterprise tier (web Stripe Checkout). */
   @IsString()
   @IsOptional()
-  STRIPE_ENTERPRISE_MONTHLY_PRICE_ID?: string;
+  STRIPE_ENTERPRISE_PRICE_MONTHLY_ID?: string;
 
   @IsString()
   @IsOptional()
-  STRIPE_ENTERPRISE_YEARLY_PRICE_ID?: string;
+  STRIPE_ENTERPRISE_PRICE_YEARLY_ID?: string;
 
   /** Solo monthly price in USD (`price_...`). */
   @IsString()
   @IsOptional()
-  STRIPE_SOLO_MONTHLY_PRICE_ID?: string;
+  STRIPE_SOLO_PRICE_MONTHLY_ID?: string;
 
   @IsString()
   @IsOptional()
@@ -127,11 +127,15 @@ export class EnvironmentVariables {
   /** Fallback display amounts in EUR major units (e.g. 22.99). */
   @IsString()
   @IsOptional()
-  FALLBACK_PRO_PRICE_MONTHLY_EUR?: string;
+  FALLBACK_SOLO_PRICE_MONTHLY_EUR?: string;
 
   @IsString()
   @IsOptional()
-  FALLBACK_PRO_PRICE_ANNUAL_EUR?: string;
+  FALLBACK_STUDIO_PRICE_MONTHLY_EUR?: string;
+
+  @IsString()
+  @IsOptional()
+  FALLBACK_STUDIO_PRICE_ANNUAL_EUR?: string;
 
   @IsString()
   @IsOptional()

@@ -31,6 +31,7 @@ import {
 import { resolveCreateStudioCurrency } from './studio-currency';
 import { trialGrantedNotice } from '../subscriptions/trial-notices';
 import {
+  directoryHiddenStudioWhere,
   hasSubscriptionAccess,
   listedSubscriptionWhere,
 } from '../subscriptions/subscription-access.util';
@@ -495,6 +496,7 @@ export class StudiosService {
       where: {
         status: 'ACTIVE',
         Subscription: listedSubscriptionWhere(),
+        ...directoryHiddenStudioWhere(),
         OR: [
           { name: { contains: term, mode: 'insensitive' } },
           { address: { contains: term, mode: 'insensitive' } },
@@ -516,6 +518,7 @@ export class StudiosService {
         where: {
           status: 'ACTIVE',
           Subscription: listedSubscriptionWhere(),
+          ...directoryHiddenStudioWhere(),
         },
         select: {
           id: true,
@@ -767,6 +770,7 @@ export class StudiosService {
     const where: any = {
       status: 'ACTIVE',
       Subscription: listedSubscriptionWhere(),
+      ...directoryHiddenStudioWhere(),
     };
 
     // Build category service filter first (needed for combining with search)
@@ -2348,6 +2352,7 @@ export class StudiosService {
         status: 'ACTIVE',
         slug: { not: null },
         Subscription: listedSubscriptionWhere(),
+        ...directoryHiddenStudioWhere(),
       },
       select: {
         slug: true,
@@ -2642,6 +2647,7 @@ export class StudiosService {
     const publicWhere = {
       ...where,
       status: 'ACTIVE',
+      ...directoryHiddenStudioWhere(),
     };
 
     const [Studios, total] = await Promise.all([
@@ -2773,6 +2779,7 @@ export class StudiosService {
       where: {
         status: 'ACTIVE',
         Subscription: listedSubscriptionWhere(),
+        ...directoryHiddenStudioWhere(),
       },
       select: {
         id: true,
@@ -2975,6 +2982,7 @@ export class StudiosService {
       where: {
         status: 'ACTIVE',
         Subscription: listedSubscriptionWhere(),
+        ...directoryHiddenStudioWhere(),
         latitude: { gte: bbox.south, lte: bbox.north },
         longitude: { gte: bbox.west, lte: bbox.east },
       },

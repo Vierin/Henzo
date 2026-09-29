@@ -13,9 +13,9 @@ export interface TierPrices {
 }
 
 export interface SoloPrice {
-  /** Major units, USD (e.g. 8). */
+  /** Major units (EUR fallback, or USD when the Stripe Solo price is set). */
   monthly: number;
-  currency: 'USD';
+  currency: 'EUR' | 'USD';
 }
 
 export interface ProPricesPayload {
@@ -71,20 +71,24 @@ export class StripePricingService {
 
   private getFallbackPrices(): ProPricesPayload {
     const studioMonthly = this.parseEurEnv(
-      'FALLBACK_PRO_PRICE_MONTHLY_EUR',
+      'FALLBACK_STUDIO_PRICE_MONTHLY_EUR',
       22.99,
     );
     const studioAnnual = this.parseEurEnv(
-      'FALLBACK_PRO_PRICE_ANNUAL_EUR',
+      'FALLBACK_STUDIO_PRICE_ANNUAL_EUR',
       229.9,
     );
     const enterpriseMonthly = this.parseEurEnv(
       'FALLBACK_ENTERPRISE_PRICE_MONTHLY_EUR',
-      69.99,
+      79.99,
     );
     const enterpriseAnnual = this.parseEurEnv(
       'FALLBACK_ENTERPRISE_PRICE_ANNUAL_EUR',
       699.9,
+    );
+    const soloMonthly = this.parseEurEnv(
+      'FALLBACK_SOLO_PRICE_MONTHLY_EUR',
+      7.99,
     );
     const studio = this.tierFromAmounts(studioMonthly, studioAnnual);
     const enterprise = this.tierFromAmounts(
@@ -100,7 +104,7 @@ export class StripePricingService {
       annualSavePercent: studio.annualSavePercent,
       studio,
       enterprise,
-      solo: { monthly: 8, currency: 'USD' },
+      solo: { monthly: soloMonthly, currency: 'EUR' },
     };
   }
 
@@ -155,16 +159,20 @@ export class StripePricingService {
   }
 
   private async fetchFromStripe(): Promise<ProPricesPayload | null> {
-    const studioMonthlyId = this.config.get<string>('STRIPE_MONTHLY_PRICE_ID');
-    const studioAnnualId = this.config.get<string>('STRIPE_YEARLY_PRICE_ID');
+    const studioMonthlyId = this.config.get<string>(
+      'STRIPE_STUDIO_PRICE_MONTHLY_ID',
+    );
+    const studioAnnualId = this.config.get<string>(
+      'STRIPE_STUDIO_PRICE_YEARLY_ID',
+    );
     const enterpriseMonthlyId = this.config.get<string>(
-      'STRIPE_ENTERPRISE_MONTHLY_PRICE_ID',
+      'STRIPE_ENTERPRISE_PRICE_MONTHLY_ID',
     );
     const enterpriseAnnualId = this.config.get<string>(
-      'STRIPE_ENTERPRISE_YEARLY_PRICE_ID',
+      'STRIPE_ENTERPRISE_PRICE_YEARLY_ID',
     );
     const soloMonthlyId = this.config.get<string>(
-      'STRIPE_SOLO_MONTHLY_PRICE_ID',
+      'STRIPE_SOLO_PRICE_MONTHLY_ID',
     );
 
     const [sm, sa, em, ea, soloAmount] = await Promise.all([
@@ -195,7 +203,10 @@ export class StripePricingService {
       annualSavePercent: studio.annualSavePercent,
       studio,
       enterprise,
-      solo: { monthly: soloAmount ?? 8, currency: 'USD' },
+      solo:
+        soloAmount != null
+          ? { monthly: soloAmount, currency: 'USD' }
+          : fallback.solo,
     };
   }
 

@@ -64,6 +64,19 @@ export function hasSubscriptionAccess(
   return false;
 }
 
+/** Test studios: direct link still works, they stay out of search, map, and nearby. */
+const DIRECTORY_HIDDEN_STUDIO_NAMES = ['Review studio'];
+
+export function directoryHiddenStudioWhere() {
+  return {
+    NOT: {
+      OR: DIRECTORY_HIDDEN_STUDIO_NAMES.map((name) => ({
+        name: { equals: name, mode: 'insensitive' as const },
+      })),
+    },
+  };
+}
+
 /** Prisma filter: studio is visible in the public marketplace. */
 export function listedSubscriptionWhere(now = new Date()) {
   return {

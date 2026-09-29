@@ -37,14 +37,14 @@ export class StripeCheckoutService {
     }
     const key =
       plan === 'solo'
-        ? 'STRIPE_SOLO_MONTHLY_PRICE_ID'
+        ? 'STRIPE_SOLO_PRICE_MONTHLY_ID'
         : plan === 'enterprise'
           ? interval === 'annual'
-            ? 'STRIPE_ENTERPRISE_YEARLY_PRICE_ID'
-            : 'STRIPE_ENTERPRISE_MONTHLY_PRICE_ID'
+            ? 'STRIPE_ENTERPRISE_PRICE_YEARLY_ID'
+            : 'STRIPE_ENTERPRISE_PRICE_MONTHLY_ID'
           : interval === 'annual'
-            ? 'STRIPE_YEARLY_PRICE_ID'
-            : 'STRIPE_MONTHLY_PRICE_ID';
+            ? 'STRIPE_STUDIO_PRICE_YEARLY_ID'
+            : 'STRIPE_STUDIO_PRICE_MONTHLY_ID';
     const priceId = this.config.get<string>(key)?.trim();
     if (!priceId) {
       throw new BadRequestException(

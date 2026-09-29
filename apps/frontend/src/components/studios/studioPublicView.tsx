@@ -305,7 +305,7 @@ export function StudioPublicView({
   });
   const scheduleHref = `/${locale}/studio/${encodeURIComponent(studioSlug)}/schedule`;
   const reviews = studio.reviews ?? [];
-  const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 1);
+  const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 3);
   const avg =
     studio.avgRating && studio.avgRating > 0
       ? studio.avgRating
@@ -584,7 +584,7 @@ export function StudioPublicView({
               <h2 className="text-[13px] font-semibold uppercase tracking-[0.04em]">
                 Reviews
               </h2>
-              {reviews.length > 1 ? (
+              {reviews.length > 3 ? (
                 <button
                   type="button"
                   onClick={() => setShowAllReviews((v) => !v)}

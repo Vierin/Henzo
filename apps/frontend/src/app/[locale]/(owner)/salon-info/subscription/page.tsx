@@ -699,7 +699,7 @@ export default function SubscriptionSettingsPage() {
                   >
                     {pricesQuery.isLoading
                       ? '…'
-                      : formatMoney(soloPrice?.monthly ?? 8, soloCurrency)}
+                      : formatMoney(soloPrice?.monthly ?? 7.99, soloCurrency)}
                   </p>
                   <span
                     className="mt-0.5 block text-[11px] font-medium"
