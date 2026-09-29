@@ -1,5 +1,6 @@
 import type { SubscriptionTier } from './subscription-tier.util';
 
+/** Keep in sync with `apps/frontend/src/config/planLimits.ts`. */
 export const SOLO_TRAINER_LIMIT = 1;
 export const SOLO_SESSIONS_PER_MONTH = 50;
 

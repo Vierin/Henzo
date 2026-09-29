@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { quotaForTier } from '@/config/planLimits';
 
 export type BillingProvider = 'NONE' | 'STRIPE' | 'REVENUECAT' | string;
 
@@ -129,7 +130,7 @@ export async function fetchOwnerUsage(): Promise<OwnerUsage | null> {
       asNum(data.classesUsed) ??
       asNum(data.monthlySessionsCount) ??
       0;
-    const classesLimit =
+    const apiClassesLimit =
       asNum(data.sessionsLimit) ??
       asNum(data.classesLimit) ??
       asNum(data.sessionLimit);
@@ -138,7 +139,11 @@ export async function fetchOwnerUsage(): Promise<OwnerUsage | null> {
       asNum(data.trainerCount) ??
       asNum(data.usedTrainers) ??
       0;
-    const trainersLimit = asNum(data.trainersLimit) ?? asNum(data.trainerLimit);
+    const apiTrainersLimit =
+      asNum(data.trainersLimit) ?? asNum(data.trainerLimit);
+    const quota = data.tier ? quotaForTier(String(data.tier)) : null;
+    const classesLimit = quota ? quota.sessionsPerMonth : apiClassesLimit;
+    const trainersLimit = quota ? quota.trainers : apiTrainersLimit;
 
     return {
       tier: data.tier ? String(data.tier) : undefined,

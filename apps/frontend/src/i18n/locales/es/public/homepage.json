@@ -181,8 +181,8 @@
           "price": "7,99",
           "priceSub": "/ al mes",
           "features": [
-            "50 clases al mes",
-            "1 entrenador",
+            "{sessions} clases al mes",
+            "{trainers} entrenador",
             "Clientes ilimitados",
             "Reservas online",
             "Perfil del estudio",
@@ -195,8 +195,8 @@
           "price": "20.99",
           "priceSub": "/ al mes",
           "features": [
-            "180 clases/mes",
-            "Hasta 5 entrenadores",
+            "{sessions} clases/mes",
+            "Hasta {trainers} entrenadores",
             "Lista de espera",
             "Recordatorios automáticos (Email y Push)",
             "Analítica básica (90 días)"
@@ -224,8 +224,8 @@
           "price": "7,99",
           "priceSub": "/ per 1 month",
           "features": [
-            "50 classes per month",
-            "1 trainer",
+            "{sessions} classes per month",
+            "{trainers} trainer",
             "Unlimited clients",
             "Online bookings",
             "Studio profile",
@@ -238,8 +238,8 @@
           "price": "22.99",
           "priceSub": "/ per 1 month",
           "features": [
-            "180 classes/month",
-            "Up to 5 trainers",
+            "{sessions} classes/month",
+            "Up to {trainers} trainers",
             "Waitlist",
             "Automated reminders (Email & Push)",
             "Basic Analytics (90 days)"

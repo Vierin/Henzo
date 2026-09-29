@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -34,8 +34,12 @@ import {
   PRICE_ENTERPRISE_MONTHLY_EUR,
   PRICE_MONTHLY_EUR,
 } from '@/config/subscriptionPlans';
+import { fillPlanLimitTokens } from '@/config/planLimits';
 
 type PlanTier = 'solo' | 'studio' | 'enterprise';
+
+const CHECKOUT_TOAST_ID = 'owner-subscription-checkout';
+const startedCheckoutSync = new Set<string>();
 
 function formatPeriodEnd(iso: string | null | undefined, locale: string) {
   if (!iso) return null;
@@ -93,7 +97,7 @@ function PlanFeatureList({
             style={{ backgroundColor: ownerTheme.accent }}
             aria-hidden
           />
-          <span>{t(key)}</span>
+          <span>{fillPlanLimitTokens(t(key), tier)}</span>
         </li>
       ))}
     </ul>
@@ -169,6 +173,9 @@ export default function SubscriptionSettingsPage() {
     text: string;
   } | null>(null);
   const [syncingCheckout, setSyncingCheckout] = useState(false);
+  const checkoutSyncKey = useRef<string | null>(null);
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const subQuery = useQuery({
     queryKey: ['owner-subscription'],
@@ -210,106 +217,101 @@ export default function SubscriptionSettingsPage() {
     [origin, locale],
   );
 
-  useEffect(() => {
-    const checkout = searchParams.get('checkout');
-    if (!checkout) return;
+  const checkout = searchParams.get('checkout');
+  const sessionId = searchParams.get('session_id')?.trim() ?? '';
 
+  useEffect(() => {
+    if (checkout !== 'success' && checkout !== 'cancelled') return;
+
+    const key = `${checkout}:${sessionId}`;
+    if (checkoutSyncKey.current === key || startedCheckoutSync.has(key)) return;
+    checkoutSyncKey.current = key;
+    startedCheckoutSync.add(key);
+
+    const translate = tRef.current;
+    const toastId = CHECKOUT_TOAST_ID;
     const clearParams = () => {
       router.replace(`/${locale}/salon-info/subscription`);
+    };
+    const toastStyle = {
+      borderRadius: '14px',
+      border: '1px solid #F1E4DB',
+      padding: '14px 16px',
+      color: ownerTheme.text,
+      fontWeight: 500,
     };
 
     if (checkout === 'cancelled') {
       toast(
-        t('owner.subscription.checkoutCancelled') || 'Checkout cancelled.',
+        translate('owner.subscription.checkoutCancelled') ||
+          'Checkout cancelled.',
         {
+          id: toastId,
           icon: 'ⓘ',
           duration: 4000,
-          style: {
-            borderRadius: '14px',
-            border: '1px solid #F1E4DB',
-            padding: '14px 16px',
-            color: ownerTheme.text,
-            fontWeight: 500,
-          },
+          style: toastStyle,
         },
       );
       clearParams();
       return;
     }
 
-    if (checkout === 'success') {
-      const sessionId = searchParams.get('session_id')?.trim();
-      if (!sessionId) {
-        toast.error(
-          t('owner.subscription.checkoutError') ||
-            'Failed to proceed to payment',
-        );
-        clearParams();
-        return;
-      }
-      let cancelled = false;
-      setSyncingCheckout(true);
-      const toastId = toast.loading(
-        t('owner.subscription.activating') || 'Activating subscription…',
-        {
-          style: {
-            borderRadius: '14px',
-            border: '1px solid #F1E4DB',
-            padding: '14px 16px',
-            color: ownerTheme.text,
-            fontWeight: 500,
-          },
-        },
+    if (!sessionId) {
+      toast.error(
+        translate('owner.subscription.checkoutError') ||
+          'Failed to proceed to payment',
+        { id: toastId },
       );
-      void (async () => {
-        try {
-          const synced = await syncCheckoutSession(sessionId);
-          if (cancelled) return;
-          if (synced) {
-            queryClient.setQueryData(['owner-subscription'], synced);
-          }
-          setSyncingCheckout(false);
-          // Don't await — was blocking UI on slow /current refetch
-          void queryClient.invalidateQueries({
-            queryKey: ['owner-subscription'],
-          });
-          void queryClient.invalidateQueries({ queryKey: ['owner-usage'] });
-          toast.success(
-            t('owner.subscription.checkoutSuccess') ||
-              'Subscription activated. Welcome aboard!',
-            {
-              id: toastId,
-              duration: 5200,
-              style: {
-                borderRadius: '14px',
-                border: `1px solid ${ownerTheme.accent}`,
-                padding: '14px 18px',
-                color: ownerTheme.text,
-                fontWeight: 600,
-                maxWidth: 420,
-              },
-            },
-          );
-        } catch (err) {
-          if (cancelled) return;
-          toast.error(
-            apiErrorMessage(
-              err,
-              t('owner.subscription.checkoutError') ||
-                'Failed to proceed to payment',
-            ),
-            { id: toastId, duration: 5000 },
-          );
-        } finally {
-          setSyncingCheckout(false);
-          clearParams();
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
+      clearParams();
+      return;
     }
-  }, [searchParams, locale, router, queryClient, t]);
+
+    setSyncingCheckout(true);
+    toast.loading(
+      translate('owner.subscription.activating') || 'Activating subscription…',
+      { id: toastId, style: toastStyle },
+    );
+    void (async () => {
+      try {
+        const synced = await syncCheckoutSession(sessionId);
+        if (synced) {
+          queryClient.setQueryData(['owner-subscription'], synced);
+        }
+        void queryClient.invalidateQueries({
+          queryKey: ['owner-subscription'],
+        });
+        void queryClient.invalidateQueries({ queryKey: ['owner-usage'] });
+        toast.success(
+          translate('owner.subscription.checkoutSuccess') ||
+            'Subscription activated. Welcome aboard!',
+          {
+            id: toastId,
+            duration: 5200,
+            style: {
+              borderRadius: '14px',
+              border: `1px solid ${ownerTheme.accent}`,
+              padding: '14px 18px',
+              color: ownerTheme.text,
+              fontWeight: 600,
+              maxWidth: 420,
+            },
+          },
+        );
+      } catch (err) {
+        toast.error(
+          apiErrorMessage(
+            err,
+            translate('owner.subscription.checkoutError') ||
+              'Failed to proceed to payment',
+          ),
+          { id: toastId, duration: 5000 },
+        );
+      } finally {
+        setSyncingCheckout(false);
+        clearParams();
+      }
+    })();
+  }, [checkout, sessionId, locale, router, queryClient]);
 
   async function startCheckout(planTier: CheckoutPlan) {
     setCheckoutLoading(planTier);

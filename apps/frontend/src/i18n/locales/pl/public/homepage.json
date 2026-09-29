@@ -180,8 +180,8 @@
           "price": "39,99",
           "priceSub": "/ za 1 miesiąc",
           "features": [
-            "50 zajęć miesięcznie",
-            "1 trener",
+            "{sessions} zajęć miesięcznie",
+            "{trainers} trener",
             "Nieograniczona liczba klientów",
             "Rezerwacje online",
             "Profil studia",
@@ -194,8 +194,8 @@
           "price": "99",
           "priceSub": "/ za 1 miesiąc",
           "features": [
-            "180 zajęć miesięcznie",
-            "Do 5 trenerów",
+            "{sessions} zajęć miesięcznie",
+            "Do {trainers} trenerów",
             "Lista oczekujących",
             "Automatyczne przypomnienia (Email & Push)",
             "Podstawowa analityka (90 dni)"

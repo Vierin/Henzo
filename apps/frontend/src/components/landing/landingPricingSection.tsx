@@ -1,6 +1,7 @@
 'use client';
 
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
+import { fillPlanLimitTokens } from '@/config/planLimits';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import { withLocale } from '@/i18n/routing';
@@ -21,6 +22,25 @@ type PricingPlan = {
   priceSub: string;
   features: string[];
 };
+
+function tierForPlan(name: string, index: number) {
+  const key = name.toLowerCase();
+  if (key.includes('enterprise')) return 'enterprise';
+  if (key.includes('studio')) return 'studio';
+  if (key.includes('solo')) return 'solo';
+  if (index === 1) return 'studio';
+  if (index >= 2) return 'enterprise';
+  return 'solo';
+}
+
+function withPlanLimits(plans: PricingPlan[]): PricingPlan[] {
+  return plans.map((plan, index) => ({
+    ...plan,
+    features: plan.features.map((feature) =>
+      fillPlanLimitTokens(feature, tierForPlan(plan.name, index)),
+    ),
+  }));
+}
 
 function parsePlans(raw: unknown): PricingPlan[] {
   if (!Array.isArray(raw)) {
@@ -91,10 +111,10 @@ function LandingPricingSectionInner() {
 
   const plans = useMemo(() => {
     if (showEuro) {
-      const euroPlans = parsePlans(t(`${BASE}.plansEuro`));
+      const euroPlans = withPlanLimits(parsePlans(t(`${BASE}.plansEuro`)));
       if (euroPlans.length > 0) return euroPlans;
     }
-    return parsePlans(t(`${BASE}.plans`));
+    return withPlanLimits(parsePlans(t(`${BASE}.plans`)));
   }, [t, showEuro]);
 
   useLayoutEffect(() => {

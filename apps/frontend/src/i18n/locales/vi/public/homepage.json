@@ -180,8 +180,8 @@
           "price": "249.000",
           "priceSub": "/ mỗi tháng",
           "features": [
-            "50 lớp mỗi tháng",
-            "1 huấn luyện viên",
+            "{sessions} lớp mỗi tháng",
+            "{trainers} huấn luyện viên",
             "Không giới hạn khách hàng",
             "Đặt lịch trực tuyến",
             "Hồ sơ studio",
@@ -194,8 +194,8 @@
           "price": "599.000",
           "priceSub": "/ mỗi tháng",
           "features": [
-            "180 lớp/tháng",
-            "Tối đa 5 huấn luyện viên",
+            "{sessions} lớp/tháng",
+            "Tối đa {trainers} huấn luyện viên",
             "Danh sách chờ",
             "Nhắc nhở tự động (Email & Push)",
             "Phân tích cơ bản (90 ngày)"

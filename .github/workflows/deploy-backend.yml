@@ -18,8 +18,50 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  build-and-push:
+    name: Build production image from main
+    runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Manual confirmation (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ inputs.confirm }}" != "DEPLOY" ]; then
+            echo "Invalid confirmation value. Type DEPLOY to continue."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image base
+        run: |
+          BASE="${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/backend"
+          echo "IMAGE_BASE=${BASE}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/backend
+          file: apps/backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_BASE }}:production
+
   deploy:
     name: Deploy to server
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -70,12 +112,12 @@ jobs:
               | grep -Fxq "backend" \
               || { echo "Service backend not found in docker-compose.yml"; exit 1; }
 
-            docker pull ${{ env.IMAGE_BASE }}:staging
-            IMAGE_REF=$(docker image inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_BASE }}:staging)
-            if [ -z "$IMAGE_REF" ]; then
-              echo "❌ Failed to resolve digest from staging image"
-              exit 1
+            IMAGE_REF="${{ env.IMAGE_BASE }}@${{ needs.build-and-push.outputs.image_digest }}"
+            if ! docker manifest inspect "$IMAGE_REF" >/dev/null 2>&1; then
+              echo "Digest not found, fallback to :production"
+              IMAGE_REF="${{ env.IMAGE_BASE }}:production"
             fi
+            docker pull "$IMAGE_REF"
 
             bash deploy/deploy-compose-service.sh --env=production --image="$IMAGE_REF" --migrate=true
             echo "✅ Production deployment complete!"

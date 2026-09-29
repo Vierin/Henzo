@@ -1,4 +1,6 @@
-/// Plan quotas — keep in sync with `apps/backend/.../plan-limits.constants.ts`.
+/// Plan quotas — keep in sync with
+/// `apps/backend/.../plan-limits.constants.ts` and
+/// `apps/frontend/src/config/planLimits.ts`.
 class PlanLimits {
   PlanLimits._();
 
