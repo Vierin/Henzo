@@ -11,7 +11,9 @@ export type StudioSpotlightSlide = {
 
 export type StudioLandingContent = {
   hero: {
-    availableForFree: string;
+    subtitle: string;
+    startTrial: string;
+    noCard: string;
     line1Lead: string;
     line1Highlight: string;
     line1Trail: string;
@@ -55,6 +57,7 @@ export type StudioLandingContent = {
     currencyEuro?: string;
     storeAppStore: string;
     storeGooglePlay: string;
+    trialBanner: string;
     plans: Array<{
       name: string;
       subtitle: string;

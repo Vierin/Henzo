@@ -3,6 +3,7 @@
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
+import { withLocale } from '@/i18n/routing';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -73,6 +74,8 @@ function LandingPricingSectionInner() {
   const titleLine2After = resolveOptional(`${BASE}.titleLine2After`);
   const appStoreLabel = String(t(`${BASE}.storeAppStore`));
   const googlePlayLabel = String(t(`${BASE}.storeGooglePlay`));
+  const startTrial = String(t('homepage.studio.hero.startTrial'));
+  const trialBanner = String(t(`${BASE}.trialBanner`));
 
   const showEuro = wantsEuroPricing(language, searchParams);
 
@@ -148,7 +151,11 @@ function LandingPricingSectionInner() {
           </span>
         </h2>
 
-        <div className="mt-15 grid gap-7 md:grid-cols-2 lg:grid-cols-3 md:gap-8 lg:gap-6 max-w-7xl mx-auto">
+        <p className="mx-auto mt-8 max-w-4xl text-center text-[1.45rem] font-medium leading-tight tracking-tight text-[#3F3F3F] sm:mt-12 sm:text-[2.15rem]">
+          {trialBanner}
+        </p>
+
+        <div className="mt-10 grid gap-7 md:grid-cols-2 lg:grid-cols-3 md:gap-8 lg:gap-6 max-w-7xl mx-auto sm:mt-14">
           {plans.map((plan, index) => (
             <div
               key={plan.name}
@@ -224,6 +231,8 @@ function LandingPricingSectionInner() {
           buttonClassName="bg-white"
           appStoreLabel={appStoreLabel}
           googlePlayLabel={googlePlayLabel}
+          webLabel={startTrial}
+          webHref={withLocale('/business/register', language)}
         />
       </div>
     </section>

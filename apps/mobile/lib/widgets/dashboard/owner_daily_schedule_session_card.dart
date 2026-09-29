@@ -92,7 +92,28 @@ bool isPlaceholderScheduleTrainerName(String value) {
   if (t == '\u2013' || t == '\u2014') return true; // en dash, em dash
   final lower = t.toLowerCase();
   if (lower == 'n/a' || lower == 'tbd' || lower == 'none') return true;
+  if (lower == 'henzo system studios') return true;
   return false;
+}
+
+String publicTrainerNameFromApiMap(Map<dynamic, dynamic> trainer) {
+  final user = trainer['User'] ?? trainer['user'];
+  final fromUser = user is Map ? (user['name'] ?? '').toString().trim() : '';
+  final fromTrainer = (trainer['name'] ?? '').toString().trim();
+  final name = fromUser.isNotEmpty ? fromUser : fromTrainer;
+  return isPlaceholderScheduleTrainerName(name) ? '' : name;
+}
+
+/// One real trainer name in [names], or null when the studio has several.
+String? solePublicTrainerName(Iterable<String> names) {
+  final unique = <String>{};
+  for (final raw in names) {
+    final name = raw.trim();
+    if (isPlaceholderScheduleTrainerName(name)) continue;
+    unique.add(name);
+  }
+  if (unique.length != 1) return null;
+  return unique.first;
 }
 
 /// Карточка слота в дневном расписании (как на дашборде).

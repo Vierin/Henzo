@@ -173,6 +173,31 @@ export function OwnerDateField({
     return true;
   };
 
+  const monthIsReachable = (monthFirst: Date) => {
+    const start = new Date(monthFirst.getFullYear(), monthFirst.getMonth(), 1);
+    const end = new Date(
+      monthFirst.getFullYear(),
+      monthFirst.getMonth() + 1,
+      0,
+    );
+    if (minDate && end < minDate) return false;
+    if (maxDate && start > maxDate) return false;
+    return true;
+  };
+
+  const prevMonth = new Date(
+    viewMonth.getFullYear(),
+    viewMonth.getMonth() - 1,
+    1,
+  );
+  const nextMonth = new Date(
+    viewMonth.getFullYear(),
+    viewMonth.getMonth() + 1,
+    1,
+  );
+  const canGoPrev = monthIsReachable(prevMonth);
+  const canGoNext = monthIsReachable(nextMonth);
+
   return (
     <div className="min-w-0">
       {label ? (
@@ -192,13 +217,13 @@ export function OwnerDateField({
         <div className="mb-2 flex items-center justify-between">
           <button
             type="button"
-            className="rounded-lg p-2"
+            className="rounded-lg p-2 disabled:cursor-default disabled:opacity-25"
             style={{ color: ownerTheme.textSecondary }}
-            onClick={() =>
-              setViewMonth(
-                new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1),
-              )
-            }
+            disabled={!canGoPrev}
+            onClick={() => {
+              if (!canGoPrev) return;
+              setViewMonth(prevMonth);
+            }}
             aria-label="Previous month"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -211,13 +236,13 @@ export function OwnerDateField({
           </div>
           <button
             type="button"
-            className="rounded-lg p-2"
+            className="rounded-lg p-2 disabled:cursor-default disabled:opacity-25"
             style={{ color: ownerTheme.textSecondary }}
-            onClick={() =>
-              setViewMonth(
-                new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1),
-              )
-            }
+            disabled={!canGoNext}
+            onClick={() => {
+              if (!canGoNext) return;
+              setViewMonth(nextMonth);
+            }}
             aria-label="Next month"
           >
             <ChevronRight className="h-6 w-6" />
@@ -267,9 +292,11 @@ export function OwnerDateField({
 
         <button
           type="button"
-          className="mt-4 w-full rounded-[12px] py-3.5 text-[15px] font-bold text-white"
+          className="mt-4 w-full rounded-[12px] py-3.5 text-[15px] font-bold text-white disabled:opacity-50"
           style={{ backgroundColor: ownerTheme.accent }}
+          disabled={!canPick(draft)}
           onClick={() => {
+            if (!canPick(draft)) return;
             onChange(toYmd(draft));
             setOpen(false);
           }}
@@ -392,6 +419,25 @@ export function OwnerTimeField({
     onChange(next);
   };
 
+  const onTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitText(e.currentTarget.value);
+      e.currentTarget.blur();
+      return;
+    }
+    if (!/^\d$/.test(e.key)) return;
+    const el = e.currentTarget;
+    const selected =
+      el.selectionStart != null &&
+      el.selectionEnd != null &&
+      el.selectionStart !== el.selectionEnd;
+    if (selected) return;
+    if (el.value.replace(/\D/g, '').length < 4) return;
+    e.preventDefault();
+    setTextDraft(e.key);
+  };
+
   return (
     <div className="min-w-0">
       {label ? (
@@ -410,17 +456,16 @@ export function OwnerTimeField({
         autoComplete="off"
         spellCheck={false}
         aria-label={label || 'Time (24h)'}
-        placeholder="09:00"
+        title="24-hour time, 00:00–23:59"
+        placeholder="18:30"
         value={textDraft}
-        onChange={(e) => setTextDraft(maskHmInput(e.target.value))}
-        onBlur={() => commitText(textDraft)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            commitText(textDraft);
-            (e.target as HTMLInputElement).blur();
-          }
+        onFocus={(e) => {
+          const el = e.currentTarget;
+          requestAnimationFrame(() => el.select());
         }}
+        onChange={(e) => setTextDraft(maskHmInput(e.target.value))}
+        onBlur={(e) => commitText(e.currentTarget.value)}
+        onKeyDown={onTimeKeyDown}
         className="owner-field hidden w-full rounded-xl border-0 bg-white px-3.5 py-3 text-[15px] tabular-nums outline-none md:block"
         style={{ color: ownerTheme.text }}
       />

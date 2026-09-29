@@ -16,6 +16,7 @@ import {
   type OwnerSessionEditScope,
 } from '@/components/owner/ownerSessionEditScopeModal';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 function isSameDay(a: Date, b: Date) {
   return (
@@ -34,23 +35,24 @@ export function OwnerDashboardStatCards({
   bookingsToday: number;
   waitlistToday: number;
 }) {
+  const t = useTranslation();
   return (
     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
       <StatCard
         value={classesToday}
-        label="Classes today"
+        label={t('owner.dashboard.classesToday')}
         background={classesToday > 0 ? ownerTheme.statLime : ownerTheme.accent}
         color={classesToday > 0 ? ownerTheme.text : '#FFFFFF'}
       />
       <StatCard
         value={bookingsToday}
-        label="Bookings"
+        label={t('owner.dashboard.bookings')}
         background={ownerTheme.statSalmon}
         color={ownerTheme.text}
       />
       <StatCard
         value={waitlistToday}
-        label="Waitlist"
+        label={t('owner.dashboard.waitlist')}
         background="#FFFFFF"
         color={ownerTheme.text}
       />
@@ -91,6 +93,7 @@ export function OwnerFeaturedSessionCard({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslation();
   const locale = (extractLocaleFromPath(pathname) ?? 'en') as Locale;
   const [editScopeOpen, setEditScopeOpen] = useState(false);
 
@@ -103,8 +106,8 @@ export function OwnerFeaturedSessionCard({
   const pct = Math.round(ratio * 100);
 
   const whenLabel = today
-    ? 'TODAY'
-    : `NEXT · ${new Intl.DateTimeFormat('en', {
+    ? t('owner.dashboard.todayBadge')
+    : `${t('owner.dashboard.nextBadge')} · ${new Intl.DateTimeFormat(locale, {
         weekday: 'short',
         day: 'numeric',
         month: 'short',
@@ -158,19 +161,21 @@ export function OwnerFeaturedSessionCard({
             onClick={() => setEditScopeOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-white/90"
             style={{ color: ownerTheme.accent }}
-            aria-label="Edit session"
+            aria-label={t('owner.dashboard.editSession')}
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
         </div>
 
         <h2 className="relative mt-3 text-2xl font-medium leading-tight">
-          {session.training?.name || 'Class'}
+          {session.training?.name || t('owner.dashboard.classFallback')}
         </h2>
         <p className="relative mt-1.5 text-sm text-white/90">
           {formatOwnerTime24h(session.startsAt)}
           {session.endsAt ? ` - ${formatOwnerTime24h(session.endsAt)}` : ''}
-          {session.trainer?.name ? ` · With ${session.trainer.name}` : ''}
+          {session.trainer?.name
+            ? ` · ${t('owner.dashboard.withTrainer').replace('{name}', session.trainer.name)}`
+            : ''}
         </p>
 
         <div className="relative mt-5 flex items-center justify-between gap-3">
@@ -205,7 +210,7 @@ export function OwnerFeaturedSessionCard({
               <div className="font-semibold">
                 {enrolled}/{capacity || '—'}
               </div>
-              <div className="text-white/80">booked</div>
+              <div className="text-white/80">{t('owner.dashboard.booked')}</div>
             </div>
           </div>
           <Link
@@ -213,7 +218,7 @@ export function OwnerFeaturedSessionCard({
             className="rounded-full bg-white px-4 py-2 text-sm font-semibold"
             style={{ color: ownerTheme.accent }}
           >
-            Show more
+            {t('owner.dashboard.showMore')}
           </Link>
         </div>
       </article>

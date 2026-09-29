@@ -10,6 +10,7 @@ import {
 } from '@/lib/client/fetch-popular-studios';
 import {
   parseNearbyClassSession,
+  withSoleStudioTrainer,
   type NearbyClassSession,
   type NearbyClassesDayGroup,
 } from '@/lib/client/nearby-class-session';
@@ -80,12 +81,9 @@ async function fetchStudioScheduleClient(
   return [];
 }
 
-function collectSessionsForWindow(
+function collectSessions(
   studios: PublicStudioPreview[],
   rowsByStudio: Map<string, unknown[]>,
-  windowStart: Date,
-  windowEnd: Date,
-  now: Date,
 ): NearbyClassSession[] {
   const sessions: NearbyClassSession[] = [];
 
@@ -93,21 +91,27 @@ function collectSessionsForWindow(
     const rows = rowsByStudio.get(studio.id) ?? [];
     for (const row of rows) {
       const session = parseNearbyClassSession(row, studio);
-      if (!session) continue;
-
-      const startsAt = new Date(session.startsAt);
-      if (startsAt < windowStart || startsAt >= windowEnd) continue;
-      if (startsAt < now) continue;
-
-      sessions.push(session);
+      if (session) sessions.push(session);
     }
   }
 
-  sessions.sort(
-    (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
-  );
+  return withSoleStudioTrainer(sessions);
+}
 
-  return sessions;
+function sessionsInWindow(
+  sessions: NearbyClassSession[],
+  windowStart: Date,
+  windowEnd: Date,
+  now: Date,
+): NearbyClassSession[] {
+  return sessions
+    .filter((session) => {
+      const startsAt = new Date(session.startsAt);
+      return startsAt >= windowStart && startsAt < windowEnd && startsAt >= now;
+    })
+    .sort(
+      (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
+    );
 }
 
 async function loadScheduleRows(
@@ -157,14 +161,14 @@ export async function buildNearbyClassGroups(
   );
 
   const groups: NearbyClassesDayGroup[] = [];
+  const sessions = collectSessions(studios, rowsByStudio);
 
   for (const [offset, window] of [
     [0, today],
     [1, tomorrow],
   ] as const) {
-    const classes = collectSessionsForWindow(
-      studios,
-      rowsByStudio,
+    const classes = sessionsInWindow(
+      sessions,
       window.start,
       new Date(window.to),
       now,

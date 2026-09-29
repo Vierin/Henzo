@@ -17,6 +17,7 @@ import type {
   OwnerTrainingSession,
 } from '@/lib/owner/types';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { formatOwnerTime24h } from '@/lib/owner/format-time';
 import { copyTextToClipboard } from '@/lib/owner/booking-link';
 import {
@@ -34,10 +35,10 @@ export type DashboardNextBooking = {
   status: string;
 };
 
-function greetingPhrase(hour: number): string {
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+function greetingPhrase(hour: number, t: (path: string) => string): string {
+  if (hour < 12) return t('owner.dashboard.greetingMorning');
+  if (hour < 18) return t('owner.dashboard.greetingAfternoon');
+  return t('owner.dashboard.greetingEvening');
 }
 
 function initials(name: string): string {
@@ -62,6 +63,7 @@ export function OwnerDashboardGreeting({
   locale: string;
   firstName: string;
 }) {
+  const t = useTranslation();
   const hour = new Date().getHours();
   return (
     <div>
@@ -79,13 +81,13 @@ export function OwnerDashboardGreeting({
         className="mt-1.5 text-[28px] font-bold leading-tight tracking-tight md:text-[32px]"
         style={{ color: ownerTheme.text }}
       >
-        {greetingPhrase(hour)}, {firstName}
+        {greetingPhrase(hour, t)}, {firstName}
       </h1>
       <p
         className="mt-1.5 hidden text-sm lg:block"
         style={{ color: ownerTheme.textSecondary }}
       >
-        Here&apos;s what&apos;s happening at your studio today.
+        {t('owner.dashboard.todayAtStudio')}
       </p>
     </div>
   );
@@ -100,6 +102,7 @@ export function OwnerDashboardSchedulePanel({
   localePath: (path: string) => string;
   bookingLink?: string;
 }) {
+  const t = useTranslation();
   return (
     <section>
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -107,21 +110,21 @@ export function OwnerDashboardSchedulePanel({
           className="text-[13px] font-semibold uppercase tracking-[0.06em]"
           style={{ color: ownerTheme.text }}
         >
-          Daily schedule
+          {t('owner.dashboard.dailySchedule')}
         </h2>
         <Link
           href={localePath('/calendar')}
           className="text-[11px] font-semibold uppercase tracking-wide"
           style={{ color: ownerTheme.accent }}
         >
-          See all ›
+          {t('owner.dashboard.seeAll')} ›
         </Link>
       </div>
 
       {sessions.length === 0 ? (
         <OwnerScheduleEmptyCard
-          title="No bookings yet"
-          subtitle="Share your booking link to start receiving clients."
+          title={t('owner.dashboard.noBookingsYet')}
+          subtitle={t('owner.dashboard.shareBookingLinkHint')}
           bookingLink={bookingLink}
         />
       ) : (
@@ -162,6 +165,7 @@ export function OwnerDashboardStudioBanner({
     chipFgHex: string;
   }[];
 }) {
+  const t = useTranslation();
   const visibleTags = categories.slice(0, 3);
   const moreCount = Math.max(0, categories.length - visibleTags.length);
   const hasRating = typeof rating === 'number' && rating > 0;
@@ -212,7 +216,10 @@ export function OwnerDashboardStudioBanner({
               {(reviewCount ?? 0) > 0 ? (
                 <span style={{ color: ownerTheme.textSecondary }}>
                   ({reviewCount}{' '}
-                  {(reviewCount ?? 0) === 1 ? 'review' : 'reviews'})
+                  {(reviewCount ?? 0) === 1
+                    ? t('owner.dashboard.reviewOne')
+                    : t('owner.dashboard.reviewMany')}
+                  )
                 </span>
               ) : null}
             </span>
@@ -251,7 +258,10 @@ export function OwnerDashboardStudioBanner({
                   color: ownerTheme.textSecondary,
                 }}
               >
-                +{moreCount} more
+                {t('owner.dashboard.moreTags').replace(
+                  '{count}',
+                  String(moreCount),
+                )}
               </span>
             ) : null}
           </div>
@@ -263,7 +273,7 @@ export function OwnerDashboardStudioBanner({
               boxShadow: `inset 0 0 0 1.5px ${ownerTheme.accent}`,
             }}
           >
-            View studio
+            {t('owner.dashboard.viewStudio')}
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
           </span>
         </div>
@@ -273,6 +283,7 @@ export function OwnerDashboardStudioBanner({
 }
 
 export function OwnerDashboardNewClassButton({ href }: { href: string }) {
+  const t = useTranslation();
   return (
     <Link
       href={href}
@@ -280,7 +291,7 @@ export function OwnerDashboardNewClassButton({ href }: { href: string }) {
       style={{ backgroundColor: ownerTheme.accent }}
     >
       <Plus className="h-4 w-4" strokeWidth={2.5} />
-      New class
+      {t('owner.dashboard.newClass')}
     </Link>
   );
 }
@@ -290,6 +301,7 @@ export function OwnerDashboardCopyBookingLinkButton({
 }: {
   bookingLink: string;
 }) {
+  const t = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -310,7 +322,9 @@ export function OwnerDashboardCopyBookingLinkButton({
       }}
     >
       <Link2 className="h-4 w-4" strokeWidth={2.25} />
-      {copied ? 'Copied!' : 'Copy booking link'}
+      {copied
+        ? t('owner.dashboard.copied')
+        : t('owner.dashboard.copyBookingLink')}
     </button>
   );
 }
@@ -324,14 +338,15 @@ export function OwnerDashboardSidebar({
   lastBookings: DashboardNextBooking[];
   featuredSession?: OwnerTrainingSession | null;
 }) {
+  const t = useTranslation();
   const actions = [
     {
-      label: 'Add new client',
+      label: t('owner.dashboard.addNewClient'),
       href: localePath('/clients'),
       icon: <UserPlus className="h-4 w-4" />,
     },
     {
-      label: 'Create class',
+      label: t('owner.dashboard.createClass'),
       href: localePath('/trainings/new'),
       icon: <Dumbbell className="h-4 w-4" />,
     },
@@ -344,7 +359,7 @@ export function OwnerDashboardSidebar({
           className="px-4 pb-1 pt-3.5 text-base font-bold"
           style={{ color: ownerTheme.text }}
         >
-          Quick actions
+          {t('owner.dashboard.quickActions')}
         </h3>
         <ul className="divide-y divide-[#F1E4DB]">
           {actions.map((a) => (
@@ -385,14 +400,14 @@ export function OwnerDashboardSidebar({
             className="text-base font-bold"
             style={{ color: ownerTheme.text }}
           >
-            Last bookings
+            {t('owner.dashboard.lastBookings')}
           </h3>
           <Link
             href={localePath('/calendar')}
             className="text-sm font-semibold"
             style={{ color: ownerTheme.accent }}
           >
-            See all ›
+            {t('owner.dashboard.seeAll')} ›
           </Link>
         </div>
         {lastBookings.length === 0 ? (
@@ -400,7 +415,7 @@ export function OwnerDashboardSidebar({
             className="px-4 py-6 text-sm"
             style={{ color: ownerTheme.textSecondary }}
           >
-            No bookings yet.
+            {t('owner.dashboard.noBookingsYetShort')}
           </p>
         ) : (
           <ul className="divide-y divide-[#F1E4DB]">
@@ -441,7 +456,7 @@ export function OwnerDashboardSidebar({
                       backgroundColor: '#F0FDF4',
                     }}
                   >
-                    Confirmed
+                    {t('owner.dashboard.confirmed')}
                   </span>
                 </Link>
               </li>

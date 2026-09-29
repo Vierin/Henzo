@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Building2, CalendarPlus, ChevronRight, ImagePlus } from 'lucide-react';
 import { ownerTheme } from '@/lib/owner/owner-theme';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 type Props = {
   studioDetailsCompleted: boolean;
@@ -40,6 +41,7 @@ export function OwnerOnboardingCard({
   previewHref,
   onPublish,
 }: Props) {
+  const t = useTranslation();
   const done = [studioDetailsCompleted, hasTraining, hasPhoto].filter(
     Boolean,
   ).length;
@@ -54,8 +56,8 @@ export function OwnerOnboardingCard({
       index: 1,
       done: studioDetailsCompleted,
       href: detailsHref,
-      title: 'Create your studio profile',
-      subtitle: 'Add your studio name, location and a short description.',
+      title: t('owner.dashboard.stepProfileTitle'),
+      subtitle: t('owner.dashboard.stepProfileBody'),
       icon: <Building2 className="h-5 w-5" />,
     },
     {
@@ -63,8 +65,8 @@ export function OwnerOnboardingCard({
       index: 2,
       done: hasTraining,
       href: trainingHref,
-      title: 'Add your first class',
-      subtitle: 'Create a class, set the duration, capacity and price.',
+      title: t('owner.dashboard.stepClassTitle'),
+      subtitle: t('owner.dashboard.stepClassBody'),
       icon: <CalendarPlus className="h-5 w-5" />,
     },
     {
@@ -72,8 +74,8 @@ export function OwnerOnboardingCard({
       index: 3,
       done: hasPhoto,
       href: photoHref,
-      title: 'Add at least 1 photo',
-      subtitle: 'Show clients what your studio looks like.',
+      title: t('owner.dashboard.stepPhotoTitle'),
+      subtitle: t('owner.dashboard.stepPhotoBody'),
       icon: <ImagePlus className="h-5 w-5" />,
     },
   ];
@@ -89,19 +91,20 @@ export function OwnerOnboardingCard({
             className="text-[11px] font-medium tracking-[0.06em]"
             style={{ color: ownerTheme.textSecondary }}
           >
-            ✧ LET&apos;S GET YOUR STUDIO LIVE!
+            ✧ {t('owner.dashboard.onboardingTagline')}
           </p>
           <p
             className="mt-2 text-[1.75rem] leading-tight sm:text-3xl"
             style={{ color: ownerTheme.text }}
           >
-            Your studio is
+            {t('owner.dashboard.studioIs')}
           </p>
           <p
             className="text-[1.75rem] leading-tight sm:text-3xl"
             style={{ color: ownerTheme.text }}
           >
-            <span className="font-semibold">{percent}%</span> ready
+            <span className="font-semibold">{percent}%</span>{' '}
+            {t('owner.dashboard.readyWord')}
           </p>
         </div>
 
@@ -154,7 +157,7 @@ export function OwnerOnboardingCard({
               className="inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold text-white"
               style={{ backgroundColor: ownerTheme.accent }}
             >
-              Preview
+              {t('owner.dashboard.preview')}
             </Link>
           ) : null}
           {showActivate ? (
@@ -168,7 +171,9 @@ export function OwnerOnboardingCard({
                 color: ownerTheme.accent,
               }}
             >
-              {isPublishing ? 'Activating…' : 'Activate studio'}
+              {isPublishing
+                ? t('owner.dashboard.activating')
+                : t('owner.dashboard.activateStudio')}
             </button>
           ) : null}
         </div>

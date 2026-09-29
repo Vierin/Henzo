@@ -39,9 +39,55 @@ function parseIso(value: unknown): Date | null {
 
 function isPlaceholderTrainer(name: string): boolean {
   const t = name.trim();
-  if (!t || t === '-' || t === '—') return true;
+  if (!t || t === '-' || t === '—' || t === '\u2013' || t === '\u2014') {
+    return true;
+  }
   const lower = t.toLowerCase();
-  return lower === 'n/a' || lower === 'tbd' || lower === 'none';
+  return (
+    lower === 'n/a' ||
+    lower === 'tbd' ||
+    lower === 'none' ||
+    lower === 'henzo system studios'
+  );
+}
+
+export function readPublicTrainerName(
+  trainer: Record<string, unknown> | null,
+  fallback?: unknown,
+): string {
+  const user = asRecord(trainer?.User) ?? asRecord(trainer?.user);
+  const fromUser = String(user?.name ?? '').trim();
+  const fromTrainer = String(trainer?.name ?? '').trim();
+  const fromFallback = String(fallback ?? '').trim();
+  const name = fromUser || fromTrainer || fromFallback;
+  return isPlaceholderTrainer(name) ? '' : name;
+}
+
+/** Sessions with no trainer inherit the studio's only real trainer name. */
+export function withSoleStudioTrainer(
+  sessions: NearbyClassSession[],
+): NearbyClassSession[] {
+  const namesByStudio = new Map<string, Set<string>>();
+  for (const session of sessions) {
+    const name = session.trainerName.trim();
+    if (!name) continue;
+    const set = namesByStudio.get(session.studioId) ?? new Set<string>();
+    set.add(name);
+    namesByStudio.set(session.studioId, set);
+  }
+
+  const soleByStudio = new Map<string, string>();
+  for (const [studioId, names] of namesByStudio) {
+    if (names.size !== 1) continue;
+    const only = [...names][0];
+    if (only) soleByStudio.set(studioId, only);
+  }
+
+  return sessions.map((session) => {
+    if (session.trainerName.trim()) return session;
+    const sole = soleByStudio.get(session.studioId);
+    return sole ? { ...session, trainerName: sole } : session;
+  });
 }
 
 export function parseNearbyClassSession(
@@ -83,7 +129,7 @@ export function parseNearbyClassSession(
     );
   }
 
-  const trainerName = String(trainer?.name ?? map.trainerName ?? '').trim();
+  const trainerName = readPublicTrainerName(trainer, map.trainerName);
   const rawPrice = Number(map.price ?? training?.price ?? 0);
   const price =
     Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : undefined;
@@ -93,7 +139,7 @@ export function parseNearbyClassSession(
     studioId: studio.id,
     studioName: studio.studioName,
     className: String(training?.name ?? 'Class'),
-    trainerName: isPlaceholderTrainer(trainerName) ? '' : trainerName,
+    trainerName,
     locationName,
     startsAt: startsAt.toISOString(),
     durationMin,

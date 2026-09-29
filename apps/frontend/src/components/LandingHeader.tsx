@@ -84,6 +84,8 @@ function LandingHeaderContent({
               selectedLanguage={selectedLanguage}
               languages={businessHeaderLanguages}
               onLanguageSelect={handleLanguageSelect}
+              getAppHref={withLocale('/business/register', locale)}
+              getAppLabel={String(t('homepage.studio.header.webVersion'))}
               buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
               storeButtonClassName="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#3F3F3F] text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:h-10 sm:w-10"
             />

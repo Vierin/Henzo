@@ -119,7 +119,14 @@ List<Widget> buildBrowseResultsSlivers({
             final session = ownerSessionFromExplore(c);
             final loc = (c.locationName ?? '').trim();
             final subtitle = loc.isNotEmpty ? loc : c.studioName;
-            final trainerLine = scheduleTrainerLineOrNull(session, null);
+            final trainerLine = scheduleTrainerLineOrNull(
+              session,
+              solePublicTrainerName(
+                dayClasses
+                    .where((other) => other.studioId == c.studioId)
+                    .map((other) => other.trainerName),
+              ),
+            );
             return OwnerDailyScheduleSessionCard(
               session: session,
               subtitleLabel: subtitle,

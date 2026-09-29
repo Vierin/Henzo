@@ -342,6 +342,18 @@ class _PublicStudioScheduleScreenState
     return _sessionsByDay[_dayKey(day)] ?? const [];
   }
 
+  String? _soleTrainerName() {
+    final names = <String>[];
+    for (final day in _sessionsByDay.values) {
+      for (final raw in day) {
+        final trainer = raw['trainer'];
+        if (trainer is! Map) continue;
+        names.add(publicTrainerNameFromApiMap(trainer));
+      }
+    }
+    return solePublicTrainerName(names);
+  }
+
   double _dayPillWidth(double viewportWidth) =>
       viewportWidth / 7 - _kDayPillGap;
 
@@ -683,7 +695,7 @@ class _PublicStudioScheduleScreenState
               true
           ? (training['language'] as String).trim()
           : null,
-      trainerName: (trainer['name'] ?? '').toString().trim(),
+      trainerName: publicTrainerNameFromApiMap(trainer),
 
       trainerId: trainer['id']?.toString(),
 
@@ -869,7 +881,7 @@ class _PublicStudioScheduleScreenState
                                 loc.isNotEmpty ? loc : studioLabel;
                             final trainerLine = scheduleTrainerLineOrNull(
                               session,
-                              null,
+                              _soleTrainerName(),
                             );
                             final price = session.trainingPrice;
                             final rawSessionId =

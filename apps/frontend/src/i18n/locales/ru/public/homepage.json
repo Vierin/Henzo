@@ -54,9 +54,11 @@
       "line2Lead": "к",
       "line2Highlight": "понятному расписанию",
       "line2Trail": "",
+      "subtitle": "Всё для студий йоги и пилатеса в одном приложении. Записи, оплата, лист ожидания, напоминания — от €8/месяц",
+      "startTrial": "Начать 3 месяца бесплатно",
+      "noCard": "Карта не нужна.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
-      "availableForFree": "Доступно бесплатно",
       "notification": "Не забудьте тренировку сегодня в 15:00",
       "entryNotificationTitle": "Новая резервация!",
       "entryNotificationText": "Sam только что записался на тренировку.",
@@ -88,7 +90,8 @@
       "navPricing": "Цены",
       "navHowItWorks": "Как это работает",
       "navContact": "Контакты",
-      "getApp": "Скачать приложение"
+      "getApp": "Скачать приложение",
+      "webVersion": "Веб-версия"
     },
     "intro": {
       "description": "Управляйте студией с телефона: расписание, слоты тренеров и записи клиентов в одном потоке.",
@@ -169,6 +172,7 @@
       "currency": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
+      "trialBanner": "Все функции бесплатно 3 месяца. Карта не нужна.",
       "plans": [
         {
           "name": "Solo",
@@ -250,7 +254,8 @@
     "ctaBanner": {
       "titleLine1": "Ваша студия.",
       "titleLine2": "В ваших руках.",
-      "description": "Управляйте занятиями, учениками и записями в одном мобильном приложении",
+      "description": "Управляйте занятиями, учениками и записями в браузере или в приложении",
+      "reassurance": "Без карты · Отмена в любой момент · Настройка за 5 минут.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play"
     },

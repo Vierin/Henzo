@@ -54,9 +54,11 @@
       "line2Lead": "a un",
       "line2Highlight": "horario claro",
       "line2Trail": "",
+      "subtitle": "App todo en uno para estudios de yoga y pilates. Reservas, pagos, listas de espera y recordatorios — desde 8 €/mes",
+      "startTrial": "Empieza 3 meses gratis",
+      "noCard": "Sin tarjeta.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
-      "availableForFree": "Disponible gratis",
       "notification": "Recuerda entrenar hoy a las 15:00",
       "entryNotificationTitle": "¡Nueva reserva!",
       "entryNotificationText": "Sam acaba de reservar una sesión.",
@@ -88,7 +90,8 @@
       "navPricing": "Precios",
       "navHowItWorks": "Cómo funciona",
       "navContact": "Contacto",
-      "getApp": "Descargar la app"
+      "getApp": "Descargar la app",
+      "webVersion": "Versión web"
     },
     "intro": {
       "description": "Gestiona tu estudio desde el móvil: horarios, slots de coaches y reservas de clientes en un solo flujo.",
@@ -170,6 +173,7 @@
       "currencyEuro": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
+      "trialBanner": "Prueba todo gratis durante 3 meses. No hace falta tarjeta.",
       "plans": [
         {
           "name": "Solo",
@@ -294,7 +298,8 @@
     "ctaBanner": {
       "titleLine1": "Tu estudio.",
       "titleLine2": "En tus manos.",
-      "description": "Gestiona clases, alumnos y citas desde una sola app móvil",
+      "description": "Gestiona clases, alumnos y citas en el navegador o en la app",
+      "reassurance": "Sin tarjeta · Cancela cuando quieras · Configuración en 5 minutos.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play"
     },

@@ -2,6 +2,7 @@ import {
   fetchPublicApiJson,
   resolvePopularStudiosApiBases,
 } from '@/lib/client/fetch-popular-studios';
+import { readPublicTrainerName } from '@/lib/client/nearby-class-session';
 import { extractStudioIdFromSlug, isValidStudioSlug } from '@/utils/slug';
 import { parseStudioCurrency, type StudioCurrency } from '@/lib/format-money';
 
@@ -269,7 +270,7 @@ function parseScheduleSessions(raw: unknown): PublicScheduleSession[] {
         ? (asRecord(raw)!.sessions as unknown[])
         : [];
 
-  return list
+  const parsed = list
     .map((item): PublicScheduleSession | null => {
       const m = asRecord(item);
       if (!m?.id || !m.startsAt) return null;
@@ -284,12 +285,7 @@ function parseScheduleSessions(raw: unknown): PublicScheduleSession[] {
         trainingName: String(
           m.trainingName ?? training?.name ?? 'Class',
         ).trim(),
-        trainerName: (() => {
-          const raw = trainer?.name
-            ? String(trainer.name).trim()
-            : String(m.trainerName ?? '').trim();
-          return raw || undefined;
-        })(),
+        trainerName: readPublicTrainerName(trainer, m.trainerName) || undefined,
         capacity: Number(m.capacity ?? 0) || undefined,
         enrolledCount:
           Number(
@@ -340,6 +336,17 @@ function parseScheduleSessions(raw: unknown): PublicScheduleSession[] {
     .sort(
       (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
     );
+
+  const names = new Set(
+    parsed
+      .map((s) => s.trainerName?.trim() ?? '')
+      .filter((name) => name.length > 0),
+  );
+  if (names.size !== 1) return parsed;
+  const sole = [...names][0];
+  return parsed.map((s) =>
+    s.trainerName?.trim() ? s : { ...s, trainerName: sole },
+  );
 }
 
 export type PublicScheduleFetchOpts = {

@@ -17,6 +17,7 @@ type CtaBannerCopy = {
   titleLine1: string;
   titleLine2: string;
   description: string;
+  reassurance: string;
   storeAppStore: string;
   storeGooglePlay: string;
 };
@@ -57,6 +58,7 @@ export function LandingCtaSection() {
     titleLine1,
     titleLine2,
     description,
+    reassurance,
     storeAppStore,
     storeGooglePlay,
   } = useCtaBannerCopy();
@@ -109,6 +111,9 @@ export function LandingCtaSection() {
                 {storeGooglePlay}
               </a>
             </div>
+            <p className="mt-5 text-sm leading-snug text-white/75 sm:text-base">
+              {reassurance}
+            </p>
           </div>
 
           <div className="relative z-10 flex justify-center md:justify-end bottom-[-25%] sm:bottom-0">

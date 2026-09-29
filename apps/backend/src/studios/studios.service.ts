@@ -20,6 +20,8 @@ import {
 import {
   buildPublicTrainerPayload,
   isUnclaimedStudio,
+  soleAssignedPublicTrainer,
+  type AssignedTrainerRef,
 } from '../fitness/trainer-display.util';
 import {
   assertValidClientReviewComment,
@@ -1905,6 +1907,13 @@ export class StudiosService {
               avatarUrl: true,
             },
           },
+          Trainer: {
+            select: {
+              id: true,
+              name: true,
+              User: { select: { name: true } },
+            },
+          },
         },
       });
 
@@ -1925,6 +1934,9 @@ export class StudiosService {
               email: (Studio as any).User.email,
             }
           : null;
+      const soleTrainer = soleAssignedPublicTrainer(
+        ((Studio as any).Trainer ?? []) as AssignedTrainerRef[],
+      );
 
       // Transform Prisma response to frontend format
       const transformedStudio = {
@@ -2033,11 +2045,11 @@ export class StudiosService {
                   }),
                 }
               : null,
-            trainer: buildPublicTrainerPayload(
-              session.Trainer,
-              // Unclaimed/ops studios: show assigned trainer only — never tech owner.
-              studioOwner,
-            ),
+            trainer:
+              buildPublicTrainerPayload(session.Trainer, null) ??
+              soleTrainer ??
+              // Unclaimed/ops studios: never fall back to the tech owner.
+              buildPublicTrainerPayload(null, studioOwner),
           }),
         ),
       };
@@ -2474,60 +2486,71 @@ export class StudiosService {
     }
     const take = Math.min(Math.max(params?.limit ?? 300, 1), 500);
 
-    const sessions = await this.prisma.trainingSession.findMany({
-      where: {
-        studioId: id,
-        status: 'ACTIVE',
-        startsAt: {
-          gte: fromDate,
-          lte: effectiveToDate,
+    const [sessions, roster] = await Promise.all([
+      this.prisma.trainingSession.findMany({
+        where: {
+          studioId: id,
+          status: 'ACTIVE',
+          startsAt: {
+            gte: fromDate,
+            lte: effectiveToDate,
+          },
         },
-      },
-      select: {
-        id: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        capacity: true,
-        bookedCount: true,
-        locationId: true,
-        Training: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            descriptionEn: true,
-            descriptionVi: true,
-            descriptionRu: true,
-            duration: true,
-            price: true,
-            trainingCategoryId: true,
-            language: true,
-            displayColor: true,
-            trainingCategory: {
-              select: {
-                chip_bg_hex: true,
-                chip_fg_hex: true,
-                name_en: true,
-                name_vn: true,
-                name_ru: true,
+        select: {
+          id: true,
+          startsAt: true,
+          endsAt: true,
+          status: true,
+          capacity: true,
+          bookedCount: true,
+          locationId: true,
+          Training: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              descriptionEn: true,
+              descriptionVi: true,
+              descriptionRu: true,
+              duration: true,
+              price: true,
+              trainingCategoryId: true,
+              language: true,
+              displayColor: true,
+              trainingCategory: {
+                select: {
+                  chip_bg_hex: true,
+                  chip_fg_hex: true,
+                  name_en: true,
+                  name_vn: true,
+                  name_ru: true,
+                },
+              },
+            },
+          },
+          Trainer: {
+            select: {
+              id: true,
+              name: true,
+              User: {
+                select: { name: true },
               },
             },
           },
         },
-        Trainer: {
-          select: {
-            id: true,
-            name: true,
-            User: {
-              select: { name: true },
-            },
-          },
+        orderBy: { startsAt: 'asc' },
+        take,
+      }),
+      this.prisma.trainer.findMany({
+        where: { studioId: id },
+        select: {
+          id: true,
+          name: true,
+          User: { select: { name: true } },
         },
-      },
-      orderBy: { startsAt: 'asc' },
-      take,
-    });
+      }),
+    ]);
+    const soleTrainer = soleAssignedPublicTrainer(roster);
 
     const studioName = studio.name?.trim() ?? 'Studio';
     const locationCount = countTrainingLocations(studio.reminderSettings);
@@ -2578,11 +2601,11 @@ export class StudiosService {
                 : null,
             }
           : null,
-        trainer: buildPublicTrainerPayload(
-          s.Trainer,
-          // Unclaimed/ops studios: show assigned trainer only — never tech owner.
-          hideTrainers ? null : studioOwner,
-        ),
+        trainer:
+          buildPublicTrainerPayload(s.Trainer, null) ??
+          soleTrainer ??
+          // Unclaimed/ops studios: never fall back to the tech owner.
+          buildPublicTrainerPayload(null, hideTrainers ? null : studioOwner),
         timezone: studio.timezone,
         studio: { locationCount },
       };

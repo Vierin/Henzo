@@ -54,6 +54,11 @@ export function PublicHeaderActions({
           buttonClassName={buttonClassName}
         />
       )}
+      {!hideGetApp && getAppHref && getAppLabel && (
+        <a href={getAppHref} className={getAppClassName}>
+          {getAppLabel}
+        </a>
+      )}
       <a
         href={appStoreUrl}
         target="_blank"
@@ -72,11 +77,6 @@ export function PublicHeaderActions({
       >
         <GooglePlayIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
       </a>
-      {!hideGetApp && getAppHref && getAppLabel && (
-        <a href={getAppHref} className={getAppClassName}>
-          {getAppLabel}
-        </a>
-      )}
     </div>
   );
 }

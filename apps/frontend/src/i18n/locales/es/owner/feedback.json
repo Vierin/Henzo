@@ -1,12 +1,12 @@
 {
-	"title": "Need help?",
-	"subtitle": "Ask a question or describe your issue",
-	"placeholder": "Describe your question or issue...",
-	"send": "Send",
-	"sending": "Sending...",
-	"pleaseEnterMessage": "Please enter a message",
-	"thankYou": "Thanks! We will help you soon.",
-	"failedToSend": "Failed to send your message. Please try again.",
-	"sendFeedback": "Need help?",
-	"close": "Close"
+	"title": "¿Necesitas ayuda?",
+	"subtitle": "Haz una pregunta o describe el problema",
+	"placeholder": "Describe tu pregunta o el problema...",
+	"send": "Enviar",
+	"sending": "Enviando...",
+	"pleaseEnterMessage": "Escribe un mensaje",
+	"thankYou": "¡Gracias! Te ayudaremos pronto.",
+	"failedToSend": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+	"sendFeedback": "¿Necesitas ayuda?",
+	"close": "Cerrar"
 }

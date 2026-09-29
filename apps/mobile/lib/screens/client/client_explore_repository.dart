@@ -151,7 +151,19 @@ class ClientExploreRepository {
             startsAt: startsAt,
             durationMin: (training['duration'] as num?)?.toInt(),
             trainerName: map['trainer'] is Map
-                ? (map['trainer']['name'] ?? '').toString()
+                ? () {
+                    final trainer = Map<String, dynamic>.from(
+                      map['trainer'] as Map,
+                    );
+                    final user = trainer['User'] ?? trainer['user'];
+                    final fromUser = user is Map
+                        ? (user['name'] ?? '').toString().trim()
+                        : '';
+                    final fromTrainer = (trainer['name'] ?? '')
+                        .toString()
+                        .trim();
+                    return fromUser.isNotEmpty ? fromUser : fromTrainer;
+                  }()
                 : '',
             className: (training['name'] ?? defaultClassName).toString(),
             price: (training['price'] as num?)?.toDouble(),

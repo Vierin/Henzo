@@ -13,9 +13,11 @@ type HeroCopy = {
   line2Lead: string;
   line2Highlight: string;
   line2Trail: string;
+  subtitle: string;
+  startTrial: string;
+  noCard: string;
   storeAppStore: string;
   storeGooglePlay: string;
-  availableForFree: string;
 };
 
 export function LandingHeroSection() {
@@ -27,9 +29,11 @@ export function LandingHeroSection() {
     line2Lead,
     line2Highlight,
     line2Trail,
+    subtitle,
+    startTrial,
+    noCard,
     storeAppStore,
     storeGooglePlay,
-    availableForFree,
   } = t(H) as unknown as HeroCopy;
 
   return (
@@ -52,12 +56,24 @@ export function LandingHeroSection() {
             </span>
           </h1>
 
-          <StoreBadgeLinks
-            id="get-app"
-            appStoreLabel={storeAppStore}
-            googlePlayLabel={storeGooglePlay}
-          />
-          <p className="mt-5 text-sm text-[#878787]">{availableForFree}</p>
+          <p className="mx-auto mt-6 max-w-[42rem] text-base leading-snug text-[#5C5C5C] sm:mt-8 sm:text-xl">
+            {subtitle}
+          </p>
+
+          <div className="mx-auto mt-8 flex max-w-4xl flex-col items-center justify-center gap-6 sm:mt-10 sm:flex-row sm:gap-10">
+            <div className="text-center sm:text-left">
+              <p className="text-lg font-semibold leading-snug text-[#3F3F3F] sm:text-xl">
+                {startTrial}
+              </p>
+              <p className="mt-1 text-sm text-[#878787]">{noCard}</p>
+            </div>
+            <StoreBadgeLinks
+              id="get-app"
+              className="mt-0 flex scroll-mt-28 flex-wrap items-center justify-center gap-4 sm:mt-0"
+              appStoreLabel={storeAppStore}
+              googlePlayLabel={storeGooglePlay}
+            />
+          </div>
         </div>
       </div>
     </section>

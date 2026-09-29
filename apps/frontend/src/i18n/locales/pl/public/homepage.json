@@ -54,9 +54,11 @@
       "line2Lead": "do",
       "line2Highlight": "przejrzystego grafiku",
       "line2Trail": "",
+      "subtitle": "Aplikacja all-in-one dla studiów jogi i pilates. Rezerwacje, płatności, listy oczekujących, przypomnienia — od 8 €/mies.",
+      "startTrial": "Zacznij 3 miesiące za darmo",
+      "noCard": "Bez karty.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
-      "availableForFree": "Dostępne za darmo",
       "notification": "Pamiętaj o treningu dziś o 15:00",
       "entryNotificationTitle": "Nowa rezerwacja!",
       "entryNotificationText": "Asia właśnie zarezerwowała trening.",
@@ -88,7 +90,8 @@
       "navPricing": "Cennik",
       "navHowItWorks": "Jak to działa",
       "navContact": "Kontakt",
-      "getApp": "Pobierz aplikację"
+      "getApp": "Pobierz aplikację",
+      "webVersion": "Wersja webowa"
     },
     "intro": {
       "description": "Prowadź studio z telefonu: grafik, sloty trenerów i rezerwacje klientów w jednym flow.",
@@ -169,6 +172,7 @@
       "currency": "PLN",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
+      "trialBanner": "Wypróbuj wszystko za darmo przez 3 miesiące. Karta nie jest potrzebna.",
       "plans": [
         {
           "name": "Solo",
@@ -250,7 +254,8 @@
     "ctaBanner": {
       "titleLine1": "Twoje studio.",
       "titleLine2": "W Twoich rękach.",
-      "description": "Zarządzaj zajęciami, kursantami i rezerwacjami w jednej aplikacji mobilnej",
+      "description": "Zarządzaj zajęciami, kursantami i rezerwacjami w przeglądarce lub w aplikacji",
+      "reassurance": "Bez karty · Anuluj w dowolnym momencie · Konfiguracja w 5 minut.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play"
     },

@@ -54,9 +54,11 @@
       "line2Lead": "đến",
       "line2Highlight": "lịch trình rõ ràng",
       "line2Trail": "",
+      "subtitle": "Ứng dụng tất cả trong một cho studio yoga và pilates. Đặt chỗ, thanh toán, danh sách chờ, nhắc nhở — từ €8/tháng",
+      "startTrial": "Dùng thử miễn phí 3 tháng",
+      "noCard": "Không cần thẻ.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
-      "availableForFree": "Dùng miễn phí",
       "notification": "Nhớ tập hôm nay lúc 3pm",
       "entryNotificationTitle": "Đặt lịch mới!",
       "entryNotificationText": "Sam vừa đặt một buổi tập.",
@@ -88,7 +90,8 @@
       "navPricing": "Bảng giá",
       "navHowItWorks": "Cách hoạt động",
       "navContact": "Liên hệ",
-      "getApp": "Tải ứng dụng"
+      "getApp": "Tải ứng dụng",
+      "webVersion": "Bản web"
     },
     "intro": {
       "description": "Vận hành studio từ điện thoại: lịch, khung giờ huấn luyện viên và đặt chỗ của khách trong một luồng thống nhất.",
@@ -169,6 +172,7 @@
       "currency": "VND",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
+      "trialBanner": "Dùng thử mọi tính năng miễn phí trong 3 tháng. Không cần thẻ.",
       "plans": [
         {
           "name": "Solo",
@@ -250,7 +254,8 @@
     "ctaBanner": {
       "titleLine1": "Studio của bạn.",
       "titleLine2": "Trong tay bạn.",
-      "description": "Quản lý lớp học, học viên và lịch hẹn trong một ứng dụng mobile",
+      "description": "Quản lý lớp học, học viên và lịch hẹn trên trình duyệt hoặc trong ứng dụng",
+      "reassurance": "Không cần thẻ · Hủy bất cứ lúc nào · Thiết lập trong 5 phút.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play"
     },

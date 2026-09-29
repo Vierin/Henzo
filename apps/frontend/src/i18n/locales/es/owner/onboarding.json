@@ -1,48 +1,48 @@
 {
-	"setupChecklist": "Setup Checklist",
-	"progress": "Setup Progress",
+	"setupChecklist": "Lista de configuración",
+	"progress": "Progreso",
 	"steps": {
 		"addServices": {
-			"title": "Add Services",
-			"description": "Create your service catalog with prices and durations. This helps clients understand what you offer and book appointments easily."
+			"title": "Añadir servicios",
+			"description": "Crea tu catálogo con precios y duraciones. Así los clientes entienden qué ofreces y reservan más fácil."
 		},
 		"addStaff": {
-			"title": "Add Staff",
-			"description": "Add your team members so clients can choose their preferred master. Each staff member can have their own schedule and services.",
-			"question": "Do you perform services in the salon?",
-			"yesIAmStaff": "Yes, I am an employee",
-			"noAddOther": "No (add another person)"
+			"title": "Añadir equipo",
+			"description": "Añade a tu equipo para que los clientes elijan profesional. Cada persona puede tener horario y servicios propios.",
+			"question": "¿Das tú las clases en el estudio?",
+			"yesIAmStaff": "Sí, formo parte del equipo",
+			"noAddOther": "No (añadir a otra persona)"
 		},
 		"checkSchedule": {
-			"title": "Salon hours & calendar",
-			"description": "Set opening hours in Salon settings — that controls online booking slots. Use Calendar to see visits and block time off when you're closed or busy.",
-			"primaryCta": "Set operating hours",
-			"secondaryCta": "Open calendar"
+			"title": "Horario y calendario",
+			"description": "Define el horario de apertura en los ajustes del estudio: eso controla los huecos de reserva. Usa el calendario para ver visitas y bloquear tiempo.",
+			"primaryCta": "Definir horario",
+			"secondaryCta": "Abrir calendario"
 		},
 		"checkBookingPage": {
-			"title": "Check Booking Page",
-			"description": "Preview how your salon appears to clients. Make sure all information is correct and the booking process works smoothly."
+			"title": "Revisar la página de reservas",
+			"description": "Mira cómo ven los clientes tu estudio. Comprueba que la información y el proceso de reserva estén bien."
 		},
 		"publishSalon": {
-			"title": "Publish Salon",
-			"description": "Make your salon visible to clients. Once published, your salon will appear in search results and category listings."
+			"title": "Publicar estudio",
+			"description": "Haz visible tu estudio. Cuando lo publiques, aparecerá en la búsqueda y en las categorías."
 		}
 	},
-	"publishSalon": "Publish Salon",
-	"publishing": "Publishing...",
-	"salonPublished": "Salon published successfully!",
-	"publishError": "Failed to publish salon",
-	"congratulations": "Congratulations!",
-	"salonPublishedSuccess": "Your salon has been published and is now visible to clients!",
-	"goToStep": "Go to step",
-	"goToPage": "Go to page",
-	"viewPage": "View page",
-	"ownerStaffCreated": "Staff member created successfully!",
-	"failedToCreateOwnerStaff": "Failed to create staff member",
-	"stepsRemaining": "Until first clients: {count} {plural}",
+	"publishSalon": "Publicar estudio",
+	"publishing": "Publicando...",
+	"salonPublished": "¡Estudio publicado!",
+	"publishError": "No se pudo publicar el estudio",
+	"congratulations": "¡Enhorabuena!",
+	"salonPublishedSuccess": "Tu estudio está publicado y ya es visible para los clientes.",
+	"goToStep": "Ir al paso",
+	"goToPage": "Ir a la página",
+	"viewPage": "Ver página",
+	"ownerStaffCreated": "Miembro del equipo creado",
+	"failedToCreateOwnerStaff": "No se pudo crear el miembro del equipo",
+	"stepsRemaining": "Hasta los primeros clientes: {count} {plural}",
 	"photoTip": {
-		"title": "💡 Tip to increase bookings",
-		"description": "Add salon photos to increase customer trust by 40% and bookings by 35%",
-		"addPhotos": "Add photos"
+		"title": "💡 Consejo para conseguir más reservas",
+		"description": "Añade fotos del estudio: sube la confianza un 40% y las reservas un 35%",
+		"addPhotos": "Añadir fotos"
 	}
 }

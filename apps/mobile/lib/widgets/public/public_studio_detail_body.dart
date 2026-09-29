@@ -301,7 +301,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
               true
           ? (training['language'] as String).trim()
           : null,
-      trainerName: (trainer['name'] ?? '').toString().trim(),
+      trainerName: publicTrainerNameFromApiMap(trainer),
       trainerId: trainer['id']?.toString(),
       locationId: item['locationId']?.toString(),
       locationName: item['locationName']?.toString(),
@@ -726,7 +726,13 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                               loc.isNotEmpty ? loc : studioLabel;
                           final trainerLine = scheduleTrainerLineOrNull(
                             session,
-                            null,
+                            solePublicTrainerName(
+                              _upcomingSessions.map((raw) {
+                                final trainer = raw['trainer'];
+                                if (trainer is! Map) return '';
+                                return publicTrainerNameFromApiMap(trainer);
+                              }),
+                            ),
                           );
                           final price = session.trainingPrice;
                           return Padding(

@@ -54,9 +54,11 @@
       "line2Lead": "k",
       "line2Highlight": "přehlednému rozvrhu",
       "line2Trail": "",
+      "subtitle": "Aplikace all-in-one pro studia jógy a pilatesu. Rezervace, platby, pořadníky, připomínky — od 8 €/měsíc",
+      "startTrial": "Začněte 3 měsíce zdarma",
+      "noCard": "Bez karty.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
-      "availableForFree": "Dostupné zdarma",
       "notification": "Nezapomeňte dnes trénovat v 15:00",
       "entryNotificationTitle": "Nová rezervace!",
       "entryNotificationText": "Sam právě rezervoval trénink.",
@@ -88,7 +90,8 @@
       "navPricing": "Ceník",
       "navHowItWorks": "Jak to funguje",
       "navContact": "Kontakt",
-      "getApp": "Stáhnout aplikaci"
+      "getApp": "Stáhnout aplikaci",
+      "webVersion": "Webová verze"
     },
     "intro": {
       "description": "Spravujte studio z mobilu: rozvrh, sloty trenérů a rezervace klientů v jednom toku.",
@@ -169,6 +172,7 @@
       "currency": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
+      "trialBanner": "Vyzkoušejte vše zdarma na 3 měsíce. Karta není potřeba.",
       "plans": [
         {
           "name": "Solo",
@@ -250,7 +254,8 @@
     "ctaBanner": {
       "titleLine1": "Vaše studio.",
       "titleLine2": "Ve vašich rukou.",
-      "description": "Spravujte lekce, studenty a rezervace v jedné mobilní aplikaci",
+      "description": "Spravujte lekce, studenty a rezervace v prohlížeči nebo v aplikaci",
+      "reassurance": "Bez karty · Zrušení kdykoli · Nastavení za 5 minut.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play"
     },

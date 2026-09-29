@@ -37,13 +37,29 @@ export function resolveTrainerDisplayName(
   return null;
 }
 
+const TECH_OWNER_DISPLAY_NAMES = new Set(['henzo system studios']);
+
+export function isPlaceholderPublicTrainerName(value: string): boolean {
+  const t = value.trim();
+  if (!t || t === '-' || t === '—' || t === '\u2013' || t === '\u2014') {
+    return true;
+  }
+  const lower = t.toLowerCase();
+  return (
+    lower === 'n/a' ||
+    lower === 'tbd' ||
+    lower === 'none' ||
+    TECH_OWNER_DISPLAY_NAMES.has(lower)
+  );
+}
+
 /** Display name for clients when session has no Trainer row or empty name. */
 export function buildPublicTrainerPayload(
   trainer: AssignedTrainerRef,
   owner: StudioOwnerRef,
 ): PublicTrainerDto {
   const linkedName = resolveTrainerDisplayName(trainer);
-  if (linkedName) {
+  if (linkedName && !isPlaceholderPublicTrainerName(linkedName)) {
     return { id: trainer!.id, name: linkedName };
   }
   if (!owner) return null;
@@ -52,12 +68,33 @@ export function buildPublicTrainerPayload(
     (owner.name && String(owner.name).trim()) ||
     (owner.email && String(owner.email).trim()) ||
     '';
-  if (!display) return null;
+  if (!display || isPlaceholderPublicTrainerName(display)) return null;
 
   return {
     id: trainer?.id ?? owner.id,
     name: display,
   };
+}
+
+/**
+ * When a session has no trainer, show the studio's only real trainer.
+ * Several trainers → don't guess. Tech-owner placeholder rows are ignored.
+ */
+export function soleAssignedPublicTrainer(
+  trainers: AssignedTrainerRef[],
+): PublicTrainerDto {
+  const named: { id: string; name: string }[] = [];
+  const seen = new Set<string>();
+  for (const trainer of trainers) {
+    const name = resolveTrainerDisplayName(trainer);
+    if (!name || !trainer || isPlaceholderPublicTrainerName(name)) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    named.push({ id: trainer.id, name });
+  }
+  if (named.length !== 1) return null;
+  return named[0] ?? null;
 }
 
 /**

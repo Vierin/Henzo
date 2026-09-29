@@ -1,10 +1,10 @@
 {
-	"required": "This field is required",
-	"invalidEmail": "Invalid email address",
-	"invalidPhone": "Invalid phone number",
-	"passwordTooShort": "Password too short",
-	"passwordsDoNotMatch": "Passwords do not match",
-	"termsAndConditions": "Terms and Conditions",
-	"privacyPolicy": "Privacy Policy",
-	"agreeToTerms": "I agree to the terms"
+	"required": "Este campo es obligatorio",
+	"invalidEmail": "Correo no válido",
+	"invalidPhone": "Teléfono no válido",
+	"passwordTooShort": "La contraseña es demasiado corta",
+	"passwordsDoNotMatch": "Las contraseñas no coinciden",
+	"termsAndConditions": "Términos y condiciones",
+	"privacyPolicy": "Política de privacidad",
+	"agreeToTerms": "Acepto los términos"
 }

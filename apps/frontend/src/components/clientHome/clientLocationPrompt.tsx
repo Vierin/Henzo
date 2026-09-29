@@ -26,12 +26,7 @@ function shouldOfferLocationPrompt(pathname: string | null): boolean {
   if (path.startsWith('/admin')) return false;
   if (path.startsWith('/auth')) return false;
   if (isRouteMatch(path, ownerRoutes)) return false;
-  if (
-    path.startsWith('/business/login') ||
-    path.startsWith('/business/register')
-  ) {
-    return false;
-  }
+  if (path === '/business' || path.startsWith('/business/')) return false;
   if (path.startsWith('/login') || path.startsWith('/register')) return false;
   if (path.startsWith('/forgot-password')) return false;
   return true;
@@ -99,7 +94,7 @@ export function ClientLocationPrompt() {
     };
   }, [query, open, mode]);
 
-  if (!open) return null;
+  if (!open || !shouldOfferLocationPrompt(pathname)) return null;
 
   const title = String(t(`${T}.title`) || 'Share your location');
   const body = String(

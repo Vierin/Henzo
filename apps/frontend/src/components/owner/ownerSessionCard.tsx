@@ -11,6 +11,7 @@ import {
   trainingLanguageLabel,
 } from '@/lib/owner/format-time';
 import { copyTextToClipboard } from '@/lib/owner/booking-link';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 function progressColor(ratio: number, accent: string) {
   if (ratio < 0.5) return '#E26152';
@@ -173,6 +174,7 @@ export function OwnerScheduleEmptyCard({
   /** When set, shows a compact “Copy booking link” action. */
   bookingLink?: string;
 }) {
+  const t = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -240,7 +242,9 @@ export function OwnerScheduleEmptyCard({
           }}
         >
           <Link2 className="h-4 w-4" strokeWidth={2.25} />
-          {copied ? 'Copied!' : 'Copy booking link'}
+          {copied
+            ? t('owner.dashboard.copied')
+            : t('owner.dashboard.copyBookingLink')}
         </button>
       ) : null}
     </div>

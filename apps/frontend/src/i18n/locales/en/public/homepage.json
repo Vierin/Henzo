@@ -54,9 +54,11 @@
       "line2Lead": "to a",
       "line2Highlight": "clear schedule",
       "line2Trail": "",
+      "subtitle": "All-in-one app for yoga & pilates studios. Bookings, payments, waitlists, reminders — from €8/month",
+      "startTrial": "Start 3-month free trial",
+      "noCard": "No credit card required.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
-      "availableForFree": "Available for free",
       "notification": "Remember to train today at 3pm",
       "entryNotificationTitle": "New reservation!",
       "entryNotificationText": "Sam just booked a training session.",
@@ -88,7 +90,8 @@
       "navPricing": "Pricing",
       "navHowItWorks": "How it works",
       "navContact": "Contact",
-      "getApp": "Get the app"
+      "getApp": "Get the app",
+      "webVersion": "Web version"
     },
     "intro": {
       "description": "Run your studio from mobile: schedule, coach slots, and client bookings in one flow.",
@@ -170,6 +173,7 @@
       "currencyEuro": "€",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play",
+      "trialBanner": "Try everything free for 3 months. No credit card required.",
       "plans": [
         {
           "name": "Solo",
@@ -294,7 +298,8 @@
     "ctaBanner": {
       "titleLine1": "Your studio.",
       "titleLine2": "In your hands.",
-      "description": "Manage classes, students, and appointments all from one mobile app",
+      "description": "Manage classes, students, and appointments in the browser or in the app",
+      "reassurance": "No credit card · Cancel anytime · Setup in 5 minutes.",
       "storeAppStore": "App Store",
       "storeGooglePlay": "Google Play"
     },
