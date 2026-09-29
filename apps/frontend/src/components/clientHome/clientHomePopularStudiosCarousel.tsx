@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useClientLocation } from '@/contexts/ClientLocationContext';
+import { distanceFilterToRadiusKm } from '@/lib/client/browse-filters';
 import { fetchPopularStudiosClient } from '@/lib/client/fetch-popular-studios';
 import type { PublicStudioPreview } from '@/lib/client/studio-preview';
 import { PopularStudioCard } from '@/components/clientHome/popularStudioCard';
@@ -47,10 +48,15 @@ export function ClientHomePopularStudiosCarousel({
     let cancelled = false;
     setIsLoading(true);
 
-    fetchPopularStudiosClient(8, {
-      lat: location.lat,
-      lng: location.lng,
-    })
+    fetchPopularStudiosClient(
+      8,
+      {
+        lat: location.lat,
+        lng: location.lng,
+      },
+      distanceFilterToRadiusKm('auto'),
+      true,
+    )
       .then((data) => {
         if (!cancelled) {
           setStudios(data);

@@ -182,17 +182,17 @@ export function StudiosListClient({
           50,
           { lat: location.lat, lng: location.lng },
           radius,
+          true,
         );
 
-        // Fallback to search if nearby empty
-        if (items.length === 0) {
+        if (items.length === 0 && appliedSearch) {
           const category =
             lockedCategory?.slug ??
             categories.find((c) => c.id === selectedCategoryId)?.slug;
           const result = await fetchStudiosSearchClient({
             category: category ?? undefined,
             limit: 50,
-            search: appliedSearch || undefined,
+            search: appliedSearch,
           });
           items = result.items;
         }

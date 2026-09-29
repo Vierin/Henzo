@@ -48,20 +48,67 @@ async function fetchPublicApiJson(
   return null;
 }
 
-function nearbyPath(lat: number, lng: number, limit: number, radius = 50) {
-  return `/studios/nearby?lat=${lat}&lng=${lng}&limit=${limit}&radius=${radius}`;
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Drop studios outside the requested radius, including a featured fallback with no distance. */
+function studiosWithinRadius(
+  studios: PublicStudioPreview[],
+  origin: Pick<ClientLocation, 'lat' | 'lng'>,
+  radiusKm: number,
+): PublicStudioPreview[] {
+  return studios.filter((studio) => {
+    let distance = studio.distanceKm;
+    if (
+      (distance == null || !Number.isFinite(distance)) &&
+      studio.lat != null &&
+      studio.lng != null
+    ) {
+      distance = haversineKm(origin.lat, origin.lng, studio.lat, studio.lng);
+    }
+    return (
+      distance != null && Number.isFinite(distance) && distance <= radiusKm
+    );
+  });
+}
+
+function nearbyPath(
+  lat: number,
+  lng: number,
+  limit: number,
+  radius = 50,
+  strict = false,
+) {
+  const strictQuery = strict ? '&strict=true' : '';
+  return `/studios/nearby?lat=${lat}&lng=${lng}&limit=${limit}&radius=${radius}${strictQuery}`;
 }
 
 async function loadPopularStudios(
   limit: number,
   coords: Pick<ClientLocation, 'lat' | 'lng'> = DEFAULT_CLIENT_LOCATION,
   radius = 50,
+  strict = false,
 ): Promise<PublicStudioPreview[]> {
   const nearbyRaw = await fetchPublicApiJson(
-    nearbyPath(coords.lat, coords.lng, limit, radius),
+    nearbyPath(coords.lat, coords.lng, limit, radius, strict),
   );
-  const nearby = parseStudiosList(nearbyRaw);
+  const nearby = strict
+    ? studiosWithinRadius(parseStudiosList(nearbyRaw), coords, radius)
+    : parseStudiosList(nearbyRaw);
   if (nearby.length > 0) return nearby;
+  if (strict) return [];
 
   const featuredRaw = await fetchPublicApiJson(
     `/studios/featured?limit=${limit}`,
@@ -74,8 +121,14 @@ export async function fetchPopularStudios(
   limit = 8,
   coords?: Pick<ClientLocation, 'lat' | 'lng'>,
   radius = 50,
+  strict = false,
 ): Promise<PublicStudioPreview[]> {
-  return loadPopularStudios(limit, coords ?? DEFAULT_CLIENT_LOCATION, radius);
+  return loadPopularStudios(
+    limit,
+    coords ?? DEFAULT_CLIENT_LOCATION,
+    radius,
+    strict,
+  );
 }
 
 /** Client-side fetch with explicit coordinates. */
@@ -83,16 +136,25 @@ export async function fetchPopularStudiosClient(
   limit = 8,
   coords: Pick<ClientLocation, 'lat' | 'lng'> = DEFAULT_CLIENT_LOCATION,
   radius = 50,
+  strict = false,
 ): Promise<PublicStudioPreview[]> {
-  const path = nearbyPath(coords.lat, coords.lng, limit, radius);
+  const path = nearbyPath(coords.lat, coords.lng, limit, radius, strict);
 
   for (const base of resolvePopularStudiosApiBases()) {
     try {
       const nearbyRes = await fetch(`${base}${path}`);
       if (nearbyRes.ok) {
-        const nearby = parseStudiosList(await nearbyRes.json());
+        const nearby = strict
+          ? studiosWithinRadius(
+              parseStudiosList(await nearbyRes.json()),
+              coords,
+              radius,
+            )
+          : parseStudiosList(await nearbyRes.json());
         if (nearby.length > 0) return nearby;
       }
+
+      if (strict) return [];
 
       const featuredRes = await fetch(
         `${base}/studios/featured?limit=${limit}`,

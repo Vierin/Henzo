@@ -1,4 +1,5 @@
-﻿import { fetchPopularStudios } from '@/lib/client/fetch-popular-studios';
+﻿import { distanceFilterToRadiusKm } from '@/lib/client/browse-filters';
+import { fetchPopularStudios } from '@/lib/client/fetch-popular-studios';
 import { ClientHomePopularStudiosCarousel } from '@/components/clientHome/clientHomePopularStudiosCarousel';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/routing';
@@ -9,7 +10,7 @@ type Props = {
 
 export async function ClientHomePopularStudiosSection({ locale }: Props) {
   const [studios, dict] = await Promise.all([
-    fetchPopularStudios(8),
+    fetchPopularStudios(8, undefined, distanceFilterToRadiusKm('auto'), true),
     getDictionary(locale, ['public/homepage']),
   ]);
 

@@ -1,3 +1,4 @@
+import { distanceFilterToRadiusKm } from '@/lib/client/browse-filters';
 import {
   DEFAULT_CLIENT_LOCATION,
   type ClientLocation,
@@ -19,6 +20,8 @@ import type { Locale } from '@/i18n/routing';
 
 const STUDIO_SCAN_LIMIT = 16;
 const BATCH_SIZE = 4;
+/** Homepage "near you" uses the browse Distance chip default: Auto (20 km). */
+const NEARBY_CLASSES_RADIUS_KM = distanceFilterToRadiusKm('auto');
 
 function dayWindow(offset: number) {
   const start = new Date();
@@ -194,6 +197,8 @@ export async function fetchNearbyClassGroups(
   const studios = await fetchPopularStudios(
     STUDIO_SCAN_LIMIT,
     coords ?? DEFAULT_CLIENT_LOCATION,
+    NEARBY_CLASSES_RADIUS_KM,
+    true,
   );
   return buildNearbyClassGroups(studios, locale, labels, false);
 }
@@ -203,6 +208,11 @@ export async function fetchNearbyClassGroupsClient(
   labels: { today: string; tomorrow: string },
   coords: Pick<ClientLocation, 'lat' | 'lng'> = DEFAULT_CLIENT_LOCATION,
 ): Promise<NearbyClassesDayGroup[]> {
-  const studios = await fetchPopularStudiosClient(STUDIO_SCAN_LIMIT, coords);
+  const studios = await fetchPopularStudiosClient(
+    STUDIO_SCAN_LIMIT,
+    coords,
+    NEARBY_CLASSES_RADIUS_KM,
+    true,
+  );
   return buildNearbyClassGroups(studios, locale, labels, true);
 }
