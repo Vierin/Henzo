@@ -36,7 +36,7 @@ function deltaPercent(current: number, previous: number | undefined): string {
   return `${sign}${Math.round(delta)}%`;
 }
 
-function studioAgeDays(createdAt: string | undefined): number | null {
+function studioAgeDays(createdAt: string | null | undefined): number | null {
   if (!createdAt) return null;
   const created = new Date(createdAt);
   if (Number.isNaN(created.getTime())) return null;
