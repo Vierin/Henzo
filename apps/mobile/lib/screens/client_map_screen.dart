@@ -1025,7 +1025,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 interactionOptions: HenzoMapLayers.interactionOptions(),
               ),
               children: [
-                HenzoMapLayers.cartoLightTileLayer(),
+                HenzoMapLayers.basemapLayer(),
                 if (hasCoords)
                   ClientMapUserMarkerLayer(
                     lat: loc.lat!,
@@ -1045,7 +1045,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     studio: selectedMapStudio,
                     onPinTap: _selectStudioFromPin,
                   ),
-                HenzoMapLayers.cartoAttribution(),
+                HenzoMapLayers.basemapAttribution(),
               ],
             ),
           ),

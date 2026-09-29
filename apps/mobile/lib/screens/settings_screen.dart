@@ -459,9 +459,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _locations = [..._locations, newLoc]);
   }
 
+  void _scrollToFirstInvalidField() {
+    final formContext = _salonFormKey.currentContext;
+    if (formContext == null) return;
+    var found = false;
+
+    void visit(Element element) {
+      if (found) return;
+      if (element is StatefulElement && element.state is FormFieldState) {
+        final field = element.state as FormFieldState<dynamic>;
+        if (field.hasError) {
+          found = true;
+          Scrollable.ensureVisible(
+            element,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeInOut,
+            alignment: 0.22,
+          );
+          return;
+        }
+      }
+      element.visitChildElements(visit);
+    }
+
+    formContext.visitChildElements(visit);
+  }
+
   Future<void> _saveSalon() async {
     if (!_hasUnsavedChanges) return;
-    if (!(_salonFormKey.currentState?.validate() ?? false)) return;
+    if (!(_salonFormKey.currentState?.validate() ?? false)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scrollToFirstInvalidField();
+      });
+      return;
+    }
     final name = _salonNameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(

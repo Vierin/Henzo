@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 
-/// Styled OSM / CARTO attribution popup for [FlutterMap].
+/// Styled OSM / OpenFreeMap attribution popup for [FlutterMap].
 class HenzoMapAttributionWidget extends StatefulWidget {
   const HenzoMapAttributionWidget({
     super.key,
@@ -34,8 +34,12 @@ class _HenzoMapAttributionWidgetState
       uri: 'https://www.openstreetmap.org/copyright',
     ),
     _AttributionEntry(
-      label: 'CARTO',
-      uri: 'https://carto.com/attributions/',
+      label: 'OpenMapTiles',
+      uri: 'https://openmaptiles.org/',
+    ),
+    _AttributionEntry(
+      label: 'OpenFreeMap',
+      uri: 'https://openfreemap.org/',
     ),
   ];
 

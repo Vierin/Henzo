@@ -833,9 +833,9 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                               Colors.grey.withValues(alpha: 0.65),
                               BlendMode.saturation,
                             ),
-                            child: HenzoMapLayers.cartoLightTileLayer(),
+                            child: HenzoMapLayers.basemapLayer(),
                           ),
-                          HenzoMapLayers.cartoAttribution(),
+                          HenzoMapLayers.basemapAttribution(),
                           if (hasCoords)
                             MarkerLayer(
                               markers: [
