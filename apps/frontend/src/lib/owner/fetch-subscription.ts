@@ -15,6 +15,9 @@ export type OwnerSubscription = {
   hasStripeCustomer?: boolean;
   isTrial?: boolean;
   hasAccess?: boolean;
+  /** Lower plan that starts at `pendingEffectiveAt`. Current type stays until then. */
+  pendingType?: string | null;
+  pendingEffectiveAt?: string | null;
 };
 
 export type OwnerUsage = {
@@ -111,6 +114,10 @@ export async function fetchOwnerSubscription(): Promise<OwnerSubscription | null
           : data.hasAccess === true
             ? true
             : undefined,
+      pendingType: data.pendingType ? String(data.pendingType) : null,
+      pendingEffectiveAt: data.pendingEffectiveAt
+        ? String(data.pendingEffectiveAt)
+        : null,
     };
   } catch {
     return null;
@@ -266,6 +273,10 @@ export async function changeSubscriptionPlan(params: {
     billingProvider: data.billingProvider ? String(data.billingProvider) : null,
     cancelAtPeriodEnd: Boolean(data.cancelAtPeriodEnd),
     hasStripeCustomer: Boolean(data.hasStripeCustomer),
+    pendingType: data.pendingType ? String(data.pendingType) : null,
+    pendingEffectiveAt: data.pendingEffectiveAt
+      ? String(data.pendingEffectiveAt)
+      : null,
   };
 }
 

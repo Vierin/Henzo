@@ -189,6 +189,9 @@ model Subscription {
   stripeSubscriptionId String?                @unique
   stripePriceId        String?
   cancelAtPeriodEnd    Boolean                @default(false)
+  /// Lower plan that starts at `pendingEffectiveAt` (next charge). Current `type` stays until then.
+  pendingType          SubscriptionType?
+  pendingEffectiveAt   DateTime?
   manualOverride       Boolean                @default(false)
   manualOverrideAt     DateTime?
   manualOverrideBy     String?

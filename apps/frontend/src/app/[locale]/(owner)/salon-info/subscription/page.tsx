@@ -22,7 +22,7 @@ import {
   type CheckoutPlan,
   type OwnerSubscription,
 } from '@/lib/owner/fetch-subscription';
-import { formatMoney } from '@/lib/format-money';
+import { formatMoney, parseStudioCurrency } from '@/lib/format-money';
 import { extractLocaleFromPath, type Locale } from '@/i18n/routing';
 import { ownerTheme } from '@/lib/owner/owner-theme';
 import {
@@ -166,7 +166,7 @@ export default function SubscriptionSettingsPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<CheckoutPlan | null>(
     null,
   );
-  const [changeLoading, setChangeLoading] = useState(false);
+  const [switchingPlan, setSwitchingPlan] = useState<CheckoutPlan | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [banner, setBanner] = useState<{
     kind: 'ok' | 'err' | 'info';
@@ -354,30 +354,55 @@ export default function SubscriptionSettingsPage() {
     }
   }
 
-  async function upgradeToEnterprise() {
-    setChangeLoading(true);
+  async function switchPaidPlan(plan: CheckoutPlan) {
+    setSwitchingPlan(plan);
     setBanner(null);
     try {
       if (isStripe) {
-        await changeSubscriptionPlan({ plan: 'enterprise', interval });
+        const updated = await changeSubscriptionPlan({ plan, interval });
+        if (updated) {
+          queryClient.setQueryData(
+            ['owner-subscription'],
+            (prev: OwnerSubscription | null | undefined) => ({
+              ...(prev ?? {}),
+              ...updated,
+            }),
+          );
+        }
         await queryClient.invalidateQueries({
           queryKey: ['owner-subscription'],
         });
         await queryClient.invalidateQueries({ queryKey: ['owner-usage'] });
-        setBanner({
-          kind: 'ok',
-          text:
-            t('owner.subscription.switchSuccess') ||
-            'Subscription plan updated successfully',
-        });
+        const pending = (updated?.pendingType || '').toUpperCase();
+        const current = (updated?.type || '').toUpperCase();
+        if (pending && pending !== current) {
+          const when =
+            formatPeriodEnd(updated?.pendingEffectiveAt, locale) || '';
+          const planName = planBadgeLabel({ type: pending });
+          const template =
+            t('owner.subscription.decreaseScheduled') ||
+            '{{plan}} starts on {{date}}. Your current plan and limits stay until the next payment.';
+          setBanner({
+            kind: 'info',
+            text: template
+              .replace('{{plan}}', planName)
+              .replace('{{date}}', when),
+          });
+        } else {
+          setBanner({
+            kind: 'ok',
+            text:
+              t('owner.subscription.switchSuccess') ||
+              'Subscription plan updated successfully',
+          });
+        }
         return;
       }
-      // Paid Studio without STRIPE provider (legacy / sync lag) → Checkout
-      await startCheckout('enterprise');
+      await startCheckout(plan);
     } catch (err) {
       const code = apiErrorCode(err);
       if (code === 'NO_STRIPE_SUBSCRIPTION' || code === 'STRIPE_ACTIVE') {
-        await startCheckout('enterprise');
+        await startCheckout(plan);
         return;
       }
       if (code === 'REVENUECAT_ACTIVE') {
@@ -407,7 +432,7 @@ export default function SubscriptionSettingsPage() {
         ),
       });
     } finally {
-      setChangeLoading(false);
+      setSwitchingPlan(null);
     }
   }
 
@@ -444,11 +469,35 @@ export default function SubscriptionSettingsPage() {
   const listMonthly = (tier: CheckoutPlan) =>
     tier === 'enterprise' ? PRICE_ENTERPRISE_MONTHLY_EUR : PRICE_MONTHLY_EUR;
 
-  const busy = syncingCheckout || checkoutLoading != null || changeLoading;
+  const busy =
+    syncingCheckout || checkoutLoading != null || switchingPlan != null;
   const showCatalog = !paidActive && !syncingCheckout;
   // Studio → Enterprise for any paid Studio except App Store / Play
   const showStudioUpgrade =
     paidActive && activeTier === 'studio' && !isRevenueCat && !syncingCheckout;
+  const showSoloDecrease =
+    paidActive && activeTier !== 'solo' && !isRevenueCat && !syncingCheckout;
+  const pendingType = (subQuery.data?.pendingType || '').toUpperCase();
+  const pendingWhen = formatPeriodEnd(
+    subQuery.data?.pendingEffectiveAt,
+    locale,
+  );
+  const decreaseScheduledText = (() => {
+    if (
+      !pendingType ||
+      pendingType === (subQuery.data?.type || '').toUpperCase()
+    ) {
+      return null;
+    }
+    const template =
+      t('owner.subscription.decreaseScheduled') ||
+      '{{plan}} starts on {{date}}. Your current plan and limits stay until the next payment.';
+    return template
+      .replace('{{plan}}', planBadgeLabel({ type: pendingType }))
+      .replace('{{date}}', pendingWhen || '');
+  })();
+  const soloPrice = pricesQuery.data?.solo;
+  const soloCurrency = parseStudioCurrency(soloPrice?.currency);
 
   return (
     <SettingsSubpageShell
@@ -547,6 +596,14 @@ export default function SubscriptionSettingsPage() {
                 </p>
               </div>
             </div>
+            {decreaseScheduledText ? (
+              <p
+                className="mt-4 text-sm"
+                style={{ color: ownerTheme.textSecondary }}
+              >
+                {decreaseScheduledText}
+              </p>
+            ) : null}
           </div>
 
           <div className="rounded-[14px] bg-white px-4 py-4">
@@ -604,14 +661,73 @@ export default function SubscriptionSettingsPage() {
               <button
                 type="button"
                 disabled={busy || !origin}
-                onClick={() => void upgradeToEnterprise()}
+                onClick={() => void switchPaidPlan('enterprise')}
                 className="mt-4 w-full rounded-[12px] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                 style={{ backgroundColor: ownerTheme.accent }}
               >
-                {changeLoading || checkoutLoading === 'enterprise'
+                {switchingPlan === 'enterprise' ||
+                checkoutLoading === 'enterprise'
                   ? t('owner.subscription.switching') || 'Switching...'
                   : t('owner.subscription.upgradeToEnterpriseBtn') ||
                     'Upgrade to Enterprise'}
+              </button>
+            </div>
+          ) : null}
+
+          {showSoloDecrease ? (
+            <div className="rounded-[14px] bg-white px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p
+                    className="text-base font-bold"
+                    style={{ color: ownerTheme.text }}
+                  >
+                    {t('owner.subscription.soloTitle') || 'Solo'}
+                  </p>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: ownerTheme.textSecondary }}
+                  >
+                    {t('owner.subscription.soloTagline') ||
+                      'For independent trainers'}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right tabular-nums">
+                  <p
+                    className="text-base font-semibold"
+                    style={{ color: ownerTheme.accent }}
+                  >
+                    {pricesQuery.isLoading
+                      ? '…'
+                      : formatMoney(soloPrice?.monthly ?? 8, soloCurrency)}
+                  </p>
+                  <span
+                    className="mt-0.5 block text-[11px] font-medium"
+                    style={{ color: ownerTheme.textSecondary }}
+                  >
+                    {t('owner.subscription.perMonth') || 'month'}
+                  </span>
+                </div>
+              </div>
+              <PlanFeatureList tier="solo" t={t} />
+              <button
+                type="button"
+                disabled={busy || !origin || pendingType === 'SOLO'}
+                onClick={() => void switchPaidPlan('solo')}
+                className="mt-4 w-full rounded-[12px] border px-4 py-3 text-sm font-semibold disabled:opacity-60"
+                style={{
+                  borderColor: ownerTheme.accent,
+                  color: ownerTheme.accent,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                {switchingPlan === 'solo' || checkoutLoading === 'solo'
+                  ? t('owner.subscription.switching') || 'Switching...'
+                  : pendingType === 'SOLO'
+                    ? t('owner.subscription.decreaseScheduledBtn') ||
+                      'Scheduled for the next payment'
+                    : t('owner.subscription.decreaseToSoloBtn') ||
+                      'Decrease to Solo'}
               </button>
             </div>
           ) : null}

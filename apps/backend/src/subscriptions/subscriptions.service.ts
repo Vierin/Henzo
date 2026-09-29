@@ -65,6 +65,13 @@ function planToSubscriptionType(plan: CheckoutPlan): SubscriptionType {
   return SubscriptionType.STUDIO;
 }
 
+function planRank(type: string | null | undefined): number {
+  const raw = String(type ?? '').toUpperCase();
+  if (raw === 'ENTERPRISE') return 2;
+  if (raw === 'STUDIO' || raw === 'PRO') return 1;
+  return 0;
+}
+
 function subscriptionTypeFromStripeMeta(
   meta: Stripe.Metadata | null | undefined,
   priceId?: string | null,
@@ -348,11 +355,39 @@ export class SubscriptionsService {
     }
 
     const targetType = planToSubscriptionType(params.plan);
-    if (existing.type === targetType) {
+    if (existing.type === targetType && !existing.pendingType) {
       return this.toCurrentPayload(existing);
     }
 
     const priceId = this.checkout.resolvePriceId(params.plan, params.interval);
+    const upgrading = planRank(targetType) > planRank(existing.type);
+
+    if (!upgrading) {
+      const effectiveAt = await this.checkout.scheduleSubscriptionPrice({
+        stripeSubscriptionId: existing.stripeSubscriptionId,
+        newPriceId: priceId,
+        plan: params.plan,
+        interval: params.interval,
+      });
+      const scheduled = await this.prisma.subscription.update({
+        where: { id: existing.id },
+        data: {
+          pendingType: targetType,
+          pendingEffectiveAt: effectiveAt,
+          updatedAt: new Date(),
+        },
+      });
+      this.analytics.track(userId, 'subscription_plan_changed', {
+        studio_id: studio.id,
+        provider: 'stripe',
+        from: existing.type,
+        to: targetType,
+        interval: params.interval,
+        when: 'period_end',
+      });
+      return this.toCurrentPayload(scheduled);
+    }
+
     const stripeSub = await this.checkout.updateSubscriptionPrice({
       stripeSubscriptionId: existing.stripeSubscriptionId,
       newPriceId: priceId,
@@ -373,6 +408,7 @@ export class SubscriptionsService {
       from: existing.type,
       to: targetType,
       interval: params.interval,
+      when: 'now',
     });
 
     return this.toCurrentPayload(updated);
@@ -513,8 +549,14 @@ export class SubscriptionsService {
       status === SubscriptionStatus.ACTIVE ||
       (cancelAtPeriodEnd && periodEnd.getTime() > Date.now());
 
+    const clearPending =
+      !stillPaid ||
+      (existing?.pendingType != null && existing.pendingType === tier) ||
+      planRank(tier) > planRank(existing?.type);
+
     const data = {
       type: stillPaid ? tier : SubscriptionType.SOLO,
+      ...(clearPending ? { pendingType: null, pendingEffectiveAt: null } : {}),
       status: stillPaid ? status : SubscriptionStatus.CANCELLED,
       startDate: startAt,
       currentPeriodEnd: periodEnd,
@@ -734,6 +776,8 @@ export class SubscriptionsService {
     billingProvider?: SubscriptionBillingProvider | string;
     cancelAtPeriodEnd?: boolean;
     stripeCustomerId?: string | null;
+    pendingType?: string | null;
+    pendingEffectiveAt?: Date | null;
   }) {
     return {
       id: sub.id,
@@ -745,6 +789,8 @@ export class SubscriptionsService {
       billingProvider: sub.billingProvider ?? SubscriptionBillingProvider.NONE,
       cancelAtPeriodEnd: Boolean(sub.cancelAtPeriodEnd),
       hasStripeCustomer: Boolean(sub.stripeCustomerId),
+      pendingType: sub.pendingType ?? null,
+      pendingEffectiveAt: sub.pendingEffectiveAt?.toISOString() ?? null,
       isTrial: isActiveStudioTrial(sub),
       hasAccess: hasSubscriptionAccess(sub),
     };

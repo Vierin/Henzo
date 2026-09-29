@@ -133,7 +133,7 @@ export class StripeCheckoutService {
     }
   }
 
-  /** Switch price on an existing Stripe subscription (upgrade/downgrade). */
+  /** Raise the price now and drop a scheduled downgrade, if any. */
   async updateSubscriptionPrice(params: {
     stripeSubscriptionId: string;
     newPriceId: string;
@@ -141,9 +141,12 @@ export class StripeCheckoutService {
     interval: CheckoutInterval;
   }): Promise<Stripe.Subscription> {
     const stripe = this.getStripe();
-    const sub = await stripe.subscriptions.retrieve(
-      params.stripeSubscriptionId,
-    );
+    let sub = await stripe.subscriptions.retrieve(params.stripeSubscriptionId);
+    const scheduleId = scheduleIdOf(sub);
+    if (scheduleId) {
+      await stripe.subscriptionSchedules.release(scheduleId);
+      sub = await stripe.subscriptions.retrieve(params.stripeSubscriptionId);
+    }
     const itemId = sub.items.data[0]?.id;
     if (!itemId) {
       throw new BadRequestException('Stripe subscription has no items');
@@ -157,6 +160,92 @@ export class StripeCheckoutService {
         interval: params.interval,
       },
     });
+  }
+
+  /**
+   * Keep the paid price until `current_period_end`, then switch.
+   * Does not change the live subscription price or plan metadata.
+   */
+  async scheduleSubscriptionPrice(params: {
+    stripeSubscriptionId: string;
+    newPriceId: string;
+    plan: CheckoutPlan;
+    interval: CheckoutInterval;
+  }): Promise<Date> {
+    const stripe = this.getStripe();
+    const sub = await stripe.subscriptions.retrieve(
+      params.stripeSubscriptionId,
+    );
+    const periodEnd = periodEndUnix(sub);
+    const currentItem = sub.items.data[0];
+    const currentPriceId =
+      typeof currentItem?.price === 'string'
+        ? currentItem.price
+        : currentItem?.price?.id;
+    if (!currentPriceId) {
+      throw new BadRequestException('Stripe subscription has no price');
+    }
+    if (currentPriceId === params.newPriceId) {
+      return new Date(periodEnd * 1000);
+    }
+
+    let scheduleId = scheduleIdOf(sub);
+    if (!scheduleId) {
+      const created = await stripe.subscriptionSchedules.create({
+        from_subscription: params.stripeSubscriptionId,
+      });
+      scheduleId = created.id;
+    }
+    const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const currentPhase =
+      schedule.phases.find(
+        (phase) =>
+          phase.start_date <= nowSec &&
+          (phase.end_date == null || phase.end_date > nowSec),
+      ) ?? schedule.phases[0];
+    if (!currentPhase) {
+      throw new BadRequestException('Stripe schedule has no current phase');
+    }
+
+    const phaseItems = currentPhase.items.map((item) => ({
+      price: typeof item.price === 'string' ? item.price : item.price.id,
+      quantity: item.quantity ?? 1,
+    }));
+
+    try {
+      await stripe.subscriptionSchedules.update(scheduleId, {
+        end_behavior: 'release',
+        phases: [
+          {
+            items: phaseItems,
+            start_date: currentPhase.start_date,
+            end_date: periodEnd,
+            proration_behavior: 'none',
+            ...(currentPhase.metadata
+              ? { metadata: currentPhase.metadata }
+              : {}),
+          },
+          {
+            items: [{ price: params.newPriceId, quantity: 1 }],
+            proration_behavior: 'none',
+            metadata: {
+              ...(sub.metadata ?? {}),
+              plan: params.plan,
+              interval: params.interval,
+            },
+          },
+        ],
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`subscriptionSchedules.update failed: ${msg}`);
+      throw new BadRequestException(
+        `Could not schedule the plan change: ${msg}`,
+      );
+    }
+
+    return new Date(periodEnd * 1000);
   }
 
   /** Used after Checkout redirect (web success URL with `session_id`). */
@@ -177,4 +266,25 @@ export class StripeCheckoutService {
     const stripe = this.getStripe();
     return stripe.webhooks.constructEvent(rawBody, signature, secret);
   }
+}
+
+function scheduleIdOf(sub: Stripe.Subscription): string | null {
+  const schedule = sub.schedule;
+  if (!schedule) return null;
+  return typeof schedule === 'string' ? schedule : schedule.id;
+}
+
+function periodEndUnix(sub: Stripe.Subscription): number {
+  const top = (sub as Stripe.Subscription & { current_period_end?: number })
+    .current_period_end;
+  if (typeof top === 'number') return top;
+  const item = sub.items.data[0] as
+    | (Stripe.SubscriptionItem & { current_period_end?: number })
+    | undefined;
+  if (item && typeof item.current_period_end === 'number') {
+    return item.current_period_end;
+  }
+  throw new BadRequestException(
+    'Stripe subscription has no current period end',
+  );
 }
