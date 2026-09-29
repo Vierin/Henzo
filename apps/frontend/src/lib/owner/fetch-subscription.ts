@@ -175,7 +175,7 @@ export async function fetchProPrices(): Promise<ProPrices | null> {
     const studio = asTierPrices(data.studio, monthly, annual);
     const enterprise = asTierPrices(data.enterprise, 69.99, 699.9);
     const soloRaw = asRecord(data.solo);
-    const soloMonthly = asNum(soloRaw?.monthly) ?? 8;
+    const soloMonthly = asNum(soloRaw?.monthly) ?? 7.99;
     return {
       currency: data.currency ? String(data.currency).toUpperCase() : 'EUR',
       monthly: studio.monthly,
@@ -189,7 +189,7 @@ export async function fetchProPrices(): Promise<ProPrices | null> {
         monthly: soloMonthly,
         currency: soloRaw?.currency
           ? String(soloRaw.currency).toUpperCase()
-          : 'USD',
+          : 'EUR',
       },
     };
   } catch {

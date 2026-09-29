@@ -111,7 +111,7 @@ export class EnvironmentVariables {
   @IsOptional()
   STRIPE_ENTERPRISE_PRICE_YEARLY_ID?: string;
 
-  /** Solo monthly price in USD (`price_...`). */
+  /** Solo monthly price in EUR (`price_...`). */
   @IsString()
   @IsOptional()
   STRIPE_SOLO_PRICE_MONTHLY_ID?: string;

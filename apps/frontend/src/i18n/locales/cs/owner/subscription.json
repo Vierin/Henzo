@@ -62,6 +62,7 @@
 	},
 	"activeBadge": "ACTIVE",
 	"trialBadge": "TRIAL",
+	"trialRenewBtn": "Prodloužit",
 	"trialEnds": "Active until",
 	"trialPrice": "Free",
 	"nextRenewalDate": "Next renewal date",

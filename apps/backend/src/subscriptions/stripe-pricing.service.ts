@@ -13,9 +13,9 @@ export interface TierPrices {
 }
 
 export interface SoloPrice {
-  /** Major units (EUR fallback, or USD when the Stripe Solo price is set). */
+  /** Major units, EUR. */
   monthly: number;
-  currency: 'EUR' | 'USD';
+  currency: 'EUR';
 }
 
 export interface ProPricesPayload {
@@ -102,27 +102,6 @@ export class StripePricingService {
     return unitAmount;
   }
 
-  /** Solo price is USD. Returns null when the Stripe price is missing or not USD. */
-  private async retrieveUsdAmount(
-    priceId: string | undefined,
-  ): Promise<number | null> {
-    if (!this.stripe || !priceId?.trim()) return null;
-    try {
-      const price = await this.stripe.prices.retrieve(priceId.trim());
-      if (price.unit_amount == null) return null;
-      if (price.currency !== 'usd') {
-        this.logger.warn(
-          `Expected USD Stripe price for Solo, got ${price.currency} for ${priceId}`,
-        );
-        return null;
-      }
-      return this.unitAmountToMajor(price.unit_amount, price.currency);
-    } catch (e) {
-      this.logger.warn(`Stripe prices retrieve failed for ${priceId}: ${e}`);
-      return null;
-    }
-  }
-
   private async retrieveMajorAmount(
     priceId: string | undefined,
   ): Promise<number | null> {
@@ -156,7 +135,7 @@ export class StripePricingService {
     const [sm, em, soloAmount] = await Promise.all([
       this.retrieveMajorAmount(studioMonthlyId),
       this.retrieveMajorAmount(enterpriseMonthlyId),
-      this.retrieveUsdAmount(soloMonthlyId),
+      this.retrieveMajorAmount(soloMonthlyId),
     ]);
 
     if (sm == null && em == null && soloAmount == null) {
@@ -178,7 +157,7 @@ export class StripePricingService {
       enterprise,
       solo:
         soloAmount != null
-          ? { monthly: soloAmount, currency: 'USD' }
+          ? { monthly: soloAmount, currency: 'EUR' }
           : fallback.solo,
     };
   }

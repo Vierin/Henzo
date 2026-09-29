@@ -62,6 +62,7 @@
 	},
 	"activeBadge": "АКТИВЕН",
 	"trialBadge": "ТРИАЛ",
+	"trialRenewBtn": "Продлить",
 	"trialEnds": "Активен до",
 	"trialPrice": "Бесплатно",
 	"nextRenewalDate": "Дата продления",
