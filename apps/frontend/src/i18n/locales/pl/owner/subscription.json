@@ -61,6 +61,9 @@
 		"emailSupport": "Email technical support"
 	},
 	"activeBadge": "ACTIVE",
+	"trialBadge": "TRIAL",
+	"trialEnds": "Active until",
+	"trialPrice": "Free",
 	"nextRenewalDate": "Next renewal date",
 	"billedAnnuallyAt": "Billed annually at",
 	"billedMonthlyAt": "Billed monthly at",

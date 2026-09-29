@@ -32,19 +32,15 @@ export class StripeCheckoutService {
   }
 
   resolvePriceId(plan: CheckoutPlan, interval: CheckoutInterval): string {
-    if (plan === 'solo' && interval === 'annual') {
-      throw new BadRequestException('Solo is billed monthly only');
+    if (interval === 'annual') {
+      throw new BadRequestException('Annual billing is not available');
     }
     const key =
       plan === 'solo'
         ? 'STRIPE_SOLO_PRICE_MONTHLY_ID'
         : plan === 'enterprise'
-          ? interval === 'annual'
-            ? 'STRIPE_ENTERPRISE_PRICE_YEARLY_ID'
-            : 'STRIPE_ENTERPRISE_PRICE_MONTHLY_ID'
-          : interval === 'annual'
-            ? 'STRIPE_STUDIO_PRICE_YEARLY_ID'
-            : 'STRIPE_STUDIO_PRICE_MONTHLY_ID';
+          ? 'STRIPE_ENTERPRISE_PRICE_MONTHLY_ID'
+          : 'STRIPE_STUDIO_PRICE_MONTHLY_ID';
     const priceId = this.config.get<string>(key)?.trim();
     if (!priceId) {
       throw new BadRequestException(

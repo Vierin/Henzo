@@ -4,9 +4,10 @@
 
 1. Products + Prices (**EUR** for Spain / Europe):
 
-- Studio monthly / annual → `STRIPE_STUDIO_PRICE_MONTHLY_ID` / `STRIPE_STUDIO_PRICE_YEARLY_ID`
-- Enterprise monthly / annual → `STRIPE_ENTERPRISE_PRICE_MONTHLY_ID` / `STRIPE_ENTERPRISE_PRICE_YEARLY_ID`
+- Studio monthly → `STRIPE_STUDIO_PRICE_MONTHLY_ID`
+- Enterprise monthly → `STRIPE_ENTERPRISE_PRICE_MONTHLY_ID`
 - Solo monthly → `STRIPE_SOLO_PRICE_MONTHLY_ID`
+- Yearly price ids are unused. Checkout rejects `interval=annual`. Display prices come from the monthly Stripe Price; fallback env is used only when that retrieve fails.
 - Fallback display (optional): `FALLBACK_SOLO_PRICE_MONTHLY_EUR=7.99`, `FALLBACK_STUDIO_PRICE_MONTHLY_EUR=22.99`, `FALLBACK_ENTERPRISE_PRICE_MONTHLY_EUR=79.99`
 
 2. Webhook endpoint: `POST https://api.henzo.app/webhooks/stripe` (staging: `api-staging`)

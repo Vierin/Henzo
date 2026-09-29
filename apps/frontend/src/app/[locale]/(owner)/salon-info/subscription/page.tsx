@@ -54,6 +54,20 @@ function formatPeriodEnd(iso: string | null | undefined, locale: string) {
   }
 }
 
+function isStudioTrialSub(sub: OwnerSubscription | null): boolean {
+  if (!sub) return false;
+  if (sub.isTrial) return true;
+  const provider = (sub.billingProvider || 'NONE').toUpperCase();
+  if (provider !== 'NONE') return false;
+  const type = (sub.type || sub.tier || sub.plan || '').toUpperCase();
+  if (!type.includes('STUDIO')) return false;
+  const status = (sub.status || 'ACTIVE').toUpperCase();
+  if (status !== 'ACTIVE') return false;
+  if (!sub.currentPeriodEnd) return false;
+  const end = new Date(sub.currentPeriodEnd).getTime();
+  return Number.isFinite(end) && end > Date.now();
+}
+
 function tierFromSub(sub: OwnerSubscription | null): PlanTier {
   const raw = (sub?.type || sub?.tier || sub?.plan || 'SOLO').toUpperCase();
   if (raw.includes('ENTERPRISE')) return 'enterprise';
@@ -193,9 +207,24 @@ export default function SubscriptionSettingsPage() {
   const plan = planBadgeLabel(subQuery.data ?? null);
   const usage = usageQuery.data;
   const paidActive = isPaidActiveSubscription(subQuery.data ?? null);
+  const isTrial = isStudioTrialSub(subQuery.data ?? null);
+  const hasPlan = paidActive || isTrial || subQuery.data?.hasAccess === true;
   const activeTier = tierFromSub(subQuery.data ?? null);
   const provider = (subQuery.data?.billingProvider || 'NONE').toUpperCase();
   const periodLabel = formatPeriodEnd(subQuery.data?.currentPeriodEnd, locale);
+  const trialDaysLeft = (() => {
+    if (!isTrial || !subQuery.data?.currentPeriodEnd) return null;
+    const end = new Date(subQuery.data.currentPeriodEnd).getTime();
+    if (!Number.isFinite(end)) return null;
+    const days = Math.ceil((end - Date.now()) / 86_400_000);
+    return days > 0 ? days : null;
+  })();
+  const trialDaysLabel =
+    trialDaysLeft == null
+      ? t('owner.subscription.trialActive') || 'Trial period active'
+      : (
+          t('owner.subscription.trialDaysLeft') || '{{days}} days left in trial'
+        ).replace('{{days}}', String(trialDaysLeft));
   const isStripe = provider === 'STRIPE';
   const isRevenueCat = provider === 'REVENUECAT';
   /** Portal CTA for any paid web plan; click fails cleanly if no Stripe customer. */
@@ -521,7 +550,7 @@ export default function SubscriptionSettingsPage() {
         </div>
       ) : null}
 
-      {paidActive ? (
+      {hasPlan ? (
         <>
           <div className="rounded-[14px] bg-white px-4 py-4">
             <div className="flex items-start justify-between gap-3">
@@ -538,9 +567,12 @@ export default function SubscriptionSettingsPage() {
                   className="mt-1 text-sm"
                   style={{ color: ownerTheme.textSecondary }}
                 >
-                  {activeTier === 'enterprise'
-                    ? t('owner.subscription.enterpriseTagline')
-                    : t('owner.subscription.studioTagline')}
+                  {isTrial
+                    ? t('owner.subscription.trialActive') ||
+                      'Trial period active'
+                    : activeTier === 'enterprise'
+                      ? t('owner.subscription.enterpriseTagline')
+                      : t('owner.subscription.studioTagline')}
                 </p>
               </div>
               <span
@@ -550,7 +582,9 @@ export default function SubscriptionSettingsPage() {
                   color: '#2E7D32',
                 }}
               >
-                {t('owner.subscription.activeBadge') || 'ACTIVE'}
+                {isTrial
+                  ? t('owner.subscription.trialBadge') || 'TRIAL'
+                  : t('owner.subscription.activeBadge') || 'ACTIVE'}
               </span>
             </div>
             <div className="mt-5 flex gap-4 border-t border-[#F1E4DB] pt-4">
@@ -559,22 +593,28 @@ export default function SubscriptionSettingsPage() {
                   className="text-xl font-extrabold tabular-nums"
                   style={{ color: ownerTheme.accent }}
                 >
-                  {pricesQuery.isLoading
-                    ? '…'
-                    : (() => {
-                        const amount = saleMonthly(
-                          activeTier === 'enterprise' ? 'enterprise' : 'studio',
-                        );
-                        return amount != null
-                          ? formatMoney(amount, 'EUR')
-                          : '—';
-                      })()}
+                  {isTrial
+                    ? t('owner.subscription.trialPrice') || 'Free'
+                    : pricesQuery.isLoading
+                      ? '…'
+                      : (() => {
+                          const amount = saleMonthly(
+                            activeTier === 'enterprise'
+                              ? 'enterprise'
+                              : 'studio',
+                          );
+                          return amount != null
+                            ? formatMoney(amount, 'EUR')
+                            : '—';
+                        })()}
                 </p>
                 <p
                   className="text-sm"
                   style={{ color: ownerTheme.textSecondary }}
                 >
-                  {t('owner.subscription.perOneMonth') || 'per month'}
+                  {isTrial
+                    ? trialDaysLabel
+                    : t('owner.subscription.perOneMonth') || 'per month'}
                 </p>
               </div>
               <div
@@ -586,7 +626,9 @@ export default function SubscriptionSettingsPage() {
                   className="text-sm"
                   style={{ color: ownerTheme.textSecondary }}
                 >
-                  {t('owner.subscription.nextPayment') || 'Next payment'}
+                  {isTrial
+                    ? t('owner.subscription.trialEnds') || 'Active until'
+                    : t('owner.subscription.nextPayment') || 'Next payment'}
                 </p>
                 <p
                   className="text-base font-bold"
@@ -780,7 +822,7 @@ export default function SubscriptionSettingsPage() {
               className="mt-3 text-xl font-extrabold"
               style={{ color: ownerTheme.accent }}
             >
-              {t('owner.subscription.soloFreePrice') || '$8'}
+              {formatMoney(soloPrice?.monthly ?? 7.99, soloCurrency)}
               <span
                 className="ml-1 text-sm font-medium"
                 style={{ color: ownerTheme.textSecondary }}

@@ -46,19 +46,14 @@ export class StripePricingService {
     }
   }
 
-  private tierFromAmounts(monthly: number, annual: number): TierPrices {
+  /** Yearly billing is off. `annual` stays 12× monthly so clients still have a number. */
+  private tierFromMonthly(monthly: number): TierPrices {
     const twelveMonthsCompare = Math.round(monthly * 12 * 100) / 100;
-    const annualSavePercent =
-      twelveMonthsCompare > 0 && twelveMonthsCompare > annual
-        ? Math.round(
-            ((twelveMonthsCompare - annual) / twelveMonthsCompare) * 100,
-          )
-        : 0;
     return {
       monthly,
-      annual,
+      annual: twelveMonthsCompare,
       twelveMonthsCompare,
-      annualSavePercent,
+      annualSavePercent: 0,
     };
   }
 
@@ -74,27 +69,16 @@ export class StripePricingService {
       'FALLBACK_STUDIO_PRICE_MONTHLY_EUR',
       22.99,
     );
-    const studioAnnual = this.parseEurEnv(
-      'FALLBACK_STUDIO_PRICE_ANNUAL_EUR',
-      229.9,
-    );
     const enterpriseMonthly = this.parseEurEnv(
       'FALLBACK_ENTERPRISE_PRICE_MONTHLY_EUR',
       79.99,
-    );
-    const enterpriseAnnual = this.parseEurEnv(
-      'FALLBACK_ENTERPRISE_PRICE_ANNUAL_EUR',
-      699.9,
     );
     const soloMonthly = this.parseEurEnv(
       'FALLBACK_SOLO_PRICE_MONTHLY_EUR',
       7.99,
     );
-    const studio = this.tierFromAmounts(studioMonthly, studioAnnual);
-    const enterprise = this.tierFromAmounts(
-      enterpriseMonthly,
-      enterpriseAnnual,
-    );
+    const studio = this.tierFromMonthly(studioMonthly);
+    const enterprise = this.tierFromMonthly(enterpriseMonthly);
     return {
       currency: 'EUR',
       source: 'fallback',
@@ -162,37 +146,26 @@ export class StripePricingService {
     const studioMonthlyId = this.config.get<string>(
       'STRIPE_STUDIO_PRICE_MONTHLY_ID',
     );
-    const studioAnnualId = this.config.get<string>(
-      'STRIPE_STUDIO_PRICE_YEARLY_ID',
-    );
     const enterpriseMonthlyId = this.config.get<string>(
       'STRIPE_ENTERPRISE_PRICE_MONTHLY_ID',
-    );
-    const enterpriseAnnualId = this.config.get<string>(
-      'STRIPE_ENTERPRISE_PRICE_YEARLY_ID',
     );
     const soloMonthlyId = this.config.get<string>(
       'STRIPE_SOLO_PRICE_MONTHLY_ID',
     );
 
-    const [sm, sa, em, ea, soloAmount] = await Promise.all([
+    const [sm, em, soloAmount] = await Promise.all([
       this.retrieveMajorAmount(studioMonthlyId),
-      this.retrieveMajorAmount(studioAnnualId),
       this.retrieveMajorAmount(enterpriseMonthlyId),
-      this.retrieveMajorAmount(enterpriseAnnualId),
       this.retrieveUsdAmount(soloMonthlyId),
     ]);
 
-    if (sm == null || sa == null) {
+    if (sm == null && em == null && soloAmount == null) {
       return null;
     }
 
     const fallback = this.getFallbackPrices();
-    const studio = this.tierFromAmounts(sm, sa);
-    const enterprise = this.tierFromAmounts(
-      em ?? fallback.enterprise.monthly,
-      ea ?? fallback.enterprise.annual,
-    );
+    const studio = this.tierFromMonthly(sm ?? fallback.studio.monthly);
+    const enterprise = this.tierFromMonthly(em ?? fallback.enterprise.monthly);
 
     return {
       currency: 'EUR',

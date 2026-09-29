@@ -39,7 +39,7 @@ export class SubscriptionsController {
 
   /**
    * Stripe Checkout (subscription) — web only; mobile uses RevenueCat IAP.
-   * Supports Studio + Enterprise × monthly/annual.
+   * Monthly only (Solo, Studio, Enterprise). Annual billing is disabled.
    */
   @Post('create-checkout-session')
   async createCheckoutSession(

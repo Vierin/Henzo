@@ -61,6 +61,9 @@
 		"emailSupport": "Soporte técnico por email"
 	},
 	"activeBadge": "ACTIVA",
+	"trialBadge": "PRUEBA",
+	"trialEnds": "Activa hasta",
+	"trialPrice": "Gratis",
 	"nextRenewalDate": "Próxima renovación",
 	"billedAnnuallyAt": "Facturación anual de",
 	"billedMonthlyAt": "Facturación mensual de",

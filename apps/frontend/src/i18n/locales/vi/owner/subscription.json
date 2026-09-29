@@ -61,6 +61,9 @@
 		"emailSupport": "Hỗ trợ kỹ thuật qua email"
 	},
 	"activeBadge": "ĐANG DÙNG",
+	"trialBadge": "DÙNG THỬ",
+	"trialEnds": "Dùng đến",
+	"trialPrice": "Miễn phí",
 	"nextRenewalDate": "Ngày gia hạn",
 	"billedAnnuallyAt": "Thanh toán hàng năm",
 	"billedMonthlyAt": "Thanh toán hàng tháng",
