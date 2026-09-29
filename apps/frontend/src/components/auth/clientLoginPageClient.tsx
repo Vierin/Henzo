@@ -168,6 +168,7 @@ export function ClientLoginPageClient() {
     const { error: oauthError } = await startClientGoogleOAuth({
       provider,
       next: nextPath,
+      pickRole: true,
     });
 
     if (oauthError) {

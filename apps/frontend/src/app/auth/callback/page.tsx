@@ -14,6 +14,7 @@ import {
 import {
   consumeBusinessOAuthContext,
   consumeOAuthIntent,
+  OAUTH_PICK_ROLE_KEY,
   peekOAuthIntent,
 } from '@/utils/oauth';
 import type { Session } from '@supabase/supabase-js';
@@ -66,6 +67,7 @@ function AuthCallbackInner() {
       nextRaw: string | null,
       locale: Locale,
       intentType: string | undefined,
+      pickRole = false,
     ) => {
       const publicSb = getPublicSupabase();
 
@@ -118,7 +120,9 @@ function AuthCallbackInner() {
 
       try {
         const res = await fetch(
-          `${publicEnv.apiUrl}/auth/user?syncIfMissing=true`,
+          pickRole
+            ? `${publicEnv.apiUrl}/auth/user`
+            : `${publicEnv.apiUrl}/auth/user?syncIfMissing=true`,
           {
             headers: {
               Authorization: `Bearer ${session.access_token}`,
@@ -128,6 +132,11 @@ function AuthCallbackInner() {
         );
 
         if (!res.ok) {
+          if (res.status === 404 && pickRole) {
+            sessionStorage.setItem('henzo-oauth-role-next', nextRaw ?? '');
+            router.replace(withLocale('/login/role', locale));
+            return;
+          }
           await publicSb.auth.signOut({ scope: 'local' });
           failToLogin(locale, res.status === 404 ? 'account' : 'server');
           return;
@@ -135,6 +144,7 @@ function AuthCallbackInner() {
 
         const body = (await res.json()) as { user?: { role?: string } };
         const role = body.user?.role;
+        sessionStorage.removeItem(OAUTH_PICK_ROLE_KEY);
         if (role === 'OWNER') {
           if (!alive) return;
           setMessage('Opening business panel…');
@@ -197,6 +207,9 @@ function AuthCallbackInner() {
       }
 
       const intent = peekOAuthIntent();
+      const pickRole =
+        sessionStorage.getItem(OAUTH_PICK_ROLE_KEY) === '1' ||
+        (intent?.pickRole === true && intent.type !== 'business');
       const oauthError =
         searchParams.get('error_description') ?? searchParams.get('error');
       // Prefer window.location — useSearchParams can lag on the first paint
@@ -266,6 +279,7 @@ function AuthCallbackInner() {
           nextRaw,
           localeFromNext,
           intent?.type,
+          pickRole,
         );
         return;
       }
@@ -297,6 +311,7 @@ function AuthCallbackInner() {
             nextRaw,
             localeFromNext,
             intent?.type,
+            pickRole,
           );
           return;
         }
@@ -320,6 +335,7 @@ function AuthCallbackInner() {
             nextRaw,
             localeFromNext,
             intent?.type,
+            pickRole,
           );
           return;
         }
@@ -365,6 +381,7 @@ function AuthCallbackInner() {
               nextRaw,
               localeFromNext,
               intent?.type,
+              pickRole,
             );
           }
           return;
@@ -395,6 +412,7 @@ function AuthCallbackInner() {
           nextRaw,
           localeFromNext,
           intent?.type,
+          pickRole,
         );
       }
       // If !alive, leave OAUTH_CODE_KEY + lock=done; remount finishes via

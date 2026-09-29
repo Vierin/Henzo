@@ -7,6 +7,8 @@ export const BUSINESS_OAUTH_SOURCE_KEY = 'businessOAuthSource';
 
 /** Client / business OAuth intent — kept out of redirectTo query (Supabase allowlist). */
 export const OAUTH_INTENT_KEY = 'henzoOAuthIntent';
+/** Survives callback remounts after the intent JSON is consumed. */
+export const OAUTH_PICK_ROLE_KEY = 'henzo-oauth-pick-role';
 
 const BUSINESS_OAUTH_TTL_MS = 15 * 60 * 1000;
 const OAUTH_INTENT_TTL_MS = 15 * 60 * 1000;
@@ -16,6 +18,8 @@ export type OAuthIntent = {
   next: string;
   createdAt: number;
   source?: string;
+  /** Login page only: new Google/Apple users pick Client or Manager. */
+  pickRole?: boolean;
 };
 
 /** Prefer current tab origin so auth cookies/storage stay on the same host. */
@@ -159,12 +163,19 @@ export async function startBusinessGoogleOAuth(options?: {
 export async function startClientGoogleOAuth(options: {
   next: string;
   provider?: 'google' | 'apple';
+  pickRole?: boolean;
 }) {
   const provider = options.provider ?? 'google';
   saveOAuthIntent({
     type: 'client',
     next: options.next,
+    pickRole: options.pickRole === true,
   });
+  if (options.pickRole) {
+    sessionStorage.setItem(OAUTH_PICK_ROLE_KEY, '1');
+  } else {
+    sessionStorage.removeItem(OAUTH_PICK_ROLE_KEY);
+  }
 
   // Drop stale exchange locks / pending codes from a previous attempt.
   if (typeof sessionStorage !== 'undefined') {
