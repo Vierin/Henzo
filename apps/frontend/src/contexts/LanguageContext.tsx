@@ -95,6 +95,7 @@ export function LanguageProvider({
     pathNoLocale.startsWith('/subscription') ||
     pathNoLocale.startsWith('/clients') ||
     pathNoLocale.startsWith('/owner-help') ||
+    pathNoLocale.startsWith('/notifications') ||
     pathNoLocale.startsWith('/business/complete-setup');
 
   const isClientPage =
@@ -277,6 +278,8 @@ export function LanguageProvider({
     modulesToLoad.push('owner/feedback');
     // Load onboarding module for OnboardingChecklist component on dashboard
     modulesToLoad.push('owner/onboarding');
+    // Trial / paywall modal is mounted on every owner page.
+    modulesToLoad.push('owner/subscription');
     // Account settings under /salon-info/account
     if (pathNoLocale.startsWith('/salon-info')) {
       modulesToLoad.push('owner/profileSettings');

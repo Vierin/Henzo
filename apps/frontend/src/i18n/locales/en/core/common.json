@@ -17,6 +17,7 @@
 	"none": "None",
 	"yes": "Yes",
 	"no": "No",
+	"ok": "OK",
 	"useCurrentLocation": "Use Current Location",
 	"gettingLocation": "Getting your location...",
 	"toggleMenu": "Toggle menu",

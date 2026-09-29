@@ -2,28 +2,28 @@ type Notice = { title: string; body: string };
 
 const GRANTED: Record<string, Notice> = {
   en: {
-    title: 'Studio trial started',
-    body: 'You have a 3-month Studio trial. Add classes and trainers until it ends.',
+    title: '3 months to explore Henzo',
+    body: 'Studio is yours for 3 months, so you can get to know the app and see how it fits your studio. We will remind you a month before it ends.',
   },
   ru: {
-    title: 'Триал Studio на 3 месяца',
-    body: 'Вам выдан триал пакета Studio на 3 месяца. Можно добавлять занятия и тренеров, пока он действует.',
+    title: '3 месяца, чтобы узнать Henzo',
+    body: 'Studio открыт на 3 месяца — спокойно познакомьтесь с приложением и посмотрите, как оно подходит вашей студии. За месяц до конца напомним.',
   },
   es: {
-    title: 'Prueba de Studio iniciada',
-    body: 'Tienes 3 meses de Studio. Añade clases y entrenadores hasta que termine.',
+    title: '3 meses para conocer Henzo',
+    body: 'Studio es tuyo durante 3 meses para que explores la app y veas cómo encaja en tu estudio. Te avisaremos un mes antes de que termine.',
   },
   vi: {
-    title: 'Đã bắt đầu dùng thử Studio',
-    body: 'Bạn được dùng thử gói Studio trong 3 tháng. Thêm lớp và huấn luyện viên cho đến khi hết hạn.',
+    title: '3 tháng để làm quen với Henzo',
+    body: 'Studio mở trong 3 tháng để bạn khám phá ứng dụng và xem nó hợp với studio của bạn thế nào. Chúng tôi sẽ nhắc trước một tháng khi sắp hết hạn.',
   },
   pl: {
-    title: 'Okres próbny Studio',
-    body: 'Masz 3 miesiące pakietu Studio. Dodawaj zajęcia i trenerów do końca okresu.',
+    title: '3 miesiące, żeby poznać Henzo',
+    body: 'Studio jest Twoje przez 3 miesiące — spokojnie poznaj aplikację i zobacz, jak pasuje do Twojego studia. Przypomnimy miesiąc przed końcem.',
   },
   cs: {
-    title: 'Zkušební Studio',
-    body: 'Máte 3 měsíce tarifu Studio. Přidávejte lekce a trenéry, dokud neskončí.',
+    title: '3 měsíce na seznámení s Henzo',
+    body: 'Studio máte na 3 měsíce, abyste si aplikaci v klidu prošli a viděli, jak sedí vašemu studiu. Měsíc před koncem vám připomeneme.',
   },
 };
 

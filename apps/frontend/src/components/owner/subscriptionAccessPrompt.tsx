@@ -43,6 +43,10 @@ export function SubscriptionAccessPrompt() {
 
   const paywall = open === 'paywall';
   const plansHref = withLocale('/salon-info/subscription', locale);
+  const label = (key: string, fallback: string) => {
+    const value = String(t(key) ?? '');
+    return value && value !== key ? value : fallback;
+  };
 
   return (
     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 p-4 sm:items-center">
@@ -53,15 +57,22 @@ export function SubscriptionAccessPrompt() {
       >
         <p className="text-lg font-bold" style={{ color: ownerTheme.text }}>
           {paywall
-            ? t('owner.subscription.paywallTitle') || 'Subscribe to continue'
-            : t('owner.subscription.trialBannerTitle') || 'Studio trial'}
+            ? label('owner.subscription.paywallTitle', 'Subscribe to continue')
+            : label(
+                'owner.subscription.trialBannerTitle',
+                '3 months to explore Henzo',
+              )}
         </p>
         <p className="mt-2 text-sm" style={{ color: ownerTheme.textSecondary }}>
           {paywall
-            ? t('owner.subscription.paywallBody') ||
-              'Your trial has ended. Pay for a plan to add new classes.'
-            : t('owner.subscription.trialBannerBody') ||
-              'You have a 3-month Studio trial.'}
+            ? label(
+                'owner.subscription.paywallBody',
+                'Your trial has ended. Pay for a plan to add new classes.',
+              )
+            : label(
+                'owner.subscription.trialBannerBody',
+                'Studio is yours for 3 months, so you can get to know the app and see how it fits your studio.',
+              )}
         </p>
         <div className="mt-4 flex gap-2">
           {!paywall ? (
@@ -71,7 +82,7 @@ export function SubscriptionAccessPrompt() {
               style={{ backgroundColor: ownerTheme.accent }}
               onClick={() => setOpen(null)}
             >
-              {t('common.ok') || 'OK'}
+              {label('common.ok', 'OK')}
             </button>
           ) : (
             <>
@@ -84,7 +95,7 @@ export function SubscriptionAccessPrompt() {
                 }}
                 onClick={() => setOpen(null)}
               >
-                {t('common.cancel') || 'Cancel'}
+                {label('common.cancel', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -95,7 +106,7 @@ export function SubscriptionAccessPrompt() {
                   router.push(plansHref);
                 }}
               >
-                {t('owner.subscription.paywallCta') || 'See plans'}
+                {label('owner.subscription.paywallCta', 'See plans')}
               </button>
             </>
           )}
