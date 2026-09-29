@@ -84,7 +84,7 @@ export function ClientHomeNearbyClassesCarousel({
 
   const subtitle = copy.subtitle.includes('{city}')
     ? copy.subtitle.replace('{city}', location.city)
-    : copy.subtitle.replace(/Da Nang/gi, location.city || 'your area');
+    : copy.subtitle;
 
   return (
     <section

@@ -16,7 +16,7 @@ export async function ClientHomeNearbyClassesSection({ locale }: Props) {
     titleHighlight: String(nearby.titleHighlight ?? 'near you'),
     subtitle: String(
       nearby.subtitle ??
-        'Explore upcoming classes at top studios around Da Nang. Book your spot in seconds.',
+        'Explore upcoming classes at top studios. Book your spot in seconds.',
     ),
     seeAll: String(nearby.seeAll ?? 'See all'),
     today: String(nearby.today ?? 'Today'),
