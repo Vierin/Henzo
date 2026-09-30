@@ -107,7 +107,7 @@ export function OwnerSelect({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 z-[80] mt-2 max-h-64 origin-top overflow-y-auto rounded-[16px] border bg-white p-1.5 shadow-[0_16px_40px_rgba(63,50,135,0.14)]"
+          className="absolute left-0 z-[80] mt-2 max-h-64 w-max min-w-full max-w-[min(100vw-1.5rem,22rem)] origin-top overflow-y-auto rounded-[16px] border bg-white p-1.5 shadow-[0_16px_40px_rgba(63,50,135,0.14)]"
           style={{ borderColor: ownerTheme.borderSoft }}
         >
           {placeholder != null && placeholder !== '' ? (
@@ -155,7 +155,7 @@ export function OwnerSelect({
                     setOpen(false);
                   }}
                 >
-                  <span className="min-w-0 flex-1 truncate">{opt.label}</span>
+                  <span className="whitespace-nowrap">{opt.label}</span>
                   {isOn ? (
                     <span
                       className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"

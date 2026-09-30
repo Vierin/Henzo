@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
@@ -13,6 +14,11 @@ import {
   updateTrainingSchedule,
   updateTrainingSessionDefaults,
 } from '@/lib/owner/fetch-trainings';
+import { fetchStaff } from '@/lib/owner/fetch-staff';
+import {
+  fetchOwnerSubscription,
+  planBadgeLabel,
+} from '@/lib/owner/fetch-subscription';
 import { fetchOwnerSessions } from '@/lib/owner/fetch-owner-sessions';
 import {
   extraLocationsToJson,
@@ -99,6 +105,8 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
   const [capacity, setCapacity] = useState('10');
   const [price, setPrice] = useState('');
   const [language, setLanguage] = useState('en');
+  const [trainerId, setTrainerId] = useState('');
+  const [initialTrainerId, setInitialTrainerId] = useState('');
   const [description, setDescription] = useState('');
   const [applySchedule, setApplySchedule] = useState(false);
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
@@ -137,7 +145,20 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
     enabled: Boolean(trainingId),
   });
 
+  const staffQuery = useQuery({
+    queryKey: ['owner-staff', studio?.id],
+    queryFn: () => fetchStaff(studio!.id),
+    enabled: Boolean(studio?.id),
+  });
+
+  const subQuery = useQuery({
+    queryKey: ['owner-subscription'],
+    queryFn: fetchOwnerSubscription,
+  });
+
   const categories = categoriesQuery.data ?? [];
+  const trainers = staffQuery.data ?? [];
+  const isPro = planBadgeLabel(subQuery.data ?? null) !== 'Solo';
 
   useEffect(() => {
     setLocalLocations(listTrainingLocations(studio));
@@ -208,6 +229,9 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
     );
     setDescription((t.description ?? '').trim());
     setLanguage(t.language || 'en');
+    const linked = t.Staff?.find((s) => s.id)?.id ?? '';
+    setTrainerId(linked);
+    setInitialTrainerId(linked);
     if (t.trainingCategoryId != null) {
       setCategoryId(String(t.trainingCategoryId));
     }
@@ -264,6 +288,9 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
         description: description.trim() || undefined,
         language: language || undefined,
         trainingCategoryId: categoryId ? Number(categoryId) : null,
+        ...(isPro && trainerId && trainerId !== initialTrainerId
+          ? { trainerIds: [trainerId] }
+          : {}),
       });
 
       const loc =
@@ -323,9 +350,17 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
 
   return (
     <div className="mx-auto max-w-xl space-y-5 pb-10">
-      <div>
+      <div className="relative flex items-center justify-center">
+        <button
+          type="button"
+          onClick={() => router.push(withLocale('/trainings', locale))}
+          className="absolute left-0 flex h-9 w-9 items-center justify-center rounded-full bg-white"
+          aria-label="Back to trainings"
+        >
+          <ChevronLeft className="h-5 w-5" style={{ color: ownerTheme.text }} />
+        </button>
         <h1
-          className="text-2xl font-semibold"
+          className="text-center text-2xl font-semibold"
           style={{ color: ownerTheme.text }}
         >
           Edit training
@@ -554,6 +589,25 @@ export function EditTrainingForm({ trainingId }: { trainingId: string }) {
               </div>
             ) : null}
           </div>
+        ) : null}
+
+        {isPro && trainers.length > 0 ? (
+          <label className="block">
+            <FieldLabel>Trainer</FieldLabel>
+            <OwnerSelect
+              value={trainerId}
+              onChange={setTrainerId}
+              placeholder="Any / unassigned"
+              options={trainers.map((t) => ({
+                value: t.id,
+                label: t.name,
+              }))}
+            />
+          </label>
+        ) : !isPro && subQuery.isFetched ? (
+          <p className="text-xs" style={{ color: ownerTheme.textSecondary }}>
+            Trainer assignment is available on Studio plan.
+          </p>
         ) : null}
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}

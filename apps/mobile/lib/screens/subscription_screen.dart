@@ -407,6 +407,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       tagline: locale.t(
                         subscriptionPlanTaglineKey(SubscriptionPlanTier.solo),
                       ),
+                      iconAsset: 'assets/icons/icon-shoose.png',
                       priceLabel:
                           _soloPackage?.storeProduct.priceString ??
                           locale.t('subscription.soloFreePrice'),
@@ -470,6 +471,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       tagline: locale.t(
                         subscriptionPlanTaglineKey(SubscriptionPlanTier.solo),
                       ),
+                      iconAsset: 'assets/icons/icon-shoose.png',
                       priceLabel:
                           _soloPackage?.storeProduct.priceString ??
                           locale.t('subscription.soloFreePrice'),
@@ -560,6 +562,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       planTitle: locale.t(
                         subscriptionPlanTitleKey(_activePlanTier),
                       ),
+                      iconAsset: _activePlanTier == SubscriptionPlanTier.solo
+                          ? 'assets/icons/icon-shoose.png'
+                          : 'assets/icons/icon-rocket.png',
                       tagline: locale.t(
                         subscriptionPlanTaglineKey(_activePlanTier),
                       ),
@@ -789,6 +794,7 @@ class _ProStatusCard extends StatelessWidget {
   final String? renewLabel;
   final VoidCallback? onRenew;
   final bool renewLoading;
+  final String iconAsset;
 
   const _ProStatusCard({
     required this.planTitle,
@@ -802,6 +808,7 @@ class _ProStatusCard extends StatelessWidget {
     this.renewLabel,
     this.onRenew,
     this.renewLoading = false,
+    this.iconAsset = 'assets/icons/icon-rocket.png',
   });
 
   @override
@@ -815,23 +822,31 @@ class _ProStatusCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset(
-                'assets/icons/icon-rocket.png',
-                width: 28,
-                height: 28,
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      planTitle,
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            planTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 24.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Image.asset(
+                          iconAsset,
+                          width: 24,
+                          height: 24,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1083,26 +1098,24 @@ class _PlanCard extends StatelessWidget {
   final String tagline;
   final String priceLabel;
   final List<String> features;
-  final bool showPricePeriod;
   final bool highlighted;
-  final bool showActiveBadge;
   final String? subscribeLabel;
   final VoidCallback? onSubscribe;
   final bool isLoading;
   final bool isPriceLoading;
+  final String iconAsset;
 
   const _PlanCard({
     required this.title,
     required this.tagline,
     required this.priceLabel,
     required this.features,
-    this.showPricePeriod = true,
     this.highlighted = true,
-    this.showActiveBadge = false,
     this.subscribeLabel,
     this.onSubscribe,
     this.isLoading = false,
     this.isPriceLoading = false,
+    this.iconAsset = 'assets/icons/icon-rocket.png',
   });
 
   @override
@@ -1134,23 +1147,31 @@ class _PlanCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset(
-                'assets/icons/icon-rocket.png',
-                width: 28,
-                height: 28,
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 24.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Image.asset(
+                          iconAsset,
+                          width: 24,
+                          height: 24,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1164,25 +1185,6 @@ class _PlanCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showActiveBadge)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _activeBadgeBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    locale.t('profile.active').toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: _activeBadgeFg,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 20),
@@ -1201,17 +1203,15 @@ class _PlanCard extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ),
-          if (showPricePeriod) ...[
-            const SizedBox(height: 4),
-            Text(
-              locale.t('subscription.perMonthShort'),
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            locale.t('subscription.perMonthShort'),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
           ...features.map((f) => _PlanFeatureRow(label: f)),
           if (onSubscribe != null) ...[

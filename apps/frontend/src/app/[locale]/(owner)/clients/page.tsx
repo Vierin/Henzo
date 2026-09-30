@@ -1,10 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Mail, Phone, Plus, Search, Upload, X } from 'lucide-react';
+import {
+  ArrowUpDown,
+  Mail,
+  Phone,
+  Plus,
+  Search,
+  Upload,
+  X,
+} from 'lucide-react';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import {
@@ -92,6 +100,8 @@ export default function ClientsPage() {
   const [debounced, setDebounced] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('lastVisitDesc');
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -101,6 +111,15 @@ export default function ClientsPage() {
     const t = setTimeout(() => setDebounced(q.trim()), 300);
     return () => clearTimeout(t);
   }, [q]);
+
+  useEffect(() => {
+    if (!sortOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!sortRef.current?.contains(e.target as Node)) setSortOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [sortOpen]);
 
   useEffect(() => {
     setPage(1);
@@ -190,8 +209,8 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-4 lg:space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1
             className="text-2xl font-bold tracking-tight"
             style={{ color: ownerTheme.text }}
@@ -205,24 +224,24 @@ export default function ClientsPage() {
             {stats.total} clients in your studio
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-start">
-          <button
-            type="button"
-            onClick={() => setImportOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-[12px] bg-white px-4 text-sm font-semibold"
-            style={{ color: ownerTheme.text }}
-          >
-            <Upload className="h-4 w-4" style={{ color: ownerTheme.accent }} />
-            Import
-          </button>
+        <div className="flex shrink-0 flex-col items-stretch gap-2">
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold text-white"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold text-white"
             style={{ backgroundColor: ownerTheme.accent }}
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} />
             Add client
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[12px] bg-white px-4 text-sm font-semibold"
+            style={{ color: ownerTheme.text }}
+          >
+            <Upload className="h-4 w-4" style={{ color: ownerTheme.accent }} />
+            Import
           </button>
         </div>
       </div>
@@ -265,19 +284,65 @@ export default function ClientsPage() {
       >
         <div className="min-w-0 space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label className="relative min-w-0 flex-1">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
-                style={{ color: ownerTheme.textSecondary }}
-              />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by name, email or phone…"
-                className="w-full rounded-[12px] bg-white py-2.5 pl-10 pr-3 text-sm outline-none"
-                style={{ color: ownerTheme.text }}
-              />
-            </label>
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <label className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                  style={{ color: ownerTheme.textSecondary }}
+                />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search by name, email or phone…"
+                  className="w-full rounded-[12px] bg-white py-2.5 pl-10 pr-3 text-sm outline-none"
+                  style={{ color: ownerTheme.text }}
+                />
+              </label>
+
+              <div ref={sortRef} className="relative shrink-0 md:hidden">
+                <button
+                  type="button"
+                  aria-label="Sort"
+                  aria-expanded={sortOpen}
+                  onClick={() => setSortOpen((open) => !open)}
+                  className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white"
+                  style={{ color: ownerTheme.text }}
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </button>
+                {sortOpen ? (
+                  <ul
+                    className="absolute right-0 z-30 mt-2 w-max min-w-[240px] rounded-[16px] border bg-white p-1.5 shadow-[0_16px_40px_rgba(63,50,135,0.14)]"
+                    style={{ borderColor: ownerTheme.borderSoft }}
+                  >
+                    {SORT_OPTIONS.map((option) => {
+                      const selected = sortKey === option.id;
+                      return (
+                        <li key={option.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSortKey(option.id);
+                              setSortOpen(false);
+                            }}
+                            className="flex w-full whitespace-nowrap rounded-[12px] px-3 py-2.5 text-left text-sm font-medium"
+                            style={{
+                              color: ownerTheme.text,
+                              backgroundColor: selected
+                                ? 'rgba(241, 89, 66, 0.1)'
+                                : undefined,
+                              fontWeight: selected ? 600 : 500,
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </div>
+            </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
@@ -315,7 +380,7 @@ export default function ClientsPage() {
                 onChange={(v) => setSortKey(v as SortKey)}
                 size="compact"
                 aria-label="Sort"
-                className="ml-0 min-w-[140px] sm:ml-1"
+                className="ml-0 hidden min-w-[240px] md:block sm:ml-1"
                 options={SORT_OPTIONS.map((o) => ({
                   value: o.id,
                   label: o.label,

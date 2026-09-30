@@ -221,11 +221,13 @@ export default function CompleteSetupPage() {
                 autoComplete="off"
                 role="combobox"
                 aria-expanded={suggestionsOpen}
+                aria-controls="studio-address-suggestions"
                 aria-autocomplete="list"
               />
             </label>
             {suggestionsOpen && suggestions.length > 0 ? (
               <ul
+                id="studio-address-suggestions"
                 role="listbox"
                 className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
               >
@@ -234,6 +236,7 @@ export default function CompleteSetupPage() {
                     <button
                       type="button"
                       role="option"
+                      aria-selected={address === s.address}
                       className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-50"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {

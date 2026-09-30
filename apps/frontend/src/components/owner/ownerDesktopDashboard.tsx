@@ -198,7 +198,7 @@ export function OwnerDashboardStudioBanner({
         />
       </div>
 
-      <div className="relative flex min-w-0 flex-1 flex-col py-5 pl-1 pr-4 sm:pl-2 sm:pr-5">
+      <div className="relative flex min-w-0 flex-1 flex-col py-3 pl-1 pr-4 sm:py-5 sm:pl-2 sm:pr-5">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
           <h3
             className="text-[1.25rem] font-bold leading-tight tracking-tight sm:text-[1.35rem]"
@@ -228,46 +228,46 @@ export function OwnerDashboardStudioBanner({
 
         {address ? (
           <p
-            className="mt-2 flex items-start gap-1.5 text-sm leading-snug"
+            className="mt-2 flex min-w-0 items-center gap-1.5 text-sm leading-snug"
             style={{ color: ownerTheme.textSecondary }}
           >
-            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="line-clamp-2">{address}</span>
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate">{address}</span>
           </p>
         ) : null}
 
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="min-w-0 flex flex-wrap items-center gap-1.5">
-            {visibleTags.map((tag) => (
-              <span
-                key={tag.id}
-                className="rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
-                style={{
-                  backgroundColor: tag.chipBgHex,
-                  color: tag.chipFgHex,
-                }}
-              >
-                {tag.label}
-              </span>
-            ))}
-            {moreCount > 0 ? (
-              <span
-                className="rounded-full px-2.5 py-0.5 text-[12px] font-medium"
-                style={{
-                  backgroundColor: ownerTheme.bgSoft,
-                  color: ownerTheme.textSecondary,
-                }}
-              >
-                {t('owner.dashboard.moreTags').replace(
-                  '{count}',
-                  String(moreCount),
-                )}
-              </span>
-            ) : null}
-          </div>
+        <div className="mt-3 flex flex-nowrap items-center gap-1.5">
+          {visibleTags.map((tag) => (
+            <span
+              key={tag.id}
+              className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
+              style={{
+                backgroundColor: tag.chipBgHex,
+                color: tag.chipFgHex,
+              }}
+            >
+              {tag.label}
+            </span>
+          ))}
+          {moreCount > 0 ? (
+            <span
+              className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium"
+              style={{
+                backgroundColor: ownerTheme.bgSoft,
+                color: ownerTheme.textSecondary,
+              }}
+            >
+              {t('owner.dashboard.moreTags').replace(
+                '{count}',
+                String(moreCount),
+              )}
+            </span>
+          ) : null}
+        </div>
 
+        <div className="mt-4 flex justify-end pt-3 sm:mt-auto">
           <span
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition group-hover:bg-[#FFF8F4]"
+            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition group-hover:bg-[#FFF8F4]"
             style={{
               color: ownerTheme.accent,
               boxShadow: `inset 0 0 0 1.5px ${ownerTheme.accent}`,
@@ -287,7 +287,7 @@ export function OwnerDashboardNewClassButton({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="flex w-full items-center justify-center gap-2 rounded-[14px] py-3 text-sm font-semibold text-white transition hover:opacity-95"
+      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[14px] px-2 py-3 text-[13px] font-semibold text-white transition hover:opacity-95 sm:gap-2 sm:px-3 sm:text-sm"
       style={{ backgroundColor: ownerTheme.accent }}
     >
       <Plus className="h-4 w-4" strokeWidth={2.5} />
@@ -315,7 +315,7 @@ export function OwnerDashboardCopyBookingLinkButton({
     <button
       type="button"
       onClick={() => void onCopy()}
-      className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-transparent py-3 text-sm font-semibold transition hover:bg-[#FFF8F4]"
+      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[14px] bg-transparent px-2 py-3 text-[13px] font-semibold transition hover:bg-[#FFF8F4] sm:gap-2 sm:px-3 sm:text-sm"
       style={{
         color: ownerTheme.accent,
         boxShadow: `inset 0 0 0 1.5px ${ownerTheme.accent}`,

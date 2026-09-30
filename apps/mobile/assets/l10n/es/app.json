@@ -38,6 +38,7 @@
     "exit": "Salir",
     "info": "Info",
     "understood": "Entendido",
+    "ok": "OK",
     "dash": "—",
     "studio": "Estudio",
     "client": "Cliente",
@@ -708,7 +709,7 @@
     "trialDaysLeft": "Quedan {days} días de prueba",
     "trialRenewBtn": "Renovar",
     "trialBannerTitle": "3 meses para conocer Henzo",
-    "trialBannerBody": "Studio es tuyo durante 3 meses para que explores la app y veas cómo encaja en tu estudio. Te avisaremos un mes antes de que termine.",
+    "trialBannerBody": "El plan {plan} es tuyo durante 3 meses para que explores la app y veas cómo encaja en tu estudio. Te avisaremos un mes antes de que termine.",
     "subscribeToEnterpriseBtn": "Suscribirse a Enterprise"
   },
   "profile": {

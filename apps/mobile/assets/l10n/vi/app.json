@@ -38,6 +38,7 @@
     "exit": "Thoát",
     "info": "Thông tin",
     "understood": "Đã hiểu",
+    "ok": "OK",
     "dash": "—",
     "studio": "Studio",
     "client": "Khách hàng",
@@ -708,7 +709,7 @@
     "trialDaysLeft": "Còn {days} ngày dùng thử",
     "trialRenewBtn": "Gia hạn",
     "trialBannerTitle": "3 tháng để làm quen với Henzo",
-    "trialBannerBody": "Studio mở trong 3 tháng để bạn khám phá ứng dụng và xem nó hợp với studio của bạn thế nào. Chúng tôi sẽ nhắc trước một tháng khi sắp hết hạn.",
+    "trialBannerBody": "Gói {plan} của bạn trong 3 tháng để bạn khám phá ứng dụng và xem nó hợp với studio của bạn thế nào. Chúng tôi sẽ nhắc trước một tháng khi sắp hết hạn.",
     "subscribeToEnterpriseBtn": "Đăng ký Enterprise"
   },
   "profile": {

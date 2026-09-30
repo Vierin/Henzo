@@ -37,7 +37,7 @@ export function OwnerDashboardStatCards({
 }) {
   const t = useTranslation();
   return (
-    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
       <StatCard
         value={classesToday}
         label={t('owner.dashboard.classesToday')}
@@ -73,13 +73,15 @@ function StatCard({
 }) {
   return (
     <div
-      className="flex min-h-[130px] flex-col rounded-[18px] px-4 py-2 pt-3 sm:min-h-[96px] justify-between"
+      className="flex aspect-square flex-col justify-between rounded-[18px] px-2.5 py-2.5 sm:aspect-auto sm:min-h-[96px] sm:px-4 sm:py-3"
       style={{ backgroundColor: background, color }}
     >
-      <div className="text-[28px] font-medium leading-none tabular-nums sm:text-[30px]">
+      <div className="text-[22px] font-medium leading-none tabular-nums sm:text-[30px]">
         {value}
       </div>
-      <div className="min-w-0 text-[13px] leading-snug sm:text-sm">{label}</div>
+      <div className="min-w-0 text-[11px] leading-tight sm:text-sm">
+        {label}
+      </div>
     </div>
   );
 }

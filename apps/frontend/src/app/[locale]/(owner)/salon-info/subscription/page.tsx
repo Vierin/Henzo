@@ -718,102 +718,120 @@ export default function SubscriptionSettingsPage() {
             <PlanFeatureList tier={activeTier} t={t} />
           </div>
 
-          {showStudioUpgrade ? (
-            <div className="rounded-[14px] bg-white px-4 py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p
-                    className="text-base font-bold"
-                    style={{ color: ownerTheme.text }}
+          {showStudioUpgrade || showSoloDecrease ? (
+            <div
+              className={
+                showStudioUpgrade && showSoloDecrease
+                  ? 'mx-auto grid w-[92%] grid-cols-1 items-stretch gap-3 lg:grid-cols-2'
+                  : 'mx-auto w-[92%]'
+              }
+            >
+              {showStudioUpgrade ? (
+                <div className="flex h-full min-h-[22rem] flex-col rounded-[14px] bg-white px-4 py-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p
+                        className="text-base font-bold"
+                        style={{ color: ownerTheme.text }}
+                      >
+                        {t('owner.subscription.enterpriseTitle') ||
+                          'Enterprise'}
+                      </p>
+                      <p
+                        className="mt-1 text-sm"
+                        style={{ color: ownerTheme.textSecondary }}
+                      >
+                        {t('owner.subscription.enterpriseTagline')}
+                      </p>
+                    </div>
+                    <PlanPriceBlock
+                      listEur={listMonthly('enterprise')}
+                      saleEur={saleMonthly('enterprise')}
+                      loading={pricesQuery.isLoading}
+                      perMonthLabel={
+                        t('owner.subscription.perMonth') || 'month'
+                      }
+                    />
+                  </div>
+                  <PlanFeatureList tier="enterprise" t={t} />
+                  <div className="min-h-6 flex-1" aria-hidden />
+                  <button
+                    type="button"
+                    disabled={busy || !origin}
+                    onClick={() => void switchPaidPlan('enterprise')}
+                    className="w-full rounded-[12px] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: ownerTheme.accent }}
                   >
-                    {t('owner.subscription.enterpriseTitle') || 'Enterprise'}
-                  </p>
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: ownerTheme.textSecondary }}
-                  >
-                    {t('owner.subscription.enterpriseTagline')}
-                  </p>
+                    {switchingPlan === 'enterprise' ||
+                    checkoutLoading === 'enterprise'
+                      ? t('owner.subscription.switching') || 'Switching...'
+                      : t('owner.subscription.upgradeToEnterpriseBtn') ||
+                        'Upgrade to Enterprise'}
+                  </button>
                 </div>
-                <PlanPriceBlock
-                  listEur={listMonthly('enterprise')}
-                  saleEur={saleMonthly('enterprise')}
-                  loading={pricesQuery.isLoading}
-                  perMonthLabel={t('owner.subscription.perMonth') || 'month'}
-                />
-              </div>
-              <PlanFeatureList tier="enterprise" t={t} />
-              <button
-                type="button"
-                disabled={busy || !origin}
-                onClick={() => void switchPaidPlan('enterprise')}
-                className="mt-4 w-full rounded-[12px] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-                style={{ backgroundColor: ownerTheme.accent }}
-              >
-                {switchingPlan === 'enterprise' ||
-                checkoutLoading === 'enterprise'
-                  ? t('owner.subscription.switching') || 'Switching...'
-                  : t('owner.subscription.upgradeToEnterpriseBtn') ||
-                    'Upgrade to Enterprise'}
-              </button>
-            </div>
-          ) : null}
+              ) : null}
 
-          {showSoloDecrease ? (
-            <div className="rounded-[14px] bg-white px-4 py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p
-                    className="text-base font-bold"
-                    style={{ color: ownerTheme.text }}
+              {showSoloDecrease ? (
+                <div className="flex h-full min-h-[22rem] flex-col rounded-[14px] bg-white px-4 py-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p
+                        className="text-base font-bold"
+                        style={{ color: ownerTheme.text }}
+                      >
+                        {t('owner.subscription.soloTitle') || 'Solo'}
+                      </p>
+                      <p
+                        className="mt-1 text-sm"
+                        style={{ color: ownerTheme.textSecondary }}
+                      >
+                        {t('owner.subscription.soloTagline') ||
+                          'For independent trainers'}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right tabular-nums">
+                      <p
+                        className="text-base font-semibold"
+                        style={{ color: ownerTheme.accent }}
+                      >
+                        {pricesQuery.isLoading
+                          ? '…'
+                          : formatMoney(
+                              soloPrice?.monthly ?? 7.99,
+                              soloCurrency,
+                            )}
+                      </p>
+                      <span
+                        className="mt-0.5 block text-[11px] font-medium"
+                        style={{ color: ownerTheme.textSecondary }}
+                      >
+                        {t('owner.subscription.perMonth') || 'month'}
+                      </span>
+                    </div>
+                  </div>
+                  <PlanFeatureList tier="solo" t={t} />
+                  <div className="min-h-6 flex-1" aria-hidden />
+                  <button
+                    type="button"
+                    disabled={busy || !origin || pendingType === 'SOLO'}
+                    onClick={() => void switchPaidPlan('solo')}
+                    className="w-full rounded-[12px] border px-4 py-3 text-sm font-semibold disabled:opacity-60"
+                    style={{
+                      borderColor: ownerTheme.accent,
+                      color: ownerTheme.accent,
+                      backgroundColor: 'transparent',
+                    }}
                   >
-                    {t('owner.subscription.soloTitle') || 'Solo'}
-                  </p>
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: ownerTheme.textSecondary }}
-                  >
-                    {t('owner.subscription.soloTagline') ||
-                      'For independent trainers'}
-                  </p>
+                    {switchingPlan === 'solo' || checkoutLoading === 'solo'
+                      ? t('owner.subscription.switching') || 'Switching...'
+                      : pendingType === 'SOLO'
+                        ? t('owner.subscription.decreaseScheduledBtn') ||
+                          'Scheduled for the next payment'
+                        : t('owner.subscription.decreaseToSoloBtn') ||
+                          'Decrease to Solo'}
+                  </button>
                 </div>
-                <div className="shrink-0 text-right tabular-nums">
-                  <p
-                    className="text-base font-semibold"
-                    style={{ color: ownerTheme.accent }}
-                  >
-                    {pricesQuery.isLoading
-                      ? '…'
-                      : formatMoney(soloPrice?.monthly ?? 7.99, soloCurrency)}
-                  </p>
-                  <span
-                    className="mt-0.5 block text-[11px] font-medium"
-                    style={{ color: ownerTheme.textSecondary }}
-                  >
-                    {t('owner.subscription.perMonth') || 'month'}
-                  </span>
-                </div>
-              </div>
-              <PlanFeatureList tier="solo" t={t} />
-              <button
-                type="button"
-                disabled={busy || !origin || pendingType === 'SOLO'}
-                onClick={() => void switchPaidPlan('solo')}
-                className="mt-4 w-full rounded-[12px] border px-4 py-3 text-sm font-semibold disabled:opacity-60"
-                style={{
-                  borderColor: ownerTheme.accent,
-                  color: ownerTheme.accent,
-                  backgroundColor: 'transparent',
-                }}
-              >
-                {switchingPlan === 'solo' || checkoutLoading === 'solo'
-                  ? t('owner.subscription.switching') || 'Switching...'
-                  : pendingType === 'SOLO'
-                    ? t('owner.subscription.decreaseScheduledBtn') ||
-                      'Scheduled for the next payment'
-                    : t('owner.subscription.decreaseToSoloBtn') ||
-                      'Decrease to Solo'}
-              </button>
+              ) : null}
             </div>
           ) : null}
 

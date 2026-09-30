@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { ListFilter, Plus, Search } from 'lucide-react';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { fetchStaff, staffHasLinkedAccount } from '@/lib/owner/fetch-staff';
@@ -73,9 +73,20 @@ export default function StaffPage() {
   const { studio } = useOwnerStudio();
   const [q, setQ] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [roleOpen, setRoleOpen] = useState(false);
+  const roleRef = useRef<HTMLDivElement>(null);
   const [inviteMember, setInviteMember] = useState<OwnerStaffMember | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!roleOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!roleRef.current?.contains(e.target as Node)) setRoleOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [roleOpen]);
 
   const staffQuery = useQuery({
     queryKey: ['owner-staff', studio?.id],
@@ -180,25 +191,71 @@ export default function StaffPage() {
       </div>
 
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-        <label className="relative min-w-0 flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
-            style={{ color: ownerTheme.textSecondary }}
-          />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search staff…"
-            className="w-full rounded-[12px] bg-white py-2.5 pl-10 pr-3 text-sm outline-none"
-            style={{ color: ownerTheme.text }}
-          />
-        </label>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <label className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+              style={{ color: ownerTheme.textSecondary }}
+            />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search staff…"
+              className="w-full rounded-[12px] bg-white py-2.5 pl-10 pr-3 text-sm outline-none"
+              style={{ color: ownerTheme.text }}
+            />
+          </label>
+
+          <div ref={roleRef} className="relative shrink-0 md:hidden">
+            <button
+              type="button"
+              aria-label="Role"
+              aria-expanded={roleOpen}
+              onClick={() => setRoleOpen((open) => !open)}
+              className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white"
+              style={{ color: ownerTheme.text }}
+            >
+              <ListFilter className="h-4 w-4" />
+            </button>
+            {roleOpen ? (
+              <ul
+                className="absolute right-0 z-30 mt-2 w-max min-w-[160px] rounded-[16px] border bg-white p-1.5 shadow-[0_16px_40px_rgba(63,50,135,0.14)]"
+                style={{ borderColor: ownerTheme.borderSoft }}
+              >
+                {ROLE_OPTIONS.map((option) => {
+                  const selected = roleFilter === option.id;
+                  return (
+                    <li key={option.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRoleFilter(option.id);
+                          setRoleOpen(false);
+                        }}
+                        className="flex w-full whitespace-nowrap rounded-[12px] px-3 py-2.5 text-left text-sm font-medium"
+                        style={{
+                          color: ownerTheme.text,
+                          backgroundColor: selected
+                            ? 'rgba(241, 89, 66, 0.1)'
+                            : undefined,
+                          fontWeight: selected ? 600 : 500,
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
+        </div>
         <OwnerSelect
           value={roleFilter}
           onChange={(v) => setRoleFilter(v as RoleFilter)}
           size="compact"
           aria-label="Role"
-          className="w-full shrink-0 sm:w-auto sm:min-w-[140px]"
+          className="hidden w-full shrink-0 md:block md:w-auto md:min-w-[160px]"
           options={ROLE_OPTIONS.map((o) => ({
             value: o.id,
             label: o.label,

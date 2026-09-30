@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Pencil, Plus, Search } from 'lucide-react';
+import { ArrowUpDown, Plus, Search } from 'lucide-react';
 import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { fetchTrainings } from '@/lib/owner/fetch-trainings';
@@ -50,6 +50,17 @@ export default function TrainingsPage() {
   const [q, setQ] = useState('');
   const [categoryId, setCategoryId] = useState<number | 'all'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('nameAsc');
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!sortOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!sortRef.current?.contains(e.target as Node)) setSortOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [sortOpen]);
 
   const trainingsQuery = useQuery({
     queryKey: ['owner-trainings', studio?.id],
@@ -108,8 +119,8 @@ export default function TrainingsPage() {
 
   return (
     <div className="space-y-5 pb-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1
             className="text-2xl font-semibold tracking-tight md:text-[28px]"
             style={{ color: ownerTheme.text }}
@@ -125,7 +136,7 @@ export default function TrainingsPage() {
         </div>
         <Link
           href={withLocale('/trainings/new', locale)}
-          className="inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold text-white"
+          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold text-white"
           style={{ backgroundColor: ownerTheme.accent }}
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
@@ -134,19 +145,65 @@ export default function TrainingsPage() {
       </div>
 
       <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
-        <label className="relative min-w-0 flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
-            style={{ color: ownerTheme.textSecondary }}
-          />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search trainings…"
-            className="w-full rounded-[12px] bg-white py-2.5 pl-10 pr-3 text-sm outline-none"
-            style={{ color: ownerTheme.text }}
-          />
-        </label>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <label className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+              style={{ color: ownerTheme.textSecondary }}
+            />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search trainings…"
+              className="w-full rounded-[12px] bg-white py-2.5 pl-10 pr-3 text-sm outline-none"
+              style={{ color: ownerTheme.text }}
+            />
+          </label>
+
+          <div ref={sortRef} className="relative shrink-0 md:hidden">
+            <button
+              type="button"
+              aria-label="Sort"
+              aria-expanded={sortOpen}
+              onClick={() => setSortOpen((open) => !open)}
+              className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white"
+              style={{ color: ownerTheme.text }}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </button>
+            {sortOpen ? (
+              <ul
+                className="absolute right-0 z-30 mt-2 w-max min-w-[240px] rounded-[16px] border bg-white p-1.5 shadow-[0_16px_40px_rgba(63,50,135,0.14)]"
+                style={{ borderColor: ownerTheme.borderSoft }}
+              >
+                {SORT_OPTIONS.map((option) => {
+                  const selected = sortKey === option.id;
+                  return (
+                    <li key={option.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSortKey(option.id);
+                          setSortOpen(false);
+                        }}
+                        className="flex w-full whitespace-nowrap rounded-[12px] px-3 py-2.5 text-left text-sm font-medium"
+                        style={{
+                          color: ownerTheme.text,
+                          backgroundColor: selected
+                            ? 'rgba(241, 89, 66, 0.1)'
+                            : undefined,
+                          fontWeight: selected ? 600 : 500,
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
+        </div>
 
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
           <CategoryPill
@@ -177,7 +234,7 @@ export default function TrainingsPage() {
           onChange={(v) => setSortKey(v as SortKey)}
           size="compact"
           aria-label="Sort"
-          className="w-full shrink-0 sm:w-auto sm:min-w-[150px]"
+          className="hidden w-full shrink-0 md:block md:w-auto md:min-w-[150px]"
           options={SORT_OPTIONS.map((o) => ({
             value: o.id,
             label: o.label,
@@ -306,14 +363,8 @@ function TrainingCatalogCard({
           >
             {item.name}
           </h2>
-          <p
-            className="mt-1 text-sm tabular-nums"
-            style={{ color: ownerTheme.textSecondary }}
-          >
-            {item.duration} min
-          </p>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <div className="mt-2.5 flex flex-col items-start gap-1.5">
             {language ? (
               <MetaItem icon={<IconGlobe />}>{language}</MetaItem>
             ) : null}
@@ -325,22 +376,12 @@ function TrainingCatalogCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end justify-between gap-2 self-stretch py-0.5">
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2.5 py-1 text-xs font-semibold text-[#166534]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
-              Active
-            </span>
-            <span
-              className="flex h-7 w-0 shrink-0 items-center justify-center overflow-hidden rounded-full opacity-0 transition-all duration-150 group-hover:w-7 group-hover:opacity-100"
-              style={{
-                color: ownerTheme.textSecondary,
-                boxShadow: `inset 0 0 0 1.5px ${ownerTheme.borderSoft}`,
-              }}
-              aria-hidden
-            >
-              <Pencil className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-            </span>
-          </div>
+          <p
+            className="text-sm font-semibold tabular-nums"
+            style={{ color: ownerTheme.textSecondary }}
+          >
+            {item.duration} min
+          </p>
           <p
             className="text-xl font-bold tabular-nums"
             style={{ color: ownerTheme.text }}

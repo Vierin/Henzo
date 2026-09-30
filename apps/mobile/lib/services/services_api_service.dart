@@ -186,6 +186,7 @@ class ServicesApiService {
     double? price,
     int? duration,
     int? trainingCategoryId,
+    List<String>? trainerIds,
   }) async {
     try {
       final data = <String, dynamic>{};
@@ -196,6 +197,9 @@ class ServicesApiService {
       if (duration != null) data['duration'] = duration;
       if (trainingCategoryId != null) {
         data['trainingCategoryId'] = trainingCategoryId;
+      }
+      if (trainerIds != null && trainerIds.isNotEmpty) {
+        data['trainerIds'] = trainerIds;
       }
       final map =
           await ApiClient.put(
