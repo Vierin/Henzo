@@ -15,6 +15,8 @@ class ServiceItem {
   final String? displayColor;
   /// Имена привязанных тренеров (из API Staff).
   final List<String> trainerNames;
+  /// Id привязанных тренеров, в том же порядке что [trainerNames].
+  final List<String> trainerIds;
   final String? language;
 
   ServiceItem({
@@ -29,6 +31,7 @@ class ServiceItem {
     this.categoryName,
     this.displayColor,
     this.trainerNames = const [],
+    this.trainerIds = const [],
     this.language,
   });
 
@@ -82,17 +85,21 @@ class ServiceItem {
     if (cat is Map) categoryName = _categoryLabelFromMap(cat);
 
     final trainers = <String>[];
+    final trainerIds = <String>[];
     final staffRaw = json['staff'] ?? json['Staff'] ?? json['Trainer'];
+    void addTrainer(Map entry) {
+      final n = (entry['name'] as String?)?.trim();
+      final id = entry['id']?.toString().trim() ?? '';
+      if (n != null && n.isNotEmpty) trainers.add(n);
+      if (id.isNotEmpty) trainerIds.add(id);
+    }
+
     if (staffRaw is List) {
       for (final entry in staffRaw) {
-        if (entry is Map) {
-          final n = (entry['name'] as String?)?.trim();
-          if (n != null && n.isNotEmpty) trainers.add(n);
-        }
+        if (entry is Map) addTrainer(entry);
       }
     } else if (staffRaw is Map) {
-      final n = (staffRaw['name'] as String?)?.trim();
-      if (n != null && n.isNotEmpty) trainers.add(n);
+      addTrainer(staffRaw);
     }
 
     return ServiceItem(
@@ -107,6 +114,7 @@ class ServiceItem {
       categoryName: categoryName,
       displayColor: json['displayColor']?.toString(),
       trainerNames: trainers,
+      trainerIds: trainerIds,
       language: (json['language'] as String?)?.trim().isNotEmpty == true
           ? (json['language'] as String).trim()
           : null,
@@ -126,6 +134,7 @@ class ServiceItem {
       'categoryName': categoryName,
       'displayColor': displayColor,
       'trainerNames': trainerNames,
+      'trainerIds': trainerIds,
       'language': language,
     };
   }

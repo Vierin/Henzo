@@ -11,6 +11,7 @@ import '../../models/training_category_option.dart';
 import '../../models/training_location_item.dart';
 import '../../utils/currency_format.dart';
 import '../../models/service_item.dart';
+import '../../models/staff_member.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/studio_cache.dart';
@@ -18,6 +19,8 @@ import '../../services/cache/services_staff_cache.dart';
 import '../../services/cache/training_categories_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/services_api_service.dart';
+import '../../services/trainers_api_service.dart';
+import '../../utils/owner_paid_plan.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/training_locations_storage.dart';
 import '../../constants/layout.dart';
@@ -30,6 +33,7 @@ import '../../widgets/training/training_category_picker_sheet.dart';
 import '../../widgets/training/training_filter_chip.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/training/training_time_picker_sheet.dart';
+import '../../widgets/training/training_trainer_picker_sheet.dart';
 import 'add_training_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -720,6 +724,11 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
   String _selectedLocationId = 'default';
   int? _initialCapacity;
   String? _initialLocationId;
+  bool _isProPlan = false;
+  bool _loadingTrainers = true;
+  List<StaffMember> _trainers = [];
+  String? _selectedTrainerId;
+  String? _initialTrainerId;
   final Set<int> _recurringDays = <int>{1, 3, 5};
   final Map<int, TimeOfDay> _recurringDayTimes = <int, TimeOfDay>{};
 
@@ -1144,6 +1153,32 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         .toList()
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
 
+    var selectedTrainerId = widget.item.trainerIds
+        .map((id) => id.trim())
+        .firstWhere((id) => id.isNotEmpty, orElse: () => '');
+    var isPaidPlan = false;
+    var trainers = <StaffMember>[];
+    try {
+      isPaidPlan = await resolveOwnerHasPaidPlan(widget.token);
+      final studioId = studio?.id;
+      if (studioId != null && studioId.isNotEmpty) {
+        trainers = await TrainersApiService.getByStudio(
+          widget.token,
+          studioId,
+        );
+      }
+    } catch (_) {
+      trainers = [];
+    }
+    if (selectedTrainerId.isEmpty ||
+        !trainers.any((t) => t.id == selectedTrainerId)) {
+      final name = widget.item.trainerNames
+          .map((n) => n.trim())
+          .firstWhere((n) => n.isNotEmpty, orElse: () => '');
+      final match = trainers.where((t) => t.name.trim() == name);
+      if (match.isNotEmpty) selectedTrainerId = match.first.id;
+    }
+
     if (mine.isNotEmpty) {
       final first = mine.first;
       _capacityController.text = '${first.capacity}';
@@ -1170,7 +1205,37 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         _sessionTime = times.values.first;
       }
     }
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        _isProPlan = isPaidPlan;
+        _trainers = trainers;
+        _selectedTrainerId =
+            selectedTrainerId.isEmpty ? null : selectedTrainerId;
+        _initialTrainerId =
+            selectedTrainerId.isEmpty ? null : selectedTrainerId;
+        _loadingTrainers = false;
+      });
+    }
+  }
+
+  StaffMember? get _selectedTrainer {
+    final id = _selectedTrainerId;
+    if (id == null) return null;
+    for (final trainer in _trainers) {
+      if (trainer.id == id) return trainer;
+    }
+    return null;
+  }
+
+  Future<void> _openTrainerPicker() async {
+    if (!_isProPlan || _trainers.isEmpty) return;
+    final picked = await showTrainingTrainerPickerSheet(
+      context,
+      trainers: _trainers,
+      selectedId: _selectedTrainerId,
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _selectedTrainerId = picked);
   }
 
   @override
@@ -1278,6 +1343,12 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
         trainingCategoryId: _selectedCategoryId,
         description: _descriptionController.text.trim(),
         language: _selectedLanguage,
+        trainerIds: _isProPlan &&
+                _selectedTrainerId != null &&
+                _selectedTrainerId!.trim().isNotEmpty &&
+                _selectedTrainerId!.trim() != (_initialTrainerId ?? '')
+            ? [_selectedTrainerId!.trim()]
+            : null,
       );
       if (!mounted) return;
       if (updated != null) {
@@ -1790,6 +1861,56 @@ class EditTrainingScreenState extends State<EditTrainingScreen> {
                   ),
                 ),
               ],
+            ],
+            const SizedBox(height: 22),
+            if (_isProPlan && _trainers.isNotEmpty) ...[
+              _editFormLabel(locale.t('addTraining.step2.trainer')),
+              Material(
+                color: AppColors.backgroundPrimary,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: _loadingTrainers ? null : _openTrainerPicker,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedTrainer?.name.trim().isNotEmpty == true
+                                ? _selectedTrainer!.name.trim()
+                                : locale.t('addTraining.step2.trainer'),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w400,
+                              color: _selectedTrainer == null
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          CupertinoIcons.chevron_down,
+                          color: _kFormAccent,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (!_isProPlan && !_loadingTrainers) ...[
+              Text(
+                locale.t('addTraining.step2.trainerProNote'),
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  height: 1.35,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
             const SizedBox(height: 30),
             SizedBox(

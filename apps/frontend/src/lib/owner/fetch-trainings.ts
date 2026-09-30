@@ -44,6 +44,7 @@ export async function updateTraining(
     description?: string;
     language?: string;
     trainingCategoryId?: number | null;
+    trainerIds?: string[];
   },
 ): Promise<OwnerTraining> {
   return apiClient.put<OwnerTraining>(`/trainings/${id}`, body);

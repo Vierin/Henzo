@@ -51,9 +51,9 @@ function LandingHeaderContent({
           />
         </Link>
 
-        <div className="flex items-center gap-12">
+        <div className="flex min-w-0 items-center gap-4 lg:gap-10">
           <nav
-            className="relative hidden gap-6 text-[1rem] font-medium text-[#3F3F3F] sm:flex md:gap-8"
+            className="relative hidden gap-6 text-[1rem] font-medium text-[#3F3F3F] lg:flex lg:gap-8"
             aria-label="Landing"
           >
             <a
@@ -84,10 +84,11 @@ function LandingHeaderContent({
               selectedLanguage={selectedLanguage}
               languages={businessHeaderLanguages}
               onLanguageSelect={handleLanguageSelect}
+              hideStores
               getAppHref={withLocale('/business/register', locale)}
-              getAppLabel={String(t('homepage.studio.header.webVersion'))}
+              getAppLabel={String(t('homepage.studio.header.startFree'))}
+              getAppShowChevron
               buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
-              storeButtonClassName="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#3F3F3F] text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:h-10 sm:w-10"
             />
           </div>
         </div>

@@ -359,10 +359,12 @@ export default function OwnerDashboardPage() {
         </div>
 
         <div className="space-y-3">
-          <OwnerDashboardNewClassButton href={path('/trainings/new')} />
-          {bookingLink ? (
-            <OwnerDashboardCopyBookingLinkButton bookingLink={bookingLink} />
-          ) : null}
+          <div className="flex gap-2 lg:flex-col">
+            <OwnerDashboardNewClassButton href={path('/trainings/new')} />
+            {bookingLink ? (
+              <OwnerDashboardCopyBookingLinkButton bookingLink={bookingLink} />
+            ) : null}
+          </div>
           <OwnerDashboardSidebar
             localePath={path}
             lastBookings={lastBookings}

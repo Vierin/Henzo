@@ -137,8 +137,8 @@ export default function OwnerCalendarPage() {
 
   return (
     <div className="relative space-y-4 pb-20 lg:space-y-5 lg:pb-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1
             className="text-2xl font-bold tracking-tight"
             style={{ color: ownerTheme.text }}
@@ -159,23 +159,23 @@ export default function OwnerCalendarPage() {
           </p>
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setCalendarOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-white px-3.5 text-sm font-semibold"
+            className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-white px-3 text-sm font-semibold lg:px-3.5"
             style={{ color: ownerTheme.text }}
           >
             <CalendarDays
               className="h-4 w-4"
               style={{ color: ownerTheme.accent }}
             />
-            Calendar
+            <span>Calendar</span>
           </button>
           <button
             type="button"
             onClick={goToday}
-            className="h-10 rounded-[12px] bg-white px-3.5 text-sm font-semibold"
+            className="h-10 rounded-[12px] bg-white px-3 text-sm font-semibold lg:px-3.5"
             style={{ color: ownerTheme.text }}
           >
             Today
@@ -183,7 +183,7 @@ export default function OwnerCalendarPage() {
           <button
             type="button"
             onClick={() => shiftWeek(-1)}
-            className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white"
+            className="hidden h-10 w-10 items-center justify-center rounded-[12px] bg-white lg:flex"
             style={{ color: ownerTheme.text }}
             aria-label="Previous week"
           >
@@ -192,7 +192,7 @@ export default function OwnerCalendarPage() {
           <button
             type="button"
             onClick={() => shiftWeek(1)}
-            className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white"
+            className="hidden h-10 w-10 items-center justify-center rounded-[12px] bg-white lg:flex"
             style={{ color: ownerTheme.text }}
             aria-label="Next week"
           >
@@ -200,7 +200,7 @@ export default function OwnerCalendarPage() {
           </button>
           <Link
             href={path('/trainings/new')}
-            className="inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold text-white"
+            className="hidden h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold text-white lg:inline-flex"
             style={{ backgroundColor: ownerTheme.accent }}
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} />
@@ -297,7 +297,7 @@ export default function OwnerCalendarPage() {
       <Link
         href={path('/trainings/new')}
         aria-label="Add training"
-        className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-colors lg:hidden"
+        className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg transition-colors lg:hidden"
         style={{ backgroundColor: ownerTheme.accent }}
       >
         <Plus className="h-7 w-7" strokeWidth={2.25} />

@@ -1,4 +1,4 @@
-﻿import { fetchNearbyClassGroups } from '@/lib/client/fetch-nearby-classes';
+import { fetchNearbyClassGroups } from '@/lib/client/fetch-nearby-classes';
 import { ClientHomeNearbyClassesCarousel } from '@/components/clientHome/clientHomeNearbyClassesCarousel';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/routing';

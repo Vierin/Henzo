@@ -8,6 +8,26 @@ import '../widgets/common/henzo_modal.dart';
 import '../screens/subscription_screen.dart';
 import '../services/api_client.dart';
 
+Widget _planNameText(String template) {
+  const plan = 'Studio';
+  final parts = template.split('{plan}');
+  if (parts.length < 2) return Text(template);
+  return Text.rich(
+    TextSpan(
+      children: [
+        for (var i = 0; i < parts.length; i++) ...[
+          TextSpan(text: parts[i]),
+          if (i != parts.length - 1)
+            const TextSpan(
+              text: plan,
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+        ],
+      ],
+    ),
+  );
+}
+
 bool isSubscriptionRequiredError(Object e) {
   if (e is! ApiException) return false;
   return e.errorCode == 'SUBSCRIPTION_REQUIRED' ||
@@ -47,7 +67,7 @@ Future<void> showStudioTrialDialog(BuildContext context) async {
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(locale.t('subscription.trialBannerTitle')),
-      content: Text(locale.t('subscription.trialBannerBody')),
+      content: _planNameText(locale.t('subscription.trialBannerBody')),
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(ctx),

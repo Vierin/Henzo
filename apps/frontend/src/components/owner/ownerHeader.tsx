@@ -9,7 +9,7 @@ import {
   withLocale,
   type Locale,
 } from '@/i18n/routing';
-import { Bell, LogOut, ChevronDown, User } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useOwnerStudio } from '@/contexts/OwnerStudioContext';
 import { getPublicSupabase } from '@/lib/supabase-public';
@@ -29,7 +29,13 @@ function ownerInitials(name: string): string {
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }
 
-export default function OwnerHeader() {
+export default function OwnerHeader({
+  isMobileMenuOpen = false,
+  onToggleMobileMenu,
+}: {
+  isMobileMenuOpen?: boolean;
+  onToggleMobileMenu?: () => void;
+}) {
   const t = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
@@ -121,13 +127,13 @@ export default function OwnerHeader() {
       }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-end px-3 py-2.5 md:px-6 lg:px-8">
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {/* Language */}
           <div className="relative" ref={languageDropdownRef}>
             <button
               type="button"
               onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-              className="flex h-10 items-center gap-1.5 rounded-[12px] border-0 bg-white px-3.5 text-sm font-semibold"
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] border-0 bg-white px-3 text-sm font-semibold sm:px-3.5"
               style={{ color: ownerTheme.text }}
               aria-label="Change language"
             >
@@ -174,8 +180,8 @@ export default function OwnerHeader() {
             type="button"
             className={
               hasUnread
-                ? 'flex h-10 min-w-[52px] items-center justify-center gap-1.5 rounded-full border-0 px-3.5'
-                : 'relative flex h-10 w-10 items-center justify-center rounded-full border-0 bg-white'
+                ? 'flex h-10 min-w-[52px] shrink-0 items-center justify-center gap-1.5 rounded-full border-0 px-3.5'
+                : 'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white'
             }
             style={
               hasUnread
@@ -206,7 +212,7 @@ export default function OwnerHeader() {
             <button
               type="button"
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="flex h-10 max-w-[220px] items-center gap-2 rounded-full bg-white py-0 pl-1 pr-2.5 transition-colors hover:bg-white sm:max-w-none"
+              className="flex h-10 max-w-[220px] shrink-0 items-center gap-2 rounded-full bg-white py-0 pl-1 pr-2.5 transition-colors hover:bg-white sm:max-w-none"
             >
               <span
                 className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold"
@@ -275,6 +281,21 @@ export default function OwnerHeader() {
               </div>
             ) : null}
           </div>
+
+          {onToggleMobileMenu ? (
+            <button
+              type="button"
+              onClick={onToggleMobileMenu}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-none md:hidden"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" style={{ color: ownerTheme.text }} />
+              ) : (
+                <Menu className="h-5 w-5" style={{ color: ownerTheme.text }} />
+              )}
+            </button>
+          ) : null}
         </div>
       </div>
     </header>
