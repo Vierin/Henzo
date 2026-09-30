@@ -351,11 +351,11 @@ export class RevenueCatService {
   private toPayload(current: {
     id: string;
     studioId: string;
-    type: SubscriptionType | string;
-    status: SubscriptionStatus | string;
+    type: string;
+    status: string;
     startDate: Date;
     currentPeriodEnd: Date | null;
-    billingProvider?: SubscriptionBillingProvider | string;
+    billingProvider?: string;
     cancelAtPeriodEnd?: boolean;
   }) {
     return {

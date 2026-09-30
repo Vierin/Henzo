@@ -5,9 +5,9 @@ import {
 } from '@prisma/client';
 
 type AccessRow = {
-  type: SubscriptionType | string;
-  status: SubscriptionStatus | string;
-  billingProvider?: SubscriptionBillingProvider | string | null;
+  type: string;
+  status: string;
+  billingProvider?: string | null;
   currentPeriodEnd?: Date | null;
   cancelAtPeriodEnd?: boolean | null;
 };

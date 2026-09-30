@@ -773,7 +773,7 @@ export class SubscriptionsService {
     status: string;
     startDate: Date;
     currentPeriodEnd?: Date | null;
-    billingProvider?: SubscriptionBillingProvider | string;
+    billingProvider?: string;
     cancelAtPeriodEnd?: boolean;
     stripeCustomerId?: string | null;
     pendingType?: string | null;
