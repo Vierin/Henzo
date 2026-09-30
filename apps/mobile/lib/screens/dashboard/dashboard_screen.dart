@@ -15,6 +15,7 @@ import '../../models/studio.dart';
 import '../../models/studio_status.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/dashboard_api_service.dart';
 import '../../services/api_client.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/studio_cache.dart';

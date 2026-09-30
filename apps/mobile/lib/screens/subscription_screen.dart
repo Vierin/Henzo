@@ -1098,9 +1098,7 @@ class _PlanCard extends StatelessWidget {
   final String tagline;
   final String priceLabel;
   final List<String> features;
-  final bool showPricePeriod;
   final bool highlighted;
-  final bool showActiveBadge;
   final String? subscribeLabel;
   final VoidCallback? onSubscribe;
   final bool isLoading;
@@ -1112,9 +1110,7 @@ class _PlanCard extends StatelessWidget {
     required this.tagline,
     required this.priceLabel,
     required this.features,
-    this.showPricePeriod = true,
     this.highlighted = true,
-    this.showActiveBadge = false,
     this.subscribeLabel,
     this.onSubscribe,
     this.isLoading = false,
@@ -1189,25 +1185,6 @@ class _PlanCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showActiveBadge)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _activeBadgeBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    locale.t('profile.active').toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: _activeBadgeFg,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 20),
@@ -1226,17 +1203,15 @@ class _PlanCard extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ),
-          if (showPricePeriod) ...[
-            const SizedBox(height: 4),
-            Text(
-              locale.t('subscription.perMonthShort'),
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            locale.t('subscription.perMonthShort'),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
           ...features.map((f) => _PlanFeatureRow(label: f)),
           if (onSubscribe != null) ...[
