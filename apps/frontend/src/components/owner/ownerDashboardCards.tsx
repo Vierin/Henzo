@@ -76,7 +76,7 @@ function StatCard({
       className="flex aspect-square flex-col justify-between rounded-[18px] px-2.5 py-2.5 sm:aspect-auto sm:min-h-[96px] sm:px-4 sm:py-3"
       style={{ backgroundColor: background, color }}
     >
-      <div className="text-[22px] font-medium leading-none tabular-nums sm:text-[30px]">
+      <div className="text-[30px] font-medium leading-none tabular-nums">
         {value}
       </div>
       <div className="min-w-0 text-[11px] leading-tight sm:text-sm">
@@ -131,42 +131,42 @@ export function OwnerFeaturedSessionCard({
   return (
     <>
       <article
-        className="relative overflow-hidden rounded-[22px] p-4 text-white sm:p-5"
+        className="relative rounded-[22px] p-4 text-white sm:p-5"
         style={{ backgroundColor: ownerTheme.accent }}
       >
-        {/* Concentric rings — mobile parity (_RingsPainter), top-right only */}
-        <svg
-          className="pointer-events-none absolute -right-[85px] -top-[85px] h-[200px] w-[200px] opacity-[0.18]"
-          viewBox="0 0 200 200"
-          fill="none"
-          aria-hidden
-        >
-          {[10, 36, 62, 88, 114].map((r) => (
-            <circle
-              key={r}
-              cx="100"
-              cy="100"
-              r={r}
-              stroke="#FFFFFF"
-              strokeWidth="1.4"
-            />
-          ))}
-        </svg>
-
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/90">
             <MapPin className="h-3.5 w-3.5" aria-hidden />
             {whenLabel}
           </div>
-          <button
-            type="button"
-            onClick={() => setEditScopeOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-white/90"
-            style={{ color: ownerTheme.accent }}
-            aria-label={t('owner.dashboard.editSession')}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          <div className="relative h-8 w-8 shrink-0">
+            <svg
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[240px] w-[240px] -translate-x-1/2 -translate-y-1/2 overflow-visible opacity-[0.18]"
+              viewBox="0 0 240 240"
+              fill="none"
+              aria-hidden
+            >
+              {[10, 36, 62, 88, 114].map((r) => (
+                <circle
+                  key={r}
+                  cx="120"
+                  cy="120"
+                  r={r}
+                  stroke="#FFFFFF"
+                  strokeWidth="1.4"
+                />
+              ))}
+            </svg>
+            <button
+              type="button"
+              onClick={() => setEditScopeOpen(true)}
+              className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-white/90"
+              style={{ color: ownerTheme.accent }}
+              aria-label={t('owner.dashboard.editSession')}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         <h2 className="relative mt-3 text-2xl font-medium leading-tight">

@@ -53,7 +53,7 @@ export default function Footer() {
       suppressHydrationWarning
     >
       <div className="mx-auto max-w-7xl">
-        <div className="flex sm:flex-row flex-col gap-4 sm:gap-10 justify-between items-end">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end sm:gap-10">
           <div>
             <div className="">
               <Link
@@ -131,6 +131,9 @@ export default function Footer() {
                   hello@henzo.app
                 </a>
               </div>
+              <p className="mt-4 w-full text-left text-[1rem] font-medium text-[#3F3F3F] sm:mt-8">
+                {t('footer.allRightsReserved')}
+              </p>
             </div>
           </div>
           <div className="md:pb-1">
@@ -159,9 +162,6 @@ export default function Footer() {
                 </a>
               </div>
             </div>
-            <p className="sm:mt-8 text-[1rem] font-medium text-[#3F3F3F] text-left">
-              {t('footer.allRightsReserved')}
-            </p>
           </div>
         </div>
       </div>

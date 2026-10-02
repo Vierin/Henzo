@@ -94,23 +94,23 @@ export function ClientHomeAppPromoSection() {
   const storeGooglePlay = String(t(`${APP_BASE}.storeGooglePlay`));
 
   return (
-    <section className="bg-[#F9F4F0] px-4 pb-4 pt-1 sm:px-6 sm:pb-14 sm:pt-6">
+    <section className="bg-[#F9F4F0] pb-4 pt-1 sm:px-6 sm:pb-14 sm:pt-6">
       <div className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-[2rem] bg-[#FDF5F0] px-4 py-4 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <div className="overflow-hidden bg-[#FDF5F0] px-4 py-4 sm:rounded-[2.5rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           <div className="flex flex-col items-stretch gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
             <div className="w-full max-w-md lg:basis-1/3">
-              <h2 className="text-[2rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-5xl lg:text-6xl">
+              <h2 className="whitespace-pre-line text-[2.35rem] font-bold leading-tight tracking-tight text-[#3F3F3F] sm:text-5xl lg:text-6xl">
                 {title}
               </h2>
               <p className="mt-3 text-base leading-relaxed text-[#878787] sm:mt-4 sm:text-lg">
                 {subtitle}
               </p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
+              <div className="mt-4 flex justify-center sm:mt-8 sm:justify-start">
                 <StoreBadgeLinks
                   appStoreLabel={storeAppStore}
                   googlePlayLabel={storeGooglePlay}
-                  className="mt-0 flex flex-wrap items-center gap-3 sm:gap-4"
+                  className="mt-0 flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto sm:justify-start sm:gap-4"
                   buttonClassName="inline-flex min-h-[44px] w-[148px] items-center justify-center gap-2 rounded-full border border-[#3F3F3F] bg-white px-5 py-2 text-sm font-semibold text-[#3F3F3F] transition hover:bg-white/80 sm:min-h-[48px] sm:w-[158px]"
                 />
               </div>
